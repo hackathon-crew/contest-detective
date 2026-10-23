@@ -48,7 +48,7 @@ def test_conflicting_text_uses_latest_publication_and_official_sources_win():
 def test_missing_and_consistent_claims_have_distinct_levels():
     from contest_detective.server.contest.verification import resolve
 
-    assert resolve('prize', []).model_dump() == {'value': None, 'level': 'not_found', 'sources': []}
+    assert resolve('prize', []).model_dump() == {'value': None, 'level': 'not_found', 'sources': [], 'precision': 'datetime'}
     result = resolve('mode', [source('online'), source('online', url='https://news.example')])
     assert (result.value, result.level) == ('online', 'reposted')
 
