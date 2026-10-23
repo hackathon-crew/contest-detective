@@ -21,16 +21,18 @@ function renderAt(path: string) {
         JSON.stringify({
           code: 200,
           message: 'success',
-          data: String(input).includes('/contests/')
-            ? {
-                id: 'tme-ai-hackathon',
-                name: '赛事详情',
-                cover_url: null,
-                status: 'upcoming',
-                fields: {},
-                summary: null,
-              }
-            : [],
+          data: String(input).includes('/auth/me')
+            ? null
+            : String(input).includes('/contests/')
+              ? {
+                  id: 'tme-ai-hackathon',
+                  name: '赛事详情',
+                  cover_url: null,
+                  status: 'upcoming',
+                  fields: {},
+                  summary: null,
+                }
+              : [],
           total: 0,
           page: 1,
           page_size: 20,
@@ -51,6 +53,11 @@ function renderAt(path: string) {
 }
 
 describe('路由', () => {
+  it('首页可打开画像确认入口', async () => {
+    renderAt('/')
+    fireEvent.click(screen.getByRole('button', { name: '按我的情况挑比赛' }))
+    expect(await screen.findByRole('button', { name: '确认并挑比赛' })).toBeTruthy()
+  })
   it('首页显示四个区块，不开详情', () => {
     renderAt('/')
 
