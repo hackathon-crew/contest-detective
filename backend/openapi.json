@@ -661,7 +661,14 @@
                 "mode",
                 "prize",
                 "registration_url",
-                "organizer"
+                "organizer",
+                "venue",
+                "eligibility",
+                "team_size",
+                "entry_fee",
+                "entry_requirements",
+                "judging_criteria",
+                "past_statistics"
               ]
             },
             "type": "object",
@@ -735,7 +742,14 @@
                 "mode",
                 "prize",
                 "registration_url",
-                "organizer"
+                "organizer",
+                "venue",
+                "eligibility",
+                "team_size",
+                "entry_fee",
+                "entry_requirements",
+                "judging_criteria",
+                "past_statistics"
               ]
             },
             "type": "object",
