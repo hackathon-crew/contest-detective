@@ -102,13 +102,15 @@ def register_tools(agent: Agent, *, web_enabled: bool):
         extract = create_page_extractor(model=ctx.deps.model, session_factory=ctx.deps.session_factory,
                                         usage=ctx.usage)
 
-        registration = None
+        context = {}
         if contest_id:
             with ctx.deps.session_factory() as session:
                 existing = contests.get(session, contest_id)
             if existing:
+                context['contest_id'] = existing.id
                 registration = existing.fields.get('registration_url')
-        context = {'registration_url': registration.value} if registration and registration.value else {}
+                if registration and registration.value:
+                    context['registration_url'] = registration.value
         contest_id = await invoke(ctx.deps.record, url, extractor=extract,
                                  session_factory=ctx.deps.session_factory, **context)
         sources = []
