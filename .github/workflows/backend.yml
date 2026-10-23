@@ -1,0 +1,21 @@
+name: Backend
+on:
+  pull_request:
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest
+      - run: uv run lint-imports

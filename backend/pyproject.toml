@@ -5,7 +5,10 @@ description = "比赛侦探后端：统一响应与异常处理"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    "httpx>=0.28.1",
+    "openai>=3.37.0",
     "pydantic-settings>=2.6",
+    "sqlalchemy>=2",
     "uvicorn[standard]>=0.30",
 ]
 
@@ -18,3 +21,36 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/contest_detective"]
+
+[dependency-groups]
+dev = [
+    "import-linter>=2.15",
+    "pytest>=9.1.1",
+]
+
+[tool.importlinter]
+root_package = "contest_detective"
+
+[[tool.importlinter.contracts]]
+name = "Domain code does not depend on HTTP"
+type = "forbidden"
+source_modules = ["contest_detective.server"]
+forbidden_modules = ["contest_detective.web"]
+
+[[tool.importlinter.contracts]]
+name = 'Contest owns its data'
+type = "forbidden"
+source_modules = ["contest_detective.server.contest"]
+forbidden_modules = ['contest_detective.server.research_pipeline', 'contest_detective.server.agent', 'contest_detective.server.auth', 'contest_detective.server.user']
+
+[[tool.importlinter.contracts]]
+name = 'Research is independent of accounts and investigation'
+type = "forbidden"
+source_modules = ["contest_detective.server.research_pipeline"]
+forbidden_modules = ['contest_detective.server.agent', 'contest_detective.server.auth', 'contest_detective.server.user']
+
+[[tool.importlinter.contracts]]
+name = 'Investigation does not authenticate'
+type = "forbidden"
+source_modules = ["contest_detective.server.agent"]
+forbidden_modules = ['contest_detective.server.auth']
