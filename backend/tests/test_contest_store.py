@@ -94,6 +94,15 @@ def test_an_undated_page_can_later_supply_the_start_date(session):
     assert service.get(session, contest_id).fields['start_at'].value == '2026-11-01T00:00:00Z'
 
 
+def test_same_page_can_reschedule_an_existing_contest_without_duplicating_it(session):
+    contest_id = service.save(session, draft(claims={'start_at': '2026-11-01T00:00:00Z'}))
+    assert service.save(session, draft(claims={'start_at': '2026-11-08T00:00:00Z'})) == contest_id
+    detail = service.get(session, contest_id)
+    assert detail.fields['start_at'].value == '2026-11-08T00:00:00Z'
+    assert len(detail.fields['start_at'].sources) == 1
+    assert service.query(session, ContestQuery())[1] == 1
+
+
 def test_official_postponement_overrides_reposts_after_save(session):
     contest_id = service.save(session, draft(claims={'start_at': '2026-11-01T00:00:00Z',
         'submission_deadline': '2026-11-10T15:59:59Z'}))
