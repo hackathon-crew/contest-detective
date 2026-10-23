@@ -16,7 +16,50 @@
 
 ## 当前状态
 
-仓库刚建立，还没有可运行的代码。开发进度见 [Milestones](https://github.com/hackathon-crew/contest-detective/milestones)。
+已提供赛事查询、来源核实、画像匹配和本地只读 MCP。前端运行方式见 [frontend/README.md](frontend/README.md)，开发进度见 [Milestones](https://github.com/hackathon-crew/contest-detective/milestones)。
+
+## 本地只读 MCP
+
+安装后端依赖并准备 SQLite 数据库：
+
+```bash
+uv sync --locked --directory backend
+uv run --directory backend alembic upgrade head
+```
+
+启动 stdio 服务：
+
+```bash
+uv run --directory backend contest-detective-mcp
+```
+
+默认读取后端工作目录中的 `contest_detective.db`，也可通过 `DETECTIVE_DB_URL` 指定已有 SQLite 文件。MCP 以文件只读模式连接，启动不会创建数据库或执行迁移；标准输入、输出承载协议，运行日志写入标准错误。
+
+在支持 stdio MCP 的客户端中配置命令，将示例中的绝对路径替换为本机仓库和数据库位置：
+
+```json
+{
+  "mcpServers": {
+    "contest-detective": {
+      "command": "uv",
+      "args": ["run", "--directory", "/absolute/path/to/contest-detective/backend", "contest-detective-mcp"],
+      "env": {
+        "DETECTIVE_DB_URL": "sqlite:////absolute/path/to/contest_detective.db"
+      }
+    }
+  }
+}
+```
+
+服务只提供三个读取工具，均声明只读、无破坏和无外部访问：
+
+| 工具 | 参数 | 返回 |
+| --- | --- | --- |
+| `search_contests` | 平铺的 `keyword`、`status`、`mode`、`date_from`、`date_to`、`ids`、`sort`、`page`、`page_size`，均可省略 | `items`、`total`、`page`、`page_size` |
+| `get_contest` | 必填 `id` | 完整赛事详情及出处；缺少赛事返回工具错误 |
+| `match_contests` | 必填 `profile`，结构与画像接口相同 | `items`，每条包含赛事、模板理由及排序分数 |
+
+例如查询参数 `{"keyword":"Python","mode":"online","page_size":5}`，匹配参数 `{"profile":{"skills":["Python"],"preferred_modes":["online"]}}`。这些调用只读取本地赛事库，不联网获取资料、不调用模型、不保存画像，也不读取登录态。
 
 ## 参与开发
 
