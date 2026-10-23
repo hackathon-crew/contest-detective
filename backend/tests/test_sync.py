@@ -94,20 +94,21 @@ def test_application_stops_its_scheduler_when_lifespan_ends(session_factory, mon
     assert stopped.is_set()
 
 
-def test_two_public_source_fixtures_reach_the_real_contest_store(session_factory):
+def test_default_public_source_fixtures_reach_the_real_contest_store(session_factory):
     import json
     from pathlib import Path
     from sqlalchemy import func, select
     from contest_detective.server.contest.models import ContestPage
     from contest_detective.server.contest.service import get
     from contest_detective.server.research_pipeline.service import run_sync
-    from contest_detective.server.research_pipeline.sources import hackertrip, waytoagi
 
     fixtures = Path(__file__).parent / 'fixtures'
     snapshots = {name: json.loads((fixtures / f'{name}.json').read_text())
-                 for name in ('hackertrip', 'waytoagi', 'waytoagi_details')}
+                 for name in ('hackertrip', 'waytoagi', 'waytoagi_details', 'devpost')}
 
     def handle(request):
+        if request.url.host == 'devpost.com':
+            return httpx.Response(200, json=snapshots['devpost'][request.url.params['page']])
         if request.url.host == 'hackertrip.space':
             return httpx.Response(200, json=snapshots['hackertrip'])
         if request.url.path == '/api/events':
@@ -115,17 +116,18 @@ def test_two_public_source_fixtures_reach_the_real_contest_store(session_factory
         return httpx.Response(200, json=snapshots['waytoagi_details'][request.url.path.rsplit('/', 1)[-1]])
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        report = run_sync(session_factory, client=client, sources=[
-            ('hackertrip', hackertrip.fetch), ('waytoagi', waytoagi.fetch),
-        ])
-    assert report.saved == 68
+        report = run_sync(session_factory, client=client)
+    assert report.saved == 113
     assert report.failed == 0
     with session_factory() as session:
-        items, total = query(session, ContestQuery(page_size=100))
-        assert total == len(items) > 0
-        assert session.scalar(select(func.count()).select_from(ContestPage)) == 68
+        first, total = query(session, ContestQuery(page_size=100))
+        second, second_total = query(session, ContestQuery(page=2, page_size=100))
+        items = first + second
+        assert total == second_total == len(items) > 0
+        assert session.scalar(select(func.count()).select_from(ContestPage)) == 113
         evidence = [source for item in items for field in get(session, item.id).fields.values()
                     for source in field.sources]
     assert any(source.url.startswith('https://hackertrip.space/hackathon/') for source in evidence)
     assert any(source.url.startswith('https://events.waytoagi.com/events/') for source in evidence)
+    assert any('devpost.com' in source.url for source in evidence)
     assert all(source.excerpt and source.value for source in evidence)
