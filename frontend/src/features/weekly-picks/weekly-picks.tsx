@@ -9,7 +9,7 @@ export function WeeklyPicks() {
     date_from: today.toISOString(),
     date_to: addDays(today, 7).toISOString(),
     sort: 'deadline',
-    page_size: 6,
+    page_size: 3,
   })
   return (
     <section aria-labelledby="weekly-picks-title" className="min-w-0 space-y-5">

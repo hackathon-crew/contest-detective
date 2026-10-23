@@ -24,7 +24,7 @@ export function HomePage() {
 
       {/* 底部留白给常驻的侦探输入条，免得最后一个区块被它挡住 */}
       <main className="mx-auto max-w-7xl px-6 pb-32 sm:px-8">
-        <section className="grid items-start gap-10 py-10 lg:grid-cols-2 lg:py-14">
+        <section className="grid items-start gap-10 py-10 md:grid-cols-2 lg:py-14">
           <div className="space-y-6 lg:py-12">
             <h1 className="text-4xl font-bold text-ink">近期值得参加的黑客松</h1>
             <a
