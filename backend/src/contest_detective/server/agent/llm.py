@@ -10,6 +10,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.wrapper import WrapperModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.profiles.openai import OpenAIModelProfile
 
 from contest_detective.common.exceptions import BizException
 from contest_detective.framework.db import SessionLocal
@@ -43,7 +44,13 @@ class GuardedModel(WrapperModel):
             self.budget.cancel_before_request(call_id)
             raise BizException('模型余额不足或暂时无法确认余额', code=503) from exc
         # No retry here: once dispatched, failures retain the maximum liability.
-        settings = dict(model_settings or {}, max_tokens=config.max_tokens)
+        # Body overlays can replace messages or token caps; SDK retry overrides can
+        # dispatch another paid request against the same reservation. Accept only
+        # generation controls that cannot bypass the input/output spending bound.
+        allowed = {'parallel_tool_calls', 'temperature', 'top_p', 'seed', 'stop_sequences'}
+        settings = {key: value for key, value in (model_settings or {}).items() if key in allowed}
+        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=30,
+                        extra_body={'thinking': {'type': 'disabled'}})
         response = await self.wrapped.request(messages, settings, model_request_parameters)
         self.budget.settle(call_id, response.usage)
         return response
@@ -62,5 +69,6 @@ def create_model(settings: LLMSettings | None = None, *, session_factory=Session
         raise BizException('侦探模型尚未配置', code=503)
     client = AsyncOpenAI(api_key=config.api_key.get_secret_value(), base_url=config.base_url,
                          max_retries=0, timeout=30)
-    model = OpenAIChatModel(config.model, provider=OpenAIProvider(openai_client=client))
+    model = OpenAIChatModel(config.model, provider=OpenAIProvider(openai_client=client),
+        profile=OpenAIModelProfile(openai_chat_supports_max_completion_tokens=False))
     return GuardedModel(model, budget)
