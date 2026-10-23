@@ -1,14 +1,23 @@
 """FastAPI 应用工厂。装配异常处理和 API 路由。"""
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
+from contest_detective.framework.db import init_db
 
 from contest_detective.common.result import Response
 from contest_detective.web.api import router
 from contest_detective.web.handler import register_exception_handlers
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="比赛侦探", version="0.1.0")
+def create_app(*, db_engine=None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(_app):
+        init_db(db_engine)
+        yield
+
+    app = FastAPI(title="比赛侦探", version="0.1.0", lifespan=lifespan)
     register_exception_handlers(app)
     app.include_router(router)
 
