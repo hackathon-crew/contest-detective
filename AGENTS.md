@@ -1,6 +1,6 @@
 # 项目约束
 
-本仓库按 XEngineer 营软件工程规范协作。人和 AI 助手都遵守本文件；流程细则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+本仓库是个人项目，参照 XEngineer 营软件工程规范协作，弹性遵循：营规范与本文件冲突时，以本文件为准。人和 AI 助手都遵守本文件；流程细则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 协作流程
 
@@ -15,11 +15,10 @@
 
 ## AI 使用红线
 
-AI 生成的内容合入前必须满足以下四条，任一条不满足，先澄清再继续：
+AI 生成的内容合入前必须满足以下三条，任一条不满足，先澄清再继续：
 
 - 方案经得起拷问，理由可讲清。
 - 代码逻辑有人能完整理解、能讲清、出问题能改。
-- 核心模块的 PR 描述附关键 Prompt 与人工 Review 说明。
 - 系统架构由人主导设计，不以 AI 生成的粗浅实现冒充架构。
 
 AI 生成的代码要有测试兜底，没有测试的先补测试再合并。
@@ -30,6 +29,7 @@ AI 生成的代码要有测试兜底，没有测试的先补测试再合并。
 
 - Commit message 只用英文，格式 `type(scope): subject`，一个提交只做一件事。
 - PR 标题用英文 `type(scope): subject`，小标题用英文，正文用中文，按 `.github/pull_request_template.md` 填写。
+- PR、Issue 和 commit message 里不写 prompt 摘要，也不写任何 AI 协作的字样。
 
 ## 产品不变量
 
