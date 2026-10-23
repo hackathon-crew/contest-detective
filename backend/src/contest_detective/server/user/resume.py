@@ -37,14 +37,19 @@ def _text(content: bytes, extension: str) -> str:
     return result.text_content.strip()[:MAX_TEXT]
 
 
-def create_profile_extractor(*, model_factory):
+def create_profile_extractor(*, model_factory, manage_model=False):
+    # 注入模型可复用；只有请求自行创建的客户端随本次抽取释放。
     async def extract(text: str) -> Profile:
         model = model_factory()
         agent = Agent(model, output_type=Profile, retries=0,
             instructions='仅提取用户提供简历中的技能、身份、城市和可投入时间，未知字段保留默认空值。'
                          '不要输出姓名、电话、邮箱、地址等联系信息。不得编造 GitHub 仓库证据。'
                          '只有原文明确给出时间与时区才填写 availability.windows；自然语言放 available_time 供用户确认。')
-        result = await agent.run(text, usage_limits=UsageLimits(request_limit=1))
+        if manage_model:
+            async with agent:
+                result = await agent.run(text, usage_limits=UsageLimits(request_limit=1))
+        else:
+            result = await agent.run(text, usage_limits=UsageLimits(request_limit=1))
         profile = result.output
         # 简历输入不能伪造公开接口提供的仓库证据。
         return profile.model_copy(update={'github_evidence': [], 'language_repo_share': {}, 'github_last_active_at': None})
