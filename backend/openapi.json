@@ -816,6 +816,15 @@
             },
             "type": "array",
             "title": "Sources"
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "day",
+              "datetime"
+            ],
+            "title": "Precision",
+            "default": "datetime"
           }
         },
         "type": "object",
@@ -1442,6 +1451,15 @@
             "type": "boolean",
             "title": "Stale",
             "default": false
+          },
+          "precision": {
+            "type": "string",
+            "enum": [
+              "day",
+              "datetime"
+            ],
+            "title": "Precision",
+            "default": "datetime"
           }
         },
         "type": "object",

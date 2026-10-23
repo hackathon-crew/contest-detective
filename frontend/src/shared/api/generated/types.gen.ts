@@ -137,6 +137,10 @@ export type FieldValue = {
      * Sources
      */
     sources?: Array<Source>;
+    /**
+     * Precision
+     */
+    precision?: 'day' | 'datetime';
 };
 
 /**
@@ -524,6 +528,10 @@ export type Source = {
      * Stale
      */
     stale?: boolean;
+    /**
+     * Precision
+     */
+    precision?: 'day' | 'datetime';
 };
 
 /**
