@@ -42,7 +42,10 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
                     ClaimIn(field='city', value=place, excerpt=f'location: {place}'),
                     ClaimIn(field='mode', value='offline', excerpt=f'location: {place}'),
                 ])
-            for field, key in [('organizer', 'organization_name'), ('prize', 'prize_amount')]:
+            for field, key in [
+                ('organizer', 'organization_name'), ('prize', 'prize_amount'),
+                ('eligibility', 'eligibility_requirement_invite_only_description'),
+            ]:
                 raw = item.get(key)
                 if raw:
                     value = html.unescape(re.sub(r'<[^>]+>', '', str(raw))).strip()

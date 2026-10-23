@@ -29,7 +29,7 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
         claims = []
         for field, key in [
             ('start_at', 'date'), ('end_at', 'endDate'),
-            ('deadline_unspecified', 'deadline'), ('city', 'city'),
+            ('deadline_unspecified', 'deadline'), ('city', 'city'), ('venue', 'venue'),
             ('mode', 'eventMode'), ('organizer', 'organizerName'),
             ('registration_url', 'externalRegUrl'),
         ]:

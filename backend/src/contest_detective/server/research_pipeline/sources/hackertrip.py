@@ -17,7 +17,7 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
         fields = [
             ('start_at', 'startDate'), ('end_at', 'endDate'),
             ('registration_deadline', 'registrationDeadline'),
-            ('city', 'city'), ('mode', 'mode'), ('prize', 'prizePool'),
+            ('city', 'city'), ('venue', 'venue'), ('mode', 'mode'), ('prize', 'prizePool'),
             ('organizer', 'hostOrganizer'),
         ]
         for field, key in fields:
