@@ -64,3 +64,18 @@ def test_mixed_precision_clock_needs_support_for_the_named_field(session_factory
         {'field': 'registration_deadline', 'value': '2026-10-27T15:59:00Z', 'excerpt': '10月27日23:59报名截止'},
     ], answer)
     assert result.type == expected
+
+
+@pytest.mark.parametrize('answer,expected', [
+    (f'开赛日期为[10月27日]({URL})且报名截止为[10月26日23:59]({URL})。', 'answer'),
+    (f'报名截止为[10月26日23:59]({URL})并且开赛日期为[10月27日]({URL})。', 'answer'),
+    (f'报名截止为[2026-10-26T23:59:00+08:00]({URL})。', 'answer'),
+    (f'报名截止为[2026-10-26T15:59:00Z]({URL})。', 'answer'),
+    (f'报名截止为[2026-10-26T23:59:00+09:00]({URL})。', 'error'),
+])
+def test_independent_field_statements_and_iso_offsets_keep_exact_time_semantics(session_factory, answer, expected):
+    result = ask(session_factory, [
+        {'field': 'start_at', 'value': '2026-10-27', 'precision': 'day', 'excerpt': '10月27日开赛'},
+        {'field': 'registration_deadline', 'value': '2026-10-26T15:59:00Z', 'excerpt': '10月26日23:59报名截止'},
+    ], answer)
+    assert result.type == expected
