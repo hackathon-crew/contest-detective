@@ -9,7 +9,7 @@ VerificationLevel = Literal['official', 'reposted', 'conflict', 'not_found']
 ContestStatus = Literal['upcoming', 'ongoing', 'ended']
 DATE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified')
 DEADLINE_FIELDS = ('registration_deadline', 'submission_deadline', 'deadline_unspecified')
-AGGREGATOR_DOMAINS = ('hackertrip.space', 'events.waytoagi.com', 'devpost.com', 'hackathonradar.com')
+AGGREGATOR_DOMAINS = ('hackertrip.space', 'hackathonradar.com')
 
 
 def utc_iso(value: str) -> str:
