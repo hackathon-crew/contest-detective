@@ -12,7 +12,11 @@ export function LevelBadge({ level }: { level: FieldValue['level'] }) {
     conflict: 'text-level-conflict',
     not_found: 'text-level-not-found',
   }
-  return <Badge className={colors[level]}>{names[level]}</Badge>
+  return (
+    <Badge variant="outline" className={colors[level]}>
+      {names[level]}
+    </Badge>
+  )
 }
 export function ContestCard({ contest, action }: { contest: ContestSummary; action?: ReactNode }) {
   const location = useLocation()
