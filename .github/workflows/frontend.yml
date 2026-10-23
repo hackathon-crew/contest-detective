@@ -1,0 +1,54 @@
+name: Frontend
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/frontend.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'backend/**'
+      - '.github/workflows/frontend.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  # 不叫 check：分支保护里必过的 check 是 PR Issue Link 那一项，重名会混在一起
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: astral-sh/setup-uv@v6
+
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+      # 后端改了路由或响应模型却没重新生成，前端拿到的就是旧类型。这里重新导出、重新生成，
+      # 和提交的不一致就失败。用 git status 而不是 git diff，新生成的文件也能查出来。
+      - name: Generated API types match the backend
+        run: |
+          npm run generate:api
+          changes=$(git status --porcelain -- ../backend/openapi.json src/shared/api/generated)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            echo "::error::后端接口和前端生成的类型不一致，请在 frontend 下运行 npm run generate:api 并提交结果"
+            exit 1
+          fi
