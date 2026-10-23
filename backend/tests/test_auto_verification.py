@@ -158,3 +158,29 @@ def test_sync_page_reader_is_supported_without_blocking_the_event_loop(session_f
         fetcher=fetch, runner=runner, now=NOW))
     assert visited == ['https://organizer.example/1']
     assert result.failed == 1
+
+
+def test_real_single_page_pipeline_writes_postponement_back_to_selected_contest(session_factory, monkeypatch):
+    from contest_detective.server.research_pipeline.verification import verify_recent
+    monkeypatch.setattr(service, '_now', lambda: NOW)
+    with session_factory() as session:
+        contest_id = seed(session, 1, deadline=NOW + timedelta(days=2), start=NOW + timedelta(days=3))
+
+    async def fetch(url):
+        return '活动 1 主办方延期通知：比赛改为 2026-11-10 开赛。'
+
+    async def extractor(url, body):
+        return ContestDraft(name='活动 1', page={'url': 'https://invented.example',
+            'site': '抽取结果', 'title': '活动', 'is_official': False}, claims=[
+                {'field': 'start_at', 'value': '2026-11-10T00:00:00Z', 'excerpt': '比赛改为 2026-11-10 开赛'}])
+
+    result = asyncio.run(verify_recent(session_factory=session_factory, extractor=extractor,
+        fetcher=fetch, now=NOW))
+    assert result.verified == 1
+    assert result.failed == 0
+    with session_factory() as session:
+        detail = service.get(session, contest_id)
+        assert detail.fields['start_at'].value == '2026-11-10T00:00:00Z'
+        assert detail.fields['start_at'].level == 'official'
+        assert len(detail.fields['start_at'].sources) == 2
+        assert service.query(session, ContestQuery())[1] == 1
