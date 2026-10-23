@@ -1,0 +1,284 @@
+{
+  "description": "显式合成的业务规则回归，不计入真实赛事或人工金标样本。",
+  "cases": [
+    {
+      "id": "synthetic-postponement",
+      "kind": "synthetic_regression",
+      "name": "合成延期回归",
+      "origin": "https://github.com/hackathon-crew/contest-detective/issues/8",
+      "tags": [
+        "postponed",
+        "official_override"
+      ],
+      "notes": [
+        "取自提案匿名例子；日期和地址仅用于回归，不对应已核实的真实赛事。"
+      ],
+      "drafts": [
+        {
+          "name": "合成延期回归",
+          "page": {
+            "url": "https://repost.example/old",
+            "site": "合成回归来源",
+            "title": "合成延期回归",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-01T00:00:00Z",
+              "excerpt": "合成开赛时间：11月1日"
+            },
+            {
+              "field": "submission_deadline",
+              "value": "2026-11-10T15:59:59Z",
+              "excerpt": "首轮投递截止11月10日"
+            }
+          ]
+        },
+        {
+          "name": "合成延期回归",
+          "page": {
+            "url": "https://organizer.example/extended",
+            "site": "合成回归来源",
+            "title": "合成延期回归",
+            "is_official": true
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-01T00:00:00Z",
+              "excerpt": "合成开赛时间：11月1日"
+            },
+            {
+              "field": "submission_deadline",
+              "value": "2026-12-06T15:59:59Z",
+              "excerpt": "首轮投递截止时间延长至12月6日"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0,
+            1
+          ],
+          "fields": {
+            "submission_deadline": [
+              "2026-12-06T15:59:59Z",
+              "official"
+            ]
+          },
+          "stale_urls": [
+            "https://repost.example/old"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "synthetic-submission-kind",
+      "kind": "synthetic_regression",
+      "name": "合成截止类型回归",
+      "origin": "https://github.com/hackathon-crew/contest-detective/issues/8",
+      "tags": [
+        "deadline_types"
+      ],
+      "notes": [
+        "取自提案匿名例子；未把16:00提交截止改写成报名截止。"
+      ],
+      "drafts": [
+        {
+          "name": "合成截止类型回归",
+          "page": {
+            "url": "https://organizer.example/submit",
+            "site": "合成回归来源",
+            "title": "合成截止类型回归",
+            "is_official": true
+          },
+          "claims": [
+            {
+              "field": "submission_deadline",
+              "value": "2026-10-25T08:00:00Z",
+              "excerpt": "16:00 提交截止"
+            },
+            {
+              "field": "deadline_unspecified",
+              "value": "2026-10-26T15:59:59Z",
+              "excerpt": "10月26日截止，未注明类型"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "submission_deadline": [
+              "2026-10-25T08:00:00Z",
+              "official"
+            ],
+            "deadline_unspecified": [
+              "2026-10-26T15:59:59Z",
+              "official"
+            ]
+          },
+          "missing_fields": [
+            "registration_deadline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "synthetic-fuzzy-start-day",
+      "kind": "synthetic_regression",
+      "name": "合成同日别名回归",
+      "tags": [
+        "fuzzy_merge",
+        "beijing_day",
+        "different_start_day"
+      ],
+      "drafts": [
+        {
+          "name": "Open Source Hack 2026",
+          "page": {
+            "url": "https://source.example/midnight",
+            "site": "合成回归来源",
+            "title": "Open Source Hack 2026",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-10-31T16:00:00Z",
+              "excerpt": "合成北京11月1日00:00"
+            }
+          ]
+        },
+        {
+          "name": "Open Source Hack 2026 Shanghai",
+          "page": {
+            "url": "https://source.example/daytime",
+            "site": "合成回归来源",
+            "title": "Open Source Hack 2026 Shanghai",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-01T02:00:00Z",
+              "excerpt": "合成北京11月1日10:00"
+            }
+          ]
+        },
+        {
+          "name": "Open Source Hack 2026",
+          "page": {
+            "url": "https://source.example/next-day",
+            "site": "合成回归来源",
+            "title": "Open Source Hack 2026",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-01T16:00:00Z",
+              "excerpt": "合成北京11月2日00:00"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0,
+            1
+          ],
+          "fields": {
+            "start_at": [
+              "2026-10-31T16:00:00Z",
+              "conflict"
+            ]
+          }
+        },
+        {
+          "draft_indices": [
+            2
+          ],
+          "fields": {
+            "start_at": [
+              "2026-11-01T16:00:00Z",
+              "reposted"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "synthetic-page-replacement",
+      "kind": "synthetic_regression",
+      "name": "合成页面刷新回归",
+      "tags": [
+        "source_replacement",
+        "rescheduled_start"
+      ],
+      "drafts": [
+        {
+          "name": "合成页面刷新回归",
+          "page": {
+            "url": "https://source.example/refresh",
+            "site": "合成回归来源",
+            "title": "合成页面刷新回归",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-01T00:00:00Z",
+              "excerpt": "合成初次开赛日"
+            },
+            {
+              "field": "city",
+              "value": "上海",
+              "excerpt": "合成初次地点"
+            }
+          ]
+        },
+        {
+          "name": "合成页面刷新回归",
+          "page": {
+            "url": "https://source.example/refresh",
+            "site": "合成回归来源",
+            "title": "合成页面刷新回归",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-08T00:00:00Z",
+              "excerpt": "合成调整后开赛日"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0,
+            1
+          ],
+          "fields": {
+            "start_at": [
+              "2026-11-08T00:00:00Z",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "city"
+          ]
+        }
+      ]
+    }
+  ]
+}

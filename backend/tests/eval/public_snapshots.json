@@ -1,0 +1,817 @@
+{
+  "description": "公开来源字段快照。核对的是快照中的说法，不是赛事事实的最终认证。",
+  "checked_on": "2026-10-24",
+  "human_gold_status": "pending",
+  "limitations": [
+    "这些样本尚未经过用户人工复核，不能声称已满足产品提案的人工作为金标验收。",
+    "HackerTrip 样本只证明聚合平台当时提供的字段，等级最高为 reposted。",
+    "真实延期样本缺少延期前原始公告；旧转载划掉规则另由明确标注的合成样本验证。",
+    "评测范围为确定性核实和持久化，不代表真实模型的字段抽取准确率。"
+  ],
+  "upstream_snapshot": {
+    "url": "https://hackertrip.space/api/hackathons",
+    "fixture_commit": "361e17c18ce207fd0d596e9ade931624d44f4e2c",
+    "fixture_path": "backend/tests/fixtures/hackertrip.json"
+  },
+  "cases": [
+    {
+      "id": "ht-2027",
+      "name": "雾客松 2027（WAKEATHON）重庆跨年 AI 黑客松",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-2027",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "雾客松 2027（WAKEATHON）重庆跨年 AI 黑客松",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-2027",
+            "site": "HackerTrip",
+            "title": "雾客松 2027（WAKEATHON）重庆跨年 AI 黑客松",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2027-01-22T00:00:00.000Z",
+              "excerpt": "startDate: 2027-01-22T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2027-01-24T00:00:00.000Z",
+              "excerpt": "endDate: 2027-01-24T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2027-01-10T15:59:59.000Z",
+              "excerpt": "registrationDeadline: 2027-01-10T15:59:59.000Z"
+            },
+            {
+              "field": "city",
+              "value": "重庆",
+              "excerpt": "city: 重庆"
+            },
+            {
+              "field": "mode",
+              "value": "hybrid",
+              "excerpt": "mode: hybrid"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2027-01-22T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2027-01-24T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2027-01-10T15:59:59Z",
+              "reposted"
+            ],
+            "city": [
+              "重庆",
+              "reposted"
+            ],
+            "mode": [
+              "hybrid",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-2026-ai-for-good-71daacf3",
+      "name": "2026 AI For Good公益黑客松·秋季赛",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-2026-ai-for-good-71daacf3",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "2026 AI For Good公益黑客松·秋季赛",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-2026-ai-for-good-71daacf3",
+            "site": "HackerTrip",
+            "title": "2026 AI For Good公益黑客松·秋季赛",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-12-18T00:00:00.000Z",
+              "excerpt": "startDate: 2026-12-18T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-12-20T00:00:00.000Z",
+              "excerpt": "endDate: 2026-12-20T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-11-15T00:00:00.000Z",
+              "excerpt": "registrationDeadline: 2026-11-15T00:00:00.000Z"
+            },
+            {
+              "field": "city",
+              "value": "上海",
+              "excerpt": "city: 上海"
+            },
+            {
+              "field": "mode",
+              "value": "hybrid",
+              "excerpt": "mode: hybrid"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-12-18T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-12-20T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-11-15T00:00:00Z",
+              "reposted"
+            ],
+            "city": [
+              "上海",
+              "reposted"
+            ],
+            "mode": [
+              "hybrid",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-2026-2beb1cb6",
+      "name": "2026硬件黑客松（极客营）",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-2026-2beb1cb6",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "2026硬件黑客松（极客营）",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-2026-2beb1cb6",
+            "site": "HackerTrip",
+            "title": "2026硬件黑客松（极客营）",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-12-02T00:00:00.000Z",
+              "excerpt": "startDate: 2026-12-02T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-12-06T00:00:00.000Z",
+              "excerpt": "endDate: 2026-12-06T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-11-15T15:59:59.000Z",
+              "excerpt": "registrationDeadline: 2026-11-15T15:59:59.000Z"
+            },
+            {
+              "field": "city",
+              "value": "深圳",
+              "excerpt": "city: 深圳"
+            },
+            {
+              "field": "mode",
+              "value": "offline",
+              "excerpt": "mode: offline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-12-02T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-12-06T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-11-15T15:59:59Z",
+              "reposted"
+            ],
+            "city": [
+              "深圳",
+              "reposted"
+            ],
+            "mode": [
+              "offline",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-a04d899420",
+      "name": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-a04d899420",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+            "site": "HackerTrip",
+            "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-11-15T00:00:00.000Z",
+              "excerpt": "startDate: 2026-11-15T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-11-16T00:00:00.000Z",
+              "excerpt": "endDate: 2026-11-16T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-11-10T15:59:59.000Z",
+              "excerpt": "registrationDeadline: 2026-11-10T15:59:59.000Z"
+            },
+            {
+              "field": "city",
+              "value": "北京",
+              "excerpt": "city: 北京"
+            },
+            {
+              "field": "mode",
+              "value": "offline",
+              "excerpt": "mode: offline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-11-15T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-11-16T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-11-10T15:59:59Z",
+              "reposted"
+            ],
+            "city": [
+              "北京",
+              "reposted"
+            ],
+            "mode": [
+              "offline",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-ai-67962884",
+      "name": "「枫客松」AI 黑客松",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-ai-67962884",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "「枫客松」AI 黑客松",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-ai-67962884",
+            "site": "HackerTrip",
+            "title": "「枫客松」AI 黑客松",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-10-31T00:00:00.000Z",
+              "excerpt": "startDate: 2026-10-31T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-11-01T00:00:00.000Z",
+              "excerpt": "endDate: 2026-11-01T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-10-22T15:59:00.000Z",
+              "excerpt": "registrationDeadline: 2026-10-22T15:59:00.000Z"
+            },
+            {
+              "field": "city",
+              "value": "南京",
+              "excerpt": "city: 南京"
+            },
+            {
+              "field": "mode",
+              "value": "offline",
+              "excerpt": "mode: offline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-10-31T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-11-01T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-10-22T15:59:00Z",
+              "reposted"
+            ],
+            "city": [
+              "南京",
+              "reposted"
+            ],
+            "mode": [
+              "offline",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-2026",
+      "name": "苏客松 2026（SU2026）苏州 AI 黑客松",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-2026",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "苏客松 2026（SU2026）苏州 AI 黑客松",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-2026",
+            "site": "HackerTrip",
+            "title": "苏客松 2026（SU2026）苏州 AI 黑客松",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-10-30T00:00:00.000Z",
+              "excerpt": "startDate: 2026-10-30T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-11-01T00:00:00.000Z",
+              "excerpt": "endDate: 2026-11-01T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-10-26T15:59:59.000Z",
+              "excerpt": "registrationDeadline: 2026-10-26T15:59:59.000Z"
+            },
+            {
+              "field": "city",
+              "value": "苏州",
+              "excerpt": "city: 苏州"
+            },
+            {
+              "field": "mode",
+              "value": "hybrid",
+              "excerpt": "mode: hybrid"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-10-30T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-11-01T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-10-26T15:59:59Z",
+              "reposted"
+            ],
+            "city": [
+              "苏州",
+              "reposted"
+            ],
+            "mode": [
+              "hybrid",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-intercity-hack-740c8114",
+      "name": "INTERCITY HACK 杭甬温三城联动黑客松——宁波站",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-intercity-hack-740c8114",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "INTERCITY HACK 杭甬温三城联动黑客松——宁波站",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-intercity-hack-740c8114",
+            "site": "HackerTrip",
+            "title": "INTERCITY HACK 杭甬温三城联动黑客松——宁波站",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-10-24T00:00:00.000Z",
+              "excerpt": "startDate: 2026-10-24T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-10-25T00:00:00.000Z",
+              "excerpt": "endDate: 2026-10-25T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-10-20T15:59:00.000Z",
+              "excerpt": "registrationDeadline: 2026-10-20T15:59:00.000Z"
+            },
+            {
+              "field": "city",
+              "value": "宁波",
+              "excerpt": "city: 宁波"
+            },
+            {
+              "field": "mode",
+              "value": "offline",
+              "excerpt": "mode: offline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-10-24T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-10-25T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-10-20T15:59:00Z",
+              "reposted"
+            ],
+            "city": [
+              "宁波",
+              "reposted"
+            ],
+            "mode": [
+              "offline",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ht-ff87c9d574",
+      "name": "WTCC 2026 AI硬件黑客松",
+      "kind": "public_snapshot",
+      "tags": [
+        "aggregator",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://hackertrip.space/api/hackathons",
+      "snapshot_record_id": "ht-ff87c9d574",
+      "evidence_access": "saved_public_api_response",
+      "drafts": [
+        {
+          "name": "WTCC 2026 AI硬件黑客松",
+          "page": {
+            "url": "https://hackertrip.space/hackathon/ht-ff87c9d574",
+            "site": "HackerTrip",
+            "title": "WTCC 2026 AI硬件黑客松",
+            "is_official": false
+          },
+          "claims": [
+            {
+              "field": "start_at",
+              "value": "2026-10-22T00:00:00.000Z",
+              "excerpt": "startDate: 2026-10-22T00:00:00.000Z"
+            },
+            {
+              "field": "end_at",
+              "value": "2026-10-25T00:00:00.000Z",
+              "excerpt": "endDate: 2026-10-25T00:00:00.000Z"
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-10-17T15:59:59.000Z",
+              "excerpt": "registrationDeadline: 2026-10-17T15:59:59.000Z"
+            },
+            {
+              "field": "city",
+              "value": "上海",
+              "excerpt": "city: 上海"
+            },
+            {
+              "field": "mode",
+              "value": "offline",
+              "excerpt": "mode: offline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "start_at": [
+              "2026-10-22T00:00:00Z",
+              "reposted"
+            ],
+            "end_at": [
+              "2026-10-25T00:00:00Z",
+              "reposted"
+            ],
+            "registration_deadline": [
+              "2026-10-17T15:59:59Z",
+              "reposted"
+            ],
+            "city": [
+              "上海",
+              "reposted"
+            ],
+            "mode": [
+              "offline",
+              "reposted"
+            ]
+          },
+          "missing_fields": [
+            "submission_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hackindore-4-2026",
+      "name": "HackIndore 4.0",
+      "kind": "public_snapshot",
+      "tags": [
+        "postponed",
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://unstop.com/hackathons/hackindore-40-24hour-national-hackathon-shri-g-s-institute-of-technology-science-indore-1744202/amp",
+      "evidence_access": "public_registration_page",
+      "notes": [
+        "页面注明由 SGSITS 发布，并明示 PPT 截止已延期。未取得延期前的原始公告，不构造历史旧值。",
+        "页面抓取版本为22:00 IST，搜索摘要另有23:59版本；固定快照只采用已读取页面的22:00，仍需人工复核。"
+      ],
+      "drafts": [
+        {
+          "name": "HackIndore 4.0",
+          "page": {
+            "url": "https://unstop.com/hackathons/hackindore-40-24hour-national-hackathon-shri-g-s-institute-of-technology-science-indore-1744202/amp",
+            "site": "Unstop / SGSITS",
+            "title": "HackIndore 4.0 – 24-Hour National Hackathon",
+            "is_official": true
+          },
+          "claims": [
+            {
+              "field": "submission_deadline",
+              "value": "2026-09-21T22:00:00+05:30",
+              "excerpt": "Deadline Extended: PPT submission deadline has been extended to 21st September 2026, 10:00 PM IST."
+            },
+            {
+              "field": "registration_deadline",
+              "value": "2026-09-21T22:00:00+05:30",
+              "excerpt": "Registration Deadline"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "submission_deadline": [
+              "2026-09-21T16:30:00Z",
+              "official"
+            ],
+            "registration_deadline": [
+              "2026-09-21T16:30:00Z",
+              "official"
+            ]
+          },
+          "missing_fields": [
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nasa-space-apps-haldia-2025",
+      "name": "NASA Space Apps Challenge Haldia 2025",
+      "kind": "public_snapshot",
+      "tags": [
+        "deadline_types"
+      ],
+      "checked_on": "2026-10-24",
+      "human_review_status": "pending",
+      "evidence_url": "https://www.spaceappschallenge.org/2025/local-events/haldia/",
+      "evidence_access": "public_page_search_snapshot",
+      "notes": [
+        "公开搜索快照给出明确作品提交截止和IST时区；直接重新打开一度返回502。未把注册开放日推断为注册截止。"
+      ],
+      "drafts": [
+        {
+          "name": "NASA Space Apps Challenge Haldia 2025",
+          "page": {
+            "url": "https://www.spaceappschallenge.org/2025/local-events/haldia/",
+            "site": "NASA Space Apps",
+            "title": "Haldia 2025",
+            "is_official": true
+          },
+          "claims": [
+            {
+              "field": "submission_deadline",
+              "value": "2025-10-05T23:59:00+05:30",
+              "excerpt": "Project Submission Deadline: October 5, 2025, 11:59 PM IST"
+            },
+            {
+              "field": "mode",
+              "value": "online",
+              "excerpt": "Virtual only"
+            }
+          ]
+        }
+      ],
+      "expected_groups": [
+        {
+          "draft_indices": [
+            0
+          ],
+          "fields": {
+            "submission_deadline": [
+              "2025-10-05T18:29:00Z",
+              "official"
+            ],
+            "mode": [
+              "online",
+              "official"
+            ]
+          },
+          "missing_fields": [
+            "registration_deadline",
+            "deadline_unspecified"
+          ]
+        }
+      ]
+    }
+  ]
+}
