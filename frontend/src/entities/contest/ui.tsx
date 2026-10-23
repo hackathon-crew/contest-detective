@@ -50,7 +50,7 @@ export function ContestCard({ contest, action }: { contest: ContestSummary; acti
         <p className="text-sm">
           {date ? (
             <>
-              {fieldNames[date.field]} {formatDate(date.info.value)}{' '}
+              {fieldNames[date.field]} {formatDate(date.info.value, date.info.precision)}{' '}
               <LevelBadge level={date.info.level} />
             </>
           ) : (

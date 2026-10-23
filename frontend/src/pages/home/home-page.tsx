@@ -1,26 +1,60 @@
-import { useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
 import { AuthControls } from '@/features/auth'
+import { AppearanceControl } from '@/features/appearance'
+import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
+import { currentUserKey, useCurrentUser } from '@/entities/user'
+import type { Profile } from '@/shared/api'
+import { Button } from '@/shared/ui'
 import { ContestCalendar } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveDock } from '@/features/detective'
 import { WeeklyPicks } from '@/features/weekly-picks'
+import { FollowButton, FollowedContests, useFollows } from '@/features/follow'
+import { ErrorState } from '@/shared/ui'
 
 /** 首页只负责摆放各个区块，数据由各个 feature 自己取。 */
 export function HomePage() {
+  const { data: user } = useCurrentUser()
+  const client = useQueryClient()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
+  const follows = useFollows()
+  const [showFollows, setShowFollows] = useState(false)
+  const listArea = useRef<HTMLDivElement | null>(null)
+  const followAction = (contest: { id: string }) => (
+    <FollowButton contestId={contest.id} follows={follows} />
+  )
   const contestId = useMatch('/contests/:contestId')?.params.contestId
   const navigate = useNavigate()
   const { search } = useLocation()
   const closeDetail = useCallback(() => navigate({ pathname: '/', search }), [navigate, search])
+  function confirmed(profile: Profile) {
+    if (user) void client.invalidateQueries({ queryKey: currentUserKey })
+    else setGuestProfile(profile)
+  }
 
   return (
     <div className="min-h-dvh">
       <header className="border-b border-rule bg-surface">
         <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
           <span className="text-base font-semibold text-ink">比赛侦探</span>
-          <AuthControls />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowFollows((value) => !value)
+                listArea.current?.scrollIntoView?.({ block: 'start' })
+              }}
+            >
+              {showFollows ? '全部赛事' : '我的关注'}
+            </Button>
+            <AppearanceControl />
+            <AuthControls />
+          </div>
         </div>
       </header>
 
@@ -28,26 +62,54 @@ export function HomePage() {
       <main className="mx-auto max-w-7xl px-6 pb-32 sm:px-8">
         <section className="grid items-start gap-10 py-10 md:grid-cols-2 lg:py-14">
           <div className="space-y-6 lg:py-12">
-            <h1 className="text-4xl font-bold text-ink">近期值得参加的黑客松</h1>
-            <a
-              href="#explore"
-              className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
-            >
-              浏览赛事
-            </a>
+            <h1 className="text-4xl font-bold text-balance text-ink">近期值得参加的黑客松</h1>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="#explore"
+                onClick={() => setShowFollows(false)}
+                className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
+              >
+                浏览赛事
+              </a>
+              <Button variant="outline" onClick={() => setProfileOpen(true)}>
+                按我的情况挑比赛
+              </Button>
+            </div>
           </div>
-          <WeeklyPicks />
+          <WeeklyPicks renderAction={followAction} />
         </section>
-        <div className="grid items-start gap-8 lg:grid-cols-3">
+        {!showFollows && follows.error && <ErrorState error={new Error(follows.error)} />}
+        <div
+          id="explore"
+          ref={listArea}
+          className="grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3"
+        >
           <div className="min-w-0 lg:col-span-2">
-            <ContestBrowser />
+            {showFollows ? (
+              <FollowedContests follows={follows} />
+            ) : (
+              <ContestBrowser renderAction={followAction} />
+            )}
           </div>
-          <ContestCalendar />
+          <ContestCalendar followedIds={follows.ids} />
         </div>
       </main>
 
-      <DetectiveDock />
-      {contestId && <ContestDetail contestId={contestId} onClose={closeDetail} />}
+      <DetectiveDock profile={user?.profile ?? guestProfile} />
+      {profileOpen && (
+        <ProfileMatchDialog
+          user={user}
+          onClose={() => setProfileOpen(false)}
+          onConfirmed={confirmed}
+        />
+      )}
+      {contestId && (
+        <ContestDetail
+          contestId={contestId}
+          onClose={closeDetail}
+          action={<FollowButton contestId={contestId} follows={follows} />}
+        />
+      )}
     </div>
   )
 }

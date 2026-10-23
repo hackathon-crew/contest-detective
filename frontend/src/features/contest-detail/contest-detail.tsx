@@ -1,4 +1,5 @@
 import ReactMarkdown from 'react-markdown'
+import type { ReactNode } from 'react'
 import {
   dateFields,
   fieldNames,
@@ -12,8 +13,9 @@ import { Dialog, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 export interface ContestDetailProps {
   contestId: string
   onClose: () => void
+  action?: ReactNode
 }
-export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
+export function ContestDetail({ contestId, onClose, action }: ContestDetailProps) {
   const query = useContest(contestId)
   return (
     <Dialog title={query.data?.name ?? '赛事详情'} onClose={onClose}>
@@ -23,6 +25,7 @@ export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : (
         <div className="space-y-6">
+          {action}
           <dl className="divide-y divide-rule">
             {Object.entries(fieldNames).map(([field, label]) => {
               const item = query.data.fields[field]
@@ -38,7 +41,7 @@ export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
                     {value && (
                       <p>
                         {dateFields.includes(field) ? (
-                          formatDate(value)
+                          formatDate(value, item.precision)
                         ) : field === 'mode' ? (
                           (modeNames[value] ?? value)
                         ) : field === 'registration_url' && safeUrl(value) ? (

@@ -1,5 +1,6 @@
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
-import { ContestCard, useContests } from '@/entities/contest'
+import type { ReactNode } from 'react'
+import { ContestCard, useContests, type ContestSummary } from '@/entities/contest'
 import {
   Button,
   EmptyState,
@@ -13,7 +14,11 @@ import {
   Skeleton,
 } from '@/shared/ui'
 
-export function ContestBrowser() {
+export function ContestBrowser({
+  renderAction,
+}: {
+  renderAction?: (contest: ContestSummary) => ReactNode
+}) {
   const [filters, setFilters] = useQueryStates(
     {
       keyword: parseAsString.withDefault(''),
@@ -33,11 +38,7 @@ export function ContestBrowser() {
     page_size: 20,
   })
   return (
-    <section
-      id="explore"
-      aria-labelledby="contest-browser-title"
-      className="min-w-0 space-y-5 py-8"
-    >
+    <section aria-labelledby="contest-browser-title" className="min-w-0 space-y-5 py-8">
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="contest-browser-title" className="text-2xl font-bold text-ink">
           全部赛事
@@ -115,7 +116,7 @@ export function ContestBrowser() {
       ) : (
         <div className="grid gap-3">
           {query.data.items.map((contest) => (
-            <ContestCard key={contest.id} contest={contest} />
+            <ContestCard key={contest.id} contest={contest} action={renderAction?.(contest)} />
           ))}
         </div>
       )}

@@ -51,6 +51,20 @@ afterEach(() => {
 })
 
 describe('profile confirmation', () => {
+  it('clears the draft without changing the confirmed profile until reconfirmed', async () => {
+    localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
+    const fetch = vi.fn(async () => envelope([]))
+    vi.stubGlobal('fetch', fetch)
+    show()
+    fireEvent.click(screen.getByRole('button', { name: '清空草稿' }))
+    expect((screen.getByLabelText('GitHub 用户名') as HTMLInputElement).value).toBe('')
+    expect(screen.queryByRole('button', { name: '移除技能 Python' })).toBeNull()
+    expect(loadConfirmedProfile()?.github).toBe('octocat')
+    expect(fetch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
+    await screen.findByText('没有找到符合条件的比赛，调整画像后再试。')
+    expect(loadConfirmedProfile()).toEqual({})
+  })
   it('keeps a GitHub draft unsaved until edited and confirmed', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
     vi.stubGlobal(

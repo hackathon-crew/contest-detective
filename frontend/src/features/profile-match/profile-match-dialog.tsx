@@ -108,6 +108,10 @@ export function ProfileMatchDialog({
   const [error, setError] = useState<unknown>(null)
   const [errorLocation, setErrorLocation] = useState<'source' | 'match'>('source')
   const [results, setResults] = useState<MatchItem[] | null>(null)
+  const resultsRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (results !== null) resultsRef.current?.scrollIntoView?.({ block: 'start' })
+  }, [results])
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
   const id = useId()
@@ -222,7 +226,7 @@ export function ProfileMatchDialog({
           )}
           {profile.github_last_active_at && (
             <p className="text-xs text-muted">
-              最近推送：{formatDate(profile.github_last_active_at)}
+              最近推送：{formatDate(profile.github_last_active_at, 'datetime', true)}
             </p>
           )}
           <Tags
@@ -422,13 +426,27 @@ export function ProfileMatchDialog({
               ))}
             </div>
           )}
-          <Button type="button" disabled={busy} onClick={confirmProfile}>
-            {busy ? '正在处理' : '确认并挑比赛'}
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button type="button" disabled={busy} onClick={confirmProfile}>
+              {busy ? '正在处理' : '确认并挑比赛'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => {
+                draft({})
+                setUsername('')
+                setError(null)
+              }}
+            >
+              清空草稿
+            </Button>
+          </div>
         </div>
         {error != null && errorLocation === 'match' && <ErrorState error={error} />}
         {results !== null && (
-          <section className="space-y-4 border-t border-rule pt-6">
+          <section ref={resultsRef} className="space-y-4 border-t border-rule pt-6">
             <h3 className="text-2xl font-bold">推荐比赛</h3>
             {results.length === 0 ? (
               <p className="text-sm text-muted">没有找到符合条件的比赛，调整画像后再试。</p>

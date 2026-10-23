@@ -52,7 +52,15 @@ it('displays participation facts with their original source links', async () => 
           name: '参赛规则',
           cover_url: null,
           status: 'upcoming',
-          fields,
+          fields: {
+            ...fields,
+            start_at: {
+              value: '2026-10-25T00:00:00Z',
+              precision: 'day',
+              level: 'official',
+              sources: [{ url, title: '开赛日期原文', excerpt: '10月25日开赛', stale: false }],
+            },
+          },
           summary: null,
         },
       }),
@@ -66,6 +74,8 @@ it('displays participation facts with their original source links', async () => 
     </QueryClientProvider>,
   )
   await screen.findByText('具体地点')
+  expect(screen.getByText('10月25日（时刻未核实）')).toBeTruthy()
+  expect(screen.queryByText(/08:00/)).toBeNull()
   for (const [, label, value] of evidence) {
     expect(screen.getByText(label)).toBeTruthy()
     expect(screen.getByText(value)).toBeTruthy()

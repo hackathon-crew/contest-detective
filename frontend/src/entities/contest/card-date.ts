@@ -1,3 +1,5 @@
+import { endOfDay } from 'date-fns'
+import { TZDate } from '@date-fns/tz'
 import type { ContestSummary, FieldValue } from './api'
 
 export function cardDate(
@@ -7,7 +9,11 @@ export function cardDate(
   const deadlines = ['registration_deadline', 'submission_deadline', 'deadline_unspecified']
     .flatMap((field) => {
       const info = contest.fields[field]
-      const time = info?.value ? Date.parse(info.value) : NaN
+      const instant = info?.value ? Date.parse(info.value) : NaN
+      const time =
+        info?.precision === 'day' && Number.isFinite(instant)
+          ? endOfDay(new TZDate(instant, 'Asia/Shanghai')).getTime()
+          : instant
       return info?.value && Number.isFinite(time) ? [{ field, info, time }] : []
     })
     .sort((a, b) => a.time - b.time)
