@@ -42,6 +42,7 @@ class ContestClaim(Base):
     field: Mapped[str] = mapped_column(String(32), primary_key=True)
     value: Mapped[str] = mapped_column(Text)
     excerpt: Mapped[str] = mapped_column(Text)
+    precision: Mapped[str] = mapped_column(String(8), default='datetime', server_default='datetime')
 
 
 class ContestPageLink(Base):

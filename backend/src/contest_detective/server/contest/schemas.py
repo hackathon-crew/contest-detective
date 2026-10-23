@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Literal
 from urllib.parse import urlsplit
 
@@ -11,6 +11,8 @@ ContestField = Literal[
 ]
 VerificationLevel = Literal['official', 'reposted', 'conflict', 'not_found']
 ContestStatus = Literal['upcoming', 'ongoing', 'ended']
+DatePrecision = Literal['day', 'datetime']
+BEIJING = timezone(timedelta(hours=8))
 DATE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified')
 DEADLINE_FIELDS = ('registration_deadline', 'submission_deadline', 'deadline_unspecified')
 AGGREGATOR_DOMAINS = ('hackertrip.space', 'hackathonradar.com')
@@ -22,6 +24,27 @@ def utc_iso(value: str) -> str:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError('日期必须包含时区')
     return parsed.astimezone(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
+
+
+def date_value(value: str, precision: DatePrecision = 'datetime') -> str:
+    if precision == 'datetime':
+        return utc_iso(value)
+    # day 的 UTC00 只是原文日期的排序锚点，不表示原文公布了零点或时区。
+    day = date.fromisoformat(value) if len(value) == 10 else datetime.fromisoformat(value).date()
+    return day.isoformat() + 'T00:00:00Z'
+
+
+def calendar_date(value: str, precision: DatePrecision = 'datetime') -> date:
+    parsed = datetime.fromisoformat(value)
+    return parsed.date() if precision == 'day' else parsed.astimezone(BEIJING).date()
+
+
+def date_bounds(value: str, precision: DatePrecision = 'datetime') -> tuple[datetime, datetime]:
+    if precision == 'day':
+        start = datetime.combine(calendar_date(value, precision), time(), BEIJING)
+        return start, start + timedelta(days=1)
+    exact = datetime.fromisoformat(value)
+    return exact, exact
 
 
 class PageIn(BaseModel):
@@ -52,11 +75,14 @@ class ClaimIn(BaseModel):
     field: ContestField
     value: str
     excerpt: str
+    precision: DatePrecision = 'datetime'
 
     @model_validator(mode='after')
     def canonical_value(self):
         if self.field in DATE_FIELDS:
-            self.value = utc_iso(self.value)
+            self.value = date_value(self.value, self.precision)
+        elif self.precision == 'day':
+            raise ValueError('只有日期字段可以使用 day 精度')
         elif self.field == 'mode' and self.value not in ('online', 'offline', 'hybrid'):
             raise ValueError('参赛形式必须为 online、offline 或 hybrid')
         return self
@@ -99,12 +125,14 @@ class Source(PageIn):
     value: str
     excerpt: str
     stale: bool = False
+    precision: DatePrecision = 'datetime'
 
 
 class FieldValue(BaseModel):
     value: str | None
     level: VerificationLevel
     sources: list[Source] = Field(default_factory=list)
+    precision: DatePrecision = 'datetime'
 
 
 class ContestSummary(BaseModel):
