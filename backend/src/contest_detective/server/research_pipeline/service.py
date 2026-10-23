@@ -17,9 +17,9 @@ class SyncReport(BaseModel):
 
 
 def source_adapters():
-    from contest_detective.server.research_pipeline.sources import hackertrip, waytoagi
+    from contest_detective.server.research_pipeline.sources import devpost, hackertrip, waytoagi
 
-    return [('hackertrip', hackertrip.fetch), ('waytoagi', waytoagi.fetch)]
+    return [('hackertrip', hackertrip.fetch), ('waytoagi', waytoagi.fetch), ('devpost', devpost.fetch)]
 
 
 def run_sync(session_factory=SessionLocal, *, client=None, sources=None) -> SyncReport:
