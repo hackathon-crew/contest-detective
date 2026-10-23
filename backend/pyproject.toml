@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.6",
     "rapidfuzz>=3.14",
     "sqlalchemy>=2",
+    "trafilatura>=2",
     "uvicorn[standard]>=0.30",
 ]
 
