@@ -12,6 +12,7 @@ from contest_detective.common.result import Response
 from contest_detective.framework.db import get_session
 from contest_detective.server.agent.loop import Investigator, create_investigator
 from contest_detective.server.agent.schemas import AskRequest
+from contest_detective.server.auth.service import get_current_user_id
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
@@ -23,8 +24,7 @@ def get_investigator(body: AskRequest, session: Session = Depends(get_session)) 
 
 
 async def get_request_user_id(request: Request) -> str | None:
-    # The web boundary resolves identity; investigation code never authenticates.
-    return None
+    return await get_current_user_id(request)
 
 
 @limiter.limit('5/minute;30/day')
