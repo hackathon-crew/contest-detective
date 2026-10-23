@@ -15,7 +15,9 @@ dependencies = [
     "pydantic-ai-slim[openai]>=2.60.0",
     "pydantic-settings>=2.6",
     "rapidfuzz>=3.14",
+    "slowapi>=0.1.10",
     "sqlalchemy>=2",
+    "sse-starlette>=3.5.0",
     "trafilatura>=2",
     "uvicorn[standard]>=0.30",
 ]
