@@ -1,6 +1,10 @@
 @import 'tailwindcss';
 
 /*
+ * 用途对照：页面标题 text-4xl font-bold；分区标题 text-2xl font-bold；
+ * 卡片标题 text-base font-semibold；正文 text-sm；元信息 text-xs text-muted。
+ * 圆角：标签 rounded-lg；控件 rounded-xl；卡片 rounded-2xl；弹窗 rounded-3xl。
+ *
  * 设计令牌。尺寸一律用 Tailwind 自带的刻度，不另起名字：
  * 字号 text-xs…text-5xl，圆角 rounded-lg / xl / 2xl / 3xl（正好是 Everplain 的 8 / 12 / 16 / 24），
  * 阴影 shadow-*，间距，版心 max-w-*，动效时长 duration-140 / 240 / 420。
