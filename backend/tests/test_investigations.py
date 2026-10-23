@@ -298,3 +298,50 @@ def test_empty_account_profile_is_not_described_as_confirmed(session_factory):
                                 profile_reader=lambda _: empty)
     run(investigator, user_id='new-account')
     assert '用户已确认的画像' not in instructions[0]
+
+
+def test_research_tool_uses_real_page_validation_and_storage(session_factory, monkeypatch):
+    from decimal import Decimal
+    from importlib import import_module
+    from pydantic_ai.usage import RequestUsage
+    from contest_detective.server.agent.budget import Budget
+    from contest_detective.server.agent.config import LLMSettings
+    from contest_detective.server.agent.llm import GuardedModel
+    from contest_detective.server.agent.models import LLMUsage
+    from contest_detective.server.contest.schemas import ContestQuery
+    from contest_detective.server.contest import service as contests
+    from contest_detective.server.research_pipeline import run as record_page
+    recording = import_module('contest_detective.server.research_pipeline.record')
+    url = 'https://weekend.devpost.com/'
+    monkeypatch.setattr(recording, 'fetch_page', lambda _: '网页活动，作品提交截止 11月1日16:00，线上举行。')
+    draft = {'name': '网页活动', 'page': {'url': 'https://untrusted.example/', 'site': '错误页面', 'title': '页面', 'is_official': False},
+             'claims': [
+                 {'field': 'submission_deadline', 'value': '2026-11-01T08:00:00Z', 'excerpt': '作品提交截止 11月1日16:00'},
+                 {'field': 'registration_deadline', 'value': '2026-10-28T08:00:00Z', 'excerpt': '报名截止10月28日'},
+             ]}
+    calls = 0
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if info.output_tools:
+            parts = [ToolCallPart(info.output_tools[0].name, draft)]
+        elif calls == 1:
+            parts = [ToolCallPart('record_page', {'url': url})]
+        else:
+            parts = [TextPart(f'作品提交截止：[11月1日16:00]({url})，报名截止未找到。')]
+        return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
+    async def enough():
+        return Decimal('100')
+    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only')
+    guarded = GuardedModel(FunctionModel(respond), Budget(session_factory, settings), balance_reader=enough)
+    events = run(Investigator(guarded, session_factory=session_factory, record=record_page))
+    assert events[-1].type == 'answer'
+    with session_factory() as session:
+        items, total = contests.query(session, ContestQuery(keyword='网页活动'))
+        assert total == 1
+        detail = contests.get(session, items[0].id)
+        submission = detail.fields['submission_deadline']
+        assert submission.level == 'official' and submission.sources[0].url == url
+        assert detail.fields['registration_deadline'].value is None
+        usage = session.scalars(select(LLMUsage)).all()
+        assert len(usage) == 3 and all(row.status == 'settled' for row in usage)
