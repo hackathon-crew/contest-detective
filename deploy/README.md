@@ -26,6 +26,8 @@ sudoedit /etc/contest-detective.env
 
 同步间隔默认 360 分钟，启用后立即执行首轮，再按间隔运行；设为 0 可关闭同步。必须只运行一个 worker。
 
+`DETECTIVE_SYNC_EXTRACT_ENABLED` 默认 `true`，周期同步和 `contest-detective-sync` 只有在它与 `DETECTIVE_LLM_ENABLED` 都为 `true` 时才启用来源抽取。设为 `false` 后，HackerTrip、WaytoAGI、Devpost 的结构化入库照常运行，跳过主办方核对及依赖模型的来源发现；侦探和简历功能仍由 `DETECTIVE_LLM_ENABLED` 控制，不受这个来源开关影响。服务器修改 `/etc/contest-detective.env` 后重启服务即可生效；手动同步可在后端目录运行 `DETECTIVE_SYNC_EXTRACT_ENABLED=false uv run contest-detective-sync`，输出中的 `extraction_enabled` 应为 `false`。
+
 安装并检查配置：
 
 ```sh
