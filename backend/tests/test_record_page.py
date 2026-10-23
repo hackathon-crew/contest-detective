@@ -18,7 +18,7 @@ def extracted(*, claims=None):
 
 
 def test_record_page_keeps_only_supported_excerpts_and_fixes_source_identity(session_factory):
-    from contest_detective.server.research_pipeline.service import run
+    from contest_detective.server.research_pipeline import run
 
     async def extractor(url, text):
         return extracted()
