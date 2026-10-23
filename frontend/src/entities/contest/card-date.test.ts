@@ -7,6 +7,7 @@ function contest(fields: ContestSummary['fields']): ContestSummary {
   return { id: 'one', name: '公开赛事', status: 'upcoming', cover_url: null, fields }
 }
 const field = (value: string) => ({ value, level: 'official' as const, sources: [] })
+const day = (value: string) => ({ ...field(value), precision: 'day' as const })
 
 describe('卡片日期', () => {
   it('没有开赛日期时显示作品提交截止，并保留截止类型', () => {
@@ -30,5 +31,25 @@ describe('卡片日期', () => {
       'start_at',
     )
     expect(cardDate(contest({}), now)).toBeNull()
+  })
+  it('当天仅日期的截止不会在北京上午八点后被跳过', () => {
+    const result = cardDate(
+      contest({
+        registration_deadline: day('2026-10-24T00:00:00Z'),
+        submission_deadline: field('2026-10-25T08:00:00Z'),
+      }),
+      new Date('2026-10-24T09:00:00Z'),
+    )
+    expect(result?.field).toBe('registration_deadline')
+  })
+  it('当天已有精确时刻且已截止的字段仍会跳过', () => {
+    const result = cardDate(
+      contest({
+        registration_deadline: field('2026-10-24T08:00:00Z'),
+        submission_deadline: day('2026-10-25T00:00:00Z'),
+      }),
+      new Date('2026-10-24T09:00:00Z'),
+    )
+    expect(result?.field).toBe('submission_deadline')
   })
 })
