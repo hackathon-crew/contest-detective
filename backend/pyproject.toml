@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "比赛侦探后端：统一响应与异常处理"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.20.1",
     "fastapi>=0.115",
     "httpx>=0.28.1",
     "openai>=3.37.0",
