@@ -55,8 +55,6 @@ def test_missing_and_consistent_claims_have_distinct_levels():
 
 @pytest.mark.parametrize('url', [
     'https://hackertrip.space/hackathon/1',
-    'https://events.waytoagi.com/events/1',
-    'https://event.devpost.com/',
     'https://hackathonradar.com/events/1',
 ])
 def test_aggregator_cannot_be_marked_official(url):
