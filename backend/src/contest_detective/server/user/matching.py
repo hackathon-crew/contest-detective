@@ -34,6 +34,24 @@ def _date(detail, field):
     return datetime.fromisoformat(value) if value else None
 
 
+def _is_day(detail, field):
+    item = detail.fields.get(field)
+    return item is not None and item.precision == 'day'
+
+
+def _deadline_passed(detail, field, now):
+    value = _date(detail, field)
+    if value is None:
+        return False
+    if _is_day(detail, field):
+        return value.date() < now.astimezone(BEIJING).date()
+    return value < now
+
+
+def _day_schedule(detail):
+    return any(_is_day(detail, field) for field in ('start_at', 'end_at'))
+
+
 def _contains(text, keyword):
     key = keyword.casefold()
     return any(re.search(r'(?<![a-z0-9])' + re.escape(term) + r'(?![a-z0-9])', text)
@@ -50,7 +68,7 @@ def _required_days(text):
 def _eligible(detail, profile, now):
     if detail.status == 'ended':
         return False
-    if any((date := _date(detail, field)) is not None and date < now for field in DEADLINE_FIELDS):
+    if any(_deadline_passed(detail, field, now) for field in DEADLINE_FIELDS):
         return False
     mode, city = _value(detail, 'mode'), _value(detail, 'city')
     if profile.preferred_modes and mode not in profile.preferred_modes:
@@ -77,19 +95,35 @@ def _eligible(detail, profile, now):
                 for first in range(7)):
             return False
     if start is not None:
-        end = end or start + timedelta(days=1)
-        if end <= start:
-            return False
-        first = start.astimezone(BEIJING).date()
-        last = (end - timedelta(microseconds=1)).astimezone(BEIJING).date()
+        date_only = _day_schedule(detail)
+        if date_only:
+            first = start.date() if _is_day(detail, 'start_at') else start.astimezone(BEIJING).date()
+            last = first if end is None else (end.date() if _is_day(detail, 'end_at')
+                                              else (end - timedelta(microseconds=1)).astimezone(BEIJING).date())
+            if last < first:
+                return False
+        else:
+            end = end or start + timedelta(days=1)
+            if end <= start:
+                return False
+            first = start.astimezone(BEIJING).date()
+            last = (end - timedelta(microseconds=1)).astimezone(BEIJING).date()
         days = (last - first).days + 1
         if available.max_consecutive_days and days > available.max_consecutive_days:
             return False
         if available.weekdays and any((first + timedelta(days=index)).weekday() not in available.weekdays
                                       for index in range(min(days, 7))):
             return False
-        if available.windows and not any(window.start_at <= start and window.end_at >= end for window in available.windows):
-            return False
+        if available.windows:
+            if date_only:
+                # Calendar overlap cannot establish attendance at an unverified hour.
+                fits = any(window.start_at.astimezone(BEIJING).date() <= last
+                           and (window.end_at - timedelta(microseconds=1)).astimezone(BEIJING).date() >= first
+                           for window in available.windows)
+            else:
+                fits = any(window.start_at <= start and window.end_at >= end for window in available.windows)
+            if not fits:
+                return False
     return True
 
 
@@ -112,7 +146,8 @@ def _rank_and_reason(detail, profile):
         reasons.append({'online': '线上', 'offline': '线下', 'hybrid': '线上线下结合'}[mode])
     if profile.availability.weekdays or profile.availability.windows or profile.availability.max_consecutive_days:
         if _date(detail, 'start_at'):
-            reasons.append('已知比赛时间与你确认的可投入时间相符')
+            reasons.append('比赛日期有记录，具体时刻未核实' if _day_schedule(detail)
+                           else '已知比赛时间与你确认的可投入时间相符')
     if not topics and not skills:
         reasons.insert(0, '符合你确认的筛选条件，暂未找到技能或主题重合')
     return float(len(topics) * 3 + len(skills) * 2), '；'.join(reasons) + '。'
