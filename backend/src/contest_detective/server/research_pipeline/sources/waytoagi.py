@@ -1,4 +1,5 @@
 from urllib.parse import quote
+import re
 
 import httpx
 
@@ -36,12 +37,14 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
             raw = event.get(key)
             if raw is None or raw == '':
                 continue
-            value = parse_datetime(raw, default_timezone='Asia/Shanghai') if field in {
+            day_only = isinstance(raw, str) and re.fullmatch(r'\d{4}-\d{2}-\d{2}', raw.strip()) is not None
+            value = parse_datetime(raw, default_timezone='UTC' if day_only else 'Asia/Shanghai') if field in {
                 'start_at', 'end_at', 'deadline_unspecified',
             } else str(raw).strip()
             if not value or (field == 'mode' and value not in {'online', 'offline', 'hybrid'}):
                 continue
-            claims.append(ClaimIn(field=field, value=value, excerpt=f'{key}: {raw}'))
+            precision = 'day' if day_only and field in {'start_at', 'end_at', 'deadline_unspecified'} else 'datetime'
+            claims.append(ClaimIn(field=field, value=value, precision=precision, excerpt=f'{key}: {raw}'))
         if official:
             claims.append(ClaimIn(field='registration_url', value=page_url,
                                   excerpt=f"origin: {event.get('origin')}; externalRegUrl: {event.get('externalRegUrl')}"))
