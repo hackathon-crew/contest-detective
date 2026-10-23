@@ -50,8 +50,9 @@ class GuardedModel(WrapperModel):
         # generation controls that cannot bypass the input/output spending bound.
         allowed = {'parallel_tool_calls', 'temperature', 'top_p', 'seed', 'stop_sequences'}
         settings = {key: value for key, value in (model_settings or {}).items() if key in allowed}
-        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=30,
-                        extra_body={'thinking': {'type': 'disabled'}})
+        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=30)
+        if config.deepseek_options:
+            settings['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self.wrapped.request(messages, settings, model_request_parameters)
         self.budget.settle(call_id, response.usage)
         return response
