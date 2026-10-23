@@ -5,6 +5,7 @@
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,7 @@ class AppSettings(BaseSettings):
     )
 
     log_level: str = "INFO"
+    sync_interval_minutes: int = Field(default=0, ge=0)
 
 
 @lru_cache

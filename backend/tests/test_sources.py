@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 
 import httpx
+import pytest
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 
@@ -96,3 +97,24 @@ def test_waytoagi_does_not_guess_the_deadline_type():
     assert 'registration_deadline' not in values(draft)
     assert 'submission_deadline' not in values(draft)
     assert draft.summary == '公开介绍'
+
+
+@pytest.mark.parametrize(('origin', 'external', 'official'), [
+    ('hosted', None, True), ('imported', None, False),
+    ('hosted', 'https://elsewhere.example/register', False), ('unknown', None, False),
+])
+def test_waytoagi_self_hosted_registration_is_official_only_with_trusted_metadata(origin, external, official):
+    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+
+    item = {'id': 'hosted-one', 'title': '主办活动', 'eventKind': 'hackathon',
+            'timeStatus': 'upcoming', 'date': '2026-11-01', 'origin': origin, 'externalRegUrl': external}
+
+    def handle(request):
+        return httpx.Response(200, json={'ok': True, 'items': [item]} if request.url.path == '/api/events'
+                              else {'event': item})
+
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        draft, = fetch(client)
+    assert draft.page.is_official is official
+    if official:
+        assert values(draft)['registration_url'] == draft.page.url
