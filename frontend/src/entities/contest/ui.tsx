@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router'
 import { Badge } from '@/shared/ui'
 import type { ContestSummary, FieldValue } from './api'
-import { formatDate, modeNames, safeUrl, statusNames } from './format'
+import { fieldNames, formatDate, modeNames, safeUrl, statusNames } from './format'
+import { cardDate } from './card-date'
 
 export function LevelBadge({ level }: { level: FieldValue['level'] }) {
   const names = { official: '官方', reposted: '仅转载', conflict: '冲突', not_found: '未找到' }
@@ -20,7 +21,7 @@ export function LevelBadge({ level }: { level: FieldValue['level'] }) {
 }
 export function ContestCard({ contest, action }: { contest: ContestSummary; action?: ReactNode }) {
   const location = useLocation()
-  const start = contest.fields.start_at
+  const date = cardDate(contest)
   const cover = safeUrl(contest.cover_url)
   return (
     <article className="flex min-w-0 items-start gap-4 rounded-2xl border border-rule bg-surface p-4">
@@ -29,7 +30,7 @@ export function ContestCard({ contest, action }: { contest: ContestSummary; acti
           src={cover}
           alt=""
           loading="lazy"
-          className="h-24 w-24 shrink-0 rounded-xl object-cover"
+          className="h-20 w-20 shrink-0 rounded-xl object-cover sm:h-24 sm:w-24"
         />
       )}
       <div className="min-w-0 flex-1 space-y-2">
@@ -47,7 +48,14 @@ export function ContestCard({ contest, action }: { contest: ContestSummary; acti
           {contest.fields.city?.value ? ` · ${contest.fields.city.value}` : ''}
         </p>
         <p className="text-sm">
-          {formatDate(start?.value)} {start && <LevelBadge level={start.level} />}
+          {date ? (
+            <>
+              {fieldNames[date.field]} {formatDate(date.info.value)}{' '}
+              <LevelBadge level={date.info.level} />
+            </>
+          ) : (
+            '时间未找到'
+          )}
         </p>
         {action}
       </div>

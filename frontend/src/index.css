@@ -14,6 +14,8 @@
  * 颜色取自 Everplain（frontend/src/styles/tokens.css）。默认调色板清掉了，组件只用下面这些语义色。
  */
 @theme {
+  --color-*: initial;
+
   /* shadcn 颜色名只映射语义色，不引入另一套调色板。 */
   --color-background: var(--color-canvas);
   --color-foreground: var(--color-ink);
@@ -43,8 +45,6 @@
 
   /* 主缓动：短而有弹性，替换 Tailwind 默认的 ease-out */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-
-  --color-*: initial;
 
   /* 表面：从最底的画布到浮起的纸面；scrim 是弹窗背后压暗页面的那层 */
   --color-canvas: light-dark(#f5f5f5, #1c1e1d);

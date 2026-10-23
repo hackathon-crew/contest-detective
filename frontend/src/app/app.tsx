@@ -1,6 +1,8 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 
+import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
+
 import { HomePage } from '@/pages/home'
 import { queryClient } from './query-client'
 
@@ -8,7 +10,9 @@ export function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AppRoutes />
+        <NuqsAdapter>
+          <AppRoutes />
+        </NuqsAdapter>
       </BrowserRouter>
     </QueryClientProvider>
   )
