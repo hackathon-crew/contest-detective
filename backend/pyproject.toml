@@ -13,6 +13,7 @@ dependencies = [
     "httpx>=0.28.1",
     "lxml>=6.1.3",
     "markitdown[docx,pdf]>=0.1.4",
+    "mcp>=1.30,<2",
     "openai>=3.37.0",
     "pydantic-ai-slim[openai]>=2.60.0",
     "pydantic-settings>=2.6",
@@ -27,6 +28,7 @@ dependencies = [
 [project.scripts]
 contest-detective = "contest_detective.web.bootstrap.app:main"
 contest-detective-sync = "contest_detective.web.bootstrap.source_sync:main"
+contest-detective-mcp = "contest_detective.web.bootstrap.mcp:main"
 
 [build-system]
 requires = ["hatchling"]
