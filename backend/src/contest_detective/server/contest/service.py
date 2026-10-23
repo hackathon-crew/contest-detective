@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 
 from .models import Contest, ContestClaim, ContestPage, ContestPageLink
 from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
-                      ContestField, ContestQuery, ContestSummary, FieldValue, Source, utc_iso)
+                      ContestField, ContestQuery, ContestSummary, FieldValue, Source,
+                      calendar_date, date_bounds, utc_iso)
 from .verification import resolve
 
 
@@ -26,13 +27,12 @@ def _normalized_name(name: str) -> str:
     return _name_tokens(name).replace(' ', '')
 
 
-def _start_date(value: str) -> str:
-    # 来源的 date-only 是北京零点，不能拿它的前一天 UTC 日期去比另一来源的开赛时刻。
-    return datetime.fromisoformat(value).astimezone(timezone(timedelta(hours=8))).date().isoformat()
+def _start_date(value: str, precision='datetime') -> str:
+    return calendar_date(value, precision).isoformat()
 
 
 def _match(session, draft, page):
-    start = next((_start_date(claim.value) for claim in draft.claims if claim.field == 'start_at'), None)
+    start = next((_start_date(claim.value, claim.precision) for claim in draft.claims if claim.field == 'start_at'), None)
     normalized_name = _normalized_name(draft.name)
     linked = session.scalar(select(Contest).join(ContestPageLink).where(
         ContestPageLink.page_id == page.id, Contest.normalized_name == normalized_name)
@@ -58,21 +58,30 @@ def _fields(session, contest_id):
     for claim, page in rows:
         grouped[claim.field].append(Source(url=page.url, site=page.site, title=page.title,
             published_at=page.published_at, is_official=page.is_official,
-            value=claim.value, excerpt=claim.excerpt))
+            value=claim.value, excerpt=claim.excerpt, precision=claim.precision))
     return {field: resolve(field, claims) for field, claims in grouped.items()}
 
 
 def _next_deadline(fields, now):
     upcoming = [fields[field].value for field in DEADLINE_FIELDS if fields[field].value is not None
-                and datetime.fromisoformat(fields[field].value) >= now]
+                and _deadline_available(fields[field].model_dump(), now)]
     return min(upcoming) if upcoming else None
+
+
+def _deadline_available(value, now):
+    if value.get('value') is None:
+        return False
+    if value.get('precision') == 'day':
+        return now < date_bounds(value['value'], 'day')[1]
+    return datetime.fromisoformat(value['value']) >= now
 
 
 def _refresh(session, contest, now):
     fields = _fields(session, contest.id)
-    contest.fields = {field: {'value': result.value, 'level': result.level} for field, result in fields.items()}
+    contest.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision}
+                      for field, result in fields.items()}
     contest.start_at = fields['start_at'].value
-    contest.start_date = _start_date(contest.start_at) if contest.start_at else None
+    contest.start_date = _start_date(contest.start_at, fields['start_at'].precision) if contest.start_at else None
     contest.end_at = fields['end_at'].value
     contest.next_deadline = _next_deadline(fields, now)
     contest.mode = fields['mode'].value
@@ -81,11 +90,10 @@ def _refresh(session, contest, now):
 
 def _status(contest, now):
     if contest.start_at is None:
-        deadlines = (contest.fields.get(field, {}).get('value') for field in DEADLINE_FIELDS)
-        return 'upcoming' if any(value and datetime.fromisoformat(value) >= now
-                                 for value in deadlines) else 'ended'
-    start = datetime.fromisoformat(contest.start_at)
-    end = datetime.fromisoformat(contest.end_at) if contest.end_at else start + timedelta(days=1)
+        return 'upcoming' if any(_deadline_available(contest.fields.get(field, {}), now)
+                                 for field in DEADLINE_FIELDS) else 'ended'
+    start = date_bounds(contest.start_at, contest.fields.get('start_at', {}).get('precision', 'datetime'))[0]
+    end = date_bounds(contest.end_at, contest.fields.get('end_at', {}).get('precision', 'datetime'))[1] if contest.end_at else start + timedelta(days=1)
     if now < start:
         return 'upcoming'
     return 'ongoing' if now < end else 'ended'
@@ -144,10 +152,12 @@ def query(session: Session, q: ContestQuery) -> tuple[list[ContestSummary], int]
         if q.status and summary.status != q.status:
             continue
         if q.date_from or q.date_to:
-            dates = [datetime.fromisoformat(summary.fields[field].value) for field in DATE_FIELDS
-                     if summary.fields[field].value is not None]
-            if not any((q.date_from is None or value >= q.date_from)
-                       and (q.date_to is None or value <= q.date_to) for value in dates):
+            def inside(value):
+                start, end = date_bounds(value.value, value.precision)
+                after = q.date_from is None or (end > q.date_from if value.precision == 'day' else end >= q.date_from)
+                return after and (q.date_to is None or start <= q.date_to)
+            if not any(inside(summary.fields[field]) for field in DATE_FIELDS
+                       if summary.fields[field].value is not None):
                 continue
         value = contest.start_at if q.sort == 'start' else _next_deadline(summary.fields, now)
         results.append(((value is None, value or '', contest.start_at or '', contest.name, contest.id), summary))
