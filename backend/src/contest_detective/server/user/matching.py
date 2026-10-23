@@ -40,6 +40,13 @@ def _contains(text, keyword):
                if term.isascii() else term in text for term in TOPIC_TERMS.get(key, (key,)))
 
 
+def _required_days(text):
+    text = re.sub(r'\s+', '', text)
+    # Only an explicit obligation sets a minimum; optional attendance stays open.
+    values = re.findall(r'(?<![无不必])(?:必须|要求|需|须)(?:至少)?连续(?:到场|驻场|参赛|参加|参与)(?:至少)?([1-9]\d?)天', text)
+    return max((int(value) for value in values), default=0)
+
+
 def _eligible(detail, profile, now):
     if detail.status == 'ended':
         return False
@@ -50,7 +57,9 @@ def _eligible(detail, profile, now):
         return False
     if mode in {'offline', 'hybrid'} and profile.city and city and city.removesuffix('市') != profile.city.removesuffix('市'):
         return False
-    text = (detail.name + ' ' + (detail.summary or '')).casefold()
+    text = ' '.join((detail.name, detail.summary or '', _value(detail, 'eligibility') or '',
+                     _value(detail, 'entry_requirements') or '')).casefold()
+    text = re.sub(r'(?:不限|不仅限|不只限)(?:职场开发者|在校生)', '', text)
     if any(term in text for term in ('仅限职场开发者', '限职场开发者', 'professionals only', 'professional developers only')):
         if profile.identity_kind != 'professional':
             return False
@@ -59,6 +68,14 @@ def _eligible(detail, profile, now):
             return False
     start, end = _date(detail, 'start_at'), _date(detail, 'end_at')
     available = profile.availability
+    required_days = _required_days(text)
+    if required_days:
+        if available.max_consecutive_days and required_days > available.max_consecutive_days:
+            return False
+        if available.weekdays and not any(
+                all((first + index) % 7 in available.weekdays for index in range(min(required_days, 7)))
+                for first in range(7)):
+            return False
     if start is not None:
         end = end or start + timedelta(days=1)
         if end <= start:
