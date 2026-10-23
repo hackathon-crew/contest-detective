@@ -26,7 +26,7 @@ def get_github_builder():
 
 def get_resume_extractor(session: Session = Depends(get_session)):
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    return create_profile_extractor(model_factory=lambda: create_model(session_factory=factory))
+    return create_profile_extractor(model_factory=lambda: create_model(session_factory=factory), manage_model=True)
 
 
 @router.post('/profile/github', response_model=Response[Profile])
