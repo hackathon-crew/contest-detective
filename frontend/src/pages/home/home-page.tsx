@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
+import { AuthControls } from '@/features/auth'
 import { ContestCalendar } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveDock } from '@/features/detective'
@@ -17,8 +18,9 @@ export function HomePage() {
   return (
     <div className="min-h-dvh">
       <header className="border-b border-rule bg-surface">
-        <div className="mx-auto flex h-14 max-w-7xl items-center px-6 sm:px-8">
+        <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
           <span className="text-base font-semibold text-ink">比赛侦探</span>
+          <AuthControls />
         </div>
       </header>
 
