@@ -3,7 +3,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = '0005_page_hash'
-down_revision = '0002_llm_budget'
+down_revision = '0003_users'
 branch_labels = None
 depends_on = None
 
