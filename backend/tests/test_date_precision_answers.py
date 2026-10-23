@@ -44,6 +44,8 @@ def test_exact_deadline_on_a_page_cannot_authorize_a_day_only_start_time(session
 @pytest.mark.parametrize('answer,expected', [
     (f'[来源]({URL})未公布具体时刻，16:00是报名截止还是提交截止，现有资料无法确认。', 'answer'),
     (f'[来源]({URL})具体时刻未公布，是否在16:00截止无法确认。', 'answer'),
+    (f'[来源]({URL})16:00是否报名截止，具体时刻未核实。', 'answer'),
+    (f'[来源]({URL})报名在08:00截止，其他时刻未核实。', 'error'),
     (f'[来源]({URL})报名在08:00截止，其他时刻未公布。', 'error'),
 ])
 def test_uncertain_question_keeps_its_sentence_context_without_authorizing_a_statement(session_factory, answer, expected):
