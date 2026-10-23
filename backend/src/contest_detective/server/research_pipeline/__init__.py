@@ -1,5 +1,6 @@
 from contest_detective.framework.config.search import get_search_settings
 from contest_detective.server.research_pipeline.pages import fetch_page
+from contest_detective.server.research_pipeline.record import run
 from contest_detective.server.research_pipeline.search import SearchHit, MixedSearch, YuanbaoSearch
 
 
@@ -17,4 +18,4 @@ def search_web(query: str, site: str | None = None, count: int = 10) -> list[Sea
     )
 
 
-__all__ = ['SearchHit', 'fetch_page', 'search_web', 'web_search_available']
+__all__ = ['SearchHit', 'fetch_page', 'run', 'search_web', 'web_search_available']
