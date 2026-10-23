@@ -1,0 +1,32 @@
+name: Feature request
+description: 小范围的功能或体验改进。影响面大的需求请用「产品提案」模板。
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: 现在哪里不方便、缺什么、容易出错？用一个真实场景说明。
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: 能解决问题的最小改动。
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: 这次明确不做的部分。
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: 可观察、可验证的完成标准，尽量用具体例子写。
+    validations:
+      required: true
