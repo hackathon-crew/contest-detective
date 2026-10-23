@@ -21,10 +21,22 @@ from .config import LLMSettings, get_llm_settings
 
 class GuardedModel(WrapperModel):
     def __init__(self, wrapped: Model, budget: Budget, *,
-                 balance_reader: Callable[[], Awaitable[Decimal]] | None = None):
+                 balance_reader: Callable[[], Awaitable[Decimal]] | None = None,
+                 owned_client: AsyncOpenAI | None = None):
         super().__init__(wrapped)
         self.budget = budget
+        self._owned_client = owned_client
         self.balance_reader = balance_reader or (lambda: read_balance(budget.settings))
+
+    async def aclose(self):
+        if self._owned_client is not None:
+            await self._owned_client.close()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        try:
+            return await super().__aexit__(exc_type, exc_val, exc_tb)
+        finally:
+            await self.aclose()
 
     async def request(self, messages, model_settings, model_request_parameters):
         self.budget.ensure_enabled()
@@ -73,4 +85,4 @@ def create_model(settings: LLMSettings | None = None, *, session_factory=Session
                          max_retries=0, timeout=30)
     model = OpenAIChatModel(config.model, provider=OpenAIProvider(openai_client=client),
         profile=OpenAIModelProfile(openai_chat_supports_max_completion_tokens=False))
-    return GuardedModel(model, budget)
+    return GuardedModel(model, budget, owned_client=client)
