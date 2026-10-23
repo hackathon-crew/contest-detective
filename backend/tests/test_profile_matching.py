@@ -11,11 +11,13 @@ NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 
 
 def contest(session, name, *, mode='online', city='上海', start='2026-10-31T01:00:00Z',
-            end='2026-11-01T10:00:00Z', deadline='2026-10-30T15:59:59Z', summary='智能体应用赛道', extra=None):
+            end='2026-11-01T10:00:00Z', deadline='2026-10-30T15:59:59Z', summary='智能体应用赛道',
+            extra=None, precision=None):
     claims = {'start_at': start, 'end_at': end, 'registration_deadline': deadline, 'mode': mode, 'city': city, **(extra or {})}
     return service.save(session, ContestDraft(name=name, summary=summary,
         page={'url': 'https://organizer.example/' + name, 'site': '报名页', 'title': name, 'is_official': True},
-        claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in claims.items()]))
+        claims=[{'field': field, 'value': value, 'excerpt': value, 'precision': (precision or {}).get(field, 'datetime')}
+                for field, value in claims.items()]))
 
 
 def student():
@@ -133,3 +135,49 @@ def test_optional_attendance_wording_does_not_create_a_requirement(session, monk
     monkeypatch.setattr(matching, '_now', lambda: NOW)
     target = contest(session, '自由参与', extra={'entry_requirements': '无需连续到场 5 天'})
     assert [item.contest.id for item in matching.match(session, student())] == [target]
+
+
+def test_day_deadline_remains_eligible_through_its_civil_date(session, monkeypatch):
+    from contest_detective.server.user import matching
+    now = datetime(2026, 10, 24, 12, tzinfo=timezone.utc)
+    monkeypatch.setattr(matching, '_now', lambda: now)
+    monkeypatch.setattr(service, '_now', lambda: now)
+    target = contest(session, '今日截止', deadline='2026-10-24T00:00:00Z', precision={'registration_deadline': 'day'})
+    contest(session, '昨日截止', deadline='2026-10-23T00:00:00Z', precision={'registration_deadline': 'day'})
+    contest(session, '精确时刻已截止', deadline='2026-10-24T11:00:00Z')
+    assert [item.contest.id for item in matching.match(session, student())] == [target]
+
+
+def test_day_event_matches_a_same_date_window_without_promising_unknown_hours(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    precision = {'start_at': 'day', 'end_at': 'day'}
+    target = contest(session, '同日活动', start='2026-10-31T00:00:00Z', end='2026-10-31T00:00:00Z', precision=precision)
+    contest(session, '错日活动', start='2026-11-01T00:00:00Z', end='2026-11-01T00:00:00Z', precision=precision)
+    profile = Profile(skills=['Python'], availability={'windows': [
+        {'start_at': '2026-10-31T04:00:00Z', 'end_at': '2026-10-31T07:00:00Z'}]})
+    results = matching.match(session, profile)
+    assert [item.contest.id for item in results] == [target]
+    assert '具体时刻未核实' in results[0].reason
+    assert '已知比赛时间与你确认的可投入时间相符' not in results[0].reason
+
+
+def test_day_event_does_not_overlap_a_window_ending_at_the_previous_midnight(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    contest(session, '周日活动', start='2026-11-01T00:00:00Z', end='2026-11-01T00:00:00Z',
+            precision={'start_at': 'day', 'end_at': 'day'})
+    profile = Profile(skills=['Python'], availability={'windows': [
+        {'start_at': '2026-10-31T04:00:00Z', 'end_at': '2026-10-31T16:00:00Z'}]})
+    assert matching.match(session, profile) == []
+
+
+@pytest.mark.parametrize('availability', [{'weekdays': [5, 6]}, {'max_consecutive_days': 2}])
+def test_day_schedule_preserves_calendar_duration_and_weekday_constraints(session, monkeypatch, availability):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    precision = {'start_at': 'day', 'end_at': 'day'}
+    target = contest(session, '周末两天', start='2026-10-31T00:00:00Z', end='2026-11-01T00:00:00Z', precision=precision)
+    contest(session, '持续到周一', start='2026-10-31T00:00:00Z', end='2026-11-02T00:00:00Z', precision=precision)
+    profile = Profile(skills=['Python'], availability=availability)
+    assert [item.contest.id for item in matching.match(session, profile)] == [target]
