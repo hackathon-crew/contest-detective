@@ -1,4 +1,5 @@
 import json
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -18,9 +19,11 @@ router = APIRouter()
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
 
 
-def get_investigator(body: AskRequest, session: Session = Depends(get_session)) -> Investigator:
+async def get_investigator(body: AskRequest, session: Session = Depends(get_session)) -> AsyncIterator[Investigator]:
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    return create_investigator(session_factory=factory)
+    investigator = create_investigator(session_factory=factory)
+    async with investigator.agent:
+        yield investigator
 
 
 async def get_request_user_id(request: Request) -> str | None:
