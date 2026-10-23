@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from contest_detective.framework.db import SessionLocal
 from contest_detective.server.contest.models import Contest, ContestPage, ContestPageLink
-from contest_detective.server.contest.schemas import DEADLINE_FIELDS
+from contest_detective.server.contest.schemas import DEADLINE_FIELDS, date_bounds
 
 from .official import is_official_page
 
@@ -28,8 +28,16 @@ class _Target:
     order: tuple
 
 
-def _date(value):
-    return datetime.fromisoformat(value).astimezone(timezone.utc) if value else None
+def _bounds(value):
+    return date_bounds(value['value'], value.get('precision', 'datetime')) if value.get('value') else None
+
+
+def _pending(bounds, now):
+    if bounds is None:
+        return False
+    start, end = bounds
+    # 全天日期的结束不包含在内；精确时刻在边界当刻仍可核对。
+    return end > now if start != end else end >= now
 
 
 def _targets(session, now, limit):
@@ -39,16 +47,17 @@ def _targets(session, now, limit):
     candidates = []
     for contest in session.scalars(statement):
         values = {key: item.get('value') for key, item in contest.fields.items()}
-        dates = [_date(values.get(key)) for key in (*DEADLINE_FIELDS, 'start_at')]
-        if not any(date is not None and now <= date <= horizon for date in dates):
+        dates = [_bounds(contest.fields.get(key, {})) for key in (*DEADLINE_FIELDS, 'start_at')]
+        if not any(_pending(bounds, now) and bounds[0] <= horizon for bounds in dates):
             continue
         url = values.get('registration_url')
         if not url or not is_official_page(url, registration_url=url):
             continue
-        deadlines = [date for date in dates[:-1] if date is not None and date >= now]
+        deadlines = [bounds[0] for bounds in dates[:-1] if _pending(bounds, now)]
         deadline = min(deadlines) if deadlines else None
+        start = dates[-1][0] if dates[-1] is not None else None
         candidates.append(_Target(contest.id, url,
-            (deadline is None, deadline or dates[-1] or horizon, url, contest.id)))
+            (deadline is None, deadline or start or horizon, url, contest.id)))
     result, seen = [], set()
     for target in sorted(candidates, key=lambda item: item.order):
         if target.url not in seen:
