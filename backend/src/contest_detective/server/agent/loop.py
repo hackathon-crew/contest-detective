@@ -38,6 +38,8 @@ LABELS = {'search_contests': '查询比赛库', 'get_contest': '读取赛事出�
 DATE = re.compile(r'\d{4}-\d{1,2}-\d{1,2}|\d{1,2}月\d{1,2}|\d{1,2}:\d{2}')
 LINK = re.compile(r'\[[^\]]+\]\((https?://[^\s)]+)\)')
 TIME = re.compile(r'(?<!\d)\d{1,2}:\d{2}(?!\d)')
+ISO_TIME = re.compile(r'\d{4}-\d{2}-\d{2}[Tt ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})')
+CLOCK_TOKEN = re.compile(f'(?:{ISO_TIME.pattern})|(?:{TIME.pattern})')
 UNCERTAIN_TIME = re.compile(r'无法确认|不能确认|未确认|未找到|未公布|尚未公布|时刻未知|时刻不明|待核实')
 QUESTION_TIME = re.compile(r'是否|是不是|还是|能否|吗|么|[？?]')
 FIELD_WORDS = {'start_at': r'开赛|开始|开幕|举办|举行', 'end_at': r'结束|闭幕|完赛',
@@ -52,7 +54,14 @@ def _supported_clock(clock, clause, fields):
         groups = [fields.get(name, ()) for name in names]
     else:
         return False
-    clock_hour, clock_minute = map(int, clock.split(':'))
+    asserted = None
+    if ISO_TIME.fullmatch(clock):
+        try:
+            asserted = datetime.fromisoformat(clock)
+        except ValueError:
+            return False
+    else:
+        clock_hour, clock_minute = map(int, clock.split(':'))
     iso_dates = re.findall(r'\d{4}-\d{2}-\d{2}', clause)
     month_days = [(int(month), int(day)) for month, day in re.findall(r'(\d{1,2})月(\d{1,2})', clause)]
     zone = timezone.utc if re.search(r'UTC|GMT|\d{2}:\d{2}(?::\d{2})?Z', clause) else BEIJING
@@ -60,6 +69,8 @@ def _supported_clock(clock, clause, fields):
         value, precision = item
         if precision != 'datetime':
             return False
+        if asserted is not None:
+            return datetime.fromisoformat(value) == asserted
         exact = datetime.fromisoformat(value).astimezone(zone)
         if (exact.hour, exact.minute) != (clock_hour, clock_minute):
             return False
@@ -85,11 +96,11 @@ def validate_answer(content: str, sources: dict, date_evidence=None):
         # 出处先按字段保留；同页精确截止不能授权 day 开赛。这里只比较已给出的格式与字段标签。
         text = re.sub(r'\[([^\]]+)\]\(https?://[^\s)]+\)', r'\1', line)
         for sentence in re.split(r'[。；;！!]', text):
-            for clause in re.split(r'[，,]', sentence):
+            for clause in re.split(r'[，,]|并且|而且|以及|且', sentence):
                 if UNCERTAIN_TIME.search(clause) or (UNCERTAIN_TIME.search(sentence) and QUESTION_TIME.search(clause)):
                     continue
-                for clock in TIME.findall(clause):
-                    if not _supported_clock(clock, clause, fields):
+                for clock in CLOCK_TOKEN.finditer(clause):
+                    if not _supported_clock(clock.group(), clause, fields):
                         raise BizException('该字段未核实这个具体时刻，请按日期和原文查看', code=422)
 
 
