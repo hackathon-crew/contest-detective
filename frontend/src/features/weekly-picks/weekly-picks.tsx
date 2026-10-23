@@ -1,9 +1,14 @@
 import { addDays, startOfDay } from 'date-fns'
+import type { ReactNode } from 'react'
 import { TZDate } from '@date-fns/tz'
-import { ContestCard, useContests } from '@/entities/contest'
+import { ContestCard, useContests, type ContestSummary } from '@/entities/contest'
 import { EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 
-export function WeeklyPicks() {
+export function WeeklyPicks({
+  renderAction,
+}: {
+  renderAction?: (contest: ContestSummary) => ReactNode
+}) {
   const today = startOfDay(TZDate.tz('Asia/Shanghai'))
   const query = useContests({
     date_from: today.toISOString(),
@@ -25,7 +30,7 @@ export function WeeklyPicks() {
       ) : (
         <div className="grid gap-3">
           {query.data.items.map((contest) => (
-            <ContestCard key={contest.id} contest={contest} />
+            <ContestCard key={contest.id} contest={contest} action={renderAction?.(contest)} />
           ))}
         </div>
       )}
