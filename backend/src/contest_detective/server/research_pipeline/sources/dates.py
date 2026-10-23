@@ -30,7 +30,8 @@ def parse_date_range(value: str, *, default_timezone: str = 'UTC') -> tuple[str 
     year = re.search(r'\b(\d{4})\b', end)
     if year and not re.search(r'\b\d{4}\b', start):
         start = f'{start}, {year.group(1)}'
-    return (
-        parse_datetime(start, default_timezone=default_timezone),
-        parse_datetime(end, default_timezone=default_timezone),
-    )
+    parsed_start = parse_datetime(start, default_timezone=default_timezone)
+    if parsed_start and re.fullmatch(r'\d{1,2},?\s+\d{4}', end.strip()):
+        # 同月区间省略右侧月份，例如 Oct 05 - 27, 2026。
+        end = f'{parsed_start[:7]}-{end.strip().split(",")[0].split()[0]}'
+    return parsed_start, parse_datetime(end, default_timezone=default_timezone)
