@@ -96,9 +96,11 @@ def _summary(contest, now):
         status=_status(contest, now), fields={field: FieldValue(**value) for field, value in contest.fields.items()})
 
 
-def save(session: Session, draft: ContestDraft) -> str:
+def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None) -> str:
     page = session.scalar(select(ContestPage).where(ContestPage.url == draft.page.url))
-    contest = _match(session, draft, page)
+    contest = session.get(Contest, contest_id) if contest_id else _match(session, draft, page)
+    if contest_id and contest is None:
+        raise ValueError('赛事不存在')
     if contest is None:
         contest = Contest(id=str(uuid4()), name=draft.name, normalized_name=_normalized_name(draft.name))
         session.add(contest)
