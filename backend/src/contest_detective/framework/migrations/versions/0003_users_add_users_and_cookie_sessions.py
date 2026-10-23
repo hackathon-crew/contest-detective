@@ -4,7 +4,7 @@ import sqlalchemy as sa
 import fastapi_users_db_sqlalchemy.generics
 
 revision = '0003_users'
-down_revision = '0000_base'
+down_revision = '0002_llm_budget'
 branch_labels = None
 depends_on = None
 
