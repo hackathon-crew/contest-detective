@@ -56,9 +56,9 @@ def run_sync(session_factory=SessionLocal, *, client=None, sources=None, extract
 
 
 def extraction_adapters():
-    from contest_detective.server.research_pipeline.sources import huodongxing, wechat
+    from contest_detective.server.research_pipeline.sources import ethglobal, huodongxing, wechat
 
-    return [('huodongxing', huodongxing.sync), ('wechat', wechat.sync)]
+    return [('huodongxing', huodongxing.sync), ('wechat', wechat.sync), ('ethglobal', ethglobal.sync)]
 
 
 async def _enrich(report, session_factory, extractor, discoveries, verifier):
