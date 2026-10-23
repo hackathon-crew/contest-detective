@@ -199,3 +199,12 @@ def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
         budget.settle(call, usage(hit=0, miss=100_000, output=1_000))
     with pytest.raises(BizException, match='模型额度已用完'):
         budget.reserve()
+
+
+def test_confirmed_profile_context_is_included_in_input_reservation_bound(session_factory):
+    async def forbidden_balance():
+        pytest.fail('oversized instructions reached balance endpoint')
+    model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized instructions reached provider')),
+                         Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=forbidden_balance)
+    with pytest.raises(BizException, match='上下文过长'):
+        asyncio.run(Agent(model, instructions='已确认资料' * 5000).run('查询'))
