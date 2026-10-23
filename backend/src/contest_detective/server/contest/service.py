@@ -81,7 +81,9 @@ def _refresh(session, contest, now):
 
 def _status(contest, now):
     if contest.start_at is None:
-        return 'ended'
+        deadlines = (contest.fields.get(field, {}).get('value') for field in DEADLINE_FIELDS)
+        return 'upcoming' if any(value and datetime.fromisoformat(value) >= now
+                                 for value in deadlines) else 'ended'
     start = datetime.fromisoformat(contest.start_at)
     end = datetime.fromisoformat(contest.end_at) if contest.end_at else start + timedelta(days=1)
     if now < start:
