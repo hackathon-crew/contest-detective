@@ -11,7 +11,8 @@
     "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:api": "uv run --directory ../backend python scripts/export_openapi.py && openapi-ts"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.5",
