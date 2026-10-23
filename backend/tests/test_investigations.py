@@ -268,3 +268,21 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
     assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register')]
+
+
+def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_factory):
+    fetched = []
+    async def fetch(url):
+        fetched.append(url)
+        return '公开规则'
+    calls = 0
+    def respond(*_):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return ModelResponse([ToolCallPart('fetch_page', {'url': f'https://organizer.example/{i}'}, tool_call_id=str(i))
+                                  for i in range(7)])
+        return ModelResponse([TextPart('未找到明确资料。')])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
+    assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
+    assert fetched == []
