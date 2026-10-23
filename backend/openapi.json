@@ -4,5 +4,653 @@
     "title": "比赛侦探",
     "version": "0.1.0"
   },
-  "paths": {}
+  "paths": {
+    "/contests": {
+      "get": {
+        "summary": "List Contests",
+        "operationId": "list_contests_contests_get",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Keyword"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "upcoming",
+                    "ongoing",
+                    "ended"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "online",
+                    "offline",
+                    "hybrid"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mode"
+            }
+          },
+          {
+            "name": "date_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "name": "date_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ids"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "deadline",
+                "start"
+              ],
+              "type": "string",
+              "default": "deadline",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponse_ContestSummary_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contests/{contest_id}": {
+      "get": {
+        "summary": "Contest Detail",
+        "operationId": "contest_detail_contests__contest_id__get",
+        "parameters": [
+          {
+            "name": "contest_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Contest Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ContestDetail_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agent/ask": {
+      "post": {
+        "summary": "Ask Question",
+        "operationId": "ask_question_agent_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
+      "ContestDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "ongoing",
+              "ended"
+            ],
+            "title": "Status"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "start_at",
+                "end_at",
+                "registration_deadline",
+                "submission_deadline",
+                "deadline_unspecified",
+                "city",
+                "mode",
+                "prize",
+                "registration_url",
+                "organizer"
+              ]
+            },
+            "type": "object",
+            "title": "Fields"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "cover_url",
+          "status",
+          "fields",
+          "summary"
+        ],
+        "title": "ContestDetail"
+      },
+      "ContestSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "upcoming",
+              "ongoing",
+              "ended"
+            ],
+            "title": "Status"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "start_at",
+                "end_at",
+                "registration_deadline",
+                "submission_deadline",
+                "deadline_unspecified",
+                "city",
+                "mode",
+                "prize",
+                "registration_url",
+                "organizer"
+              ]
+            },
+            "type": "object",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "cover_url",
+          "status",
+          "fields"
+        ],
+        "title": "ContestSummary"
+      },
+      "FieldValue": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "official",
+              "reposted",
+              "conflict",
+              "not_found"
+            ],
+            "title": "Level"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "level"
+        ],
+        "title": "FieldValue"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ListResponse_ContestSummary_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/ContestSummary"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "业务数据列表"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "数据总数",
+            "default": 0
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page",
+            "description": "当前页码，从 1 开始",
+            "default": 1
+          },
+          "page_size": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Page Size",
+            "description": "每页条数；0 表示不分页",
+            "default": 0
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "ListResponse[ContestSummary]"
+      },
+      "Response_ContestDetail_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestDetail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[ContestDetail]"
+      },
+      "Source": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "site": {
+            "type": "string",
+            "title": "Site"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "is_official": {
+            "type": "boolean",
+            "title": "Is Official"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "site",
+          "title",
+          "is_official",
+          "value",
+          "excerpt"
+        ],
+        "title": "Source"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
 }
