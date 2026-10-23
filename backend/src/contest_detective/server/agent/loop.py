@@ -93,7 +93,7 @@ class Investigator:
                 profile = await invoke(self.profile_reader, user_id)
                 if profile:
                     instructions += '\n用户已确认的画像资料：' + json.dumps(profile, ensure_ascii=False)
-            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=6),
+            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=6, tool_calls_limit=6),
                                        instructions=instructions, timeout=120) as run:
                 async for node in run:
                     if Agent.is_call_tools_node(node):
