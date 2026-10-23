@@ -43,11 +43,11 @@ export function Dialog({
         if (!open) onClose()
       }}
     >
-      <DialogContent aria-describedby={undefined} className="max-h-5/6 overflow-y-auto p-6 sm:p-8">
-        <DialogHeader>
+      <DialogContent aria-describedby={undefined} className="max-h-5/6 p-6 sm:p-8">
+        <DialogHeader className="shrink-0 pr-8">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        {children}
+        <div className="min-h-0 overflow-y-auto">{children}</div>
       </DialogContent>
     </DialogRoot>
   )
