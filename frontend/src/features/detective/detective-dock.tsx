@@ -4,7 +4,7 @@
  */
 export function DetectiveDock() {
   return (
-    <section aria-label="侦探" className="fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[720px]">
+    <section aria-label="侦探" className="fixed inset-x-6 bottom-4 z-10 mx-auto max-w-3xl">
       <form
         className="flex items-center gap-2 rounded-2xl border border-rule bg-surface p-2"
         onSubmit={(event) => event.preventDefault()}

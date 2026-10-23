@@ -17,16 +17,16 @@ export function ContestDetail({ onClose }: ContestDetailProps) {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-20 grid place-items-center bg-scrim p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-20 grid place-items-center bg-scrim p-6" onClick={onClose}>
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="contest-detail-title"
-        className="w-full max-w-2xl rounded-2xl bg-surface p-6"
+        className="w-full max-w-2xl rounded-3xl bg-surface p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between gap-4">
-          <h2 id="contest-detail-title" className="text-lg font-semibold text-ink">
+          <h2 id="contest-detail-title" className="text-2xl font-bold text-ink">
             赛事详情
           </h2>
           <button

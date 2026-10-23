@@ -2,7 +2,7 @@
 export function ContestCalendar() {
   return (
     <section aria-labelledby="contest-calendar-title" className="py-8">
-      <h2 id="contest-calendar-title" className="text-lg font-semibold text-ink">
+      <h2 id="contest-calendar-title" className="text-2xl font-bold text-ink">
         赛事日历
       </h2>
     </section>
