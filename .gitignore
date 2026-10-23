@@ -6,3 +6,6 @@ dist/
 !.env.example
 __pycache__/
 .venv/
+*.db
+*.sqlite
+*.sqlite3
