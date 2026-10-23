@@ -45,9 +45,10 @@ class Budget:
         with self.session_factory() as session:
             # Deferred SQLite transactions otherwise let two readers approve the same remainder.
             session.execute(text('BEGIN IMMEDIATE'))
-            total = session.scalar(select(func.coalesce(func.sum(LLMUsage.cost_cny), 0)))
-            if session.scalar(select(LLMUsage.id).where(LLMUsage.status == 'overrun').limit(1)) or total + maximum > self.settings.budget_cny:
-                raise BizException('模型额度已用完', code=429)
+            if self.settings.limits_mode == 'local':
+                total = session.scalar(select(func.coalesce(func.sum(LLMUsage.cost_cny), 0)))
+                if session.scalar(select(LLMUsage.id).where(LLMUsage.status == 'overrun').limit(1)) or total + maximum > self.settings.budget_cny:
+                    raise BizException('模型额度已用完', code=429)
             call_id = str(uuid4())
             session.add(LLMUsage(id=call_id, model=self.settings.model,
                                  reserved_cny=maximum, cost_cny=maximum, status='reserved'))
@@ -74,11 +75,11 @@ class Budget:
             if row.status in {'settled', 'overrun'}:
                 if (row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens) != (hit, miss, output):
                     raise ValueError('同一请求不能重复结算为不同用量')
-                if row.status == 'overrun':
+                if row.status == 'overrun' and self.settings.limits_mode == 'local':
                     raise ValueError('模型返回用量超出预留，停止后续调用')
                 return
             row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens = hit, miss, output
-            if cost > row.reserved_cny:
+            if cost > row.reserved_cny and self.settings.limits_mode == 'local':
                 # Unexpected provider accounting must never turn a reservation into a smaller lie.
                 row.cost_cny, row.status = cost, 'overrun'
                 session.commit()

@@ -1,6 +1,7 @@
 """调用开关默认关闭；本地和服务端分别配置 1.5 / 3.5 元预算。"""
 from decimal import Decimal
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,6 +11,7 @@ class LLMSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix='DETECTIVE_LLM_', env_file=('../.env', '.env'), extra='ignore')
 
     enabled: bool = False
+    limits_mode: Literal['local', 'external'] = 'local'
     api_key: SecretStr = SecretStr('')
     base_url: str = 'https://api.deepseek.com'
     model: str = 'deepseek-flash'
