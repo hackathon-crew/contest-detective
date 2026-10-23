@@ -1,32 +1,59 @@
 @import 'tailwindcss';
 
 /*
- * 设计令牌沿用首页原型（#7）：中性灰底，强调色是墨黑，层级靠字号、留白和分隔线。
- * 彩色只来自赛事海报这类内容。字体用系统字体，不加载网络字体，Google Fonts 在国内经常打不开。
+ * 设计令牌。尺寸一律用 Tailwind 自带的刻度，不另起名字：
+ * 字号 text-xs…text-5xl，圆角 rounded-lg / xl / 2xl / 3xl（正好是 Everplain 的 8 / 12 / 16 / 24），
+ * 阴影 shadow-*，间距，版心 max-w-*，动效时长 duration-140 / 240 / 420。
+ *
+ * 这里只放 Tailwind 给不了的：跟着深浅色切换的语义色、核实等级色，以及为中文改的两处默认值。
+ * 颜色取自 Everplain（frontend/src/styles/tokens.css）。默认调色板清掉了，组件只用下面这些语义色。
  */
 @theme {
   --font-sans:
-    -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
-    sans-serif;
+    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 
+  /* 中文字面几乎占满字身，行高低于 1.45 相邻两行会贴上；Tailwind 默认的 xs、sm 只有 1.33 和 1.43 */
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.6;
+  --text-base--line-height: 1.6;
+
+  /* 主缓动：短而有弹性，替换 Tailwind 默认的 ease-out */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --color-*: initial;
+
+  /* 表面：从最底的画布到浮起的纸面；scrim 是弹窗背后压暗页面的那层 */
   --color-canvas: light-dark(#f5f5f5, #1c1e1d);
   --color-surface: light-dark(#ffffff, #242625);
   --color-surface-muted: light-dark(#f7f7f7, #202221);
   --color-surface-strong: light-dark(#ededed, #303331);
+  --color-scrim: light-dark(rgb(17 17 17 / 32%), rgb(0 0 0 / 56%));
+
+  /* 墨色：ink 是标题与强调，ink-soft 是正文，muted 是元信息，faint 是几乎不看的定位符 */
   --color-ink: light-dark(#111111, #e6e7e3);
   --color-ink-soft: light-dark(#303030, #c9ccc6);
   --color-muted: light-dark(#6c6c6c, #a4aaa2);
   --color-faint: light-dark(#969696, #92998f);
   --color-rule: light-dark(#e3e3e3, #383d38);
   --color-rule-strong: light-dark(#cccccc, #50574f);
-  --color-accent: light-dark(#111111, #e0e4db);
-  --color-on-accent: light-dark(#ffffff, #20241f);
-  --color-danger: light-dark(#98434b, #e2a3a6);
-  --color-scrim: light-dark(rgb(17 17 17 / 32%), rgb(0 0 0 / 56%));
 
-  --radius-compact: 8px;
-  --radius-control: 12px;
-  --radius-surface: 16px;
+  /* 强调色就是墨黑，on-accent 是压在它上面的字 */
+  --color-accent: light-dark(#111111, #e0e4db);
+  --color-accent-hover: light-dark(#303030, #c9d0c4);
+  --color-accent-soft: light-dark(#ececec, #303630);
+  --color-on-accent: light-dark(#ffffff, #20241f);
+
+  /* 状态色只有 danger 是彩色的；普通提示用中性灰加一道细线，不另起一种黄 */
+  --color-danger: light-dark(#98434b, #e2a3a6);
+  --color-danger-soft: light-dark(#f8edef, #382729);
+  --color-notice-line: light-dark(#b8b8b8, #50574f);
+
+  /* 核实等级（#8 决策 2）：只有冲突是彩色的，其余三档是同一种墨色的深浅 */
+  --color-level-official: var(--color-ink);
+  --color-level-reposted: var(--color-muted);
+  --color-level-conflict: var(--color-danger);
+  --color-level-not-found: var(--color-faint);
 }
 
 :root {

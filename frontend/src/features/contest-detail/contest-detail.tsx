@@ -22,7 +22,7 @@ export function ContestDetail({ onClose }: ContestDetailProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="contest-detail-title"
-        className="w-full max-w-2xl rounded-surface bg-surface p-6"
+        className="w-full max-w-2xl rounded-2xl bg-surface p-6"
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between gap-4">
@@ -32,7 +32,7 @@ export function ContestDetail({ onClose }: ContestDetailProps) {
           <button
             type="button"
             onClick={onClose}
-            className="h-9 rounded-control px-3 text-sm text-muted hover:bg-surface-strong"
+            className="h-9 rounded-xl px-3 text-sm text-muted hover:bg-surface-strong"
           >
             关闭
           </button>

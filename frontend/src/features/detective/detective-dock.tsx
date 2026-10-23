@@ -6,7 +6,7 @@ export function DetectiveDock() {
   return (
     <section aria-label="侦探" className="fixed inset-x-4 bottom-4 z-10 mx-auto max-w-[720px]">
       <form
-        className="flex items-center gap-2 rounded-surface border border-rule bg-surface p-2"
+        className="flex items-center gap-2 rounded-2xl border border-rule bg-surface p-2"
         onSubmit={(event) => event.preventDefault()}
       >
         <input
@@ -18,7 +18,7 @@ export function DetectiveDock() {
         <button
           type="submit"
           disabled
-          className="h-10 rounded-control bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-40"
+          className="h-10 rounded-xl bg-accent px-4 text-sm font-medium text-on-accent disabled:opacity-40"
         >
           查证
         </button>
