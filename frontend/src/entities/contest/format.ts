@@ -19,19 +19,7 @@ export const dateFields = [
   'submission_deadline',
   'deadline_unspecified',
 ]
-export function formatDate(value: string | null | undefined) {
-  if (!value) return '未找到'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '未找到'
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(date)
-}
+export { formatDate } from '@/shared/lib/date'
 export function remainingDays(value: string | null | undefined, now = new Date()) {
   if (!value) return ''
   const diff = new Date(value).getTime() - now.getTime()
