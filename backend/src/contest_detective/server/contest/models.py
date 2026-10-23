@@ -31,6 +31,7 @@ class ContestPage(Base):
     title: Mapped[str] = mapped_column(Text)
     published_at: Mapped[str | None] = mapped_column(String(20))
     is_official: Mapped[bool] = mapped_column(Boolean)
+    content_hash: Mapped[str | None] = mapped_column(String(64))
 
 
 class ContestClaim(Base):
