@@ -58,6 +58,14 @@ describe('路由', () => {
     fireEvent.click(screen.getByRole('button', { name: '按我的情况挑比赛' }))
     expect(await screen.findByRole('button', { name: '确认并挑比赛' })).toBeTruthy()
   })
+  it('关注入口切换赛事列表，返回后恢复浏览区块', () => {
+    renderAt('/')
+    fireEvent.click(screen.getByRole('button', { name: '我的关注' }))
+    expect(screen.getByRole('heading', { name: '我的关注' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '全部赛事' }))
+    expect(screen.getByRole('heading', { name: '全部赛事' })).toBeTruthy()
+  })
   it('首页显示四个区块，不开详情', () => {
     renderAt('/')
 

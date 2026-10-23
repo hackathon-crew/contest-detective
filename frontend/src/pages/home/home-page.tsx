@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 
@@ -13,6 +13,8 @@ import { ContestCalendar } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveDock } from '@/features/detective'
 import { WeeklyPicks } from '@/features/weekly-picks'
+import { FollowButton, FollowedContests, useFollows } from '@/features/follow'
+import { ErrorState } from '@/shared/ui'
 
 /** 首页只负责摆放各个区块，数据由各个 feature 自己取。 */
 export function HomePage() {
@@ -20,6 +22,12 @@ export function HomePage() {
   const client = useQueryClient()
   const [profileOpen, setProfileOpen] = useState(false)
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
+  const follows = useFollows()
+  const [showFollows, setShowFollows] = useState(false)
+  const listArea = useRef<HTMLDivElement | null>(null)
+  const followAction = (contest: { id: string }) => (
+    <FollowButton contestId={contest.id} follows={follows} />
+  )
   const contestId = useMatch('/contests/:contestId')?.params.contestId
   const navigate = useNavigate()
   const { search } = useLocation()
@@ -35,6 +43,15 @@ export function HomePage() {
         <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
           <span className="text-base font-semibold text-ink">比赛侦探</span>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowFollows((value) => !value)
+                listArea.current?.scrollIntoView?.({ block: 'start' })
+              }}
+            >
+              {showFollows ? '全部赛事' : '我的关注'}
+            </Button>
             <AppearanceControl />
             <AuthControls />
           </div>
@@ -49,6 +66,7 @@ export function HomePage() {
             <div className="flex flex-wrap gap-3">
               <a
                 href="#explore"
+                onClick={() => setShowFollows(false)}
                 className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
               >
                 浏览赛事
@@ -58,13 +76,22 @@ export function HomePage() {
               </Button>
             </div>
           </div>
-          <WeeklyPicks />
+          <WeeklyPicks renderAction={followAction} />
         </section>
-        <div className="grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3">
+        {!showFollows && follows.error && <ErrorState error={new Error(follows.error)} />}
+        <div
+          id="explore"
+          ref={listArea}
+          className="grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3"
+        >
           <div className="min-w-0 lg:col-span-2">
-            <ContestBrowser />
+            {showFollows ? (
+              <FollowedContests follows={follows} />
+            ) : (
+              <ContestBrowser renderAction={followAction} />
+            )}
           </div>
-          <ContestCalendar />
+          <ContestCalendar followedIds={follows.ids} />
         </div>
       </main>
 
@@ -76,7 +103,13 @@ export function HomePage() {
           onConfirmed={confirmed}
         />
       )}
-      {contestId && <ContestDetail contestId={contestId} onClose={closeDetail} />}
+      {contestId && (
+        <ContestDetail
+          contestId={contestId}
+          onClose={closeDetail}
+          action={<FollowButton contestId={contestId} follows={follows} />}
+        />
+      )}
     </div>
   )
 }
