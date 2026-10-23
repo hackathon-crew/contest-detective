@@ -345,3 +345,39 @@ def test_research_tool_uses_real_page_validation_and_storage(session_factory, mo
         assert detail.fields['registration_deadline'].value is None
         usage = session.scalars(select(LLMUsage)).all()
         assert len(usage) == 3 and all(row.status == 'settled' for row in usage)
+
+
+def test_existing_contest_is_verified_in_place_through_real_recording(session_factory, monkeypatch):
+    from importlib import import_module
+    from contest_detective.server.contest import service as contests
+    from contest_detective.server.contest.schemas import ContestQuery
+    from contest_detective.server.research_pipeline import run as record_page
+    with session_factory() as session:
+        contest_id = save(session, ContestDraft(name='转载中的旧活动名', page={
+            'url': 'https://directory.example/event', 'site': '活动汇总', 'title': '转载活动', 'is_official': False,
+        }, claims=[
+            {'field': 'start_at', 'value': '2026-11-10T01:00:00Z', 'excerpt': '11月10日开赛'},
+            {'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '报名页面'},
+        ]))
+        session.commit()
+    url = 'https://organizer.example/rules'
+    recording = import_module('contest_detective.server.research_pipeline.record')
+    monkeypatch.setattr(recording, 'fetch_page', lambda _: '官方活动完整名称，开赛延期至12月6日9:00。')
+    draft = {'name': '官方活动完整名称', 'page': {'url': url, 'site': '主办方', 'title': '活动', 'is_official': False},
+             'claims': [{'field': 'start_at', 'value': '2026-12-06T01:00:00Z', 'excerpt': '开赛延期至12月6日9:00'}]}
+    calls = 0
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if info.output_tools:
+            return ModelResponse([ToolCallPart(info.output_tools[0].name, draft)])
+        if calls == 1:
+            return ModelResponse([ToolCallPart('record_page', {'url': url, 'contest_id': contest_id})])
+        return ModelResponse([TextPart('已核实赛事。')])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record_page))
+    assert events[-1].type == 'answer'
+    with session_factory() as session:
+        assert contests.query(session, ContestQuery())[1] == 1
+        start = contests.get(session, contest_id).fields['start_at']
+        assert start.value == '2026-12-06T01:00:00Z' and start.level == 'official'
+        assert next(source for source in start.sources if source.url == 'https://directory.example/event').stale
