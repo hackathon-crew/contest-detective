@@ -11,7 +11,7 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
 from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.schemas import ContestQuery
+from contest_detective.server.contest.schemas import DATE_FIELDS, ContestQuery
 from contest_detective.server.user.schemas import Profile
 from contest_detective.server.user import matching
 
@@ -42,12 +42,21 @@ class ToolDeps:
     record: Callable | None = None
     profile: Profile | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
+    day_sources: set[str] = field(default_factory=set)
+    datetime_sources: set[str] = field(default_factory=set)
 
     def remember(self, sources):
         for source in sources:
             item = ToolSource.model_validate(source)
             if urlsplit(item.url).scheme in {'http', 'https'}:
                 self.sources[item.url] = item
+
+    def remember_dates(self, contest):
+        for name, value in contest.fields.items():
+            if name in DATE_FIELDS:
+                for source in value.sources:
+                    selected = self.day_sources if source.precision == 'day' else self.datetime_sources
+                    selected.add(source.url)
 
 
 def register_tools(agent: Agent, *, web_enabled: bool):
@@ -66,7 +75,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
 
     @agent.tool
     async def get_contest(ctx: RunContext[ToolDeps], contest_id: str) -> dict:
-        """读取赛事字段、核实等级和原文出处；报名截止与提交截止分别返回。"""
+        """读取字段、精度和出处；precision=day 只公布日期，不得把排序锚点说成小时。"""
         with ctx.deps.session_factory() as session:
             item = contests.get(session, contest_id)
         if item is None:
@@ -74,6 +83,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
         sources = {source.url: {'title': source.title, 'url': source.url, 'site': source.site}
                    for value in item.fields.values() for source in value.sources}
         ctx.deps.remember(sources.values())
+        ctx.deps.remember_dates(item)
         return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': list(sources.values())}
 
     @agent.tool
@@ -135,6 +145,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
             with ctx.deps.session_factory() as session:
                 item = contests.get(session, contest_id)
             if item:
+                ctx.deps.remember_dates(item)
                 sources = list({source.url: {'title': source.title, 'url': source.url, 'site': source.site}
                     for value in item.fields.values() for source in value.sources}.values())
                 ctx.deps.remember(sources)
