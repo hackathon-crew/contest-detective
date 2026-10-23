@@ -154,5 +154,7 @@ def create_investigator(*, session_factory=SessionLocal) -> Investigator:
 
 
 async def ask(question: str, user_id: str | None = None, profile: Profile | None = None) -> AsyncIterator[TraceEvent]:
-    async for event in create_investigator().ask(question, user_id, profile=profile):
-        yield event
+    investigator = create_investigator()
+    async with investigator.agent:
+        async for event in investigator.ask(question, user_id, profile=profile):
+            yield event

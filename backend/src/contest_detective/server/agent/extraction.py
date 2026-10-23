@@ -15,10 +15,15 @@ def create_page_extractor(*, model: Model | None = None, session_factory=Session
                           usage: RunUsage | None = None):
     async def extract(url: str, text: str) -> ContestDraft:
         from .llm import create_model
-        guarded = model if model is not None else create_model(session_factory=session_factory)
-        extractor = Agent(guarded, output_type=ContestDraft, instructions=RULES, retries=0)
-        result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text[:6000]}',
-            usage=usage, usage_limits=UsageLimits(request_limit=6),
-            model_settings={'max_tokens': 4096}, timeout=60)
-        return result.output
+        owned = create_model(session_factory=session_factory) if model is None else None
+        guarded = model if model is not None else owned
+        try:
+            extractor = Agent(guarded, output_type=ContestDraft, instructions=RULES, retries=0)
+            result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text[:6000]}',
+                usage=usage, usage_limits=UsageLimits(request_limit=6),
+                model_settings={'max_tokens': 4096}, timeout=60)
+            return result.output
+        finally:
+            if owned is not None:
+                await owned.aclose()
     return extract
