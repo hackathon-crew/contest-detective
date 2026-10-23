@@ -79,3 +79,17 @@ def test_parameter_errors_remain_json_and_do_not_start_investigation(local_clien
         assert response.headers['content-type'].startswith('application/json')
     with session_factory() as session:
         assert session.scalars(select(Investigation)).all() == []
+
+
+def test_disabled_provider_remains_json_and_validates_question_first(client, monkeypatch):
+    from contest_detective.server.agent.config import LLMSettings
+    import contest_detective.server.agent.llm as llm
+    monkeypatch.setattr(llm, 'get_llm_settings', lambda: LLMSettings(_env_file=None, enabled=False))
+    invalid = client.post('/agent/ask', json={'question': '   '})
+    assert invalid.headers['content-type'].startswith('application/json')
+    assert invalid.json()['code'] == 400
+    disabled = client.post('/agent/ask', json={'question': '找比赛'})
+    assert disabled.status_code == 200
+    assert disabled.headers['content-type'].startswith('application/json')
+    assert disabled.json()['code'] == 503
+    assert 'event:' not in disabled.text
