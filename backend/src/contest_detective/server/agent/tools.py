@@ -42,8 +42,7 @@ class ToolDeps:
     record: Callable | None = None
     profile: Profile | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
-    day_sources: set[str] = field(default_factory=set)
-    datetime_sources: set[str] = field(default_factory=set)
+    date_evidence: dict[str, dict[str, set[tuple[str, str]]]] = field(default_factory=dict)
 
     def remember(self, sources):
         for source in sources:
@@ -55,8 +54,8 @@ class ToolDeps:
         for name, value in contest.fields.items():
             if name in DATE_FIELDS:
                 for source in value.sources:
-                    selected = self.day_sources if source.precision == 'day' else self.datetime_sources
-                    selected.add(source.url)
+                    fields = self.date_evidence.setdefault(source.url, {})
+                    fields.setdefault(name, set()).add((source.value, source.precision))
 
 
 def register_tools(agent: Agent, *, web_enabled: bool):
