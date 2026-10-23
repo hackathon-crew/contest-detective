@@ -11,7 +11,7 @@ from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 
 
-def seed(session, number, *, deadline=None, start=None, url=None):
+def seed(session, number, *, deadline=None, start=None, url=None, date_claims=()):
     claims = {'registration_url': url or f'https://organizer.example/{number}'}
     if deadline is not None:
         claims['registration_deadline'] = deadline.isoformat()
@@ -20,7 +20,48 @@ def seed(session, number, *, deadline=None, start=None, url=None):
     return service.save(session, ContestDraft(name=f'活动 {number}',
         page={'url': f'https://hackertrip.space/hackathon/{number}', 'site': 'HackerTrip',
               'title': f'活动 {number}', 'is_official': False},
-        claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in claims.items()]))
+        claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in claims.items()] + list(date_claims)))
+
+
+@pytest.mark.parametrize('field', ['start_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified'])
+def test_today_day_nodes_remain_verification_targets_after_their_anchor(session, field):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    contest_id = seed(session, 1, date_claims=[{
+        'field': field, 'value': '2026-10-27', 'precision': 'day', 'excerpt': '10月27日',
+    }])
+    now = datetime.fromisoformat('2026-10-27T02:00:00Z')
+    assert [target.contest_id for target in _targets(session, now, 30)] == [contest_id]
+
+
+@pytest.mark.parametrize(('value', 'precision', 'clock', 'expected'), [
+    ('2026-10-26', 'day', '2026-10-27T02:00:00Z', False),
+    ('2026-10-27', 'day', '2026-10-27T15:59:59Z', True),
+    ('2026-10-27', 'day', '2026-10-27T16:00:00Z', False),
+    ('2026-10-27T01:59:59Z', 'datetime', '2026-10-27T02:00:00Z', False),
+    ('2026-10-27T02:00:00Z', 'datetime', '2026-10-27T02:00:00Z', True),
+    ('2026-11-26T02:00:00Z', 'datetime', '2026-10-27T02:00:00Z', True),
+    ('2026-11-26T02:00:01Z', 'datetime', '2026-10-27T02:00:00Z', False),
+    ('2026-11-26', 'day', '2026-10-26T18:00:00Z', True),
+])
+def test_verification_window_intersects_day_ranges_and_exact_instants(session, value, precision, clock, expected):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    seed(session, 1, date_claims=[{
+        'field': 'registration_deadline', 'value': value, 'precision': precision, 'excerpt': value,
+    }])
+    assert bool(_targets(session, datetime.fromisoformat(clock), 30)) is expected
+
+
+def test_day_deadline_order_uses_the_calendar_interval_start(session):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    day = seed(session, 1, date_claims=[{
+        'field': 'registration_deadline', 'value': '2026-11-01', 'precision': 'day', 'excerpt': '11月1日',
+    }])
+    exact = seed(session, 2, deadline=datetime.fromisoformat('2026-10-31T18:00:00Z'))
+    now = datetime.fromisoformat('2026-10-27T02:00:00Z')
+    assert [target.contest_id for target in _targets(session, now, 30)] == [day, exact]
 
 
 def test_recent_selection_uses_future_deadlines_or_start_and_sorts_deadlines_first(session_factory):
