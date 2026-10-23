@@ -2,7 +2,7 @@
 export function ContestBrowser() {
   return (
     <section aria-labelledby="contest-browser-title" className="py-8">
-      <h2 id="contest-browser-title" className="text-lg font-semibold text-ink">
+      <h2 id="contest-browser-title" className="text-2xl font-bold text-ink">
         全部赛事
       </h2>
     </section>
