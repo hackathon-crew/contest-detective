@@ -94,8 +94,8 @@ def register_tools(agent: Agent, *, web_enabled: bool):
         return {'text': text, 'summary': f'已读取 {len(text)} 字正文', 'sources': [source]}
 
     @agent.tool
-    async def record_page(ctx: RunContext[ToolDeps], url: str) -> dict:
-        """将网页中的赛事送入抽取和核实流水线；片段校验通过才写回比赛库。"""
+    async def record_page(ctx: RunContext[ToolDeps], url: str, contest_id: str | None = None) -> dict:
+        """将网页送入核实流水线；已有赛事时传 contest_id，使用库中的报名域名核对官方来源。"""
         if ctx.deps.record is None:
             return {'contest_id': None, 'summary': '页面保存暂未配置', 'sources': []}
 
@@ -108,7 +108,15 @@ def register_tools(agent: Agent, *, web_enabled: bool):
                 model_settings={'max_tokens': 4096}, timeout=60)
             return result.output
 
-        contest_id = await invoke(ctx.deps.record, url, extractor=extract, session_factory=ctx.deps.session_factory)
+        registration = None
+        if contest_id:
+            with ctx.deps.session_factory() as session:
+                existing = contests.get(session, contest_id)
+            if existing:
+                registration = existing.fields.get('registration_url')
+        context = {'registration_url': registration.value} if registration and registration.value else {}
+        contest_id = await invoke(ctx.deps.record, url, extractor=extract,
+                                 session_factory=ctx.deps.session_factory, **context)
         sources = []
         if contest_id:
             with ctx.deps.session_factory() as session:
