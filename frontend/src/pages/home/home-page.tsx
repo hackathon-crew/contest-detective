@@ -1,8 +1,14 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
 import { AuthControls } from '@/features/auth'
+import { AppearanceControl } from '@/features/appearance'
+import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
+import { currentUserKey, useCurrentUser } from '@/entities/user'
+import type { Profile } from '@/shared/api'
+import { Button } from '@/shared/ui'
 import { ContestCalendar } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveDock } from '@/features/detective'
@@ -10,17 +16,28 @@ import { WeeklyPicks } from '@/features/weekly-picks'
 
 /** 首页只负责摆放各个区块，数据由各个 feature 自己取。 */
 export function HomePage() {
+  const { data: user } = useCurrentUser()
+  const client = useQueryClient()
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
   const contestId = useMatch('/contests/:contestId')?.params.contestId
   const navigate = useNavigate()
   const { search } = useLocation()
   const closeDetail = useCallback(() => navigate({ pathname: '/', search }), [navigate, search])
+  function confirmed(profile: Profile) {
+    if (user) void client.invalidateQueries({ queryKey: currentUserKey })
+    else setGuestProfile(profile)
+  }
 
   return (
     <div className="min-h-dvh">
       <header className="border-b border-rule bg-surface">
         <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
           <span className="text-base font-semibold text-ink">比赛侦探</span>
-          <AuthControls />
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <AppearanceControl />
+            <AuthControls />
+          </div>
         </div>
       </header>
 
@@ -29,16 +46,21 @@ export function HomePage() {
         <section className="grid items-start gap-10 py-10 md:grid-cols-2 lg:py-14">
           <div className="space-y-6 lg:py-12">
             <h1 className="text-4xl font-bold text-ink">近期值得参加的黑客松</h1>
-            <a
-              href="#explore"
-              className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
-            >
-              浏览赛事
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="#explore"
+                className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
+              >
+                浏览赛事
+              </a>
+              <Button variant="outline" onClick={() => setProfileOpen(true)}>
+                按我的情况挑比赛
+              </Button>
+            </div>
           </div>
           <WeeklyPicks />
         </section>
-        <div className="grid items-start gap-8 lg:grid-cols-3">
+        <div className="grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">
             <ContestBrowser />
           </div>
@@ -46,7 +68,14 @@ export function HomePage() {
         </div>
       </main>
 
-      <DetectiveDock />
+      <DetectiveDock profile={user?.profile ?? guestProfile} />
+      {profileOpen && (
+        <ProfileMatchDialog
+          user={user}
+          onClose={() => setProfileOpen(false)}
+          onConfirmed={confirmed}
+        />
+      )}
       {contestId && <ContestDetail contestId={contestId} onClose={closeDetail} />}
     </div>
   )
