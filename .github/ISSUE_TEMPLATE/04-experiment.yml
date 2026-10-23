@@ -1,0 +1,37 @@
+name: Experiment
+description: 有边界的技术验证，用来回答一个具体问题。
+title: "[Experiment]: "
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: 要回答的问题，以及它影响哪个决策。
+    validations:
+      required: true
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+      description: 预期结果和判断依据。
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: Method
+      description: 用什么样本、怎么测、测多少次。
+    validations:
+      required: true
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Success and failure criteria
+      description: 什么结果算验证通过，什么结果要换方案。
+    validations:
+      required: true
+  - type: input
+    id: timebox
+    attributes:
+      label: Timebox
+      description: 最多投入多长时间。

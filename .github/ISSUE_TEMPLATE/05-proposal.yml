@@ -1,0 +1,64 @@
+name: Product proposal
+description: 产品提案（Proposal）。较大的需求先在这里写清要什么、不要什么，组内定稿后再拆任务。
+title: "[Proposal]: "
+labels:
+  - proposal
+body:
+  - type: markdown
+    attributes:
+      value: |
+        一份提案只确定一个清晰的设计点。产品设计是取舍：每个关键决策写出有哪几种做法、选哪个、为什么。定稿进入开发后提案只读，变更另开新提案。
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation and user stories
+      description: 哪些真实场景触发了这个需求，它们的共同点是什么（一句话提炼）。
+    validations:
+      required: true
+  - type: textarea
+    id: users
+    attributes:
+      label: Target users
+      description: 为谁而做。
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current approach and gaps
+      description: 用户现在怎么解决，还有哪些冗余或手动负担。没有就写「无」。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+      description: 本期做什么，明确列出本期不做的。
+    validations:
+      required: true
+  - type: textarea
+    id: decisions
+    attributes:
+      label: Key decisions
+      description: 核心规则或方案；有哪几种做法、选择哪个、为什么，包括竞品和替代方案。
+    validations:
+      required: true
+  - type: textarea
+    id: concepts
+    attributes:
+      label: Core concepts and information structure
+      description: 领域核心概念如何定义、数据如何组织，作为架构设计的输入。
+    validations:
+      required: true
+  - type: textarea
+    id: prototype
+    attributes:
+      label: Prototype
+      description: 有界面的功能，在文字定稿后附原型图或可交互链接。
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: 何为达成，尽量用具体例子表达，并能据此验证。
+    validations:
+      required: true
