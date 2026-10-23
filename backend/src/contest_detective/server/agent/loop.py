@@ -7,8 +7,8 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-from pydantic_ai import Agent
-from pydantic_ai.exceptions import UsageLimitExceeded
+from pydantic_ai import Agent, ModelRetry, RunContext
+from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
@@ -104,15 +104,27 @@ def validate_answer(content: str, sources: dict, date_evidence=None):
                         raise BizException('该字段未核实这个具体时刻，请按日期和原文查看', code=422)
 
 
+def _validate_output(ctx: RunContext[ToolDeps], content: str) -> str:
+    try:
+        validate_answer(content, ctx.deps.sources, ctx.deps.date_evidence)
+    except BizException as exc:
+        raise ModelRetry(
+            f'{exc.message}。请纠正回答：每个包含日期或时刻的行都必须附上已返回来源的 Markdown 链接 '
+            '（[原文](URL)），只能使用工具已返回的 URL。保持日期精度，不能猜测未知时刻。'
+        ) from exc
+    return content
+
+
 class Investigator:
     def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None, profile_reader=None):
         self.model = model
         self.session_factory = session_factory
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
-        self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries=0,
+        self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries={'tools': 0, 'output': 1},
                            model_settings={'parallel_tool_calls': False, 'max_tokens': 4096})
         register_tools(self.agent, web_enabled=search is not None)
+        self.agent.output_validator(_validate_output)
 
     async def ask(self, question: str, user_id: str | None = None,
                   profile: Profile | None = None) -> AsyncIterator[TraceEvent]:
@@ -185,6 +197,15 @@ class Investigator:
             await queue.put(store(TraceEvent(type='answer', payload={'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()]})))
         except Exception as exc:
             status = 'failed'
+            # 只恢复本地校验的业务提示；上游错误继续用通用提示，不回显原始回答。
+            if isinstance(exc, UnexpectedModelBehavior):
+                cause, from_validation = exc.__cause__, False
+                while cause is not None:
+                    from_validation |= isinstance(cause, ModelRetry)
+                    if from_validation and isinstance(cause, BizException):
+                        exc = cause
+                        break
+                    cause = cause.__cause__
             message = (exc.message if isinstance(exc, BizException) else
                        '本次查证已达到次数上限，请缩小问题范围' if isinstance(exc, UsageLimitExceeded) else
                        '查证暂时失败，请稍后重试')
