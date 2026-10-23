@@ -41,7 +41,7 @@ export function ContestDetail({ contestId, onClose, action }: ContestDetailProps
                     {value && (
                       <p>
                         {dateFields.includes(field) ? (
-                          formatDate(value)
+                          formatDate(value, item.precision)
                         ) : field === 'mode' ? (
                           (modeNames[value] ?? value)
                         ) : field === 'registration_url' && safeUrl(value) ? (
