@@ -286,3 +286,15 @@ def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_facto
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
     assert fetched == []
+
+
+def test_empty_account_profile_is_not_described_as_confirmed(session_factory):
+    instructions = []
+    def respond(_, info):
+        instructions.append(info.instructions)
+        return ModelResponse([TextPart('请先确认你的画像。')])
+    empty = {'skills': [], 'identity': None, 'available_time': None, 'city': None, 'github': None}
+    investigator = Investigator(FunctionModel(respond), session_factory=session_factory,
+                                profile_reader=lambda _: empty)
+    run(investigator, user_id='new-account')
+    assert '用户已确认的画像' not in instructions[0]
