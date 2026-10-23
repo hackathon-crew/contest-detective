@@ -9,7 +9,7 @@ from contest_detective.server.research_pipeline.service import run_sync
 
 
 def configured_extractor(session_factory):
-    if not get_llm_settings().enabled:
+    if not get_app_settings().sync_extract_enabled or not get_llm_settings().enabled:
         return None
     from contest_detective.server.agent.extraction import create_page_extractor
     return create_page_extractor(session_factory=session_factory)
