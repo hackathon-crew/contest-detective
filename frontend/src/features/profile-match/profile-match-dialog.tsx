@@ -226,7 +226,7 @@ export function ProfileMatchDialog({
           )}
           {profile.github_last_active_at && (
             <p className="text-xs text-muted">
-              最近推送：{formatDate(profile.github_last_active_at)}
+              最近推送：{formatDate(profile.github_last_active_at, 'datetime', true)}
             </p>
           )}
           <Tags
