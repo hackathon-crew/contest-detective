@@ -62,7 +62,7 @@ export function HomePage() {
       <main className="mx-auto max-w-7xl px-6 pb-32 sm:px-8">
         <section className="grid items-start gap-10 py-10 md:grid-cols-2 lg:py-14">
           <div className="space-y-6 lg:py-12">
-            <h1 className="text-4xl font-bold text-ink">近期值得参加的黑客松</h1>
+            <h1 className="text-4xl font-bold text-balance text-ink">近期值得参加的黑客松</h1>
             <div className="flex flex-wrap gap-3">
               <a
                 href="#explore"
