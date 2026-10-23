@@ -95,9 +95,11 @@ class Investigator:
         try:
             today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
             instructions = f'当前北京时间日期：{today}。'
-            if profile is None and user_id and self.profile_reader:
+            if user_id and self.profile_reader:
                 stored = await invoke(self.profile_reader, user_id)
-                profile = Profile.model_validate(stored) if stored is not None else None
+                confirmed = Profile.model_validate(stored) if stored is not None else None
+                if confirmed is not None and has_preferences(confirmed):
+                    profile = confirmed
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
