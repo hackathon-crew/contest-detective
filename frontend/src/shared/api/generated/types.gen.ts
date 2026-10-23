@@ -75,6 +75,20 @@ export type ContestSummary = {
 };
 
 /**
+ * Credentials
+ */
+export type Credentials = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Password
+     */
+    password: string;
+};
+
+/**
  * FieldValue
  */
 export type FieldValue = {
@@ -151,6 +165,47 @@ export type ListResponseContestSummary = {
 };
 
 /**
+ * Profile
+ */
+export type Profile = {
+    /**
+     * Skills
+     */
+    skills?: Array<string>;
+    /**
+     * Identity
+     */
+    identity?: string | null;
+    /**
+     * Available Time
+     */
+    available_time?: string | null;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Github
+     */
+    github?: string | null;
+};
+
+/**
+ * PublicUser
+ */
+export type PublicUser = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Username
+     */
+    username: string;
+    profile: Profile;
+};
+
+/**
  * Response[ContestDetail]
  */
 export type ResponseContestDetail = {
@@ -170,6 +225,92 @@ export type ResponseContestDetail = {
      * 业务数据
      */
     data?: ContestDetail | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[NoneType]
+ */
+export type ResponseNoneType = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[PublicUser]
+ */
+export type ResponsePublicUser = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: PublicUser | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[Union[PublicUser, NoneType]]
+ */
+export type ResponseUnionPublicUserNoneType = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: PublicUser | null;
     /**
      * Timestamp
      *
@@ -243,6 +384,113 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type RegisterAuthRegisterPostData = {
+    body: Credentials;
+    path?: never;
+    query?: never;
+    url: '/auth/register';
+};
+
+export type RegisterAuthRegisterPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RegisterAuthRegisterPostError = RegisterAuthRegisterPostErrors[keyof RegisterAuthRegisterPostErrors];
+
+export type RegisterAuthRegisterPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponsePublicUser;
+};
+
+export type RegisterAuthRegisterPostResponse = RegisterAuthRegisterPostResponses[keyof RegisterAuthRegisterPostResponses];
+
+export type LoginAuthLoginPostData = {
+    body: Credentials;
+    path?: never;
+    query?: never;
+    url: '/auth/login';
+};
+
+export type LoginAuthLoginPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type LoginAuthLoginPostError = LoginAuthLoginPostErrors[keyof LoginAuthLoginPostErrors];
+
+export type LoginAuthLoginPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponsePublicUser;
+};
+
+export type LoginAuthLoginPostResponse = LoginAuthLoginPostResponses[keyof LoginAuthLoginPostResponses];
+
+export type LogoutAuthLogoutPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/logout';
+};
+
+export type LogoutAuthLogoutPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type LogoutAuthLogoutPostResponse = LogoutAuthLogoutPostResponses[keyof LogoutAuthLogoutPostResponses];
+
+export type MeAuthMeGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/auth/me';
+};
+
+export type MeAuthMeGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseUnionPublicUserNoneType;
+};
+
+export type MeAuthMeGetResponse = MeAuthMeGetResponses[keyof MeAuthMeGetResponses];
+
+export type ConfirmProfileUserProfilePutData = {
+    body: Profile;
+    path?: never;
+    query?: never;
+    url: '/user/profile';
+};
+
+export type ConfirmProfileUserProfilePutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ConfirmProfileUserProfilePutError = ConfirmProfileUserProfilePutErrors[keyof ConfirmProfileUserProfilePutErrors];
+
+export type ConfirmProfileUserProfilePutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponsePublicUser;
+};
+
+export type ConfirmProfileUserProfilePutResponse = ConfirmProfileUserProfilePutResponses[keyof ConfirmProfileUserProfilePutResponses];
 
 export type ListContestsContestsGetData = {
     body?: never;
