@@ -37,7 +37,7 @@ def _match(session, draft, page):
     linked = session.scalar(select(Contest).join(ContestPageLink).where(
         ContestPageLink.page_id == page.id, Contest.normalized_name == normalized_name)
         ) if page is not None else None
-    if linked and (start is None or linked.start_date is None):
+    if linked is not None:
         return linked
     # 无日期不足以跨来源合并，只认同一网页已保存过的同名赛事。
     if start is None:
