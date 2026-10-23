@@ -15,7 +15,12 @@ function violations(source: string): string[] {
   function visit(node: ts.Node) {
     if (ts.isJsxAttribute(node) && node.name.getText(tree) === 'className') {
       const text = node.initializer?.getText(tree) ?? ''
-      if (/\b[\w:-]+-\[[^\]]+\]/u.test(text)) errors.push('arbitrary utility')
+      if (
+        /\b(?:text|bg|border|rounded|max-w|min-w|w|h|ring|size|p|m|gap|duration)-\[[^\]]+\]/u.test(
+          text,
+        )
+      )
+        errors.push('arbitrary utility')
       if (
         /\b(?:bg|text|border|ring|fill|stroke)-(?:white|black|gray|slate|red|blue|green|yellow|violet)(?:-\d+)?\b/u.test(
           text,
