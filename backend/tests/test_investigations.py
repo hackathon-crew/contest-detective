@@ -244,3 +244,27 @@ def test_page_extraction_shares_the_six_request_limit_with_investigation(session
     events = run(Investigator(FunctionModel(repeat), session_factory=session_factory, record=record))
     assert calls == 6
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
+
+
+def test_record_page_uses_registration_context_from_existing_contest(session_factory):
+    with session_factory() as session:
+        contest_id = save(session, ContestDraft(name='主办方活动', page={
+            'url': 'https://directory.example/events/event', 'site': '活动汇总', 'title': '活动条目', 'is_official': False,
+        }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '报名页面'}]))
+        session.commit()
+    recorded = []
+    async def record(url, *, extractor, session_factory, registration_url=None):
+        recorded.append((url, registration_url))
+        return None
+    calls = 0
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return ModelResponse([ToolCallPart('record_page', {
+                'url': 'https://organizer.example/rules', 'contest_id': contest_id,
+            })])
+        return ModelResponse([TextPart('未找到可写回的字段。')])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
+    assert events[-1].type == 'answer'
+    assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register')]
