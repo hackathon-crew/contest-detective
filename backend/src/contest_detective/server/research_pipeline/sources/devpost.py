@@ -32,7 +32,7 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
             deadline = last or first
             if deadline:
                 claims.append(ClaimIn(field='submission_deadline', value=deadline,
-                                      excerpt=f'submission_period_dates: {raw_dates}'))
+                                      precision='day', excerpt=f'submission_period_dates: {raw_dates}'))
             location = item.get('displayed_location') or {}
             place = (location.get('location') or '').strip()
             if place.lower() == 'online':

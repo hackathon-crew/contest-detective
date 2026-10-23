@@ -75,7 +75,8 @@ def test_waytoagi_replays_snapshot_and_fetches_only_active_hackathon_details():
     assert first.name == '第四届开放原子大赛—2026开源行业解决方案创新赛'
     assert first.page.url == 'https://events.waytoagi.com/events/e_fa883cfcd9'
     assert first.page.is_official is False
-    assert values(first)['start_at'] == '2026-11-12T16:00:00Z'
+    assert values(first)['start_at'] == '2026-11-13T00:00:00Z'
+    assert next(claim for claim in first.claims if claim.field == 'start_at').precision == 'day'
 
 
 def test_waytoagi_does_not_guess_the_deadline_type():
