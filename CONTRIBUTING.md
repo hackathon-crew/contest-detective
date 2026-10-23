@@ -4,12 +4,12 @@
 
 ## Fork 与分支
 
-仓库所有者直接在本仓库开分支；其他成员先 fork 到个人账号，开发分支只放在个人 fork 里，再向本仓库提 PR。
+`hackathon-crew` 组织成员直接在本仓库开分支；组织外的贡献者先 fork 到个人账号，在个人 fork 里开发，再向本仓库提 PR。下面的 fork 与同步命令只适用于后一种情况。
 
 ```bash
 git clone git@github.com:<你的账号>/contest-detective.git
 cd contest-detective
-git remote add upstream git@github.com:huyanxius/contest-detective.git
+git remote add upstream git@github.com:hackathon-crew/contest-detective.git
 ```
 
 开新分支前先同步上游：
