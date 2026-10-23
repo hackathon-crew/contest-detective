@@ -16,13 +16,13 @@ export function HomePage() {
   return (
     <div className="min-h-dvh">
       <header className="border-b border-rule bg-surface">
-        <div className="mx-auto flex h-14 max-w-[1200px] items-center px-4 sm:px-8">
+        <div className="mx-auto flex h-14 max-w-7xl items-center px-6 sm:px-8">
           <span className="text-base font-semibold text-ink">比赛侦探</span>
         </div>
       </header>
 
       {/* 底部留白给常驻的侦探输入条，免得最后一个区块被它挡住 */}
-      <main className="mx-auto max-w-[1200px] px-4 pb-32 sm:px-8">
+      <main className="mx-auto max-w-7xl px-4 pb-32 sm:px-8">
         <WeeklyPicks />
         <ContestBrowser />
         <ContestCalendar />
