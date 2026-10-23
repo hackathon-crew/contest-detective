@@ -16,7 +16,7 @@
 
 ## 当前状态
 
-仓库刚建立，还没有可运行的代码。开发进度见 [Milestones](https://github.com/huyanxius/contest-detective/milestones)。
+仓库刚建立，还没有可运行的代码。开发进度见 [Milestones](https://github.com/hackathon-crew/contest-detective/milestones)。
 
 ## 参与开发
 
