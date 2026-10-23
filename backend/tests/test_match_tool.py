@@ -74,13 +74,13 @@ def test_explicit_tool_preferences_override_the_confirmed_account_profile(sessio
     assert 'Rust' in events[-1].payload['content']
 
 
-def test_request_preferences_override_account_preferences(session_factory):
+def test_confirmed_account_preferences_override_guest_request_preferences(session_factory):
     ids, seen = seed(session_factory), []
     investigator = Investigator(local_match_model(seen), session_factory=session_factory,
                                 profile_reader=lambda _: {'skills': ['Python']})
     events = ask(investigator, user_id='confirmed-user', profile=Profile(skills=['Rust']))
     assert events[-1].type == 'answer'
-    assert seen[0]['items'][0]['contest']['id'] == ids['Rust 黑客松']
+    assert seen[0]['items'][0]['contest']['id'] == ids['Python agent 黑客松']
 
 
 def test_no_effective_profile_requests_confirmation_without_personalization(session_factory):
