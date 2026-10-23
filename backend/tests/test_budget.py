@@ -208,3 +208,74 @@ def test_confirmed_profile_context_is_included_in_input_reservation_bound(sessio
                          Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=forbidden_balance)
     with pytest.raises(BizException, match='上下文过长'):
         asyncio.run(Agent(model, instructions='已确认资料' * 5000).run('查询'))
+
+
+def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory):
+    budget = Budget(session_factory, settings())
+    call = budget.reserve()
+    with pytest.raises(ValueError, match='超出预留'):
+        budget.settle(call, usage(hit=0, miss=100_000, output=1_000))
+    with pytest.raises(ValueError, match='结算'):
+        budget.settle(call, usage())
+    with session_factory() as session:
+        row = session.get(LLMUsage, call)
+        assert row.status == 'overrun'
+        assert row.cost_cny == Decimal('0.208')
+        assert (row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens) == (0, 100_000, 1_000)
+    with pytest.raises(BizException, match='模型额度已用完'):
+        budget.reserve()
+
+
+@pytest.mark.parametrize('overrides', [{}, {'extra_body': {
+    'max_tokens': 60000, 'max_completion_tokens': 60000,
+    'messages': [{'role': 'user', 'content': 'bypass'}],
+}}])
+def test_deepseek_wire_request_preserves_the_reserved_output_cap(session_factory, monkeypatch, overrides):
+    import json
+    from contest_detective.server.agent import llm
+    real_client = llm.AsyncOpenAI
+    def handle(request):
+        payload = json.loads(request.content)
+        assert payload['max_tokens'] == 4096
+        assert 'max_completion_tokens' not in payload
+        assert payload['thinking'] == {'type': 'disabled'}
+        assert payload['messages'][0]['content'] == '查询'
+        return httpx.Response(200, json={
+            'id': 'chatcmpl-local', 'object': 'chat.completion', 'created': 1, 'model': 'deepseek-flash',
+            'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': '查不到'}, 'finish_reason': 'stop'}],
+            'usage': {'prompt_tokens': 3000, 'completion_tokens': 500, 'total_tokens': 3500,
+                      'prompt_cache_hit_tokens': 1000, 'prompt_cache_miss_tokens': 2000},
+        })
+    async def enough():
+        return Decimal('100')
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            monkeypatch.setattr(llm, 'AsyncOpenAI', lambda **kwargs: real_client(**kwargs, http_client=client))
+            model = llm.create_model(settings(), session_factory=session_factory)
+            model.balance_reader = enough
+            return await Agent(model, model_settings=overrides).run('查询')
+    assert asyncio.run(exercise()).output == '查不到'
+    with session_factory() as session:
+        assert session.scalars(select(LLMUsage)).one().cost_cny == Decimal('0.00804')
+
+
+def test_call_settings_cannot_turn_sdk_retries_back_on(session_factory, monkeypatch):
+    from pydantic_ai.exceptions import ModelHTTPError
+    from contest_detective.server.agent import llm
+    real_client, requests = llm.AsyncOpenAI, []
+    def fail(request):
+        requests.append(request)
+        return httpx.Response(500, json={'error': {'message': 'offline', 'type': 'server_error'}})
+    async def enough():
+        return Decimal('100')
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(fail)) as client:
+            monkeypatch.setattr(llm, 'AsyncOpenAI', lambda **kwargs: real_client(**kwargs, http_client=client))
+            model = llm.create_model(settings(), session_factory=session_factory)
+            model.balance_reader = enough
+            with pytest.raises(ModelHTTPError):
+                await Agent(model, model_settings={'max_retries': 1}).run('查询')
+    asyncio.run(exercise())
+    assert len(requests) == 1
+    with session_factory() as session:
+        assert session.scalars(select(LLMUsage)).one().status == 'reserved'
