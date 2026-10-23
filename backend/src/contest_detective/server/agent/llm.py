@@ -36,13 +36,14 @@ class GuardedModel(WrapperModel):
         if size + 4096 > config.max_input_tokens:
             raise BizException('查证上下文过长，请缩小问题范围', code=400)
         call_id = self.budget.reserve()
-        try:
-            balance = await self.balance_reader()
-            if not balance.is_finite() or balance < config.balance_floor_cny:
-                raise ValueError('余额不足')
-        except Exception as exc:
-            self.budget.cancel_before_request(call_id)
-            raise BizException('模型余额不足或暂时无法确认余额', code=503) from exc
+        if config.limits_mode == 'local':
+            try:
+                balance = await self.balance_reader()
+                if not balance.is_finite() or balance < config.balance_floor_cny:
+                    raise ValueError('余额不足')
+            except Exception as exc:
+                self.budget.cancel_before_request(call_id)
+                raise BizException('模型余额不足或暂时无法确认余额', code=503) from exc
         # No retry here: once dispatched, failures retain the maximum liability.
         # Body overlays can replace messages or token caps; SDK retry overrides can
         # dispatch another paid request against the same reservation. Accept only
