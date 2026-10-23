@@ -131,3 +131,75 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
     assert any(source.url.startswith('https://events.waytoagi.com/events/') for source in evidence)
     assert any('devpost.com' in source.url for source in evidence)
     assert all(source.excerpt and source.value for source in evidence)
+
+
+def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes(session_factory):
+    from datetime import datetime, timezone
+    from functools import partial
+    from contest_detective.server.contest.service import get
+    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.server.research_pipeline.verification import verify_recent
+
+    initial = draft()
+    initial.claims.append(ClaimIn(field='registration_url', value='https://organizer.example/register',
+                                 excerpt='报名页 https://organizer.example/register'))
+
+    async def body(_url):
+        return '本届城市：上海'
+
+    async def extractor(url, text):
+        return ContestDraft(name=initial.name, page=PageIn(url=url, site='来源', title='赛事', is_official=False),
+            claims=[ClaimIn(field='city', value='上海', excerpt='城市：上海')])
+
+    verifier = partial(verify_recent, fetcher=body, now=datetime(2026, 12, 25, tzinfo=timezone.utc))
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
+        first = run_sync(session_factory, client=client, sources=[('fixture', lambda _: [initial])],
+                         extractor=extractor, discoveries=[], verifier=verifier)
+        second = run_sync(session_factory, client=client, sources=[('fixture', lambda _: [initial])],
+                          extractor=extractor, discoveries=[], verifier=verifier)
+    assert first.extraction_enabled is True
+    assert first.verified == 1
+    assert second.verified == 0
+    assert second.skipped == 1
+    with session_factory() as session:
+        items, total = query(session, ContestQuery())
+        assert total == 1
+        assert get(session, items[0].id).fields['city'].level == 'official'
+
+
+def test_sync_with_no_extractor_does_not_start_discovery(session_factory):
+    from contest_detective.server.research_pipeline.service import run_sync
+
+    async def forbidden(**kwargs):
+        raise AssertionError('未配置抽取器时不得读取详情或调用模型')
+
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
+        report = run_sync(session_factory, client=client, sources=[], discoveries=[('forbidden', forbidden)],
+                          verifier=forbidden)
+    assert report.extraction_enabled is False
+    assert report.saved == report.verified == report.failed == 0
+
+
+def test_application_passes_an_injected_extractor_to_background_sync(session_factory, monkeypatch):
+    from fastapi.testclient import TestClient
+    from contest_detective.web.bootstrap import app as bootstrap
+
+    received = []
+
+    async def extractor(url, text):
+        raise AssertionError('装配测试不应调用抽取器')
+
+    class Scheduler:
+        def shutdown(self, *, wait):
+            assert wait is True
+
+    def start(factory, interval, *, extractor=None):
+        received.append((factory.kw['bind'], interval, extractor))
+        return Scheduler()
+
+    monkeypatch.setattr(bootstrap, 'start_scheduler', start)
+    application = bootstrap.create_app(db_engine=session_factory.kw['bind'], sync_interval_minutes=360,
+                                       sync_extractor=extractor)
+    with TestClient(application) as client:
+        assert client.get('/health').json()['code'] == 200
+    assert received == [(session_factory.kw['bind'], 360, extractor)]

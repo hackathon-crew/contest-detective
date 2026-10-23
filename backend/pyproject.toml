@@ -25,7 +25,7 @@ dependencies = [
 
 [project.scripts]
 contest-detective = "contest_detective.web.bootstrap.app:main"
-contest-detective-sync = "contest_detective.server.research_pipeline.cli:main"
+contest-detective-sync = "contest_detective.web.bootstrap.source_sync:main"
 
 [build-system]
 requires = ["hatchling"]

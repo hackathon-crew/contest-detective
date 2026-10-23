@@ -13,16 +13,20 @@ from contest_detective.server.research_pipeline.scheduler import start_scheduler
 from contest_detective.common.result import Response
 from contest_detective.web.api import router
 from contest_detective.web.handler import register_exception_handlers
+from contest_detective.web.bootstrap.source_sync import configured_extractor
 
 
 def create_app(*, db_engine=None, async_session_factory=None,
-               sync_interval_minutes: int | None = None) -> FastAPI:
+               sync_interval_minutes: int | None = None, sync_extractor=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app):
         init_db(db_engine)
         factory = sessionmaker(bind=db_engine, expire_on_commit=False) if db_engine is not None else SessionLocal
         interval = sync_interval_minutes if sync_interval_minutes is not None else get_app_settings().sync_interval_minutes
-        scheduler = start_scheduler(factory, interval)
+        extractor = sync_extractor
+        if interval > 0 and extractor is None:
+            extractor = configured_extractor(factory)
+        scheduler = start_scheduler(factory, interval, extractor=extractor) if extractor is not None else start_scheduler(factory, interval)
         try:
             yield
         finally:
