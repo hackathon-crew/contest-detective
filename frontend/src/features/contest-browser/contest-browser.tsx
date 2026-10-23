@@ -48,7 +48,7 @@ export function ContestBrowser() {
         <Input
           type="search"
           aria-label="搜索赛事"
-          placeholder="赛事、城市或主题"
+          placeholder="搜索赛事名称"
           value={filters.keyword}
           className="w-full sm:col-span-3"
           onChange={(event) => void setFilters({ keyword: event.target.value, page: 1 })}

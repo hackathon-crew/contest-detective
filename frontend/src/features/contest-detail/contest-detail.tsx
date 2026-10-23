@@ -35,9 +35,9 @@ export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
                     <LevelBadge level={item?.level ?? 'not_found'} />
                   </dt>
                   <dd className="space-y-3 break-words text-sm">
-                    <p>
-                      {value ? (
-                        dateFields.includes(field) ? (
+                    {value && (
+                      <p>
+                        {dateFields.includes(field) ? (
                           formatDate(value)
                         ) : field === 'mode' ? (
                           (modeNames[value] ?? value)
@@ -52,11 +52,9 @@ export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
                           </a>
                         ) : (
                           value
-                        )
-                      ) : (
-                        '未找到'
-                      )}
-                    </p>
+                        )}
+                      </p>
+                    )}
                     {sources.length ? (
                       <ul className="space-y-3">
                         {sources.map((source, index) => (
