@@ -9,6 +9,7 @@ from pydantic_ai.models.function import FunctionModel
 
 from contest_detective.framework.db import SessionLocal
 from contest_detective.server.agent.loop import Investigator
+from contest_detective.server.user import service as users
 from contest_detective.web.api.agent import get_investigator
 from contest_detective.web.bootstrap.app import create_app
 
@@ -22,6 +23,8 @@ def respond(messages, info):
     question = next((part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart)), '')
     results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
     if not results:
+        if '适合' in question:
+            return ModelResponse([ToolCallPart('match_contests', {}, tool_call_id='match')])
         args = {}
         if '线上' in question:
             args['mode'] = 'online'
@@ -31,15 +34,20 @@ def respond(messages, info):
             args.update(date_from=saturday.isoformat(), date_to=(saturday + timedelta(days=2, seconds=-1)).isoformat())
         return ModelResponse([ToolCallPart('search_contests', args, tool_call_id='list')])
     result = results[-1]
-    if result.tool_name == 'search_contests':
+    if result.tool_name in {'search_contests', 'match_contests'}:
+        matched = result.tool_name == 'match_contests'
         items = result.content['items']
         if not items:
-            return ModelResponse([TextPart('比赛库中暂未找到符合条件的赛事。')])
-        return ModelResponse([ToolCallPart('get_contest', {'contest_id': items[0]['id']}, tool_call_id='detail')])
+            return ModelResponse([TextPart(result.content['summary'] if matched else '比赛库中暂未找到符合条件的赛事。')])
+        first = items[0]['contest'] if matched else items[0]
+        return ModelResponse([ToolCallPart('get_contest', {'contest_id': first['id']}, tool_call_id='detail')])
     detail = result.content.get('contest')
     if not detail:
         return ModelResponse([TextPart('比赛资料未找到。')])
     lines = [detail['name']]
+    matching = next((part for part in results if part.tool_name == 'match_contests'), None)
+    if matching and matching.content['items']:
+        lines.append(matching.content['items'][0]['reason'])
     for field, label in NAMES.items():
         value = detail['fields'].get(field, {})
         if value.get('value') and value.get('sources'):
@@ -53,6 +61,10 @@ def respond(messages, info):
 
 def create_fake_app(*, db_engine=None, session_factory=SessionLocal):
     app = create_app(db_engine=db_engine)
+    def profile_reader(user_id):
+        with session_factory() as session:
+            user = users.get(session, user_id)
+            return user.profile.model_dump(mode='json') if user else None
     app.dependency_overrides[get_investigator] = lambda: Investigator(
-        FunctionModel(respond), session_factory=session_factory)
+        FunctionModel(respond), session_factory=session_factory, profile_reader=profile_reader)
     return app

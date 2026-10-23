@@ -12,6 +12,7 @@ export type AskRequest = {
      * Question
      */
     question: string;
+    profile?: Profile | null;
 };
 
 /**

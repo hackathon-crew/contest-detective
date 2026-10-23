@@ -12,6 +12,8 @@ from pydantic_ai.models import Model
 
 from contest_detective.server.contest import service as contests
 from contest_detective.server.contest.schemas import ContestQuery
+from contest_detective.server.user.schemas import Profile
+from contest_detective.server.user import matching
 
 from .extraction import create_page_extractor
 from .schemas import ToolSource
@@ -38,6 +40,7 @@ class ToolDeps:
     fetch: Callable | None = None
     search: Callable | None = None
     record: Callable | None = None
+    profile: Profile | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
 
     def remember(self, sources):
@@ -72,6 +75,20 @@ def register_tools(agent: Agent, *, web_enabled: bool):
                    for value in item.fields.values() for source in value.sources}
         ctx.deps.remember(sources.values())
         return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': list(sources.values())}
+
+    @agent.tool
+    async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None) -> dict:
+        """按已确认画像筛选比赛并生成证据理由；不编造画像，赛事日期需再读 get_contest 出处。"""
+        selected = profile if profile is not None else ctx.deps.profile
+        if selected is None or not matching.has_preferences(selected):
+            return {'items': [], 'summary': '请先确认画像，再按你的情况挑比赛', 'sources': []}
+        with ctx.deps.session_factory() as session:
+            items = matching.match(session, selected)
+        sources = [{'title': repo.name, 'url': repo.url, 'site': 'GitHub'}
+                   for repo in selected.github_evidence if any(repo.url in item.reason for item in items)]
+        ctx.deps.remember(sources)
+        return {'items': [plain(item) for item in items], 'summary': f'按已确认画像找到 {len(items)} 场比赛',
+                'sources': sources}
 
     if web_enabled:
         @agent.tool

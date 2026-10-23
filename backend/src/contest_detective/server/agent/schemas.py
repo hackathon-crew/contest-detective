@@ -2,9 +2,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from contest_detective.server.user.schemas import Profile
+
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
+    profile: Profile | None = None
 
     @field_validator('question')
     @classmethod
