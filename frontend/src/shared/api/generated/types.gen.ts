@@ -15,6 +15,38 @@ export type AskRequest = {
 };
 
 /**
+ * Availability
+ */
+export type Availability = {
+    /**
+     * Weekdays
+     */
+    weekdays?: Array<number>;
+    /**
+     * Windows
+     */
+    windows?: Array<AvailabilityWindow>;
+    /**
+     * Max Consecutive Days
+     */
+    max_consecutive_days?: number | null;
+};
+
+/**
+ * AvailabilityWindow
+ */
+export type AvailabilityWindow = {
+    /**
+     * Start At
+     */
+    start_at: string;
+    /**
+     * End At
+     */
+    end_at: string;
+};
+
+/**
  * ContestDetail
  */
 export type ContestDetail = {
@@ -107,6 +139,42 @@ export type FieldValue = {
 };
 
 /**
+ * GitHubEvidence
+ */
+export type GitHubEvidence = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Language
+     */
+    language?: string | null;
+    /**
+     * Topics
+     */
+    topics?: Array<string>;
+    /**
+     * Pushed At
+     */
+    pushed_at?: string | null;
+};
+
+/**
+ * GitHubInput
+ */
+export type GitHubInput = {
+    /**
+     * Username
+     */
+    username: string;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -165,6 +233,21 @@ export type ListResponseContestSummary = {
 };
 
 /**
+ * MatchItem
+ */
+export type MatchItem = {
+    contest: ContestSummary;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Score
+     */
+    score: number;
+};
+
+/**
  * Profile
  */
 export type Profile = {
@@ -188,6 +271,33 @@ export type Profile = {
      * Github
      */
     github?: string | null;
+    /**
+     * Topics
+     */
+    topics?: Array<string>;
+    /**
+     * Preferred Modes
+     */
+    preferred_modes?: Array<'online' | 'offline' | 'hybrid'>;
+    /**
+     * Identity Kind
+     */
+    identity_kind?: 'student' | 'professional' | null;
+    availability?: Availability;
+    /**
+     * Github Evidence
+     */
+    github_evidence?: Array<GitHubEvidence>;
+    /**
+     * Language Repo Share
+     */
+    language_repo_share?: {
+        [key: string]: number;
+    };
+    /**
+     * Github Last Active At
+     */
+    github_last_active_at?: string | null;
 };
 
 /**
@@ -264,6 +374,34 @@ export type ResponseNoneType = {
 };
 
 /**
+ * Response[Profile]
+ */
+export type ResponseProfile = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: Profile | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[PublicUser]
  */
 export type ResponsePublicUser = {
@@ -311,6 +449,36 @@ export type ResponseUnionPublicUserNoneType = {
      * 业务数据
      */
     data?: PublicUser | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[list[MatchItem]]
+ */
+export type ResponseListMatchItem = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<MatchItem> | null;
     /**
      * Timestamp
      *
@@ -491,6 +659,86 @@ export type ConfirmProfileUserProfilePutResponses = {
 };
 
 export type ConfirmProfileUserProfilePutResponse = ConfirmProfileUserProfilePutResponses[keyof ConfirmProfileUserProfilePutResponses];
+
+export type GithubProfileProfileGithubPostData = {
+    body: GitHubInput;
+    path?: never;
+    query?: never;
+    url: '/profile/github';
+};
+
+export type GithubProfileProfileGithubPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GithubProfileProfileGithubPostError = GithubProfileProfileGithubPostErrors[keyof GithubProfileProfileGithubPostErrors];
+
+export type GithubProfileProfileGithubPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProfile;
+};
+
+export type GithubProfileProfileGithubPostResponse = GithubProfileProfileGithubPostResponses[keyof GithubProfileProfileGithubPostResponses];
+
+export type ResumeProfileProfileResumePostData = {
+    body: Blob | File;
+    path?: never;
+    query: {
+        /**
+         * Filename
+         */
+        filename: 'resume.pdf' | 'resume.docx' | 'resume.txt';
+    };
+    url: '/profile/resume';
+};
+
+export type ResumeProfileProfileResumePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResumeProfileProfileResumePostError = ResumeProfileProfileResumePostErrors[keyof ResumeProfileProfileResumePostErrors];
+
+export type ResumeProfileProfileResumePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProfile;
+};
+
+export type ResumeProfileProfileResumePostResponse = ResumeProfileProfileResumePostResponses[keyof ResumeProfileProfileResumePostResponses];
+
+export type MatchProfileMatchPostData = {
+    body: Profile;
+    path?: never;
+    query?: never;
+    url: '/match';
+};
+
+export type MatchProfileMatchPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MatchProfileMatchPostError = MatchProfileMatchPostErrors[keyof MatchProfileMatchPostErrors];
+
+export type MatchProfileMatchPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListMatchItem;
+};
+
+export type MatchProfileMatchPostResponse = MatchProfileMatchPostResponses[keyof MatchProfileMatchPostResponses];
 
 export type ListContestsContestsGetData = {
     body?: never;

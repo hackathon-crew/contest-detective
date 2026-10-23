@@ -155,6 +155,137 @@
         }
       }
     },
+    "/profile/github": {
+      "post": {
+        "summary": "Github Profile",
+        "operationId": "github_profile_profile_github_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GitHubInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_Profile_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile/resume": {
+      "post": {
+        "summary": "Resume Profile",
+        "operationId": "resume_profile_profile_resume_post",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "resume.pdf",
+                "resume.docx",
+                "resume.txt"
+              ],
+              "type": "string",
+              "title": "Filename"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_Profile_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/match": {
+      "post": {
+        "summary": "Match Profile",
+        "operationId": "match_profile_match_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Profile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_list_MatchItem__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/contests": {
       "get": {
         "summary": "List Contests",
@@ -418,6 +549,63 @@
         ],
         "title": "AskRequest"
       },
+      "Availability": {
+        "properties": {
+          "weekdays": {
+            "items": {
+              "type": "integer",
+              "maximum": 6.0,
+              "minimum": 0.0
+            },
+            "type": "array",
+            "maxItems": 7,
+            "title": "Weekdays"
+          },
+          "windows": {
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityWindow"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Windows"
+          },
+          "max_consecutive_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 30.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Consecutive Days"
+          }
+        },
+        "type": "object",
+        "title": "Availability"
+      },
+      "AvailabilityWindow": {
+        "properties": {
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_at",
+          "end_at"
+        ],
+        "title": "AvailabilityWindow"
+      },
       "ContestDetail": {
         "properties": {
           "id": {
@@ -613,6 +801,75 @@
         ],
         "title": "FieldValue"
       },
+      "GitHubEvidence": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.-]{1,100}$",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Url"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "topics": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Topics"
+          },
+          "pushed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pushed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "url"
+        ],
+        "title": "GitHubEvidence"
+      },
+      "GitHubInput": {
+        "properties": {
+          "username": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$",
+            "title": "Username"
+          }
+        },
+        "type": "object",
+        "required": [
+          "username"
+        ],
+        "title": "GitHubInput"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -685,19 +942,45 @@
         "type": "object",
         "title": "ListResponse[ContestSummary]"
       },
+      "MatchItem": {
+        "properties": {
+          "contest": {
+            "$ref": "#/components/schemas/ContestSummary"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contest",
+          "reason",
+          "score"
+        ],
+        "title": "MatchItem"
+      },
       "Profile": {
         "properties": {
           "skills": {
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
             },
             "type": "array",
+            "maxItems": 50,
             "title": "Skills"
           },
           "identity": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 500
               },
               {
                 "type": "null"
@@ -708,7 +991,8 @@
           "available_time": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 500
               },
               {
                 "type": "null"
@@ -719,7 +1003,9 @@
           "city": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
               },
               {
                 "type": "null"
@@ -730,13 +1016,89 @@
           "github": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"
               },
               {
                 "type": "null"
               }
             ],
             "title": "Github"
+          },
+          "topics": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Topics"
+          },
+          "preferred_modes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "online",
+                "offline",
+                "hybrid"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Preferred Modes"
+          },
+          "identity_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "student",
+                  "professional"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Kind"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/Availability"
+          },
+          "github_evidence": {
+            "items": {
+              "$ref": "#/components/schemas/GitHubEvidence"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Github Evidence"
+          },
+          "language_repo_share": {
+            "additionalProperties": {
+              "type": "number",
+              "maximum": 1.0,
+              "minimum": 0.0
+            },
+            "propertyNames": {
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 100,
+            "title": "Language Repo Share"
+          },
+          "github_last_active_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Last Active At"
           }
         },
         "type": "object",
@@ -842,6 +1204,48 @@
         "type": "object",
         "title": "Response[NoneType]"
       },
+      "Response_Profile_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Profile"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[Profile]"
+      },
       "Response_PublicUser_": {
         "properties": {
           "code": {
@@ -925,6 +1329,52 @@
         },
         "type": "object",
         "title": "Response[Union[PublicUser, NoneType]]"
+      },
+      "Response_list_MatchItem__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MatchItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[list[MatchItem]]"
       },
       "Source": {
         "properties": {
