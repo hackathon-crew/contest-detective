@@ -9,9 +9,11 @@ from .contests import router as contests_router
 from .agent import router as agent_router
 
 from .auth import router as auth_router
+from .profile import router as profile_router
 
 router = APIRouter()
 router.include_router(auth_router)
+router.include_router(profile_router)
 router.include_router(contests_router)
 router.include_router(agent_router)
 

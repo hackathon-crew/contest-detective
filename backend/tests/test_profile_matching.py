@@ -1,0 +1,98 @@
+from datetime import datetime, timezone
+
+import pytest
+from pydantic import ValidationError
+
+from contest_detective.server.contest import service
+from contest_detective.server.contest.schemas import ContestDraft
+from contest_detective.server.user.schemas import Profile
+
+NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
+
+
+def contest(session, name, *, mode='online', city='上海', start='2026-10-31T01:00:00Z',
+            end='2026-11-01T10:00:00Z', deadline='2026-10-30T15:59:59Z', summary='智能体应用赛道'):
+    claims = {'start_at': start, 'end_at': end, 'registration_deadline': deadline, 'mode': mode, 'city': city}
+    return service.save(session, ContestDraft(name=name, summary=summary,
+        page={'url': 'https://organizer.example/' + name, 'site': '报名页', 'title': name, 'is_official': True},
+        claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in claims.items()]))
+
+
+def student():
+    return Profile(skills=['TypeScript', 'Python'], topics=['agent', 'llm'], identity_kind='student',
+        city='北京', preferred_modes=['online'], availability={'weekdays': [5, 6], 'max_consecutive_days': 2},
+        github='octocat', github_evidence=[
+            {'name': f'agent-{n}', 'url': f'https://github.com/octocat/agent-{n}', 'language': 'Python', 'topics': ['agent']}
+            for n in range(3)])
+
+
+def test_weekend_student_matches_online_agent_track_with_repository_evidence(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    target = contest(session, '线上智能体周末')
+    results = matching.match(session, student())
+    assert [item.contest.id for item in results] == [target]
+    assert '3 个仓库' in results[0].reason
+    assert 'agent' in results[0].reason
+    assert 'https://github.com/octocat/agent-0' in results[0].reason
+    assert '线上' in results[0].reason
+    assert results[0].score > 0
+
+
+def test_professional_only_and_five_day_attendance_are_filtered(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    contest(session, '职场专场', summary='仅限职场开发者参加，智能体应用赛道')
+    contest(session, '五天驻场', mode='offline', city='北京', start='2026-10-26T01:00:00Z', end='2026-10-30T10:00:00Z', summary='需连续到场 5 天')
+    profile = student().model_copy(update={'preferred_modes': ['online', 'offline']})
+    assert matching.match(session, profile) == []
+
+
+def test_expired_wrong_city_wrong_mode_and_time_conflicts_are_filtered(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    contest(session, '已截止', deadline='2026-10-23T15:59:59Z')
+    contest(session, '异地线下', mode='offline', city='上海')
+    contest(session, '周一线上', start='2026-10-26T01:00:00Z', end='2026-10-26T10:00:00Z')
+    assert matching.match(session, student()) == []
+    profile = student().model_copy(update={'preferred_modes': ['online', 'offline']})
+    assert matching.match(session, profile) == []
+
+
+def test_keyword_overlap_ranks_relevant_contest_above_unrelated_contest(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    unrelated = contest(session, '硬件作品', summary='硬件电路和传感器')
+    relevant = contest(session, 'Python Agent应用', summary='Python 智能体应用')
+    results = matching.match(session, student())
+    assert [item.contest.id for item in results] == [relevant, unrelated]
+    assert results[0].score > results[1].score
+
+
+def test_empty_profile_and_unstructured_availability_are_not_claimed_personalized(session):
+    from contest_detective.server.user import matching
+    contest(session, '活动')
+    assert not matching.has_preferences(Profile())
+    assert not matching.has_preferences(Profile(github='octocat', available_time='周末'))
+    assert matching.match(session, Profile()) == []
+
+
+def test_explicit_availability_window_must_cover_the_whole_event(session, monkeypatch):
+    from contest_detective.server.user import matching
+    monkeypatch.setattr(matching, '_now', lambda: NOW)
+    contest(session, '周末活动')
+    profile = Profile(skills=['Python'], availability={'windows': [
+        {'start_at': '2026-10-31T00:00:00Z', 'end_at': '2026-10-31T11:00:00Z'}]})
+    assert matching.match(session, profile) == []
+
+
+def test_profile_rejects_unbounded_inputs_naive_windows_and_deceptive_repository_links():
+    for values in [
+        {'skills': ['python'] * 51},
+        {'github': '../users'},
+        {'availability': {'weekdays': [7]}},
+        {'availability': {'windows': [{'start_at': '2026-10-24T10:00', 'end_at': '2026-10-24T11:00'}]}},
+        {'github_evidence': [{'name': 'repo', 'url': 'https://github.com.evil.org/owner/repo', 'topics': []}]},
+    ]:
+        with pytest.raises(ValidationError):
+            Profile.model_validate(values)
