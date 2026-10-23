@@ -137,14 +137,15 @@ def test_optional_attendance_wording_does_not_create_a_requirement(session, monk
     assert [item.contest.id for item in matching.match(session, student())] == [target]
 
 
-def test_day_deadline_remains_eligible_through_its_civil_date(session, monkeypatch):
+@pytest.mark.parametrize('deadline_field', ['registration_deadline', 'submission_deadline', 'deadline_unspecified'])
+def test_day_deadline_remains_eligible_through_its_civil_date(session, monkeypatch, deadline_field):
     from contest_detective.server.user import matching
-    now = datetime(2026, 10, 24, 12, tzinfo=timezone.utc)
+    now = datetime(2026, 10, 27, 2, tzinfo=timezone.utc)
     monkeypatch.setattr(matching, '_now', lambda: now)
     monkeypatch.setattr(service, '_now', lambda: now)
-    target = contest(session, '今日截止', deadline='2026-10-24T00:00:00Z', precision={'registration_deadline': 'day'})
-    contest(session, '昨日截止', deadline='2026-10-23T00:00:00Z', precision={'registration_deadline': 'day'})
-    contest(session, '精确时刻已截止', deadline='2026-10-24T11:00:00Z')
+    target = contest(session, '今日截止', extra={deadline_field: '2026-10-27T00:00:00Z'}, precision={deadline_field: 'day'})
+    contest(session, '昨日截止', extra={deadline_field: '2026-10-26T00:00:00Z'}, precision={deadline_field: 'day'})
+    contest(session, '精确时刻已截止', extra={deadline_field: '2026-10-27T01:00:00Z'})
     assert [item.contest.id for item in matching.match(session, student())] == [target]
 
 
