@@ -11,6 +11,7 @@ class SearchSettings(BaseSettings):
     )
 
     yuanbao_api_key: SecretStr | None = None
+    tavily_api_key: SecretStr | None = None
 
 
 @lru_cache
