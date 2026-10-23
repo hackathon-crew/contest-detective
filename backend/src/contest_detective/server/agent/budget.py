@@ -71,17 +71,19 @@ class Budget:
             row = session.get(LLMUsage, call_id)
             if row is None or row.status == 'cancelled':
                 raise ValueError('费用预留不存在，无法结算')
-            if row.status == 'settled':
+            if row.status in {'settled', 'overrun'}:
                 if (row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens) != (hit, miss, output):
                     raise ValueError('同一请求不能重复结算为不同用量')
+                if row.status == 'overrun':
+                    raise ValueError('模型返回用量超出预留，停止后续调用')
                 return
+            row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens = hit, miss, output
             if cost > row.reserved_cny:
                 # Unexpected provider accounting must never turn a reservation into a smaller lie.
                 row.cost_cny, row.status = cost, 'overrun'
                 session.commit()
                 raise ValueError('模型返回用量超出预留，停止后续调用')
             row.cost_cny, row.status = cost, 'settled'
-            row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens = hit, miss, output
             session.commit()
 
 
