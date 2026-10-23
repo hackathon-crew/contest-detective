@@ -95,7 +95,7 @@ export function ContestCalendar({ followedIds }: { followedIds?: string[] }) {
         timeZone={TIME_ZONE}
         showOutsideDays={false}
         fixedWeeks
-        className="w-full rounded-2xl border border-rule bg-surface p-3"
+        className="w-full max-w-lg rounded-2xl border border-rule bg-surface p-3"
         classNames={{ root: 'w-full' }}
         components={components}
         labels={{
