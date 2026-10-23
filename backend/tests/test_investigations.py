@@ -253,8 +253,8 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
         }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '报名页面'}]))
         session.commit()
     recorded = []
-    async def record(url, *, extractor, session_factory, registration_url=None):
-        recorded.append((url, registration_url))
+    async def record(url, *, extractor, session_factory, registration_url=None, contest_id=None):
+        recorded.append((url, registration_url, contest_id))
         return None
     calls = 0
     def respond(_, info):
@@ -267,7 +267,7 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
         return ModelResponse([TextPart('未找到可写回的字段。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
-    assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register')]
+    assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register', contest_id)]
 
 
 def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_factory):
