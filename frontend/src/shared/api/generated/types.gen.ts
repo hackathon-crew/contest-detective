@@ -3,3 +3,358 @@
 export type ClientOptions = {
     baseUrl: `${string}://${string}` | (string & {});
 };
+
+/**
+ * AskRequest
+ */
+export type AskRequest = {
+    /**
+     * Question
+     */
+    question: string;
+};
+
+/**
+ * ContestDetail
+ */
+export type ContestDetail = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Cover Url
+     */
+    cover_url: string | null;
+    /**
+     * Status
+     */
+    status: 'upcoming' | 'ongoing' | 'ended';
+    /**
+     * Fields
+     */
+    fields: {
+        [key: string]: FieldValue;
+    };
+    /**
+     * Summary
+     */
+    summary: string | null;
+};
+
+/**
+ * ContestSummary
+ */
+export type ContestSummary = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Cover Url
+     */
+    cover_url: string | null;
+    /**
+     * Status
+     */
+    status: 'upcoming' | 'ongoing' | 'ended';
+    /**
+     * Fields
+     */
+    fields: {
+        [key: string]: FieldValue;
+    };
+};
+
+/**
+ * FieldValue
+ */
+export type FieldValue = {
+    /**
+     * Value
+     */
+    value: string | null;
+    /**
+     * Level
+     */
+    level: 'official' | 'reposted' | 'conflict' | 'not_found';
+    /**
+     * Sources
+     */
+    sources?: Array<Source>;
+};
+
+/**
+ * HTTPValidationError
+ */
+export type HttpValidationError = {
+    /**
+     * Detail
+     */
+    detail?: Array<ValidationError>;
+};
+
+/**
+ * ListResponse[ContestSummary]
+ */
+export type ListResponseContestSummary = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据列表
+     */
+    data?: Array<ContestSummary>;
+    /**
+     * Total
+     *
+     * 数据总数
+     */
+    total?: number;
+    /**
+     * Page
+     *
+     * 当前页码，从 1 开始
+     */
+    page?: number;
+    /**
+     * Page Size
+     *
+     * 每页条数；0 表示不分页
+     */
+    page_size?: number;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[ContestDetail]
+ */
+export type ResponseContestDetail = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: ContestDetail | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Source
+ */
+export type Source = {
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Site
+     */
+    site: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Published At
+     */
+    published_at?: string | null;
+    /**
+     * Is Official
+     */
+    is_official: boolean;
+    /**
+     * Value
+     */
+    value: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Stale
+     */
+    stale?: boolean;
+};
+
+/**
+ * ValidationError
+ */
+export type ValidationError = {
+    /**
+     * Location
+     */
+    loc: Array<string | number>;
+    /**
+     * Message
+     */
+    msg: string;
+    /**
+     * Error Type
+     */
+    type: string;
+    /**
+     * Input
+     */
+    input?: unknown;
+    /**
+     * Context
+     */
+    ctx?: {
+        [key: string]: unknown;
+    };
+};
+
+export type ListContestsContestsGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Keyword
+         */
+        keyword?: string | null;
+        /**
+         * Status
+         */
+        status?: 'upcoming' | 'ongoing' | 'ended' | null;
+        /**
+         * Mode
+         */
+        mode?: 'online' | 'offline' | 'hybrid' | null;
+        /**
+         * Date From
+         */
+        date_from?: string | null;
+        /**
+         * Date To
+         */
+        date_to?: string | null;
+        /**
+         * Ids
+         */
+        ids?: string | null;
+        /**
+         * Sort
+         */
+        sort?: 'deadline' | 'start';
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+    };
+    url: '/contests';
+};
+
+export type ListContestsContestsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ListContestsContestsGetError = ListContestsContestsGetErrors[keyof ListContestsContestsGetErrors];
+
+export type ListContestsContestsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ListResponseContestSummary;
+};
+
+export type ListContestsContestsGetResponse = ListContestsContestsGetResponses[keyof ListContestsContestsGetResponses];
+
+export type ContestDetailContestsContestIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Contest Id
+         */
+        contest_id: string;
+    };
+    query?: never;
+    url: '/contests/{contest_id}';
+};
+
+export type ContestDetailContestsContestIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ContestDetailContestsContestIdGetError = ContestDetailContestsContestIdGetErrors[keyof ContestDetailContestsContestIdGetErrors];
+
+export type ContestDetailContestsContestIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseContestDetail;
+};
+
+export type ContestDetailContestsContestIdGetResponse = ContestDetailContestsContestIdGetResponses[keyof ContestDetailContestsContestIdGetResponses];
+
+export type AskQuestionAgentAskPostData = {
+    body: AskRequest;
+    path?: never;
+    query?: never;
+    url: '/agent/ask';
+};
+
+export type AskQuestionAgentAskPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AskQuestionAgentAskPostError = AskQuestionAgentAskPostErrors[keyof AskQuestionAgentAskPostErrors];
+
+export type AskQuestionAgentAskPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
