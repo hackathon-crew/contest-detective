@@ -4,7 +4,11 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-ContestField = Literal['start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified', 'city', 'mode', 'prize', 'registration_url', 'organizer']
+ContestField = Literal[
+    'start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified',
+    'city', 'mode', 'prize', 'registration_url', 'organizer', 'venue', 'eligibility', 'team_size',
+    'entry_fee', 'entry_requirements', 'judging_criteria', 'past_statistics',
+]
 VerificationLevel = Literal['official', 'reposted', 'conflict', 'not_found']
 ContestStatus = Literal['upcoming', 'ongoing', 'ended']
 DATE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified')

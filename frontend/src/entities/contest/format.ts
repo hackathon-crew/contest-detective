@@ -9,6 +9,13 @@ export const fieldNames: Record<string, string> = {
   prize: '奖励',
   registration_url: '报名入口',
   organizer: '主办方',
+  venue: '具体地点',
+  eligibility: '参赛人群',
+  team_size: '组队人数',
+  entry_fee: '报名费用',
+  entry_requirements: '参赛门槛与到场要求',
+  judging_criteria: '评审规则',
+  past_statistics: '往届数据',
 }
 export const statusNames = { upcoming: '即将开始', ongoing: '进行中', ended: '已结束' }
 export const modeNames: Record<string, string> = { online: '线上', offline: '线下', hybrid: '混合' }
