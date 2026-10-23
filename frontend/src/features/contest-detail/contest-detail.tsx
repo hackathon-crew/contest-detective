@@ -1,43 +1,98 @@
-import { useEffect } from 'react'
-
+import ReactMarkdown from 'react-markdown'
+import {
+  dateFields,
+  fieldNames,
+  formatDate,
+  LevelBadge,
+  modeNames,
+  safeUrl,
+  useContest,
+} from '@/entities/contest'
+import { Dialog, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 export interface ContestDetailProps {
-  /** 地址里的赛事标识，详情按它向后端取这一场的全部字段和出处。 */
   contestId: string
   onClose: () => void
 }
-
-/** 赛事详情弹窗：每个关键字段的取值、核实等级和出处。 */
-export function ContestDetail({ onClose }: ContestDetailProps) {
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [onClose])
-
+export function ContestDetail({ contestId, onClose }: ContestDetailProps) {
+  const query = useContest(contestId)
   return (
-    <div className="fixed inset-0 z-20 grid place-items-center bg-scrim p-6" onClick={onClose}>
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contest-detail-title"
-        className="w-full max-w-2xl rounded-3xl bg-surface p-6"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex items-center justify-between gap-4">
-          <h2 id="contest-detail-title" className="text-2xl font-bold text-ink">
-            赛事详情
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="h-9 rounded-xl px-3 text-sm text-muted hover:bg-surface-strong"
-          >
-            关闭
-          </button>
-        </header>
-      </section>
-    </div>
+    <Dialog title={query.data?.name ?? '赛事详情'} onClose={onClose}>
+      {query.isPending ? (
+        <Skeleton />
+      ) : query.isError ? (
+        <ErrorState error={query.error} retry={() => void query.refetch()} />
+      ) : (
+        <div className="space-y-6">
+          <dl className="divide-y divide-rule">
+            {Object.entries(fieldNames).map(([field, label]) => {
+              const item = query.data.fields[field]
+              const value = item?.value
+              const sources = item?.sources ?? []
+              return (
+                <div key={field} className="py-4">
+                  <dt className="mb-2 flex items-center gap-3 text-sm font-semibold text-ink">
+                    {label}
+                    <LevelBadge level={item?.level ?? 'not_found'} />
+                  </dt>
+                  <dd className="space-y-3 break-words text-sm">
+                    <p>
+                      {value ? (
+                        dateFields.includes(field) ? (
+                          formatDate(value)
+                        ) : field === 'mode' ? (
+                          (modeNames[value] ?? value)
+                        ) : field === 'registration_url' && safeUrl(value) ? (
+                          <a
+                            href={safeUrl(value)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="underline underline-offset-4"
+                          >
+                            去报名
+                          </a>
+                        ) : (
+                          value
+                        )
+                      ) : (
+                        '未找到'
+                      )}
+                    </p>
+                    {sources.length ? (
+                      <ul className="space-y-3">
+                        {sources.map((source, index) => (
+                          <li
+                            key={`${source.url}-${index}`}
+                            className={`space-y-1 text-xs text-muted ${source.stale ? 'line-through' : ''}`}
+                          >
+                            <a
+                              href={safeUrl(source.url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="underline underline-offset-4"
+                            >
+                              {source.title || source.site}
+                            </a>
+                            <p>{source.excerpt}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : value ? (
+                      <EmptyState>没有可显示的出处。</EmptyState>
+                    ) : null}
+                  </dd>
+                </div>
+              )
+            })}
+          </dl>
+          {query.data.summary && (
+            <div className="space-y-3 break-words text-sm">
+              <ReactMarkdown urlTransform={(url) => safeUrl(url) ?? ''}>
+                {query.data.summary}
+              </ReactMarkdown>
+            </div>
+          )}
+        </div>
+      )}
+    </Dialog>
   )
 }
