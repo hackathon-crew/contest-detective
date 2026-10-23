@@ -1,0 +1,3704 @@
+{
+  "e_fa883cfcd9": {
+    "ok": true,
+    "event": {
+      "id": "e_fa883cfcd9",
+      "city": "北京",
+      "date": "2026-11-13",
+      "tags": [
+        "开源",
+        "AIGC",
+        "智能硬件",
+        "开发者大赛",
+        "创新赛"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/7f87fcae9a25c251.webp",
+      "title": "第四届开放原子大赛—2026开源行业解决方案创新赛",
+      "venue": "北京亦庄通明湖会议中心",
+      "agenda": [],
+      "guests": [],
+      "origin": "imported",
+      "status": "published",
+      "deadline": "2026-10-31T23:59",
+      "createdAt": "2026-09-02T10:44:46.241Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "updatedAt": "2026-09-21T07:55:42.142Z",
+      "createdVia": "feishu_bot",
+      "expertTags": [
+        "开源",
+        "AIGC/绘画",
+        "算力/基础设施"
+      ],
+      "description": "第四届开放原子大赛——2026开源行业解决方案创新赛正式开启报名。本次大赛旨在通过开源模式驱动行业创新，共设立三大核心赛道：开源基础软件、开源智能硬件以及 AIGC 视频创作。\n\n**招募对象**\n面向企业团队、高校、科研机构、开源社区及学生团队开放。支持个人或团队报名，每支团队人数上限为 8 人。先提交基础信息即可锁定报名席位。\n\n**奖项与权益**\n- **百万奖金池**：三个赛道独立评审并设奖，包含一、二、三等奖及新锐潜力奖。\n- **赛后转化**：获奖项目将优先纳入重点项目库，享受产业对接、技术验证、投融资沟通等全方位的赛后转化服务。\n\n**关键节点**\n- 报名截止：2026年10月31日\n- 总决赛：2026年11月13日，于北京亦庄通明湖会议中心举行。",
+      "organizerUid": "u_feishu_bot",
+      "externalRegUrl": "https://www.oschina.net/oa2026/",
+      "hideCompany": false,
+      "hideTitle": false,
+      "requireStudentVerification": false,
+      "coverWidth": 831,
+      "coverHeight": 623,
+      "timeStatus": "upcoming",
+      "regMode": "external",
+      "sourceUrl": "https://www.oschina.net/oa2026/",
+      "sourceTier": "unknown"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_68f515d808": {
+    "ok": true,
+    "event": {
+      "id": "e_68f515d808",
+      "city": "上海",
+      "date": "2026-10-30",
+      "tags": [
+        "黑客松",
+        "AI Agent",
+        "人工智能",
+        "创业",
+        "开发者",
+        "商业化"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/336af0b85996074b.jpg",
+      "title": "ClawHunt 上海黑客松",
+      "venue": "36 SPACE · 上海市徐汇区",
+      "agenda": [],
+      "guests": [],
+      "origin": "imported",
+      "status": "published",
+      "endDate": "2026-11-01",
+      "deadline": "2026-10-30T23:59",
+      "createdAt": "2026-10-01T03:42:25.781Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "updatedAt": "2026-10-01T07:50:11.231Z",
+      "createdVia": "feishu_bot",
+      "expertTags": [
+        "AI Agent",
+        "AI 创业/投资",
+        "AI 产品"
+      ],
+      "description": "ClawHunt 将黑客松带到上海！本次活动聚焦于一个核心追问：一项新的技术，怎样变成有人需要、愿意付费的产品？这正是 ClawHunt 一直在做的事，也是持续发起黑客松的原因。\n\n**关于 ClawHunt**\nClawHunt 是一个面向 AI Builder 的 Agent 赏金任务市场。我们连接真实需求、开发者与 Agent 能力，让任务能够被承接，让结果能够被交付、被验收。目前社区已聚集超过 5,000 名成员，并推出了面向真实工作交付的 AgentOS——AwwO，以及基于 Qwen 打造的开源工程 LoRA 模型。\n\n**活动核心：真实交付**\n在 ClawHunt，现场可运行的 Demo 是交付的底线。我们不仅关注技术实现，更关心项目在活动结束后的商业化路径。上海站将聚集开发者、产品团队、企业与产业伙伴，围绕真实问题，一起开发、验证、寻找合作，让有潜力的项目有机会走向下一轮验证。\n\n**活动亮点与支持**\n- **丰厚奖金**：价值 150w 的奖金池。\n- **流量曝光**：与抖音 AI 夜校合作，提供 10 万曝光流量池支持。\n- **媒体矩阵**：36氪专题报道，百视通、东方卫视、Me Group 等媒体现场记录 Builder 的创作故事。\n- **算力资源**：toklens、Tripo 等合作伙伴提供 Token 与算力支持。\n- **创业孵化**：火山引擎 V-START 创业加速器、AI 领航者计划提供投融资资源；获奖团队有机会进入 Google、AWS 的 startup 计划及头部孵化器创业营免试名额。",
+      "organizerUid": "u_feishu_bot",
+      "requireEmail": false,
+      "requireTitle": false,
+      "externalRegUrl": "https://clawhunt.store/",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": true,
+      "hideCompany": false,
+      "hideTitle": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1920,
+      "coverHeight": 1280,
+      "timeStatus": "upcoming",
+      "regMode": "external",
+      "sourceUrl": "https://mp.weixin.qq.com/s/gmskDxM3maIiezF7sY1KVA",
+      "sourceTier": "official"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_8a8b049738": {
+    "ok": true,
+    "event": {
+      "id": "e_8a8b049738",
+      "city": "上海",
+      "date": "2026-10-26",
+      "tags": [
+        "具身智能",
+        "大模型",
+        "机器人",
+        "黑客松",
+        "蚂蚁灵波",
+        "天池大赛"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/19a28898efe17614.jpg",
+      "title": "首届蚂蚁灵波具身大模型挑战赛 (Robbyant Embodied AI Challenge)",
+      "venue": "上海",
+      "agenda": [
+        {
+          "time": "即日起-10月26日",
+          "title": "线上初赛：RoboTwin 2.0 仿真任务"
+        },
+        {
+          "time": "11月13日-11月15日",
+          "title": "线下决赛：真机黑客马拉松（上海）"
+        }
+      ],
+      "guests": [
+        {
+          "name": "沈宇军",
+          "title": "蚂蚁灵波科技首席科学家"
+        },
+        {
+          "name": "黄用韬",
+          "title": "蚂蚁灵波科技首席数据科学家"
+        },
+        {
+          "name": "石洪竺",
+          "title": "魔搭社区运营负责人"
+        },
+        {
+          "name": "王宏强",
+          "title": "AMD AI 软件产品及开发者生态总监"
+        },
+        {
+          "name": "崔远征",
+          "title": "阿里云天池平台负责人"
+        }
+      ],
+      "origin": "imported",
+      "status": "published",
+      "deadline": "2026-10-26T23:59",
+      "createdAt": "2026-09-15T03:42:16.817Z",
+      "eventKind": "hackathon",
+      "eventMode": "hybrid",
+      "updatedAt": "2026-09-15T04:36:11.597Z",
+      "createdVia": "feishu_bot",
+      "expertTags": [
+        "具身智能/机器人",
+        "大模型/LLM",
+        "开源"
+      ],
+      "description": "首届蚂蚁灵波具身大模型挑战赛正式启动。本届大赛由蚂蚁灵波、魔搭社区和阿里云天池共同发起，面向全球企业、高校、个人开发者和技术爱好者开放，旨在探索具身智能算法与应用的无限可能。\n\n**技术基座与挑战任务**\n大赛以 LingBot-VLA 2.0 开源预训练模型为技术基座。比赛分为两个阶段：\n- **线上初赛**：参赛者需完成必做的 RoboTwin 2.0 仿真任务，同时提供可选的真机创新任务。\n- **线下决赛**：入围团队将前往上海参加为期三天的真机黑客马拉松。主办方将提供真实的机器人平台、数据集和算力支持，参赛者需在此基础上完成模型调优与真机部署。\n\n**赛程安排**\n- **报名及初赛**：即日起至 2026 年 10 月 26 日。\n- **线下决赛**：2026 年 11 月 13 日至 15 日。",
+      "organizerUid": "u_feishu_bot",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "蚂蚁灵波",
+      "externalRegUrl": "https://tianchi.aliyun.com/competition/entrance/532514",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": true,
+      "hideCompany": false,
+      "hideTitle": false,
+      "requireStudentVerification": false,
+      "coverWidth": 751,
+      "coverHeight": 481,
+      "timeStatus": "upcoming",
+      "regMode": "external",
+      "sourceUrl": "https://mp.weixin.qq.com/s/rTsi_aAZWN6wss7bBhSFaQ",
+      "sourceTier": "official"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_fae359c65d": {
+    "ok": true,
+    "event": {
+      "id": "e_fae359c65d",
+      "city": "湖北襄阳",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 湖北襄阳 · 襄阳人才大厦",
+      "venue": "襄阳人才大厦 · 湖北省襄阳市樊城区襄阳人才大厦",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": null,
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-22T12:10:48.065Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T12:10:48.065Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**襄阳人才大厦**\n\n湖北省襄阳市樊城区襄阳人才大厦\n\n日期：2026 年 10 月 25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_786da52430": {
+    "ok": true,
+    "event": {
+      "id": "e_786da52430",
+      "city": "深圳",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 深圳 · 国家文化对外贸易基地（出海中心）",
+      "venue": "国家文化对外贸易基地（出海中心） · 深圳市前海颐都大厦 5 楼（国家文化对外贸易基地出海中心）",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 120,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-20T05:40:48.407Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T08:44:04.754Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**国家文化对外贸易基地（出海中心）**\n\n深圳市前海颐都大厦 5 楼（国家文化对外贸易基地出海中心）\n\n日期：2026 年 10 月 25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 22.504344,
+      "lng": 113.891148
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_dda69ae498": {
+    "ok": true,
+    "event": {
+      "id": "e_dda69ae498",
+      "city": "福州",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/12b5e37538a3f37c.webp",
+      "title": "🌈1024超能Coding周末 · AI 切磋大会 · 福州",
+      "venue": "福AI夜校总校 · 福州市晋安区茶园街道洋下党群服务中心4层",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 60,
+      "deadline": "2026-10-25T11:00",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-19T09:03:13.925Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": false,
+      "updatedAt": "2026-10-23T08:16:24.972Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**福AI夜校总校**\n\n福州市晋安区茶园街道洋下党群服务中心4层\n\n日期：2026 年 10 月 25 日。活动时间：10:30—19:02\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": false,
+      "ticketTiers": [
+        {
+          "id": "tt_4b530b",
+          "name": "参赛者",
+          "price": 0,
+          "originalPrice": 50
+        },
+        {
+          "id": "tt_dcf289",
+          "name": "观众",
+          "price": 0,
+          "originalPrice": 30
+        }
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": true,
+      "organizerName": "WaytoAGI",
+      "requireCompany": true,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_0b1eab",
+          "type": "single",
+          "label": "意向参与赛道",
+          "options": [
+            "用餐",
+            "侦探",
+            "办公",
+            "短剧",
+            "游戏",
+            "OPC"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1672,
+      "coverHeight": 941,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 26.102591,
+      "lng": 119.318411
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_3e41ac848c": {
+    "ok": true,
+    "event": {
+      "id": "e_3e41ac848c",
+      "city": "无锡",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-17:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 无锡 · 无锡青少年活动中心4楼",
+      "venue": "无锡青少年活动中心4楼 · 无锡市梁溪区青年路9号无锡青少年活动中心4楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-15T05:45:37.412Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**无锡青少年活动中心4楼**\n\n无锡市梁溪区青年路9号无锡青少年活动中心4楼\n\n日期：2026 年 10 月 25 日。活动时间：10:00—17:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_1b4d362278": {
+    "ok": true,
+    "event": {
+      "id": "e_1b4d362278",
+      "city": "湖州",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 湖州 · 湖州市南浔区图书馆",
+      "venue": "湖州市南浔区图书馆 · 湖州市南浔区泰安路 699 号",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-15T05:45:37.412Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**湖州市南浔区图书馆**\n\n湖州市南浔区泰安路 699 号\n\n日期：2026 年 10 月 25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。本会场群二维码正在准备，报名后请关注本页「参与指引」的后续更新。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_c1593f1672": {
+    "ok": true,
+    "event": {
+      "id": "e_c1593f1672",
+      "city": "昆明",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 昆明 · 天度投资集团",
+      "venue": "天度投资集团 · 昆明市西山区西园南路36号 融城优郡A座写字楼8楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-13T13:50:41.610Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**天度投资集团**\n\n昆明市西山区西园南路36号 融城优郡A座写字楼8楼\n\n日期：2026 年 10 月 25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_14680bd112": {
+    "ok": true,
+    "event": {
+      "id": "e_14680bd112",
+      "city": "南京",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 南京 · 南京阿里中心T5-3楼湖畔报告厅",
+      "venue": "南京阿里中心T5-3楼湖畔报告厅 · 南京市建邺区永初路8号阿里中心T5-3楼湖畔报告厅",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 100,
+      "coverFit": "contain",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T07:03:21.848Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**南京阿里中心T5-3楼湖畔报告厅**\n\n南京市建邺区永初路8号阿里中心T5-3楼湖畔报告厅\n\n日期：2026 年 10 月 25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "venuePhotos": [
+        "https://cdn-waic.waytoagi.com/covers/341209fb611504a3.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_ac2065405f": {
+    "ok": true,
+    "event": {
+      "id": "e_ac2065405f",
+      "city": "湛江",
+      "date": "2026-10-25",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 湛江 · 融创空间（华盛新城店）",
+      "venue": "融创空间（华盛新城店） · 广东省湛江市赤坎区民主街道华盛新城二期融创空间(华盛新城店)",
+      "agenda": [],
+      "guests": [
+        {
+          "name": "何阳",
+          "title": "WayToAGI训练营教务负责人，安克黑客松冠军"
+        }
+      ],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:41.412Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T16:09:10.750Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**融创空间（华盛新城店）**\n\n广东省湛江市赤坎区民主街道华盛新城二期融创空间(华盛新城店)\n\n日期：2026年10月24日（周六）—25日（周日）\n10月24日，湛江本地不举办线下活动，但是鼓励选手收看当天社区线上直播，了解各赛道要求及奖励详情，并同步开始作品创作，湛江本地志愿者全程在线回答各位问题。\n10月25日，湛江本地线下活动早上10:30开始，参赛者可以来线下继续打磨作品，下午15:00-18:00 开始线下路演，选出本地前三。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 21.280734,
+      "lng": 110.375554
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_b973aa1628": {
+    "ok": true,
+    "event": {
+      "id": "e_b973aa1628",
+      "city": "天津",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 天津 · 南开天开园",
+      "venue": "南开天开园 · 南开区天开广场1-3号楼裙楼2层209会议室",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": null,
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-22T05:30:06.877Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T05:30:06.877Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**南开天开园**\n\n南开区天开广场1-3号楼裙楼2层209会议室\n\n日期：2026 年 10 月 24 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_e08d785aad": {
+    "ok": true,
+    "event": {
+      "id": "e_e08d785aad",
+      "city": "南昌",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 南昌 · 南昌大学",
+      "venue": "南昌大学 · 江西省南昌市红谷滩区学府大道999号南昌大学（前湖校区）",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 150,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-20T21:34:33.076Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": false,
+      "updatedAt": "2026-10-23T16:02:49.703Z",
+      "checkinKey": "632abb5b940864cc",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**南昌大学**\n\n江西省南昌市红谷滩区学府大道999号南昌大学（前湖校区）\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—19:02。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": false,
+      "agendaImages": [
+        "https://cdn-waic.waytoagi.com/covers/bd0adaee395bd11d.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 28.656317,
+      "lng": 115.801325
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_33fd81f5f8": {
+    "ok": true,
+    "event": {
+      "id": "e_33fd81f5f8",
+      "city": "临沂",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/43667129cb2b9494.webp",
+      "title": "AI 切磋大会 · 临沂 · 临沂职业学院经济开发区校区3楼J04-308",
+      "venue": "临沂职业学院经济开发区校区3楼J04-308",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "15762918151",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-20T06:31:23.941Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T15:36:23.168Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n临沂职业学院经济开发区校区3楼J04-308\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "contactQrUrl": "https://cdn-waic.waytoagi.com/covers/adad9d08434653c4.jpg",
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverFocal": {
+        "x": 0.0373,
+        "y": 0,
+        "w": 0.7508,
+        "h": 1
+      },
+      "coverWidth": 1671,
+      "coverHeight": 941,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 34.989105,
+      "lng": 118.423977
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_0541d6df09": {
+    "ok": true,
+    "event": {
+      "id": "e_0541d6df09",
+      "city": "信阳",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 信阳 · 信阳 AI 共创社",
+      "venue": "信阳 AI 共创社 · 信阳市平桥区新七大道与新十路交叉口中原银行信阳分行15楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-20T05:39:32.626Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T11:36:48.656Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**信阳 AI 共创社**\n\n信阳市平桥区新七大道与新十路交叉口中原银行信阳分行15楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:30—19:02。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 32.143441,
+      "lng": 114.088191
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_9a415a18f9": {
+    "ok": true,
+    "event": {
+      "id": "e_9a415a18f9",
+      "city": "邯郸",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 邯郸 · 邯郸科创产业园",
+      "venue": "邯郸科创产业园 · 丛台区邯郸经开区惠泽路与赵王大街西南角邯郸科创产业园7号楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 41,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-16T09:32:06.200Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T06:49:47.115Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**邯郸科创产业园**\n\n丛台区邯郸经开区惠泽路与赵王大街西南角邯郸科创产业园7号楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 36.681575,
+      "lng": 114.584875
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_258921f59d": {
+    "ok": true,
+    "event": {
+      "id": "e_258921f59d",
+      "city": "广州&佛山",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 广州&佛山 · 中山大学广州校区南校园岭南学院",
+      "venue": "中山大学广州校区南校园岭南学院叶葆定堂204",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 151,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-15T15:32:55.085Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T13:50:25.043Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n地点：中山大学广州校区南校园岭南学院叶葆定堂204\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。本会场群二维码正在准备，报名后请关注本页「参与指引」的后续更新。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 23.102318,
+      "lng": 113.300379
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_07ed88a02b": {
+    "ok": true,
+    "event": {
+      "id": "e_07ed88a02b",
+      "city": "南昌",
+      "date": "2026-10-24",
+      "tags": [
+        "AI切磋大会",
+        "黑客松",
+        "Super Coding Weekend",
+        "南昌",
+        "AI创作"
+      ],
+      "time": "10:30 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/da60d75e9d338190.jpg",
+      "title": "AI 切磋大会 · 南昌",
+      "venue": "南昌大学前湖校区",
+      "agenda": [],
+      "guests": [
+        {
+          "name": "AIven Yi",
+          "title": "AIGC艺术家"
+        }
+      ],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "Aivenyi",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "deadline": "2026-10-23T23:59",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-15T05:54:57.479Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": false,
+      "updatedAt": "2026-10-20T01:57:00.739Z",
+      "checkinKey": "6884198ec69dd479",
+      "createdVia": "host_ai",
+      "expertTags": [
+        "AI 编程",
+        "AI 产品",
+        "AI 创业/投资"
+      ],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n### 从想法到作品\n- **选择会场**：选择南昌会场，了解该场次的参与安排并完成报名。\n- **找到伙伴**：一起开工，每队最多 4 人。组队与线下参赛的截止时间以赛事规则为准。\n- **AI 创作**：用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n### 展示你的创作\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n### 参与提示\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在参与指引中查看本会场群二维码。",
+      "hideCompany": false,
+      "agendaImages": [
+        "https://cdn-waic.waytoagi.com/covers/efddd3260973e9d0.webp"
+      ],
+      "organizerUid": "u_41d2019438",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "Aiven Yi",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 28.656317,
+      "lng": 115.801325
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": true,
+    "my": null,
+    "isOwner": false
+  },
+  "e_6f02476e99": {
+    "ok": true,
+    "event": {
+      "id": "e_6f02476e99",
+      "city": "宁波",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 宁波 · NBOPC赋能中心多个伙伴AI OPC社区",
+      "venue": "NBOPC赋能中心多个伙伴AI OPC社区 · 宁波市高新区香溢软件园D幢212室",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-15T05:45:37.412Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**NBOPC赋能中心多个伙伴AI OPC社区**\n\n宁波市高新区香溢软件园D幢212室\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_88e6ff0295": {
+    "ok": true,
+    "event": {
+      "id": "e_88e6ff0295",
+      "city": "威海",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 19:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "1024 超能 Coding 周末·威海站",
+      "venue": "山东省威海市经区智慧谷 A2 国际人才港 1 楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-14T01:05:28.697Z",
+      "eventKind": "hackathon",
+      "eventMode": "hybrid",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T13:29:58.034Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 威海站怎么参加\n**2026 年 10 月 24 日线下共创，25 日线上开发、提交与评选。**\n- 线下：24 日 10:30—19:00，威海经区智慧谷 A2 国际人才港 1 楼，限 50 人；会场不过夜，25 日不安排线下会场。\n- 本地登记填写[飞书报名表](https://ocnt0hcng35v.feishu.cn/share/base/form/shrcnrkXox01kONpaSWAlIQDE4e)，通过表内二维码进群。\n- 正式参赛还需完成本页 Events 报名；登录[我的票券](https://events.waytoagi.com/me/tickets)打开威海场票码，到场扫码签到领手环。已完成对应入口的无需重复填写。\n- 每队 1—4 人，也可单人参赛。\n- 线下参赛报名 **24 日 15:00** 截止，此后不再发手环；组队 **25 日 12:00** 截止。跨城队伍选主城市并参加该城市评审，全员远程归线上赛区；线上及跨城队伍可在 25 日 15:00 封板前报名。\n单日线下仍有两天创作时间，提交截止与全国评审标准一致。\n\n## 六条赛道与交付\n- **用餐**：用麦当劳 MCP 做作品，Skill、Agent、网页、小程序、机器人等均可。交作品链接、GitHub 仓库或安装包，加使用说明或录屏；用 WorkBuddy 的另附 `workbuddy.md` 开发对话记录。仅同时参加麦当劳独立大赛才需按其要求建公开仓库并发报名 Issue，该赛事截止 25 日 23:59。\n- **办公**：整合至少 3 项日常任务的个人 AI 工作台。交可运行入口、≤3 分钟录屏及一句前后耗时对比，数据脱敏；用豆包工作的另交三句话人物卡和分享链接。\n- **短剧 / AI 短片**：≥3 分钟、16:9、≥1080p；主题选重启、平行世界、我的城市、AI 来了以后或 1024。交完整短片和 1 页创作说明，注明素材音乐来源；路演只放≤2 分钟精华。\n- **侦探**：以元宝搜索为核心，题材形式不限。交可访问作品及 3 次真实查询录屏或截图，带结果与可访问来源；进阶功能另附对应演示。\n- **OPC**：一个人加 AI 做出能对外服务的产品，附样例交付，讲清服务谁、怎么收费。\n- **游戏**：浏览器或手机能直接玩的链接，可从开始到重开完整玩一局，游戏内有操作提示；附主角卡展示创作输入、生成角色和游戏中的样子。\n\n每件作品选 1 条赛道，每人最多 2 条、各交不同作品。争夺全国对应赛道前三：用餐须用 WorkBuddy，办公须用豆包工作，侦探须用元宝搜索；其他工具作品仍可参加本地前三、人气奖和全国超能大奖。短片、游戏、OPC 不限工具。\n\n**侦探全国前三及 10 名优秀奖须公开分享：** 作品发到小红书或视频号，不限粉丝数，带 **#元宝搜索 #WaytoAGI #AI切磋大会 #1024超能Coding周末**，在提交页补分享链接。**作品 25 日 16:00 前交，分享链接可补至 23:59**；未分享仍可参评本地前三和 1024 超能大奖。\n\n## 24 日｜线下开题与开发\n- 10:30—11:00：签到、领手环、入座。\n- 11:00 起：全国连线开幕；按连线实际结束时间进入本地赛道介绍、选题组队及开发准备，随后午餐休息。\n- 14:00—18:00：共创开发与互助；15:00 后不发参赛手环。\n- 18:00—19:00：进度交流、合影，19:00 收工，说明次日线上安排。\n全国「超能夜航局」仍为 24 日 19:02—25 日 10:30，自愿参加。\n\n## 25 日｜线上提交与评选\n- 上午继续开发；**12:00 组队截止**。\n- 14:30 提交提醒；**15:00 封板，停止开发；16:00 前提交作品**。\n- 16:00—17:00 威海线上展示与评审，每队约 3 分钟；由威海本地组织，评委与本地会议入口待确认；也可由评委直接查看作品评分。\n- 17:00—17:30 评分和人气投票：**选手每人 3 票、不投本队；观众每人 5 票**，没有观众则选手互投。\n- 17:30 起全国连线展示与闭幕，随后群内公布本地奖项，威海 19:00 收工。\n- **19:00 OpenDev 算力统一回收；23:59 前补侦探专项奖公开分享链接**，不延长作品提交时间。\n[赛事官网](https://1024.waytoagi.com)已可访问，组队与福利 24 日 10:30 开放；组队、领福利、交作品都在这里。\n\n## 提交与评选\n填写作品名称、一句话介绍、链接或文件、赛道和工具；队名、成员、主城市沿用报名信息。通用表单的录屏及社媒链接为选填，但各赛道规定材料仍须提交。不用另交测试表、访谈记录等过程证明，提交前确认作品可用。\n\n作品默认公开展示，提交即同意官方《作品展示与使用须知》：版权归作者或团队；主办方及所参加赛道赞助方可按须知免费、非独家地使用作品信息、截图和录屏等作署名宣传、案例展示，其他商业开发另行联系。开源、模板、已有项目注明来源及本次新增内容；体验账号填「仅评委可见」栏，勿写公开介绍。完整条款见下方选手手册第六节。\n\n本地前三不分赛道，评分权重为完成度与可用性 30%、创意 25%、场景价值 25%、展示 20%；各项 0—10 分，折算百分制后取评委平均。同分先比完成度再合议，利益相关评委回避。另设在地人气奖；本地前三推荐全国评审，沿用 25 日按时提交作品，无需重报补件。\n\n全国超能大奖：10240 元现金＋等值 10240 元永久算力＋奖杯；六赛道前三现金各 3072 / 2048 / 1024 元，11 月 1 日全国颁奖直播。以上为全国奖项，非威海本地奖金承诺。全国赞助总价值超 400 万元含现金、实物及工具算力等，不等于现金奖池。\n\n## 工具福利（10 月 23 日核对）\n**Toklens、OpenDev 均于 24 日 10:30 开领**，在赛事站右上角「我的福利」按指引领取，名额及有效期以页面为准。\n- **Toklens**：所有选手可领，共 2000 份，每份约 1000 元算力，先到先得，兑换后 3 天有效。\n- **OpenDev**：短片、游戏、OPC 合计 900 份，每人 300 美元（约 2130 元），**25 日 19:00 回收**。每人一份，领取时填写选题并锁定一条赛道，不能改、作品须交该赛道；登记邮箱与 OpenDev 注册邮箱一致。三赛道全国前三另获对应等值永久算力。\n- **侦探**：腾讯云须实名且不欠费；元宝搜索每月免费 2000 次，填活动邀请码升至 6000 次，超额按量扣费，避免循环调用。全国前三另有 MacBook Air、iPhone 16 Pro、AirPods Pro 2，10 名优秀奖各 500 元京东卡。\n- **办公**：全国前三另获 Anker 耳机；豆包工作会员福利为赛后选出 300 个作品，选手先自行开通再交资料报销。\n- **用餐**：前 300 件合格 WorkBuddy 作品，提交工具选 WorkBuddy，成功后每件发 1000 积分＋中薯免单券；全国前三每队另有 4000 积分及麦当劳奖品。22.9 元套餐是优惠权益，非免费供餐。\n\n## 到场前准备\n自带电脑、充电器和合法创作素材，提前登录工具；餐食自理，可点外卖。提前注册 [Toklens](https://toklens.ai/zh) 并验证邮箱；短片/游戏/OPC 选手在 [OpenDev](https://accounts.opendev.group/) 注册或登录，与报名和福利登记邮箱一致。用餐选手提前在[麦当劳 MCP 入口](https://open.mcd.cn/mcp)登录申请 Token 并接入工具；侦探选手注册腾讯云并实名。报名后进群关注工具准备、线上会议、提交及评选通知。公开介绍勿放密码或私人联系方式。\n\n[选手手册](https://waytoagi.feishu.cn/wiki/Ht49w6i3kipT0Vk61H3cmUxtnJg) · [评选标准](https://waytoagi.feishu.cn/wiki/SvBBwHIw5iR3FxkcwomcmP6enhb) · [官方活动与赛道规则](https://waytoagi.feishu.cn/wiki/KQxYwyUHvimATZkc1hIcvyjQnkf)\n\n\nOpenDev：[活动接入](https://credits.openai-next.com/join/waytoagi1024coding) · [账号注册登录指南](https://credits.openai-next.com/guide/opendev) · [算力与工具手册](https://credits.openai-next.com/guide/handbook)。新用户点 Sign up，老用户用原邮箱；验证码查垃圾箱。先在「我的福利」登记再接入，未找到邀请可稍后重试；注册成功不等于额度到账。\n\n[赞助福利介绍](https://mp.weixin.qq.com/s/yiWM5OPTf-aGfcoK1dhtkg) · [元宝搜索侦探](https://mp.weixin.qq.com/s/4i4hQB0oX3ED6PVwGwSC2w)\n",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 37.420475,
+      "lng": 122.173975
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_1e87e162f1": {
+    "ok": true,
+    "event": {
+      "id": "e_1e87e162f1",
+      "city": "徐州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 徐州 · 矿大科技园",
+      "venue": "矿大科技园 · 中国矿业大学国家大学科技园C6 -9层",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "stupid-bai",
+      "capacity": 60,
+      "coverFit": "contain",
+      "deadline": "2026-10-24T00:00",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T14:55:18.988Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T13:15:00.655Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**矿大科技园**\n\n中国矿业大学国家大学科技园C6 -9层\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "venuePhotos": [
+        "https://cdn-waic.waytoagi.com/covers/3759be45dc8ab8bd.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 34.227625,
+      "lng": 117.201075
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": true,
+    "my": null,
+    "isOwner": false
+  },
+  "e_e7d343bdea": {
+    "ok": true,
+    "event": {
+      "id": "e_e7d343bdea",
+      "city": "乌鲁木齐",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 19:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a08a80bc9825e231.webp",
+      "title": "AI 切磋大会 ·  乌鲁木齐 ·  新疆软件园创智大厦A座党群服务中心",
+      "venue": "乌鲁木齐市新疆软件园创智大厦A座一楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "【王】18599185622",
+      "capacity": 80,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T14:10:07.488Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": false,
+      "updatedAt": "2026-10-23T13:13:52.878Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 打开脑洞，把「我想做」变成「我做的」\n\nAI 切磋大会 · 1024超能 Coding黑客松，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 活动地点\n\n乌鲁木齐市新疆软件园创智大厦A座一楼\n\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": false,
+      "agendaImages": [
+        "https://cdn-waic.waytoagi.com/covers/e80351956c3c9cf5.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "🤝 你准备怎样参与？",
+          "options": [
+            "👤 一个人来 希望现场找到队友",
+            "🛠️ 一个人来 计划独立完成作品",
+            "👥 已有队伍 还想招募伙伴",
+            "✅ 队伍已齐 一起来创作"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_c3c707",
+          "type": "multi",
+          "label": "💡 你最感兴趣的创作方向是？",
+          "options": [
+            "🍔 用餐创意开发",
+            "💼 办公提效工具",
+            "🎬 故事短片短剧",
+            "🔍 信息查证工具",
+            "🏢 OPC产品创作",
+            "🎮 趣味互动游戏",
+            "🎲 还没想好希望现场碰撞灵感"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_8f8905",
+          "type": "multi",
+          "label": "🧩 你在团队更加擅长什么？",
+          "options": [
+            "💡 创意策划与需求梳理",
+            "💻 编程开发与AI工具搭建",
+            "🎨 图片与视觉或界面设计",
+            "🎬 视频音乐或文案创作",
+            "🔎 作品测试与体验反馈",
+            "🎤 展示讲解与组织协作",
+            "🌱 暂无明确分工但愿意动手尝试"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_10a4c4",
+          "type": "single",
+          "label": "🌱 你目前使用AI的经验是？",
+          "options": [
+            "🌱 刚起步：还没怎么用过或主要用于聊天问答",
+            "🌿 尝试过：用过图片视频或编程工具但还没完成作品",
+            "🌳 做出过：已借助AI完成可以展示或使用的小作品",
+            "🚀 有项目经验：能完成较完整的作品并帮助队友解决问题"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_5ae5b3",
+          "type": "text",
+          "label": "💬 有什么想提前告诉我们？",
+          "required": false
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1672,
+      "coverHeight": 941,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 43.846049,
+      "lng": 87.481769
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_f76be7a244": {
+    "ok": true,
+    "event": {
+      "id": "e_f76be7a244",
+      "city": "武汉",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 武汉 · 鄂港澳青创园",
+      "venue": "鄂港澳青创园 · 鄂港澳青创园5楼报告厅（湖北省武汉市武昌区解放路与张之洞路交叉口武汉文创大厦5层）",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 60,
+      "coverFit": "contain",
+      "geoLevel": null,
+      "createdAt": "2026-10-13T13:19:57.638Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": null,
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T15:04:26.892Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**鄂港澳青创园**\n\n鄂港澳青创园5楼报告厅（湖北省武汉市武昌区解放路与张之洞路交叉口武汉文创大厦5层）\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_05e795d8af": {
+    "ok": true,
+    "event": {
+      "id": "e_05e795d8af",
+      "city": "郑州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 郑州 · 郑州圆方集团",
+      "venue": "郑州圆方集团 · 文德路鼎盛街交叉口",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 100,
+      "coverFit": "contain",
+      "geoLevel": null,
+      "createdAt": "2026-10-13T13:19:57.638Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": null,
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T16:01:07.883Z",
+      "checkinKey": "94bea4b30ddbffff",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**郑州圆方集团**\n\n文德路鼎盛街交叉口\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_e163c9d656": {
+    "ok": true,
+    "event": {
+      "id": "e_e163c9d656",
+      "city": "上海",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 上海 · 上海京东MALL七宝店",
+      "venue": "上海京东MALL七宝店 · 中国上海市闵行区漕宝路3459号京东MALL",
+      "agenda": [],
+      "guests": [
+        {
+          "name": "张黎明",
+          "title": "HP AI Solution PM"
+        },
+        {
+          "name": "John Li",
+          "title": "OpenDev CSO / Chief Strategy & Scientific Officer ALPHA TECHNOLOGY GROUP LIMITED独立董事 美国国家自然科学基金会·会士（"
+        },
+        {
+          "name": "Jack Stone",
+          "title": "OpenDev CPO / Chief People & Partnership Officer  心理学作家 / 心理解梦疗法创始人 / AI解梦产品梦晓记 Founder"
+        },
+        {
+          "name": "Ella Chen",
+          "title": "OpenDev CRO / Chief Relationship & Regulatory Officer X Odyssey Founder / 吾道CMO"
+        },
+        {
+          "name": "阿玺",
+          "title": "华夏荣耀传媒创意总监"
+        },
+        {
+          "name": "Eason",
+          "title": "AI应用专家"
+        }
+      ],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 99,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T13:19:57.638Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T01:38:14.117Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**上海京东MALL七宝店**\n\n中国上海市闵行区漕宝路3459号京东MALL\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "agendaImages": [
+        "https://cdn-waic.waytoagi.com/covers/8debadfc8ee51991.webp",
+        "https://cdn-waic.waytoagi.com/covers/b008bffd650b5b57.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 31.156118,
+      "lng": 121.349752
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_cd64141116": {
+    "ok": true,
+    "event": {
+      "id": "e_cd64141116",
+      "city": "西安",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/334c7c9334a01d10.webp",
+      "title": "AI 切磋大会 · 西安 · 京东Mall西安曲江电竞区",
+      "venue": "京东Mall西安曲江电竞区 · 雁塔区曲江路618号京东Mall曲江电竞区一楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "maer373901",
+      "endDate": "2026-10-25",
+      "capacity": 81,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T13:19:57.638Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T06:59:52.076Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**京东Mall西安曲江电竞区**\n\n雁塔区曲江路618号京东Mall曲江电竞区一楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—19:02。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "venuePhotos": [
+        "https://cdn-waic.waytoagi.com/covers/39e9fc0787bea5c6.webp",
+        "https://cdn-waic.waytoagi.com/covers/f4dba5df3dbf7c5f.webp",
+        "https://cdn-waic.waytoagi.com/covers/9b9c6e885034878f.webp"
+      ],
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_ab1eb7",
+          "type": "multi",
+          "label": "倾向参与的赛道",
+          "options": [
+            "🍔 用餐创意开发",
+            "💼 办公提效工具",
+            "🎬 短剧三集追更",
+            "🔍 侦探查证工具",
+            "🏢 OPC超级个体",
+            "🎮 AI小游戏",
+            "🤷 还没想好",
+            "现场感受后再定"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_0d7a3e",
+          "type": "single",
+          "label": "你的主要技能背景",
+          "options": [
+            "代码/程序开发",
+            "内容创作/AI视频/美术设计",
+            "策划/产品经理/运营",
+            "高校学生（无明确专业方向）",
+            "其他/跨领域斜杠青年"
+          ],
+          "required": true
+        },
+        {
+          "id": "q_c9c764",
+          "type": "single",
+          "label": "你对AI工具的使用熟练度",
+          "options": [
+            "纯小白：只用过AI对话",
+            "没做过完整作品",
+            "初级：用过提示词/生图/生视频工具",
+            "做过一些小作品",
+            "中级：能独立完成AI应用/Agent/短片 有完整作品集",
+            "高级：参加过类似黑客松具备带队或大型项目经验"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1672,
+      "coverHeight": 941,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 34.206073,
+      "lng": 108.99759
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_743767c31b": {
+    "ok": true,
+    "event": {
+      "id": "e_743767c31b",
+      "city": "重庆",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 重庆 · 1024超能Coding周末",
+      "venue": "两江新区数字经济产业园一期4栋一楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 100,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T13:32:52.697Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**两江新区数字经济产业园一期4栋一楼**\n\n两江新区数字经济产业园一期4栋一楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 29.621463,
+      "lng": 106.492101
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_13e22f7200": {
+    "ok": true,
+    "event": {
+      "id": "e_13e22f7200",
+      "city": "成都",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 成都 · WaytoAGI 科梦OPC 社区",
+      "venue": "WaytoAGI 科梦OPC 社区 · WaytoAGI科梦OPC社区1楼路演厅",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 100,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-20T05:12:56.283Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**WaytoAGI 科梦OPC 社区**\n\nWaytoAGI科梦OPC社区1楼路演厅\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 30.594035,
+      "lng": 104.084505
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_c496af218c": {
+    "ok": true,
+    "event": {
+      "id": "e_c496af218c",
+      "city": "常州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 常州 · 常州市人工智能行业协会",
+      "venue": "常州市人工智能行业协会 · 武进区常武中路创研港4号楼16层",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**常州市人工智能行业协会**\n\n武进区常武中路创研港4号楼16层\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_6fbeae72ac": {
+    "ok": true,
+    "event": {
+      "id": "e_6fbeae72ac",
+      "city": "贵阳",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 贵阳 · 贵阳人工智能协会",
+      "venue": "贵阳市人工智能协会 · 观山湖区摩根中心A座6楼G+OPC 社区",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "微信：hx99fkf",
+      "endDate": "2026-10-25",
+      "capacity": 70,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-13T09:14:47.090Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T06:29:44.474Z",
+      "createdVia": "seed",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**贵阳市人工智能协会**\n\n贵阳观山湖区摩根中心A座6楼 G+OPC 社区\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "contactQrUrl": "https://cdn-waic.waytoagi.com/covers/4b6d3a72bc62a178.png",
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI&贵阳市人工智能协会",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 26.644506,
+      "lng": 106.621625,
+      "nextStep": {
+        "text": "报名已通过。请扫码加入本会场群，查看后续安排。",
+        "qrUrl": "https://cdn-waic.waytoagi.com/next-step/qiecuo-6a1690f80efa14dcc8b265539d2345c471fe2e356aad210b5dbbb58fe8bb3f3d.jpg",
+        "visibility": "public"
+      }
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_c978ffc465": {
+    "ok": true,
+    "event": {
+      "id": "e_c978ffc465",
+      "city": "北京",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 北京 · 京东Mall（北京南三环）5F",
+      "venue": "京东Mall（北京南三环）5F · 北京南三环京东Mall 5F",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 240,
+      "coverFit": "contain",
+      "geoLevel": null,
+      "createdAt": "2026-10-12T14:06:45.050Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": null,
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T05:50:23.841Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**京东Mall（北京南三环）5F**\n\n北京南三环京东Mall 5F\n\n北京亦庄与北京朝阳合并为这一个会场，参赛选手加入同一个群即可。\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名通过后可在本页「参与指引」查看北京统一参赛群二维码；原北京亦庄与北京朝阳的选手加入同一个群即可。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_fa61f7a70b": {
+    "ok": true,
+    "event": {
+      "id": "e_fa61f7a70b",
+      "city": "雄安",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 雄安 · OPC社区",
+      "venue": "京雄技能人才培训基地",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 88,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:44.413Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T13:07:00.726Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**雄安OPC社区**\n\n地址待定\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 39.067123,
+      "lng": 115.93552
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_0c158153da": {
+    "ok": true,
+    "event": {
+      "id": "e_0c158153da",
+      "city": "台州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 台州 · 心海OPC社区（心海国际跨境电商园）",
+      "venue": "心海OPC社区（心海国际跨境电商园） · 浙江省台州市椒江区洪家街道银泰路89号心海国际跨境电商园",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:44.082Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-16T09:50:22.434Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**心海OPC社区（心海国际跨境电商园）**\n\n浙江省台州市椒江区洪家街道银泰路89号心海国际跨境电商园\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 28.621225,
+      "lng": 121.395775
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_81a2c4916d": {
+    "ok": true,
+    "event": {
+      "id": "e_81a2c4916d",
+      "city": "平顶山",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 平顶山 · 平顶山数字产业创新基地",
+      "venue": "平顶山数字产业创新基地 · 一楼报告厅",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:43.496Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "auto",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T11:27:33.597Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**平顶山数字产业创新基地**\n\n一楼报告厅\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 33.761084,
+      "lng": 113.267101
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_ce3e54f9cb": {
+    "ok": true,
+    "event": {
+      "id": "e_ce3e54f9cb",
+      "city": "杭州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 杭州·未来数智港",
+      "venue": "杭州上城区未来数智",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:43.141Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T02:35:37.340Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**杭州云谷中心**\n\n杭州市西湖区灯彩街1009号云谷中心B1-2F【暂定】\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 30.287306,
+      "lng": 120.2117
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_0b5e96a1a8": {
+    "ok": true,
+    "event": {
+      "id": "e_0b5e96a1a8",
+      "city": "沈阳",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 沈阳 · 沈阳国际软件园",
+      "venue": "沈阳国际软件园 · D09一层会议",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": null,
+      "createdAt": "2026-10-12T14:06:42.830Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": null,
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**沈阳国际软件园**\n\n沈阳国际软件园 · D09一层会议\n\n日期：2026 年 10 月 24—25 日。各会场的单日、双日安排分别展示，请留意所选场次。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_8cc3129d78": {
+    "ok": true,
+    "event": {
+      "id": "e_8cc3129d78",
+      "city": "杭州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 杭州 · 杭州东站旁未来数智港",
+      "venue": "杭州东站旁未来数智港1楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 70,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:42.665Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T11:15:03.586Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**杭州东站旁未来数智港**\n\n杭州东站旁未来数智港\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 30.287306,
+      "lng": 120.2117
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_1cdacb5f27": {
+    "ok": true,
+    "event": {
+      "id": "e_1cdacb5f27",
+      "city": "哈尔滨",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 哈尔滨 · 云飞扬OPC社区",
+      "venue": "云飞扬OPC社区 · 黑龙江省哈尔滨市松北区中源大道16000号六楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-12T14:06:42.310Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**云飞扬OPC社区**\n\n黑龙江省哈尔滨市松北区中源大道16000号六楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_22ad0bf3cc": {
+    "ok": true,
+    "event": {
+      "id": "e_22ad0bf3cc",
+      "city": "大连",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 大连 · 海外学子创业园 A 座",
+      "venue": "海外学子创业园 A 座 · 海外学子创业园 A 座2楼",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 55,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:41.689Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T16:44:16.036Z",
+      "checkinKey": "c2c233277c6e3bdd",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**海外学子创业园 A 座**\n\n海外学子创业园 A 座2楼\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 38.859277,
+      "lng": 121.527769
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_bbf09b05e0": {
+    "ok": true,
+    "event": {
+      "id": "e_bbf09b05e0",
+      "city": "厦门",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/6f09df2baeba9bc6.webp",
+      "title": "AI 切磋大会 · 厦门 · 思明区台北路1-7号123室",
+      "venue": "厦门市思明区汽车之家空间",
+      "agenda": [],
+      "guests": [
+        {
+          "name": "郭金",
+          "title": "虫二洞工作室合伙人、项目内容主管"
+        },
+        {
+          "name": "杨如许",
+          "title": "厦门大学AIGC影视创作学社CEO"
+        }
+      ],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "BingYuzai_",
+      "endDate": "2026-10-25",
+      "capacity": 120,
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:41.081Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": false,
+      "updatedAt": "2026-10-22T08:56:49.822Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**厦门市思明区台北路1-7号123室**\n\n厦门市思明区台北路1-7号123室\n深琮（厦门）人工智能有限公司\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": false,
+      "contactQrUrl": "https://cdn-waic.waytoagi.com/covers/f9afb16107a08580.jpg",
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）",
+            "企业观众",
+            "普通观众"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 2000,
+      "coverHeight": 1128,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 24.49363,
+      "lng": 118.191563
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_f45d47c9ac": {
+    "ok": true,
+    "event": {
+      "id": "e_f45d47c9ac",
+      "city": "济南",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 济南 · 齐鲁软件园 A 座",
+      "venue": "齐鲁软件园 A 座 · 山东省济南市历下区新泺大街1766号",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-12T14:06:40.795Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**齐鲁软件园 A 座**\n\n山东省济南市历下区新泺大街1766号\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_0d6fc771c0": {
+    "ok": true,
+    "event": {
+      "id": "e_0d6fc771c0",
+      "city": "长春",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 长春 · waytoAgi社区",
+      "venue": "waytoAgi社区 · 长春朝阳区光谷大街新大光谷里6号楼9楼908",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "createdAt": "2026-10-12T14:06:40.576Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**waytoAgi社区**\n\n长春朝阳区光谷大街新大光谷里6号楼9楼908\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_dcda0e9c35": {
+    "ok": true,
+    "event": {
+      "id": "e_dcda0e9c35",
+      "city": "长沙",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 长沙 · 长沙人才会客厅",
+      "venue": "长沙人才会客厅 · 湖南省长沙市芙蓉区荷花园街道东二环一段1139号湖南国际商务中心F1层",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:06:40.204Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-23T16:00:21.380Z",
+      "checkinKey": "43a322af4723c2be",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**长沙人才会客厅**\n\n湖南省长沙市芙蓉区荷花园街道东二环一段1139号湖南国际商务中心F1层\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 28.194523,
+      "lng": 113.017385
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_00ef43567b": {
+    "ok": true,
+    "event": {
+      "id": "e_00ef43567b",
+      "city": "中山",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 中山 · 中山科技创新园",
+      "venue": "中山科技创新园 · 工1",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "capacity": 50,
+      "coverFit": "contain",
+      "geoLevel": "venue",
+      "createdAt": "2026-10-12T14:06:39.991Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-19T14:09:09.849Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**中山科技创新园**\n\n工1\n\n日期：2026 年 10 月 24 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_02a101f2ba": {
+    "ok": true,
+    "event": {
+      "id": "e_02a101f2ba",
+      "city": "苏州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 苏州 · 苏州高新区新技术产业园",
+      "venue": "苏州高新区新技术产业园 · 虎丘区横山路98号",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "coverFit": "contain",
+      "geoLevel": null,
+      "createdAt": "2026-10-12T14:06:39.564Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": null,
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T03:58:52.164Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**苏州高新区新技术产业园**\n\n虎丘区横山路98号\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_bd425ffb33": {
+    "ok": true,
+    "event": {
+      "id": "e_bd425ffb33",
+      "city": "线上",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:00-18:00",
+      "cover": "https://cdn-waic.waytoagi.com/covers/a6e04258c7db0587.jpg",
+      "title": "AI 切磋大会 · 线上会场",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 200,
+      "coverFit": "contain",
+      "createdAt": "2026-10-12T14:06:39.351Z",
+      "eventKind": "hackathon",
+      "eventMode": "online",
+      "hideTitle": true,
+      "updatedAt": "2026-10-21T02:48:52.892Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n线上参与，与不同城市的伙伴交流创作。具体线上参与安排以正式指引为准。\n\n日期：2026 年 10 月 24—25 日。各会场的单日、双日安排分别展示，请留意所选场次。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 1280,
+      "coverHeight": 719,
+      "timeStatus": "upcoming",
+      "regMode": "station"
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_515d126019": {
+    "ok": true,
+    "event": {
+      "id": "e_515d126019",
+      "city": "温州",
+      "date": "2026-10-24",
+      "tags": [
+        "AI 切磋大会",
+        "Super Coding Weekend"
+      ],
+      "time": "10:30 - 19:02",
+      "cover": "https://cdn-waic.waytoagi.com/covers/693d3ea6f1038ede.webp",
+      "title": "AI 切磋大会 · 温州 · 野也书店",
+      "venue": "野也书店 · 浙江省温州市瓯海区山根艺术村山根南路46号",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "capacity": 67,
+      "coverFit": "contain",
+      "deadline": "2026-10-24T10:00",
+      "geoLevel": "兴趣点",
+      "createdAt": "2026-10-12T14:05:35.841Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "geoSource": "manual",
+      "hideTitle": true,
+      "updatedAt": "2026-10-22T03:12:21.344Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "## 一个周末，把「我想做」变成「我做的」\n\nAI 切磋大会 · Super Coding Weekend，和同路人一起把想法做成作品，用作品展示你的超能力。大会支持多城线下参与、线上参与与跨城组队，让创作和交流在同一个周末发生。\n\n## 本场信息\n\n**野也书店**\n\n浙江省温州市瓯海区山根艺术村山根南路46号\n\n日期：2026 年 10 月 24—25 日。活动时间：10:00—18:00。\n\n## 从想法到作品\n\n- 选择适合的城市与会场，了解该场次的参与安排。请在本页完成活动报名。\n- 找到伙伴，一起开工。每队最多 4 人，组队与线下参赛的截止时间以赛事规则为准。\n- 用 AI 完成创作，再把过程与成果分享给大家。组队、作品提交和评审由赛事网站承接，Events 提供报名与会场信息。\n\n## 展示你的创作\n\n可以提前整理作品介绍、演示视频、截图，以及使用的工具与开发过程材料。赛事计划设置六个赛道，赛道要求、作品提交时间及附件公开范围以赛事站公布的规则为准。\n\n请将作品公开介绍与私密资料分开提交。作品体验账号仅供评委查看，请勿将账号凭据或私人联系方式写入公开作品介绍。\n\n## 参与提示\n\n各会场具体日程与参与安排以最新活动通知为准。报名成功后，可在本页「参与指引」查看本会场群二维码。",
+      "hideCompany": true,
+      "organizerUid": "u_370b2de645",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "WaytoAGI",
+      "requireCompany": false,
+      "customQuestions": [
+        {
+          "id": "q_intent",
+          "type": "single",
+          "label": "参赛意向",
+          "options": [
+            "单人参赛",
+            "组队参赛（稍后建队）"
+          ],
+          "required": true
+        }
+      ],
+      "requireApproval": false,
+      "requireStudentVerification": false,
+      "coverWidth": 2000,
+      "coverHeight": 1500,
+      "timeStatus": "upcoming",
+      "regMode": "station",
+      "lat": 27.911007,
+      "lng": 120.675326
+    },
+    "full": true,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  },
+  "e_b2bf35fb74": {
+    "ok": true,
+    "event": {
+      "id": "e_b2bf35fb74",
+      "city": "杭州/宁波/温州",
+      "date": "2026-10-24",
+      "tags": [],
+      "cover": "https://cdn-waic.waytoagi.com/covers/4145ad9f338c81b4.webp",
+      "title": "杭甬温三城黑客松",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "deadline": "2026-10-20T23:59",
+      "createdAt": "2026-10-08T08:51:22.830Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "hideTitle": false,
+      "updatedAt": "2026-10-08T08:59:16.705Z",
+      "createdVia": "host_form",
+      "expertTags": [],
+      "description": "https://mp.weixin.qq.com/s/Db-8BNFM33awSPAH46OnVQ\n\n⚡ INTERCITY HACK 三城黑客松｜10.24–10.25 开赛，10.20 报名截止\n杭甬温三城各设2大赛道，6 大赛道全是企业真题，\n已对接算力厂商，现场提供 Token支持开发\n🏆 三城奖金池 + 投资人对接 + 赛后百日陪跑 \n🎁 还有AiMOON 十二星座机器人、WhisPrompt AI 工作掌机、默造MuteVox S1等更多赛事奖品等你来拿！\n \n不限背景，零基础可参加，1–4 人组队 ｜ 每城 150 席 \n👇 扫码进群报名",
+      "hideCompany": false,
+      "organizerUid": "u_bdd6efd8b5",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "INTERCITY HACK",
+      "externalRegUrl": "https://hcn5szavbjrh.feishu.cn/share/base/form/shrcnDpdbWvS4WrSKSwa5Hu1a0g",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": true,
+      "externalMpQrImage": "https://cdn-waic.waytoagi.com/covers/4b40c61a03c81028.jpg",
+      "requireStudentVerification": false,
+      "coverWidth": 2000,
+      "coverHeight": 1500,
+      "timeStatus": "upcoming",
+      "regMode": "external"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": true,
+    "my": null,
+    "isOwner": false
+  },
+  "e_808d176bcb": {
+    "ok": true,
+    "event": {
+      "id": "e_808d176bcb",
+      "city": "上海",
+      "date": "2026-10-24",
+      "tags": [
+        "开源",
+        "AI",
+        "工业软件",
+        "云计算",
+        "开发者大赛",
+        "上海"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/30a86ca3a70bff2b.jpg",
+      "title": "2026 上海开源软件应用创新大赛",
+      "venue": "上海",
+      "agenda": [],
+      "guests": [],
+      "origin": "imported",
+      "status": "published",
+      "deadline": "2026-10-11T23:59",
+      "createdAt": "2026-09-02T10:12:10.725Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "updatedAt": "2026-09-02T14:07:11.760Z",
+      "createdVia": "feishu_bot",
+      "expertTags": [
+        "开源",
+        "算力/基础设施",
+        "AI 产品"
+      ],
+      "description": "2026 上海开源软件应用创新大赛正式开启！本次大赛以“开源向实 (Open Source, Real Impact)”为主题，旨在让开源项目进入真实场景，让企业需求找到可落地的解决方案。大赛由开源中国主办，聚焦开源技术在实际产业中的应用与创新。\n\n### 三大赛道\n- **AI+工业软件**：探索 AI 技术与工业软件的深度融合与应用。\n- **智算云**：聚焦智能计算基础设施与云原生开源技术。\n- **开源 AI 工具**：挖掘并培育高效、创新的开源人工智能工具与框架。\n\n### 招募对象\n大赛面向企业团队、高校、科研机构、开源社区及学生团队开放。支持个人或团队报名，建议每支参赛队伍规模为 3-5 人。参赛者需先提交基础信息即可锁定报名席位。\n\n### 奖项与权益\n- **百万奖金池**：各赛道独立评审设奖，包含一、二、三等奖及新锐潜力奖。\n- **资源对接**：获奖项目将优先纳入重点项目库，并获得产业对接、技术验证、投融资沟通等全方位的赛后转化支持。",
+      "organizerUid": "u_feishu_bot",
+      "externalRegUrl": "https://www.oschina.net/os2026/",
+      "hideCompany": false,
+      "hideTitle": false,
+      "requireStudentVerification": false,
+      "timeStatus": "upcoming",
+      "regMode": "external",
+      "sourceUrl": "https://www.oschina.net/os2026/",
+      "sourceTier": "unknown"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": true,
+    "my": null,
+    "isOwner": false
+  },
+  "e_59e2b44818": {
+    "ok": true,
+    "event": {
+      "id": "e_59e2b44818",
+      "city": "上海",
+      "date": "2026-10-23",
+      "tags": [
+        "具身智能",
+        "机器人",
+        "人工智能",
+        "人形机器人",
+        "GDPS",
+        "上海"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/d75429caf05f5d16.webp",
+      "title": "2026国际具身智能技能大赛",
+      "venue": "上海",
+      "agenda": [
+        {
+          "time": "9月30日前",
+          "title": "第一阶段：场景赛题共建"
+        },
+        {
+          "time": "10月10日前",
+          "title": "第二阶段：模拟产线落地搭建与场景测试训练"
+        },
+        {
+          "time": "10月23日-10月25日",
+          "title": "第三阶段：正式比赛期"
+        }
+      ],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "contact": "张老师：13301889120（微信同号）",
+      "endDate": "2026-10-25",
+      "deadline": "2026-10-23T23:59",
+      "createdAt": "2026-10-12T06:33:53.608Z",
+      "eventKind": "hackathon",
+      "eventMode": "offline",
+      "hideTitle": false,
+      "createdVia": "host_ai",
+      "expertTags": [
+        "具身智能/机器人",
+        "AI 创业/投资"
+      ],
+      "description": "2026国际具身智能技能大赛检阅赛将于2026年10月23日至25日在上海举行。大赛以「劳动最光荣，选最能干活的机器劳模」为口号，坚持产业出题、科技答题，着力打造全国具身智能领域实景实战示范平台，形成可复制、可推广的上海实景实训示范样板。\n\n本次大赛坚持以赛带会、以会促研、以会促产，构建「训—赛—产—融」产业闭环。基于工信部面向全国征集的千余条具身智能应用场景数据，大赛设置了生产制造、检测分析、维修维护、仓储物流、餐饮零售、医疗康养、安全生产、应急救援、文旅宣教9大赛道，共23个赛项，计划汇聚千余支竞赛队伍。\n\n**核心亮点：**\n- **实景实战：** 坚持「真实场景为赛场、真实岗位任务为赛题、真实作业数据为成绩依据」，统一采用四模块百分制测评框架，确保公平竞技。\n- **权威评审：** 组建具身智能科学家、人工智能技术专家、技能大师/实景场景代表三元交叉评审体系。\n- **产融联动：** 获奖团队可获千万级意向投资额及全程专业融资辅导。赛队一次参赛即可贯通10月GDPS秋季大会、12月迪拜中东人工智能展、2027年7月世界人工智能大会（WAIC）三大节点。\n\n目前大赛报名仍在进行中，欢迎全球赛队踊跃报名。\n\n![图片](https://cdn-waic.waytoagi.com/covers/2cb829a1175ae351.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/94f88045e59d836f.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/4619205fce26b28c.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/1bc510069e71bbea.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/d630fbee34faf9bb.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/dd27f7cc11c635f2.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/d605a46e861eeb11.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/92e9c0969a0d0d10.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/260d7689389035ad.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/8dadd5ec8384d9a1.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/da593e4ecd606df6.webp)\n\n![图片](https://cdn-waic.waytoagi.com/covers/89e7e074365182cd.webp)",
+      "hideCompany": false,
+      "venuePhotos": [
+        "https://cdn-waic.waytoagi.com/covers/854b6eb6fdec6367.webp",
+        "https://cdn-waic.waytoagi.com/covers/eb52c418327f1a09.webp",
+        "https://cdn-waic.waytoagi.com/covers/c83f149a511325ca.webp"
+      ],
+      "organizerUid": "u_c4b1a7e171",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "花卷",
+      "externalRegUrl": "https://ieic.gdps.org.cn/",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": true,
+      "requireStudentVerification": false,
+      "coverFocal": {
+        "x": 0,
+        "y": 0,
+        "w": 0.7467,
+        "h": 1
+      },
+      "coverWidth": 2000,
+      "coverHeight": 1120,
+      "timeStatus": "ongoing",
+      "regMode": "external"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": true,
+    "my": null,
+    "isOwner": false
+  },
+  "e_89ab88a7df": {
+    "ok": true,
+    "event": {
+      "id": "e_89ab88a7df",
+      "date": "2026-10-09",
+      "tags": [
+        "麦当劳",
+        "WorkBuddy",
+        "程序员节",
+        "创意开发",
+        "MCP",
+        "1024"
+      ],
+      "cover": "https://cdn-waic.waytoagi.com/covers/9609b26d33aa2fa9.webp",
+      "title": "麦当劳程序员创意开发大赛",
+      "agenda": [],
+      "guests": [],
+      "origin": "hosted",
+      "status": "published",
+      "endDate": "2026-10-25",
+      "deadline": "2026-10-25T23:59",
+      "createdAt": "2026-10-09T08:10:18.414Z",
+      "eventKind": "hackathon",
+      "eventMode": "online",
+      "hideTitle": false,
+      "updatedAt": "2026-10-09T08:13:18.469Z",
+      "createdVia": "host_ai",
+      "expertTags": [
+        "AI Agent",
+        "AI 编程",
+        "AI 产品"
+      ],
+      "description": "WorkBuddy 联合麦当劳发起“麦当劳程序员创意开发大赛”。参赛者需基于麦当劳 MCP 能力，利用 WorkBuddy 开发创意 Skill，将好点子转化为现实。\n\n### 活动奖励\n- **前三名**：巨无霸免费多次兑换券 ＋ 10240 WorkBuddy 积分。\n- **前 100 名**：程序员节实体徽章、汉堡回车键。\n- **专项奖励**：使用 WorkBuddy 开发参赛，可额外获得 3000 积分奖励。\n\n### 参与方式\n登录 GitHub，搜索 **McDonald's China (M-China)**，进入 `mcd-developer-innovation-challenge` 仓库查看规则并参与。这个 1024，和 WorkBuddy 一起脑洞全开，用技术赢取巨无霸！\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/85b39e5adfc9963d.png)\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/f02c30f91efef0ec.png)\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/a13451aa13669815.png)\n\n![图片](https://cdn-waic.waytoagi.com/covers/27f1475a93d96e3e.webp)",
+      "hideCompany": false,
+      "organizerUid": "u_c4b1a7e171",
+      "requireEmail": false,
+      "requireTitle": false,
+      "organizerName": "麦当劳 × WorkBuddy",
+      "externalRegUrl": "https://github.com/M-China-Official/mcd-developer-innovation-challenge",
+      "requireCompany": false,
+      "customQuestions": [],
+      "requireApproval": true,
+      "requireStudentVerification": false,
+      "coverWidth": 1920,
+      "coverHeight": 1080,
+      "timeStatus": "ongoing",
+      "regMode": "external"
+    },
+    "full": false,
+    "stats": {
+      "approved": 0,
+      "pending": 0,
+      "waitlist": 0,
+      "checkedIn": 0
+    },
+    "statsRedacted": true,
+    "closed": false,
+    "my": null,
+    "isOwner": false
+  }
+}
