@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>比赛侦探</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/*
+ * 设计令牌照搬 Everplain（frontend/src/styles/tokens.css）：中性灰底，强调色是墨黑，
+ * 层级靠字号、留白和分隔线；彩色只来自赛事海报这类内容，状态色只有 danger 是彩的。
+ */
+:root {
+  color-scheme: light dark;
+  --c-canvas: light-dark(#f5f5f5, #1c1e1d);
+  --c-surface: light-dark(#ffffff, #242625);
+  --c-surface-muted: light-dark(#f7f7f7, #202221);
+  --c-surface-strong: light-dark(#ededed, #303331);
+  --c-ink: light-dark(#111111, #e6e7e3);
+  --c-ink-soft: light-dark(#303030, #c9ccc6);
+  --c-muted: light-dark(#6c6c6c, #a4aaa2);
+  --c-faint: light-dark(#969696, #92998f);
+  --c-rule: light-dark(#e3e3e3, #383d38);
+  --c-rule-strong: light-dark(#cccccc, #50574f);
+  --c-accent: light-dark(#111111, #e0e4db);
+  --c-accent-hover: light-dark(#303030, #c9d0c4);
+  --c-accent-soft: light-dark(#ececec, #303630);
+  --c-on-accent: light-dark(#ffffff, #20241f);
+  --c-danger: light-dark(#98434b, #e2a3a6);
+  --c-scrim: light-dark(rgb(17 17 17 / 32%), rgb(0 0 0 / 56%));
+
+  --font-ui: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+  --r-compact: 8px;
+  --r-control: 12px;
+  --r-surface: 16px;
+  --r-feature: 24px;
+  --r-pill: 999px;
+  --h-control: 36px;
+  --h-action: 42px;
+
+  --shadow-card: 0 18px 45px rgb(17 17 17 / 8%);
+  --shadow-panel: 0 22px 60px rgb(17 17 17 / 10%);
+  --shadow-float: 0 16px 40px rgb(17 17 17 / 18%);
+
+  --t-fast: 140ms;
+  --t-base: 240ms;
+  --t-slow: 420ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+body {
+  background: var(--c-canvas); color: var(--c-ink-soft);
+  font: 15px/1.6 var(--font-ui); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+  padding-bottom: 112px;
+}
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+img { display: block; max-width: 100%; }
+:focus-visible { outline: 2px solid var(--c-ink); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+.container { max-width: 1200px; margin: 0 auto; padding-inline: 32px; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  height: var(--h-control); padding: 0 14px; border-radius: var(--r-control); border: 1px solid transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+}
+.btn:active { transform: scale(.97); }
+.btn-lg { height: var(--h-action); padding: 0 18px; font-size: 14px; }
+.btn-primary { background: var(--c-accent); color: var(--c-on-accent); }
+.btn-primary:hover { background: var(--c-accent-hover); }
+.btn-secondary { background: var(--c-surface); border-color: var(--c-rule); color: var(--c-ink); }
+.btn-secondary:hover { border-color: var(--c-rule-strong); }
+.icon-btn {
+  width: 32px; height: 32px; border: 0; border-radius: var(--r-compact); background: transparent; color: var(--c-muted);
+  display: inline-grid; place-items: center; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--c-accent-soft); color: var(--c-ink); }
+
+/* ---------- 顶栏 ---------- */
+.app-header { position: sticky; top: 0; z-index: 20; background: var(--c-canvas); border-bottom: 1px solid var(--c-rule); }
+.app-header .container { height: 64px; display: flex; align-items: center; gap: 28px; }
+.brand { display: flex; align-items: center; gap: 9px; color: var(--c-ink); font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+.brand svg { flex: none; }
+.nav { display: flex; gap: 4px; }
+.nav a { padding: 6px 10px; border-radius: var(--r-compact); font-size: 14px; color: var(--c-muted); transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.nav a:hover { color: var(--c-ink); background: var(--c-accent-soft); }
+.app-header .spacer { flex: 1; }
+
+/* ---------- 首屏 ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 48px; align-items: center; padding-block: 56px 48px; }
+.hero h1 { margin: 0 0 16px; font-size: 44px; line-height: 1.2; font-weight: 700; letter-spacing: -0.03em; color: var(--c-ink); text-wrap: balance; }
+.hero p { margin: 0 0 28px; max-width: 34em; font-size: 16px; line-height: 1.75; color: var(--c-muted); }
+.hero .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero .stats { display: flex; gap: 28px; margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--c-rule); }
+.hero .stats div { display: grid; }
+.hero .stats b { font-size: 22px; line-height: 1.3; font-weight: 600; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.hero .stats span { font-size: 13px; color: var(--c-muted); }
+
+.week { background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-feature); padding: 22px; box-shadow: var(--shadow-card); }
+.week h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; color: var(--c-ink); display: flex; justify-content: space-between; align-items: baseline; }
+.week h2 span { font-size: 13px; font-weight: 400; color: var(--c-muted); }
+.week-item { width: calc(100% + 20px); display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 14px; align-items: center; text-align: left; padding: 10px; margin: 0 -10px; border: 0; border-radius: var(--r-control); background: none; transition: background var(--t-fast) var(--ease); }
+.week-item:hover { background: var(--c-surface-muted); }
+.week-item + .week-item { margin-top: 2px; }
+.thumb { width: 96px; aspect-ratio: 16 / 9; border-radius: var(--r-compact); overflow: hidden; background: var(--c-surface-strong); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.week-item .t { font-size: 14px; font-weight: 600; color: var(--c-ink); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.week-item .m { font-size: 12px; color: var(--c-muted); }
+.pill-days { font-size: 12px; font-weight: 600; color: var(--c-ink); background: var(--c-surface-strong); border-radius: var(--r-pill); padding: 3px 10px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill-days.soon { background: var(--c-accent); color: var(--c-on-accent); }
+
+/* ---------- 赛事区 ---------- */
+.explore { display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 32px; align-items: start; padding-block: 24px 40px; }
+.section-head { margin-bottom: 18px; }
+.section-head h2 { margin: 0; font-size: 26px; line-height: 1.35; font-weight: 700; letter-spacing: -0.02em; color: var(--c-ink); }
+.section-head p { margin: 4px 0 0; font-size: 14px; color: var(--c-muted); }
+
+.tabs { display: flex; gap: 22px; border-bottom: 1px solid var(--c-rule); margin-bottom: 16px; overflow-x: auto; scrollbar-width: none; }
+.tab { position: relative; border: 0; background: none; padding: 10px 0 12px; font-size: 15px; font-weight: 500; color: var(--c-muted); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.tab .n { font-size: 12px; font-weight: 600; padding: 0 7px; line-height: 20px; border-radius: var(--r-pill); background: var(--c-surface-strong); color: var(--c-ink-soft); font-variant-numeric: tabular-nums; }
+.tab:hover { color: var(--c-ink); }
+.tab[aria-selected="true"] { color: var(--c-ink); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--c-ink); border-radius: 2px; }
+.tab[aria-selected="true"] .n { background: var(--c-accent); color: var(--c-on-accent); }
+
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.search { flex: 1 1 260px; min-width: 0; height: var(--h-action); display: flex; align-items: center; gap: 8px; padding: 0 14px; background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-control); transition: border-color var(--t-fast) var(--ease); }
+.search:focus-within { border-color: var(--c-rule-strong); }
+.search svg { color: var(--c-faint); flex: none; }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font-size: 14px; color: var(--c-ink); }
+.search input::placeholder { color: var(--c-faint); }
+.select { height: var(--h-action); padding: 0 34px 0 12px; border: 1px solid var(--c-rule); border-radius: var(--r-control); appearance: none; cursor: pointer; font-size: 13px; color: var(--c-ink);
+  background: var(--c-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23969696' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 10px center; }
+
+.scope { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 12px; border-radius: var(--r-control); background: var(--c-accent-soft); font-size: 13px; color: var(--c-ink); }
+.scope .btn { height: 28px; margin-left: auto; }
+
+.events { display: grid; gap: 12px; }
+.event {
+  display: grid; grid-template-columns: 176px minmax(0, 1fr) 196px 84px; gap: 20px; align-items: center;
+  padding: 16px; background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-surface); cursor: pointer;
+  transition: box-shadow var(--t-base) var(--ease), border-color var(--t-base) var(--ease), transform var(--t-base) var(--ease);
+}
+.event:hover { box-shadow: var(--shadow-card); border-color: transparent; transform: translateY(-1px); }
+.poster { aspect-ratio: 16 / 9; border-radius: var(--r-control); overflow: hidden; background: var(--c-surface-strong); }
+.poster img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--t-slow) var(--ease); }
+.event:hover .poster img { transform: scale(1.03); }
+.event h3 { margin: 0 0 4px; font-size: 16px; line-height: 1.45; font-weight: 600; color: var(--c-ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.meta { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 13px; color: var(--c-muted); }
+.meta span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.meta .loc { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.meta svg { flex: none; color: var(--c-faint); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 6px; }
+.tag { font-size: 12px; line-height: 20px; padding: 0 8px; border-radius: var(--r-compact); background: var(--c-surface-strong); color: var(--c-ink-soft); }
+.tag.dim { color: var(--c-faint); }
+.tag.ok { background: transparent; color: var(--c-ink); padding-left: 0; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; }
+.intro { margin: 0; font-size: 13px; line-height: 1.6; color: var(--c-muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.prize { font-size: 13px; line-height: 1.55; color: var(--c-ink-soft); display: grid; gap: 2px; }
+.prize .k { font-size: 12px; color: var(--c-faint); }
+.prize .v { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.days { text-align: center; padding: 8px 4px; border-radius: var(--r-control); background: var(--c-surface-muted); }
+.days b { display: block; font-size: 22px; line-height: 1.2; font-weight: 600; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.days span { font-size: 12px; color: var(--c-muted); }
+.days.soon { background: var(--c-accent); }
+.days.soon b, .days.soon span { color: var(--c-on-accent); }
+.empty { padding: 48px 24px; text-align: center; color: var(--c-muted); background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-surface); display: grid; gap: 14px; justify-items: center; }
+
+/* 日历 */
+.side { position: sticky; top: 88px; }
+.cal { background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-surface); padding: 20px; }
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-head h3 { margin: 0; font-size: 15px; font-weight: 600; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.cal-nav { display: flex; gap: 2px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; text-align: center; }
+.cal-grid .wd { font-size: 12px; color: var(--c-faint); padding-bottom: 6px; }
+.day { position: relative; aspect-ratio: 1; border: 0; border-radius: var(--r-compact); background: transparent; font-size: 13px; color: var(--c-ink-soft); font-variant-numeric: tabular-nums; transition: background var(--t-fast) var(--ease); }
+.day:hover { background: var(--c-accent-soft); }
+.day.other, .day.past { color: var(--c-faint); }
+.day.today { box-shadow: inset 0 0 0 1px var(--c-rule-strong); color: var(--c-ink); font-weight: 600; }
+.day.has::after { content: ""; position: absolute; left: 50%; bottom: 5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--c-ink); }
+.day[aria-pressed="true"] { background: var(--c-accent); color: var(--c-on-accent); font-weight: 600; }
+.day[aria-pressed="true"]::after { background: var(--c-on-accent); }
+.agenda { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--c-rule); }
+.agenda h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--c-ink); display: flex; justify-content: space-between; }
+.agenda h4 button { border: 0; background: none; padding: 0; font-size: 12px; font-weight: 400; color: var(--c-muted); }
+.agenda ul { list-style: none; margin: 0; padding: 0; }
+.agenda li button { width: 100%; display: grid; grid-template-columns: 42px 44px minmax(0, 1fr); gap: 6px; padding: 7px 0; border: 0; background: none; text-align: left; font-size: 13px; }
+.agenda .dt { color: var(--c-muted); font-variant-numeric: tabular-nums; }
+.agenda .lb { color: var(--c-faint); white-space: nowrap; }
+.agenda .t { color: var(--c-ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda li button:hover .t { color: var(--c-ink); text-decoration: underline; text-underline-offset: 3px; }
+.agenda .none { font-size: 13px; color: var(--c-muted); }
+.cal-toggle { display: none; }
+
+/* ---------- 详情弹窗：从中间弹出 ---------- */
+.modal-root { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; pointer-events: none; }
+.modal-root.open { pointer-events: auto; }
+.scrim { position: absolute; inset: 0; background: var(--c-scrim); opacity: 0; transition: opacity var(--t-base) var(--ease); }
+.modal-root.open .scrim { opacity: 1; }
+.modal {
+  position: relative; width: min(760px, 100%); max-height: min(88vh, 880px); overflow: auto; overscroll-behavior: contain;
+  background: var(--c-surface); border-radius: var(--r-feature); box-shadow: var(--shadow-panel);
+  opacity: 0; transform: translateY(12px) scale(.96); transition: opacity var(--t-base) var(--ease), transform var(--t-slow) var(--ease);
+}
+.modal-root.open .modal { opacity: 1; transform: none; }
+.modal-cover { position: relative; aspect-ratio: 21 / 9; background: var(--c-surface-strong); overflow: hidden; }
+.modal-cover img { width: 100%; height: 100%; object-fit: cover; }
+.modal-close { position: absolute; top: 14px; right: 14px; width: 36px; height: 36px; border: 0; border-radius: var(--r-pill); background: var(--c-surface); color: var(--c-ink); display: grid; place-items: center; box-shadow: var(--shadow-card); }
+.modal-body { padding: 26px 32px 8px; display: grid; gap: 24px; }
+.modal-body h2 { margin: 0 0 8px; font-size: 24px; line-height: 1.4; font-weight: 700; letter-spacing: -0.02em; color: var(--c-ink); }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border: 1px solid var(--c-rule); border-radius: var(--r-surface); overflow: hidden; margin: 0; }
+.facts div { padding: 14px 16px; border-left: 1px solid var(--c-rule); border-top: 1px solid var(--c-rule); }
+.facts div:nth-child(3n + 1) { border-left: 0; }
+.facts div:nth-child(-n + 3) { border-top: 0; }
+.facts dt { font-size: 12px; color: var(--c-muted); }
+.facts dd { margin: 3px 0 0; font-size: 14px; line-height: 1.5; font-weight: 600; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.facts dd small { display: block; font-size: 12px; font-weight: 400; color: var(--c-muted); }
+.modal h3 { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--c-ink); }
+.modal .about { margin: 0; font-size: 14.5px; line-height: 1.8; color: var(--c-ink-soft); }
+.claims { display: grid; gap: 12px; }
+.claim blockquote { margin: 0 0 6px; padding: 10px 14px; border-radius: var(--r-control); background: var(--c-surface-muted); font-size: 14px; line-height: 1.7; color: var(--c-ink); }
+.claim blockquote mark { background: var(--c-accent-soft); color: var(--c-ink); font-weight: 600; padding: 0 2px; border-radius: 3px; }
+.src { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--c-muted); }
+.src .kind { padding: 0 6px; border-radius: 6px; border: 1px solid var(--c-rule); color: var(--c-ink-soft); }
+.src .kind.official { border-color: var(--c-ink); color: var(--c-ink); }
+.src a { color: var(--c-ink-soft); text-decoration: underline; text-decoration-color: var(--c-rule-strong); text-underline-offset: 3px; }
+.src a:hover { color: var(--c-ink); }
+.note { font-size: 13px; line-height: 1.6; color: var(--c-ink-soft); background: var(--c-surface-muted); border-left: 2px solid var(--c-rule-strong); padding: 10px 12px; border-radius: 0 var(--r-compact) var(--r-compact) 0; }
+.modal-foot { position: sticky; bottom: 0; display: flex; gap: 10px; padding: 16px 32px 24px; background: var(--c-surface); border-top: 1px solid var(--c-rule); margin-top: 16px; }
+.modal-foot .btn-primary { flex: 1; }
+
+/* ---------- 侦探：底部常驻 ---------- */
+.dock {
+  position: fixed; z-index: 30; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px)); background: var(--c-surface); border: 1px solid var(--c-rule); border-radius: var(--r-feature);
+  box-shadow: var(--shadow-float); overflow: hidden; transition: width var(--t-slow) var(--ease);
+}
+.dock.open { width: min(780px, calc(100% - 32px)); }
+.dock-panel { max-height: 0; overflow: hidden; transition: max-height var(--t-slow) var(--ease); }
+.dock.open .dock-panel { max-height: min(62vh, 640px); border-bottom: 1px solid var(--c-rule); }
+.dock-top { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px 20px; }
+.dock-top .who { display: grid; flex: 1; }
+.dock-top .who b { font-size: 14px; font-weight: 600; color: var(--c-ink); }
+.dock-top .who span { font-size: 12px; color: var(--c-muted); }
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--c-accent); color: var(--c-on-accent); display: grid; place-items: center; flex: none; }
+.thread { max-height: calc(min(62vh, 640px) - 62px); overflow: auto; overscroll-behavior: contain; padding: 4px 20px 20px; display: grid; gap: 20px; align-content: start; }
+.welcome p { margin: 0 0 10px; font-size: 14px; color: var(--c-muted); }
+.ideas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.idea { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border: 1px solid var(--c-rule); border-radius: var(--r-control); background: var(--c-surface); font-size: 13px; line-height: 1.5; color: var(--c-muted); transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.idea:hover { border-color: var(--c-rule-strong); background: var(--c-surface-muted); }
+.idea b { color: var(--c-ink); font-weight: 600; }
+.msg-q { justify-self: end; max-width: 82%; background: var(--c-surface-strong); color: var(--c-ink); border-radius: var(--r-surface); padding: 10px 14px; font-size: 14px; animation: drop var(--t-base) var(--ease); }
+.msg-q .file { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; font-weight: 500; }
+.msg-a { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.msg-a .body { display: grid; gap: 12px; min-width: 0; }
+.process summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; height: 28px; font-size: 13px; color: var(--c-muted); }
+.process summary::-webkit-details-marker { display: none; }
+.process summary svg { transition: transform var(--t-base) var(--ease); }
+.process[open] summary svg { transform: rotate(90deg); }
+.process .live { background: linear-gradient(90deg, var(--c-faint) 0%, var(--c-ink) 50%, var(--c-faint) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sweep 1.6s linear infinite; }
+.steps { list-style: none; margin: 4px 0 0 6px; padding: 0 0 0 14px; border-left: 1px solid var(--c-rule); display: grid; gap: 6px; font-size: 13px; color: var(--c-muted); }
+.steps li { animation: fade var(--t-base) var(--ease); }
+.answer { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--c-ink); animation: fade var(--t-slow) var(--ease); }
+.answer b { font-weight: 600; }
+.answer sup a { font-size: 11px; color: var(--c-muted); padding: 0 1px; }
+.picks { display: grid; border: 1px solid var(--c-rule); border-radius: var(--r-control); overflow: hidden; animation: fade var(--t-slow) var(--ease); }
+.pick { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border: 0; border-top: 1px solid var(--c-rule); background: var(--c-surface); text-align: left; transition: background var(--t-fast) var(--ease); }
+.pick:first-child { border-top: 0; }
+.pick:hover { background: var(--c-surface-muted); }
+.pick .thumb { width: 72px; }
+.pick .n { font-size: 14px; font-weight: 600; color: var(--c-ink); line-height: 1.45; }
+.pick .why { font-size: 12.5px; color: var(--c-muted); line-height: 1.5; }
+.pick .d { font-size: 12px; color: var(--c-ink); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.refs { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12px; color: var(--c-muted); animation: fade var(--t-slow) var(--ease); }
+.refs li { display: grid; grid-template-columns: 16px minmax(0, 1fr); }
+.refs a { color: var(--c-ink-soft); }
+.refs a:hover { color: var(--c-ink); text-decoration: underline; text-underline-offset: 3px; }
+.msg-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.composer { display: flex; align-items: flex-end; gap: 6px; padding: 8px 8px 8px 10px; }
+.composer .avatar { margin: 4px 4px 4px 2px; }
+.dock.open .composer .avatar { display: none; }
+.composer textarea { flex: 1; min-width: 0; resize: none; border: 0; outline: 0; background: transparent; padding: 6px 4px; max-height: 120px; font-size: 15px; line-height: 1.6; color: var(--c-ink); }
+.composer textarea::placeholder { color: var(--c-faint); }
+.send { width: var(--h-control); height: var(--h-control); flex: none; border: 0; border-radius: var(--r-pill); background: var(--c-accent); color: var(--c-on-accent); display: grid; place-items: center; transition: opacity var(--t-fast) var(--ease), transform var(--t-fast) var(--ease); }
+.send:active { transform: scale(.94); }
+.send:disabled { opacity: .25; cursor: default; }
+
+@keyframes drop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } }
+@keyframes sweep { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+
+/* ---------- 窄屏 ---------- */
+@media (max-width: 1240px) {
+  .event { grid-template-columns: 168px minmax(0, 1fr) 84px; }
+  .event .prize { display: none; }
+}
+@media (max-width: 1080px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 32px; padding-top: 40px; }
+  .explore { grid-template-columns: minmax(0, 1fr) 288px; gap: 24px; }
+  .event { grid-template-columns: 156px minmax(0, 1fr) 84px; }
+  .event .prize { display: none; }
+}
+@media (max-width: 860px) {
+  .container { padding-inline: 24px; }
+  .nav { display: none; }
+  .explore { grid-template-columns: minmax(0, 1fr); }
+  .side { position: static; order: -1; }
+  .cal-toggle { display: inline-flex; }
+  .cal-body.collapsed { display: none; }
+  .cal-head { margin-bottom: 0; }
+  .cal-body { margin-top: 12px; }
+}
+@media (max-width: 640px) {
+  .hero { padding-block: 28px 24px; }
+  .hero h1 { font-size: 30px; }
+  .hero p { font-size: 15px; margin-bottom: 20px; }
+  .hero .stats { gap: 20px; margin-top: 24px; }
+  .week { padding: 16px; }
+  .week-item { grid-template-columns: 80px minmax(0, 1fr); }
+  .week-item .thumb { width: 80px; }
+  .week-item .pill-days { grid-column: 2; justify-self: start; }
+  .event { grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding: 12px; align-items: start; }
+  .event .days { grid-column: 1 / -1; display: flex; gap: 6px; align-items: baseline; justify-content: center; padding: 6px; }
+  .event .days b { font-size: 15px; display: inline; }
+  .event h3 { white-space: normal; font-size: 15px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .event .intro { display: none; }
+  .modal-root { padding: 0; place-items: end center; }
+  .modal { width: 100%; max-height: 92vh; border-radius: var(--r-feature) var(--r-feature) 0 0; transform: translateY(40px); }
+  .modal-body { padding: 20px 20px 8px; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts div:nth-child(n) { border-left: 1px solid var(--c-rule); border-top: 1px solid var(--c-rule); }
+  .facts div:nth-child(2n + 1) { border-left: 0; }
+  .facts div:nth-child(-n + 2) { border-top: 0; }
+  .modal-foot { padding: 12px 20px 20px; }
+  .ideas { grid-template-columns: minmax(0, 1fr); }
+  .dock, .dock.open { width: calc(100% - 16px); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="container">
+    <a class="brand" href="#">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="2.5"/><circle cx="10" cy="10" r="2.25" fill="currentColor"/><path d="m15 15 5.25 5.25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      比赛侦探
+    </a>
+    <nav class="nav"><a href="#explore">全部赛事</a><a href="#calendar">赛事日历</a></nav>
+    <span class="spacer"></span>
+    <button class="btn btn-secondary" type="button" data-resume>用简历挑比赛</button>
+  </div>
+</header>
+
+<main>
+  <section class="hero container">
+    <div>
+      <h1>近期值得参加的黑客松</h1>
+      <p>从 HackerTrip、WaytoAGI 和主办方公众号同步赛事，侦探会把截止日期追到主办方原文核对，转载和原文对不上的地方会标出来。不知道参加哪场，可以把简历交给它，按你的技能和时间挑。</p>
+      <div class="actions">
+        <a class="btn btn-primary btn-lg" href="#explore">浏览全部赛事</a>
+        <button class="btn btn-secondary btn-lg" type="button" data-resume>用简历挑比赛</button>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+    <aside class="week" aria-labelledby="week-title">
+      <h2 id="week-title">本周值得看<span id="week-date"></span></h2>
+      <div id="week"></div>
+    </aside>
+  </section>
+
+  <section class="explore container" id="explore">
+    <div>
+      <div class="section-head">
+        <h2>全部赛事</h2>
+        <p>按截止时间排好，点开能看到每条信息的出处。</p>
+      </div>
+      <div class="tabs" id="tabs" role="tablist"></div>
+      <div class="toolbar">
+        <label class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="q" type="search" placeholder="搜索赛事名称、城市或主题，比如 具身、音乐、苏州" autocomplete="off">
+        </label>
+        <select class="select" id="mode" aria-label="参赛形式"><option value="all">全部形式</option><option>线上</option><option>线下</option><option>混合</option></select>
+        <select class="select" id="sort" aria-label="排序"><option value="due">截止优先</option><option value="start">开赛时间</option></select>
+      </div>
+      <div class="scope" id="scope" hidden></div>
+      <div class="events" id="events"></div>
+    </div>
+
+    <aside class="side" id="calendar" aria-label="赛事日历">
+      <div class="cal">
+        <div class="cal-head">
+          <h3 id="cal-title"></h3>
+          <div class="cal-nav">
+            <button class="icon-btn" type="button" id="cal-prev" aria-label="上个月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+            <button class="icon-btn" type="button" id="cal-next" aria-label="下个月"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+            <button class="btn btn-secondary cal-toggle" type="button" id="cal-toggle">展开</button>
+          </div>
+        </div>
+        <div class="cal-body collapsed" id="cal-body">
+          <div class="cal-grid" id="cal-grid"></div>
+          <div class="agenda" id="agenda"></div>
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<div class="modal-root" id="modal-root" aria-hidden="true">
+  <div class="scrim" data-close></div>
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
+</div>
+
+<section class="dock" id="dock" aria-label="侦探">
+  <div class="dock-panel">
+    <div class="dock-top">
+      <span class="avatar" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="2.5"/><circle cx="10" cy="10" r="2.25" fill="currentColor"/><path d="m15 15 5.25 5.25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+      <div class="who"><b>侦探</b><span>核对截止日期，按简历挑比赛</span></div>
+      <button class="icon-btn" type="button" id="dock-close" aria-label="收起"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    </div>
+    <div class="thread" id="thread"></div>
+  </div>
+  <form class="composer" id="composer">
+    <span class="avatar" aria-hidden="true"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="2.5"/><circle cx="10" cy="10" r="2.25" fill="currentColor"/><path d="m15 15 5.25 5.25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></span>
+    <button class="icon-btn" type="button" id="attach" aria-label="上传简历" title="上传简历"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m21 11-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button>
+    <input type="file" id="file" accept=".pdf,.doc,.docx,.txt,.md" hidden>
+    <textarea id="input" rows="1" placeholder="问侦探，或上传简历挑比赛" aria-label="向侦探提问"></textarea>
+    <button class="send" type="submit" id="send" aria-label="发送" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+  </form>
+</section>
+
+<script>
+/* ============================================================
+ * 比赛侦探首页 · 纯前端 mock，没有接后端。
+ * 赛事是真实的：海报、时间、地点、形式、简介、奖金和距截止天数取自 2026-10-23 的 HackerTrip 首页
+ * （https://hackertrip.space/），海报存在 assets/；「今天」固定为 2026-10-23。
+ * 只有 1024 超能 Coding 周末的截止信息核对过主办方原文（WaytoAGI 活动页和主办方公众号），
+ * 其他赛事的出处都是 HackerTrip 收录页，界面上如实标注。
+ * 接后端时替换 EVENTS、SOURCES 和侦探的 SCRIPTS 即可。
+ * ============================================================ */
+const TODAY = "2026-10-23";
+const EVENTS = [
+ {
+  "id": "waytoagi",
+  "title": "1024 超能 Coding 周末 · AI 切磋大会",
+  "poster": "assets/waytoagi-1024.jpg",
+  "start": "2026-10-24",
+  "end": "2026-10-25",
+  "loc": "全国 40 多个城市线下会场 + 线上会场",
+  "mode": "混合",
+  "phase": "报名中",
+  "deadline": "2026-10-25",
+  "deadlineTime": "16:00",
+  "deadlineLabel": "作品提交截止",
+  "intro": "WaytoAGI 社区在程序员节发起的全国 AI 切磋大会。两天时间，每天 10:30 到 19:02，一共六条赛道：用餐、侦探、办公、短剧、OPC、游戏，可以多选。",
+  "prize": "1024 超能大奖 10240 元；侦探赛道第一名 3072 元现金 + MacBook Air",
+  "people": null,
+  "source": "https://events.waytoagi.com/collections/qiecuo1024",
+  "verified": true
+ },
+ {
+  "id": "su",
+  "title": "苏客松 2026（SU2026）苏州 AI 黑客松",
+  "poster": "assets/ht-2026.webp",
+  "start": "2026-10-30",
+  "end": "2026-11-01",
+  "loc": "苏州线下决赛（具体地址待主办方公布，以参赛指南为准）",
+  "mode": "混合",
+  "phase": "报名中",
+  "deadline": "2026-10-27",
+  "intro": "苏客松（SU2026）是一场为期 3 天 2 夜的苏州线下 AI 黑客松，主题「AIxEverything —— 世界的下一个版本，由我们定义」。100+ 支队伍在苏州同场竞技，48 小时把想法变成 Demo。赛事辐射武汉、西安、成都三城，联动西客松、雾客松、成客松，是「客松」系列跨城共创实验的重要一站。",
+  "prize": "总奖池超 50 万元：冠军 5 万元现金+定制奖杯、亚军 3 万元、季军 1 万",
+  "people": 38,
+  "source": "https://hackertrip.space/hackathon/ht-2026",
+  "added": null
+ },
+ {
+  "id": "lingbo",
+  "title": "首届蚂蚁灵波具身大模型挑战赛",
+  "poster": "assets/ht-da580d.webp",
+  "start": "2026-09-11",
+  "end": "2026-11-15",
+  "loc": "上海",
+  "mode": "混合",
+  "phase": "进行中",
+  "deadline": "2026-10-27",
+  "intro": "首届蚂蚁灵波具身大模型挑战赛由蚂蚁灵波科技、魔搭社区（ModelScope）与阿里云天池共同发起，于2026年9月11日在外滩大会具身智能论坛正式启动，是面向具身智能开发者的算法挑战赛。赛事基于开源 LingBot-VLA 2.0 模型搭建统一评测体系，主题为「从仿真到真机」，总奖金池28万元人民币，单队最高可获8万元",
+  "prize": "总奖金池 28 万元人民币（单队最高 8 万元）",
+  "people": 12,
+  "source": "https://hackertrip.space/hackathon/ht-da580d",
+  "added": null
+ },
+ {
+  "id": "tmall",
+  "title": "天猫AI黑客松·高校挑战赛",
+  "poster": "assets/ht-tmall-ai-hackathon-campus-2026.webp",
+  "start": "2026-09-08",
+  "end": "2026-10-24",
+  "loc": "待主办方通知",
+  "mode": "混合",
+  "phase": "进行中",
+  "deadline": null,
+  "intro": "天猫 AI 黑客松·高校挑战赛由天猫主办、英特尔担任首席战略合作伙伴，旨在连接高校年轻人与真实技术、品牌及产业场景，邀请每一个敢想敢做的人把 AI 创想真正做出来。赛事总奖金 20 万元，设四大赛道，晋级队伍将参与线下 48 小时极限开发并现场答辩。赛事召集人庞博，赛事推荐官影视飓风 Tim，特邀观察员拉宏桑。",
+  "prize": "总奖金 20 万元 + 电脑/千问办公 token/面试绿通",
+  "people": 25,
+  "source": "https://hackertrip.space/hackathon/ht-tmall-ai-hackathon-campus-2026",
+  "added": null
+ },
+ {
+  "id": "wtcc",
+  "title": "WTCC 2026 AI硬件黑客松",
+  "poster": "assets/ht-ff87c9d574.webp",
+  "start": "2026-10-22",
+  "end": "2026-10-25",
+  "loc": "上海市徐汇区西岸",
+  "mode": "线下",
+  "phase": "进行中",
+  "deadline": null,
+  "intro": "WTCC 2026 AI硬件黑客松以「Hack For Life｜为人生而创造」为主题，主打「先看真实需求，再做实体产品」。比赛于2026年10月22日至25日在上海西岸举办，为期四天，每队2至4人，报名于10月17日截止。赛事不以PPT演示论高下，而以能否做出真正可运行的实体产品为标准；奖金池为5万元现金加7万元算力",
+  "prize": "总奖金 ¥50,000",
+  "people": 12,
+  "source": "https://hackertrip.space/hackathon/ht-ff87c9d574",
+  "added": null
+ },
+ {
+  "id": "intercity",
+  "title": "INTERCITY HACK 杭甬温三城联动黑客松——宁波站",
+  "poster": "assets/ht-intercity-hack-740c8114.webp",
+  "start": "2026-10-24",
+  "end": "2026-10-25",
+  "loc": "浙江省宁波市鄞州区聚贤街道滨江绿道滨江水韵公园",
+  "mode": "线下",
+  "phase": "报名已截止",
+  "deadline": null,
+  "intro": "主题｜AI for Industry, Youth for Industry —— 把企业的真问题，交给最有冲劲的年轻人，48 小时共创可落地 AI 原型 参赛对象｜全社会 AI 开发者、创业者、高校学生；个人或团队（2–4 人），可现场组队，三城合计 450+ 人 亮点｜真赛题（三城 6 大方向、企业出题人到场）、真",
+  "prize": "详情烦请进入咨询群后获取",
+  "people": 8,
+  "source": "https://hackertrip.space/hackathon/ht-intercity-hack-740c8114",
+  "added": null
+ },
+ {
+  "id": "fengke",
+  "title": "「枫客松」AI 黑客松",
+  "poster": "assets/ht-ai-67962884.webp",
+  "start": "2026-10-31",
+  "end": "2026-11-01",
+  "loc": "江苏省南京市栖霞区栖霞街88号",
+  "mode": "线下",
+  "phase": "报名已截止",
+  "deadline": null,
+  "intro": "第一届「枫客松」AI 黑客松，面向全国 Builder，招募 30 支队伍，在栖霞山进行 48 小时现场共创。赛事设置 AIGC 文旅内容创作、栖霞山文旅智能体开发两条赛道，结合栖霞山文旅场景开展创作、开发、采风和成果展示。",
+  "prize": "7 万元的奖金奖品池+智能体孵化池+技术共创池+外地选手赛事补贴￥300/人",
+  "people": 5,
+  "source": "https://hackertrip.space/hackathon/ht-ai-67962884",
+  "added": null
+ },
+ {
+  "id": "tme",
+  "title": "腾讯音乐首届高校AI Hackathon（Build With AI）",
+  "poster": "assets/ht-tme-ai-hackathon.webp",
+  "start": "2026-09-14",
+  "end": "2026-11-02",
+  "loc": "线上投稿与评审 + 决赛路演（具体地址待主办方公布）",
+  "mode": "混合",
+  "phase": "进行中",
+  "deadline": null,
+  "intro": "腾讯音乐娱乐集团（TME）主办的首届面向高校的 AI Hackathon，主题「Build With AI」。官方主办阵容为腾讯音乐娱乐集团、TME 技术委员会、TME 音乐学堂、腾讯音乐招聘。赛事面向在校学生，围绕音乐场景用 AI 打造互动产品或体验，优秀作品将落地腾讯音乐旗下产品（QQ音乐、酷狗音乐、酷我音乐、全民",
+  "prize": "总奖金 10.8 万元：一等奖 ¥20,000×1、二等奖 ¥10,000×2、",
+  "people": 15,
+  "source": "https://hackertrip.space/hackathon/ht-tme-ai-hackathon",
+  "added": null
+ },
+ {
+  "id": "huairou",
+  "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+  "poster": "assets/ht-a04d899420.webp",
+  "start": "2026-11-15",
+  "end": "2026-11-16",
+  "loc": "怀柔科学城",
+  "mode": "线下",
+  "phase": "报名中",
+  "deadline": "2026-11-11",
+  "intro": "怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。参赛者在现场公布的命题下完成开发、现场演示作品并参与现场评奖。活动全程免费，黑客松总奖金池为10万元（税前）。允许个人报名，也接受不超过5",
+  "prize": "总奖金 ¥100,000",
+  "people": 5,
+  "source": "https://hackertrip.space/hackathon/ht-a04d899420",
+  "added": null
+ },
+ {
+  "id": "aiforgood",
+  "title": "2026 AI For Good公益黑客松·秋季赛",
+  "poster": "assets/ht-2026-ai-for-good-71daacf3.webp",
+  "start": "2026-12-18",
+  "end": "2026-12-20",
+  "loc": "上海市闵行区申长路富力环球中心",
+  "mode": "混合",
+  "phase": "报名中",
+  "deadline": "2026-11-15",
+  "intro": "别只卷模型和提效工具了。   你写的 Agent、RAG、多模态，也可以去解决真实社会问题。  恩派公益发起的 2026 AI For Good 公益黑客松·秋季赛问题征集中！   春季赛已打磨 24 个 MVP。养老照护、残障融合、社区动物友好、社区环保、儿童与青少年……欢迎带真实问题或初步产品报名，一起探索AI f",
+  "prize": "八个奖项（最高1万元奖金）+影响力投资机会",
+  "people": 5,
+  "source": "https://hackertrip.space/hackathon/ht-2026-ai-for-good-71daacf3",
+  "added": null
+ },
+ {
+  "id": "geek",
+  "title": "2026硬件黑客松（极客营）",
+  "poster": "assets/ht-2026-2beb1cb6.webp",
+  "start": "2026-12-02",
+  "end": "2026-12-06",
+  "loc": "广东省深圳市南山区西丽街道创智云城二期C1栋1单元",
+  "mode": "线下",
+  "phase": "报名中",
+  "deadline": "2026-11-16",
+  "intro": "❤️‍🔥本届极客营以「Negentropy（熵减）」为主题——用最硬核的架构设计与资源控制，把无序的元器件、芯片、代码 ，锻造成具备感知与执行力的熵减实体。  🚀 同时开放创业团队直通通道：面试通过可加入深圳科创学院在孵团队，成为下一个创业合伙人 。  💪 硬核保障全拉满：活动费用全免、国内往返交通报销、营期免费住宿、",
+  "prize": "赛道奖品/资源后续在公众号发布",
+  "people": 19,
+  "source": "https://hackertrip.space/hackathon/ht-2026-2beb1cb6",
+  "added": null
+ },
+ {
+  "id": "payathon",
+  "title": "支付宝AI付 PAYATHON 2026 年度黑客松",
+  "poster": "assets/ht-payathon-2026.webp",
+  "start": "2026-09-21",
+  "end": "2026-12-26",
+  "loc": "线上报名与作品提交；2026-12-26 决赛线下路演（城市与场地待主办方公布）",
+  "mode": "混合",
+  "phase": "进行中",
+  "deadline": "2026-12-02",
+  "intro": "支付宝 AI 付 PAYATHON 2026 是支付宝 AI 付主办的年度黑客松，主题为「Build & Bill」，聚焦 AI 产品商业化：给 AI 产品接入支付，用真实收款和交付验证商业价值。总奖池 ¥200,000，五条赛道独立评选，个人或 2-5 人团队均可参赛；9 月启程、12 月决赛，开发者有充足的创作和沉",
+  "prize": "总奖池 ¥200,000，五条赛道分别设奖",
+  "people": 16,
+  "source": "https://hackertrip.space/hackathon/ht-payathon-2026",
+  "added": null
+ },
+ {
+  "id": "gcloud",
+  "title": "Google Cloud AI Builder Cup 亚太云开发黑客松",
+  "poster": "assets/ht-ai-builder-cup.webp",
+  "start": "2026-09-07",
+  "end": "2026-12-04",
+  "loc": "线上原型提交与评选；50 强赴新加坡总决赛（2026-12-04，决赛场馆待主办方公布）",
+  "mode": "混合",
+  "phase": "进行中",
+  "deadline": null,
+  "intro": "Google Cloud AI Builder Cup 是 Google Cloud 面向亚太区职场开发者与初创团队的行业 AI 黑客松。参赛者围绕六大核心赛道，利用 Google Cloud AI 构建解决现实行业痛点的方案；经 200 强评选后 50 强赴新加坡总决赛，争夺超 30,000 美元总奖池，50 强差旅",
+  "prize": "总奖池超 30,000 美元；入围决赛者各获 500 美元 Google Clo",
+  "people": 20,
+  "source": "https://hackertrip.space/hackathon/ht-ai-builder-cup",
+  "added": null
+ },
+ {
+  "id": "aiy",
+  "title": "AIY HACK LEAGUE 全球青年AI创客马拉松",
+  "poster": "assets/ht-aiy-hack-league-23f2a1aa.webp",
+  "start": "2026-10-15",
+  "end": "2026-12-24",
+  "loc": "线上，中国",
+  "mode": "线上",
+  "phase": "进行中",
+  "deadline": "2026-12-08",
+  "intro": "AIY HACK LEAGUE，全球青年AI创客马拉松，由全球AI领域的先行者名校、AI学术机构与头部科技企业联合发起、命题并认证，是一个面向青少年的AI原生创造平台。AIY采用项目制学习。不设编程门槛，也不需要计算机背景——而是学生能否借助AI这个创造工具，去做一个真实、具体的落地项目。学生从自己热爱的领域出发，在从",
+  "prize": "全球名校学社荣誉证书、企业孵化机会、大厂offer机会、作品集",
+  "people": 3,
+  "source": "https://hackertrip.space/hackathon/ht-aiy-hack-league-23f2a1aa",
+  "added": null
+ },
+ {
+  "id": "wake",
+  "title": "雾客松 2027（WAKEATHON）重庆跨年 AI 黑客松",
+  "poster": "assets/ht-2027.webp",
+  "start": "2027-01-22",
+  "end": "2027-01-24",
+  "loc": "重庆市渝中区朝天门接圣街8号 重庆来福士",
+  "mode": "混合",
+  "phase": "报名中",
+  "deadline": "2027-01-11",
+  "intro": "雾客松（WAKEATHON 2027）是一场在重庆举办的跨年 AI 黑客松，主题「WAKE UP WITH AI」。赛事于 2027 年 1 月 22 日-24 日落地重庆来福士，「客松」系列赛事之一，与苏客松、西客松、成客松跨城联动，汇聚全国 AI 创造者在山雾之城跨年共创。",
+  "prize": "总奖池超 20 万元：冠军 8 万元现金+奖杯、亚军 4 万元、季军 2 万元；",
+  "people": 16,
+  "source": "https://hackertrip.space/hackathon/ht-2027",
+  "added": null
+ }
+];
+
+const SOURCES = {
+  wa_online: { site: "WaytoAGI 活动页", official: true, title: "AI 切磋大会 · 线上会场", url: "https://events.waytoagi.com/events/e_bd425ffb33" },
+  wa_article: { site: "通往AGI之路（主办方公众号）", official: true, title: "最高10240元！AI切磋大会报名开启，6大赛道等你来Coding", url: null },
+};
+EVENTS.forEach((e) => { SOURCES["ht_" + e.id] = { site: "HackerTrip", official: false, title: `${e.title} · 收录页`, url: e.source }; });
+
+/* 已核对原文的赛事，详情里逐条列出原文 */
+const CLAIMS = {
+  waytoagi: [
+    { field: "作品提交截止", src: "wa_article", q: "10 月 25 日，展示与评选：上午继续开发，15:00 停止开发，{16:00 提交截止}。" },
+    { field: "报名", src: "wa_online", q: "请在本页完成活动报名。参与情况：{限 200 人}。" },
+    { field: "组队", src: "wa_online", q: "{每队最多 4 人}，组队与线下参赛的截止时间以赛事规则为准。" },
+  ],
+};
+const REG_NOTE = { waytoagi: "报名不设截止，按会场名额报满即止；线上会场限 200 人" };
+
+/* ---------- 工具 ---------- */
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const byId = (id) => EVENTS.find((e) => e.id === id);
+const parse = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const daysFrom = (iso) => Math.round((parse(iso) - parse(TODAY)) / 86400000);
+const md = (iso) => { const d = parse(iso); return `${d.getMonth() + 1}月${d.getDate()}日`; };
+const WEEK = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+function range(e) {
+  const s = parse(e.start), t = parse(e.end);
+  const yr = s.getFullYear() !== parse(TODAY).getFullYear() ? `${s.getFullYear()}年` : "";
+  if (e.start === e.end) return yr + md(e.start);
+  if (s.getFullYear() !== t.getFullYear()) return `${s.getFullYear()}年${md(e.start)} – ${t.getFullYear()}年${md(e.end)}`;
+  if (s.getMonth() === t.getMonth()) return `${yr}${s.getMonth() + 1}月${s.getDate()}–${t.getDate()}日`;
+  return `${md(e.start)} – ${md(e.end)}`;
+}
+/* 列表和日历都用的「关键日期」：报名中看截止，进行中看结束，报名已截止看开赛 */
+function key(e) {
+  if (e.deadline && daysFrom(e.deadline) >= 0) return { iso: e.deadline, label: e.deadlineLabel || "截止", verb: "后截止", time: e.deadlineTime };
+  if (e.phase === "进行中" && daysFrom(e.end) >= 0) return { iso: e.end, label: "结束", verb: "后结束" };
+  if (daysFrom(e.start) >= 0) return { iso: e.start, label: "开赛", verb: "后开始" };
+  return { iso: e.end, label: "结束", verb: "后结束" };
+}
+function daysBox(e) {
+  const k = key(e), n = daysFrom(k.iso);
+  const word = n === 0 ? `今天${k.label}` : n === 1 ? `明天${k.label}` : `天${k.verb}`;
+  return { n: n <= 1 ? "" : n, word, soon: k.label === "截止" || k.label === "作品提交截止" ? n <= 3 : false };
+}
+function daysText(e) { const b = daysBox(e); return b.n === "" ? b.word : `${b.n} ${b.word}`; }
+
+const ICON = {
+  cal: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
+  pin: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.7-6.5-11a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg>`,
+  check: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`,
+  close: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`,
+  ext: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>`,
+  chev: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>`,
+  file: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>`,
+  mark: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6.75" stroke="currentColor" stroke-width="2.5"/><circle cx="10" cy="10" r="2.25" fill="currentColor"/><path d="m15 15 5.25 5.25" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+};
+const thumb = (e, cls = "thumb") => `<span class="${cls}"><img src="${e.poster}" alt="" loading="lazy"></span>`;
+
+/* ---------- 首屏 ---------- */
+function renderHero() {
+  const t = parse(TODAY);
+  const weekDue = EVENTS.filter((e) => e.deadline && daysFrom(e.deadline) >= 0 && daysFrom(e.deadline) <= 7).length;
+  const open = EVENTS.filter((e) => e.phase !== "报名已截止").length;
+  $("#stats").innerHTML = `<div><b>${EVENTS.length}</b><span>场近期赛事</span></div><div><b>${open}</b><span>场还能报名或参加</span></div><div><b>${weekDue}</b><span>场 7 天内截止</span></div>`;
+  $("#week-date").textContent = `${t.getMonth() + 1}月${t.getDate()}日 ${WEEK[t.getDay()]}`;
+  $("#week").innerHTML = ["waytoagi", "su", "lingbo"].map((id) => {
+    const e = byId(id), b = daysBox(e);
+    return `<button class="week-item" type="button" data-open="${id}">${thumb(e)}<span><span class="t">${esc(e.title)}</span><span class="m">${range(e)} · ${esc(e.mode)}</span></span><span class="pill-days ${b.soon ? "soon" : ""}">${daysText(e)}</span></button>`;
+  }).join("");
+}
+
+/* ---------- 全部赛事 ---------- */
+const state = { tab: "全部", q: "", mode: "all", sort: "due", date: null, picks: null };
+const TABS = ["全部", "报名中", "进行中", "报名已截止"];
+
+function renderTabs() {
+  $("#tabs").innerHTML = TABS.map((t) => {
+    const n = t === "全部" ? EVENTS.length : EVENTS.filter((e) => e.phase === t).length;
+    return `<button class="tab" type="button" role="tab" aria-selected="${state.tab === t}" data-tab="${t}">${t}<span class="n">${n}</span></button>`;
+  }).join("");
+}
+
+function filtered() {
+  const q = state.q.trim().toLowerCase();
+  return EVENTS.filter((e) => {
+    if (state.picks && !state.picks.includes(e.id)) return false;
+    if (state.tab !== "全部" && e.phase !== state.tab) return false;
+    if (state.mode !== "all" && e.mode !== state.mode) return false;
+    if (state.date && !marks(e).some((m) => m.iso === state.date)) return false;
+    if (q && ![e.title, e.loc, e.intro, e.mode].join(" ").toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a, b) => {
+    if (state.picks) return state.picks.indexOf(a.id) - state.picks.indexOf(b.id);
+    if (state.sort === "start") return a.start.localeCompare(b.start);
+    const ra = a.phase === "报名已截止" ? 1 : 0, rb = b.phase === "报名已截止" ? 1 : 0;
+    return ra - rb || key(a).iso.localeCompare(key(b).iso);
+  });
+}
+
+function renderScope() {
+  const el = $("#scope");
+  if (state.picks) {
+    el.hidden = false;
+    el.innerHTML = `<span>正在显示侦探按你的简历挑出的 ${state.picks.length} 场</span><button class="btn btn-secondary" type="button" data-clear="picks">看全部</button>`;
+  } else if (state.date) {
+    el.hidden = false;
+    el.innerHTML = `<span>只看 ${md(state.date)} 有截止、开赛或结束的赛事</span><button class="btn btn-secondary" type="button" data-clear="date">清除日期</button>`;
+  } else el.hidden = true;
+}
+
+function renderEvents() {
+  const list = filtered();
+  $("#events").innerHTML = list.length ? list.map((e) => {
+    const b = daysBox(e);
+    const reason = state.picks && PICK_REASON[e.id];
+    return `<article class="event" tabindex="0" data-open="${e.id}">
+      <div class="poster"><img src="${e.poster}" alt="${esc(e.title)} 海报" loading="lazy"></div>
+      <div>
+        <h3>${esc(e.title)}</h3>
+        <div class="meta"><span>${ICON.cal}${range(e)}</span><span class="loc">${ICON.pin} ${esc(e.loc)}</span></div>
+        <div class="tags">${reason ? `<span class="tag" style="background:var(--c-accent);color:var(--c-on-accent)">${esc(reason)}</span>` : ""}<span class="tag">${esc(e.mode)}</span><span class="tag ${e.phase === "报名已截止" ? "dim" : ""}">${esc(e.phase)}</span>${e.verified ? `<span class="tag ok">${ICON.check}截止时间已核对原文</span>` : ""}</div>
+        <p class="intro">${esc(e.intro)}</p>
+      </div>
+      <div class="prize"><span class="k">奖励</span><span class="v">${esc(e.prize || "主办方未公布")}</span></div>
+      <div class="days ${b.soon ? "soon" : ""}"><b>${b.n}</b><span>${b.word}</span></div>
+    </article>`;
+  }).join("") : `<div class="empty"><span>没有找到符合条件的赛事。</span><button class="btn btn-secondary" type="button" id="empty-ask">让侦探去网上找「${esc(state.q || state.tab)}」</button></div>`;
+  const ea = $("#empty-ask"); if (ea) ea.onclick = () => ask(`帮我找一下「${state.q || state.tab}」相关的黑客松`);
+}
+
+/* ---------- 日历 ---------- */
+const cal = { y: 2026, m: 9 };
+function marks(e) {
+  const out = [];
+  if (e.deadline) out.push({ iso: e.deadline, label: e.deadlineLabel ? "交作品" : "截止" });
+  out.push({ iso: e.start, label: "开赛" });
+  if (e.phase === "进行中") out.push({ iso: e.end, label: "结束" });
+  return out;
+}
+function marksIndex() {
+  const idx = {};
+  EVENTS.forEach((e) => marks(e).forEach((m) => { (idx[m.iso] ||= []).push({ e, label: m.label }); }));
+  return idx;
+}
+function renderCalendar() {
+  const idx = marksIndex();
+  $("#cal-title").textContent = `${cal.y}年${cal.m + 1}月`;
+  const first = new Date(cal.y, cal.m, 1), offset = (first.getDay() + 6) % 7;
+  let html = ["一", "二", "三", "四", "五", "六", "日"].map((w) => `<span class="wd">${w}</span>`).join("");
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(cal.y, cal.m, 1 - offset + i), iso = isoOf(d), items = idx[iso] || [];
+    const cls = ["day", d.getMonth() !== cal.m ? "other" : "", iso < TODAY ? "past" : "", iso === TODAY ? "today" : "", items.length ? "has" : ""].join(" ");
+    html += `<button class="${cls}" type="button" data-date="${iso}" aria-pressed="${state.date === iso}" aria-label="${md(iso)}${items.length ? `，${items.length} 项安排` : ""}">${d.getDate()}</button>`;
+  }
+  $("#cal-grid").innerHTML = html;
+  let title, items;
+  if (state.date) { title = md(state.date); items = (idx[state.date] || []).map((x) => ({ ...x, iso: state.date })); }
+  else {
+    title = "未来 7 天";
+    items = Object.keys(idx).filter((k) => { const n = daysFrom(k); return n >= 0 && n <= 7; }).sort().flatMap((k) => idx[k].map((x) => ({ ...x, iso: k })));
+  }
+  $("#agenda").innerHTML = `<h4>${title}${state.date ? `<button type="button" data-clear="date">清除</button>` : ""}</h4>` + (items.length
+    ? `<ul>${items.map((x) => `<li><button type="button" data-open="${x.e.id}"><span class="dt">${md(x.iso).replace("月", "/").replace("日", "")}</span><span class="lb">${x.label}</span><span class="t">${esc(x.e.title)}</span></button></li>`).join("")}</ul>`
+    : `<div class="none">这一天没有安排。</div>`);
+}
+
+/* ---------- 详情弹窗 ---------- */
+let lastFocus = null;
+function openModal(id) {
+  const e = byId(id); if (!e) return;
+  lastFocus = document.activeElement;
+  const k = key(e);
+  const facts = [
+    ["时间", range(e)],
+    [k.label === "结束" ? "结束" : k.label === "开赛" ? "开赛" : (e.deadlineLabel || "截止"), `${md(k.iso)}${k.time ? " " + k.time : ""}<small>${daysText(e)}</small>`],
+    ["状态", esc(e.phase)],
+    ["地点", esc(e.loc)],
+    ["形式", esc(e.mode)],
+    ["奖励", esc(e.prize || "主办方未公布")],
+  ];
+  const claims = CLAIMS[id];
+  const sources = claims
+    ? `<div class="claims">${claims.map((c) => {
+        const s = SOURCES[c.src];
+        return `<div class="claim"><blockquote>“${esc(c.q).replace(/\{(.+?)\}/g, "<mark>$1</mark>")}”</blockquote>
+          <div class="src"><span class="kind official">主办方</span><span>${esc(s.site)}</span>${s.url ? `<a href="${s.url}" target="_blank" rel="noopener">${esc(s.title)} ${ICON.ext}</a>` : `<span>《${esc(s.title)}》</span>`}</div></div>`;
+      }).join("")}</div>`
+    : `<div class="note">时间、地点、奖励和简介来自 HackerTrip 收录页，主办方原文还没有核对。报名前以主办方通知为准。</div>
+       <div class="src" style="margin-top:8px"><span class="kind">聚合平台</span><span>HackerTrip</span><a href="${e.source}" target="_blank" rel="noopener">查看收录页 ${ICON.ext}</a></div>`;
+  $("#modal").innerHTML = `
+    <div class="modal-cover"><img src="${e.poster}" alt="${esc(e.title)} 海报"><button class="modal-close" type="button" data-close aria-label="关闭">${ICON.close}</button></div>
+    <div class="modal-body">
+      <div>
+        <h2 id="modal-title">${esc(e.title)}</h2>
+        <div class="tags" style="margin:0"><span class="tag">${esc(e.mode)}</span><span class="tag">${esc(e.phase)}</span>${e.verified ? `<span class="tag ok">${ICON.check}截止时间已核对原文</span>` : ""}</div>
+      </div>
+      <dl class="facts">${facts.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join("")}</dl>
+      ${REG_NOTE[id] ? `<div class="note">${esc(REG_NOTE[id])}</div>` : ""}
+      <section><h3>赛事简介</h3><p class="about">${esc(e.intro)}</p></section>
+      <section><h3>信息出处</h3>${sources}</section>
+    </div>
+    <div class="modal-foot">
+      <a class="btn btn-primary btn-lg" href="${e.verified ? SOURCES.wa_online.url : e.source}" target="_blank" rel="noopener">${e.verified ? "去报名" : "在 HackerTrip 查看"} ${ICON.ext}</a>
+      <button class="btn btn-secondary btn-lg" type="button" data-ask="${id}">问侦探</button>
+    </div>`;
+  $("#modal-root").classList.add("open"); $("#modal-root").setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  $("#modal .modal-close").focus();
+}
+function closeModal() {
+  $("#modal-root").classList.remove("open"); $("#modal-root").setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+  if (lastFocus) lastFocus.focus();
+}
+
+/* ---------- 侦探 ---------- */
+const PICK_REASON = { tme: "面向在校学生，前端和 AI 都用得上", waytoagi: "这周末线上，两天做完", aiforgood: "小工具也能参赛", su: "开放命题，不限技术栈" };
+const ref = (id) => SOURCES[id];
+
+const SCRIPTS = {
+  weekend: {
+    steps: [
+      "理解问题：10月24–25日这个周末、可以线上参加的 AI 黑客松",
+      "在库里按时间和形式筛选：1024 超能 Coding 周末设有线上会场",
+      "打开 WaytoAGI 线上会场页：10月24–25日，限 200 人，报名不用审核",
+      "读主办方公众号原文：10月25日 15:00 停止开发，16:00 提交截止",
+      "再找时间更宽裕的线上赛：支付宝 AI 付 PAYATHON、AIY HACK LEAGUE",
+    ],
+    answer: "这个周末能线上参加的是 <b>1024 超能 Coding 周末</b>：线上会场限 200 人，报名不用审核{1}，10月25日 16:00 交作品{2}。想要时间宽裕一些的，<b>支付宝 AI 付 PAYATHON</b> 线上报名和提交作品，距截止 40 天{3}；<b>AIY HACK LEAGUE</b> 全程线上，距截止 46 天{4}。",
+    refs: ["wa_online", "wa_article", "ht_payathon", "ht_aiy"],
+    picks: ["waytoagi", "payathon", "aiy"],
+  },
+  waytoagi: {
+    steps: [
+      "理解问题：1024 超能 Coding 周末的 16:00 是哪种截止",
+      "读主办方公众号原文：「10 月 25 日上午继续开发，15:00 停止开发，16:00 提交截止」",
+      "打开线上会场报名页：没有写报名截止，限 200 人，不用审核",
+      "活动页写明：组队、作品提交和评审在赛事网站进行",
+    ],
+    answer: "不是。16:00 是 <b>10月25日的作品提交截止</b>{1}。报名页没有写截止时间，按会场名额报满为止，线上会场限 200 人{2}。组队和交作品在赛事网站上进行，报名后在会场群里拿入口。",
+    refs: ["wa_article", "wa_online"],
+    picks: ["waytoagi"],
+  },
+  resume: (name) => ({
+    file: name,
+    steps: [
+      `读取简历《${esc(name)}》`,
+      "提取到：计算机科学专业大二；会 Python 和 React；做过一个 AI 记账小程序；暂无竞赛获奖",
+      `在 ${EVENTS.length} 场赛事里按技能、身份和时间逐场比对`,
+      "排除报名已截止的 2 场，以及面向职场开发者、要求已有产品的赛事",
+      "按截止时间排出优先级",
+    ],
+    answer: "按你的简历，最合适的是这 4 场。<b>1024 超能 Coding 周末</b>就在这周末，线上两天做完，适合先练手{1}。<b>苏客松</b>是开放命题，不限技术栈，能把记账小程序扩展成 Demo，4 天后截止，决赛要去苏州{2}。<b>腾讯音乐高校 AI Hackathon</b> 面向在校学生，用 AI 做音乐场景的互动产品，React 正好用得上{3}。<b>AI For Good 公益黑客松</b>里信息匹配、表单自动化这类小工具也能参赛，23 天后截止{4}。",
+    refs: ["wa_online", "ht_su", "ht_tme", "ht_aiforgood"],
+    picks: ["waytoagi", "su", "tme", "aiforgood"],
+    filter: true,
+  }),
+};
+function genericScript(e) {
+  const k = key(e);
+  return {
+    steps: [`打开 HackerTrip 收录页：${esc(e.title)}`, `读取时间、地点、形式和奖励`, `${esc(k.label)}：${md(k.iso)}，${daysText(e)}`],
+    answer: `<b>${esc(e.title)}</b>：${range(e)}，${esc(e.loc)}，${esc(e.mode)}。${esc(k.label)}在 <b>${md(k.iso)}</b>，${daysText(e)}{1}。奖励是${esc(e.prize || "主办方未公布")}。这些信息来自 HackerTrip 收录页，主办方原文还没核对，报名前以主办方通知为准。`,
+    refs: ["ht_" + e.id], picks: [e.id],
+  };
+}
+
+const IDEAS = [
+  { t: "这周末能线上参加的 AI 黑客松", d: "按条件找比赛", run: () => ask("这周末能线上参加的 AI 黑客松") },
+  { t: "1024 超能 Coding 周末的 16:00 是报名截止吗？", d: "核对一场比赛", run: () => ask("1024 超能 Coding 周末的 16:00 是报名截止吗？") },
+  { t: "用示例简历帮我挑比赛", d: "没有简历也能先试试", run: () => run(null, SCRIPTS.resume("示例简历_计算机大二.pdf")) },
+];
+
+const dock = $("#dock"), thread = $("#thread"), input = $("#input"), send = $("#send");
+let busy = false;
+function openDock() {
+  dock.classList.add("open");
+  if (!thread.children.length) {
+    thread.innerHTML = `<div class="welcome"><p>可以直接问比赛的事，也可以上传简历，让侦探按你的技能和时间挑比赛。</p><div class="ideas">${IDEAS.map((i, n) => `<button class="idea" type="button" data-idea="${n}"><b>${esc(i.t)}</b><span>${esc(i.d)}</span></button>`).join("")}</div></div>`;
+  }
+}
+function closeDock() { dock.classList.remove("open"); }
+
+function ask(q, id) {
+  let s;
+  if (id) s = SCRIPTS[id] && id !== "resume" ? SCRIPTS[id] : genericScript(byId(id));
+  else if (/1024|16:00|超能/.test(q)) s = SCRIPTS.waytoagi;
+  else if (/简历/.test(q)) s = SCRIPTS.resume("示例简历_计算机大二.pdf");
+  else s = SCRIPTS.weekend;
+  run(q, s);
+}
+
+function run(q, s) {
+  if (busy) return;
+  openDock();
+  thread.querySelector(".welcome")?.remove();
+  busy = true; send.disabled = true;
+  const qEl = document.createElement("div");
+  qEl.className = "msg-q";
+  if (s.file) qEl.innerHTML = `<span class="file">${ICON.file}${esc(s.file)}</span>按这份简历帮我挑比赛`; else qEl.textContent = q;
+  thread.appendChild(qEl);
+  const a = document.createElement("div");
+  a.className = "msg-a";
+  a.innerHTML = `<span class="avatar" aria-hidden="true">${ICON.mark}</span><div class="body"><details class="process" open><summary>${ICON.chev}<span class="live">正在查证</span></summary><ol class="steps"></ol></details></div>`;
+  thread.appendChild(a);
+  thread.scrollTop = thread.scrollHeight;
+  const list = a.querySelector(".steps"), label = a.querySelector("summary span"), body = a.querySelector(".body");
+  let i = 0;
+  (function next() {
+    if (i < s.steps.length) {
+      const li = document.createElement("li"); li.innerHTML = s.steps[i++]; list.appendChild(li);
+      thread.scrollTop = thread.scrollHeight;
+      setTimeout(next, 600 + Math.random() * 500);
+      return;
+    }
+    label.className = ""; label.textContent = `查证了 ${s.steps.length} 步，看过 ${s.refs.length} 个来源`;
+    a.querySelector(".process").open = false;
+    body.insertAdjacentHTML("beforeend", answerHtml(s));
+    thread.scrollTop = thread.scrollHeight;
+    busy = false; send.disabled = !input.value.trim();
+  })();
+}
+
+function answerHtml(s) {
+  const text = s.answer.replace(/\{(\d)\}/g, (_, n) => { const r = ref(s.refs[n - 1]); return r.url ? `<sup><a href="${r.url}" target="_blank" rel="noopener" title="${esc(r.site)}">${n}</a></sup>` : `<sup><a title="${esc(r.site)}">${n}</a></sup>`; });
+  const picks = s.picks.length > 1 ? `<div class="picks">${s.picks.map((id) => {
+    const e = byId(id);
+    return `<button class="pick" type="button" data-open="${id}">${thumb(e)}<span><span class="n">${esc(e.title)}</span><br><span class="why">${s.filter ? esc(PICK_REASON[id]) : esc(e.mode) + " · " + range(e)}</span></span><span class="d">${daysText(e)}</span></button>`;
+  }).join("")}</div>` : "";
+  const refs = `<ol class="refs">${s.refs.map((id, i) => { const r = ref(id); return `<li><span>${i + 1}</span><span>${r.url ? `<a href="${r.url}" target="_blank" rel="noopener">${esc(r.title)}</a>` : `《${esc(r.title)}》`} · ${esc(r.site)}${r.official ? "（主办方）" : ""}</span></li>`; }).join("")}</ol>`;
+  const actions = s.filter ? `<div class="msg-actions"><button class="btn btn-primary" type="button" data-filter="${s.picks.join(",")}">在赛事列表里只看这 ${s.picks.length} 场</button></div>`
+    : s.picks.length === 1 ? `<div class="msg-actions"><button class="btn btn-secondary" type="button" data-open="${s.picks[0]}">查看这场赛事</button></div>` : "";
+  return `<p class="answer">${text}</p>${picks}${refs}${actions}`;
+}
+
+/* ---------- 事件绑定：统一用委托 ---------- */
+document.addEventListener("click", (ev) => {
+  const t = ev.target.closest("[data-open],[data-close],[data-ask],[data-idea],[data-filter],[data-clear],[data-tab],[data-date],[data-resume]");
+  if (!t) return;
+  if (t.dataset.open) { if (t.closest("#dock")) closeDock(); openModal(t.dataset.open); }
+  else if ("close" in t.dataset) closeModal();
+  else if (t.dataset.ask) { const id = t.dataset.ask; closeModal(); ask(id === "waytoagi" ? "1024 超能 Coding 周末的 16:00 是报名截止吗？" : `介绍一下「${byId(id).title}」`, id); }
+  else if (t.dataset.idea) IDEAS[+t.dataset.idea].run();
+  else if (t.dataset.filter) { state.picks = t.dataset.filter.split(","); state.tab = "全部"; state.date = null; closeDock(); refresh(); $("#explore").scrollIntoView(); }
+  else if (t.dataset.clear) { state[t.dataset.clear] = null; refresh(); }
+  else if (t.dataset.tab) { state.tab = t.dataset.tab; refresh(); }
+  else if (t.dataset.date) { const iso = t.dataset.date; state.date = state.date === iso ? null : iso; const d = parse(iso); if (d.getMonth() !== cal.m) { cal.y = d.getFullYear(); cal.m = d.getMonth(); } refresh(); }
+  else if ("resume" in t.dataset) { openDock(); $("#file").click(); }
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && $("#modal-root").classList.contains("open")) closeModal();
+  if (ev.key === "Enter" && ev.target.matches(".event[data-open]")) openModal(ev.target.dataset.open);
+});
+function refresh() { renderTabs(); renderScope(); renderEvents(); renderCalendar(); }
+
+input.addEventListener("focus", openDock);
+input.addEventListener("input", () => { send.disabled = busy || !input.value.trim(); input.style.height = "auto"; input.style.height = Math.min(input.scrollHeight, 120) + "px"; });
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#composer").requestSubmit(); } });
+$("#composer").addEventListener("submit", (e) => { e.preventDefault(); const q = input.value.trim(); if (!q || busy) return; input.value = ""; input.style.height = "auto"; ask(q); });
+$("#dock-close").addEventListener("click", closeDock);
+$("#attach").addEventListener("click", () => $("#file").click());
+$("#file").addEventListener("change", (e) => { const f = e.target.files[0]; if (f) run(null, SCRIPTS.resume(f.name)); e.target.value = ""; });
+$("#q").addEventListener("input", (e) => { state.q = e.target.value; renderEvents(); });
+$("#mode").addEventListener("change", (e) => { state.mode = e.target.value; renderEvents(); });
+$("#sort").addEventListener("change", (e) => { state.sort = e.target.value; renderEvents(); });
+$("#cal-prev").addEventListener("click", () => { cal.m--; if (cal.m < 0) { cal.m = 11; cal.y--; } renderCalendar(); });
+$("#cal-next").addEventListener("click", () => { cal.m++; if (cal.m > 11) { cal.m = 0; cal.y++; } renderCalendar(); });
+$("#cal-toggle").addEventListener("click", (e) => { const b = $("#cal-body"); b.classList.toggle("collapsed"); e.target.textContent = b.classList.contains("collapsed") ? "展开" : "收起"; });
+
+renderHero(); refresh();
+/* 带 #open-赛事 的链接直接打开那场的详情，方便分享给队友 */
+const deep = location.hash.match(/^#open-([\w-]+)$/);
+if (deep && byId(deep[1])) openModal(deep[1]);
+</script>
+</body>
+</html>
