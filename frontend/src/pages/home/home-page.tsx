@@ -3,8 +3,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
-import { AuthControls } from '@/features/auth'
+import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
+import { AuthControls } from '@/features/auth'
 import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import type { Profile } from '@/shared/api'
@@ -39,24 +40,25 @@ export function HomePage() {
 
   return (
     <div className="min-h-dvh">
-      <header className="border-b border-rule bg-surface">
-        <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
-          <span className="text-base font-semibold text-ink">比赛侦探</span>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setShowFollows((value) => !value)
-                listArea.current?.scrollIntoView?.({ block: 'start' })
-              }}
-            >
-              {showFollows ? '全部赛事' : '我的关注'}
-            </Button>
+      <SiteHeader
+        utilities={
+          <>
             <AppearanceControl />
             <AuthControls />
-          </div>
-        </div>
-      </header>
+          </>
+        }
+        actions={
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setShowFollows((value) => !value)
+              listArea.current?.scrollIntoView?.({ block: 'start' })
+            }}
+          >
+            {showFollows ? '全部赛事' : '我的关注'}
+          </Button>
+        }
+      />
 
       {/* 底部留白给常驻的侦探输入条，免得最后一个区块被它挡住 */}
       <main className="mx-auto max-w-7xl px-6 pb-32 sm:px-8">
@@ -96,6 +98,7 @@ export function HomePage() {
       </main>
 
       <DetectiveDock
+        key={user?.id ?? 'guest'}
         profile={user?.profile ?? guestProfile}
         onAddProfile={() => setProfileOpen(true)}
       />
