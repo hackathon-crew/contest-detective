@@ -46,11 +46,12 @@ export function ContestCalendar({ followedIds }: { followedIds?: string[] }) {
         return (
           <CalendarDayButton {...props} locale={zhCN} className="min-h-12 gap-0">
             {format(props.day.date, 'd')}
-            {count > 0 && (
-              <span className={props.modifiers.selected ? 'text-primary-foreground' : 'text-muted'}>
-                {count}场
-              </span>
-            )}
+            <span
+              aria-hidden={count === 0}
+              className={props.modifiers.selected ? 'text-primary-foreground' : 'text-muted'}
+            >
+              {count > 0 ? `${count}场` : '\u00a0'}
+            </span>
           </CalendarDayButton>
         )
       },
