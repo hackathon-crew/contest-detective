@@ -32,12 +32,18 @@ afterEach(() => {
   localStorage.clear()
   vi.unstubAllGlobals()
 })
-function show(path = '/') {
+function show(path = '/', collectionResponse?: (url: URL) => Promise<Response>) {
   window.history.replaceState(null, '', path)
   const calls: { url: URL; init?: RequestInit }[] = []
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost')
     calls.push({ url, init })
+    if (
+      url.pathname === '/api/contests' &&
+      !url.searchParams.has('date_from') &&
+      collectionResponse
+    )
+      return collectionResponse(url)
     if (url.pathname.endsWith('/agent/ask'))
       return new Response('event: answer\ndata: {"content":"已核实出处。","sources":[]}\n\n', {
         headers: { 'content-type': 'text/event-stream' },
@@ -145,4 +151,47 @@ it('returns from a catalog detail to the same filtered catalog instance', async 
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   expect(screen.getByRole('searchbox', { name: '搜索赛事' })).toBe(input)
   expect((input as HTMLInputElement).value).toBe('Python')
+})
+
+it('shows first-page cards before the rest arrives and preserves them when the next page fails', async () => {
+  let finish!: (response: Response) => void
+  const remaining = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  const deadline = new Date(Date.now() + 86400000).toISOString()
+  const first = Array.from({ length: 100 }, (_, index) => ({
+    ...contests[0],
+    id: 'first-' + index,
+    name: '首批赛事 ' + index,
+    fields: {
+      submission_deadline: {
+        value: deadline,
+        level: 'official',
+        precision: 'datetime',
+        sources: [],
+      },
+    },
+  }))
+  show('/', async (url) =>
+    url.searchParams.get('page') === '2'
+      ? remaining
+      : Response.json({
+          code: 200,
+          message: 'ok',
+          data: first,
+          total: 101,
+          page: 1,
+          page_size: 100,
+        }),
+  )
+  const section = within(screen.getByRole('heading', { name: '两周内截止' }).closest('section')!)
+  try {
+    expect(await section.findByRole('link', { name: /首批赛事 0/ })).toBeTruthy()
+    expect(screen.getByText(/已加载 100/)).toBeTruthy()
+  } finally {
+    finish(Response.json({ code: 503, message: '后续赛事暂时不可用', data: null }, { status: 503 }))
+  }
+  await screen.findByRole('alert')
+  expect(section.getByRole('link', { name: /首批赛事 0/ })).toBeTruthy()
+  expect(screen.getByRole('button', { name: '重试' })).toBeTruthy()
 })

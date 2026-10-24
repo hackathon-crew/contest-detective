@@ -23,9 +23,10 @@ export interface ContestFilters {
   page?: number
   page_size?: number
 }
-export function listContests(query: ContestFilters = {}) {
+export function listContests(query: ContestFilters = {}, signal?: AbortSignal) {
   return apiClient.requestList<ContestSummary>('/contests', {
     query: { ...query, ids: query.ids?.join(',') },
+    signal,
   })
 }
 export function getContest(id: string) {
