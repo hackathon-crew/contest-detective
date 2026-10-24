@@ -30,6 +30,10 @@ export function HomePage() {
     <FollowButton contestId={contest.id} follows={follows} />
   )
   const contestId = useMatch('/contests/:contestId')?.params.contestId
+  // 关闭地址先变化，详情内容保留到 Radix 退场结束；关闭期间不再请求赛事。
+  const [lastContestId, setLastContestId] = useState(contestId)
+  if (contestId && contestId !== lastContestId) setLastContestId(contestId)
+  const detailId = contestId ?? lastContestId ?? ''
   const navigate = useNavigate()
   const { search } = useLocation()
   const closeDetail = useCallback(() => navigate({ pathname: '/', search }), [navigate, search])
@@ -102,20 +106,18 @@ export function HomePage() {
         profile={user?.profile ?? guestProfile}
         onAddProfile={() => setProfileOpen(true)}
       />
-      {profileOpen && (
-        <ProfileMatchDialog
-          user={user}
-          onClose={() => setProfileOpen(false)}
-          onConfirmed={confirmed}
-        />
-      )}
-      {contestId && (
-        <ContestDetail
-          contestId={contestId}
-          onClose={closeDetail}
-          action={<FollowButton contestId={contestId} follows={follows} />}
-        />
-      )}
+      <ProfileMatchDialog
+        open={profileOpen}
+        user={user}
+        onClose={() => setProfileOpen(false)}
+        onConfirmed={confirmed}
+      />
+      <ContestDetail
+        open={!!contestId}
+        contestId={detailId}
+        onClose={closeDetail}
+        action={<FollowButton contestId={detailId} follows={follows} />}
+      />
     </div>
   )
 }
