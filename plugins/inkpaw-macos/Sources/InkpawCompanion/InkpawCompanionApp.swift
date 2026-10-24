@@ -61,6 +61,7 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
 @MainActor
 final class CompanionCoordinator: NSObject, NSWindowDelegate {
     let store: CompanionStore
+    let workspacePresentation = WorkspacePresentation()
     private var panel: NSPanel?
     private var workspace: NSWindow?
     private var statusItem: NSStatusItem?
@@ -143,7 +144,7 @@ final class CompanionCoordinator: NSObject, NSWindowDelegate {
             window.title = "Inkpaw · 比赛工作台"
             window.minSize = NSSize(width: 780, height: 560)
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: CompanionWorkspaceView(store: store))
+            window.contentView = NSHostingView(rootView: CompanionWorkspaceView(store: store, presentation: workspacePresentation))
             window.center()
             workspace = window
         }

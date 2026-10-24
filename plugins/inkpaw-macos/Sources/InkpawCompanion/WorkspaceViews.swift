@@ -1,5 +1,6 @@
 #if os(macOS)
 import AppKit
+import Combine
 import SwiftUI
 import InkpawCore
 
@@ -86,7 +87,7 @@ struct PetWidgetView: View {
     }
 }
 
-private enum WorkspaceTab: String, CaseIterable, Identifiable {
+enum WorkspaceTab: String, CaseIterable, Identifiable {
     case schedule = "赛程", documents = "规则问答", checklist = "提交清单", git = "Git 活动", settings = "服务与提醒"
     var id: String { rawValue }
     var accessibilityID: String {
@@ -109,9 +110,55 @@ private enum WorkspaceTab: String, CaseIterable, Identifiable {
     }
 }
 
+struct ScheduleEditorPresentation: Identifiable {
+    let id = UUID()
+    let existing: CompetitionSchedule?
+}
+
+/// Ephemeral presentation state shared by the real window and its commands.
+/// This does not persist data, authenticate a service, or perform external actions.
+@MainActor
+final class WorkspacePresentation: ObservableObject {
+    @Published private(set) var selectedTab: WorkspaceTab = .schedule
+    @Published private(set) var scheduleEditor: ScheduleEditorPresentation?
+    @Published private(set) var sourceInspection: DocumentSourceInspection?
+    @Published var documentQuestion = ""
+
+    func selectTab(_ tab: WorkspaceTab) {
+        guard tab != selectedTab else { return }
+        // Page-local drafts and sheets previously disappeared with their @State
+        // when the switch removed a page. Preserve that lifecycle here.
+        closeScheduleEditor()
+        closeSourceInspection()
+        documentQuestion = ""
+        selectedTab = tab
+    }
+
+    func openScheduleEditor(existing: CompetitionSchedule? = nil) {
+        guard selectedTab == .schedule, scheduleEditor == nil else { return }
+        scheduleEditor = ScheduleEditorPresentation(existing: existing)
+    }
+
+    func closeScheduleEditor() { scheduleEditor = nil }
+
+    func inspectSource(passage: DocumentPassage, quote: String = "", localURL: URL? = nil) {
+        guard selectedTab == .documents, sourceInspection == nil else { return }
+        sourceInspection = DocumentSourceInspection(passage: passage, quote: quote, localURL: localURL)
+    }
+
+    func closeSourceInspection() { sourceInspection = nil }
+
+    func canPreviewQuestion(in store: CompanionStore) -> Bool {
+        !documentQuestion.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && documentQuestion.count <= 1000
+            && !store.selectedPassages.isEmpty
+            && store.signedInName != nil
+    }
+}
+
 struct CompanionWorkspaceView: View {
     @ObservedObject var store: CompanionStore
-    @State private var tab: WorkspaceTab = .schedule
+    @ObservedObject var presentation: WorkspacePresentation
 
     var body: some View {
         HStack(spacing: 0) {
@@ -121,17 +168,17 @@ struct CompanionWorkspaceView: View {
                     Text("把项目推进到交付").font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
                 }.padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
                 ForEach(WorkspaceTab.allCases) { item in
-                    Button { tab = item } label: {
+                    Button { presentation.selectTab(item) } label: {
                         HStack(spacing: 12) {
                             Image(systemName: item.icon).font(.system(size: 16, weight: .medium)).frame(width: 20)
                             Text(item.rawValue).font(InkpawType.control)
                             Spacer(minLength: 0)
                         }
                     }
-                    .buttonStyle(InkpawNavigationStyle(isSelected: tab == item))
+                    .buttonStyle(InkpawNavigationStyle(isSelected: presentation.selectedTab == item))
                     .accessibilityLabel(item.rawValue)
                     .accessibilityIdentifier(item.accessibilityID)
-                    .accessibilityAddTraits(tab == item ? .isSelected : [])
+                    .accessibilityAddTraits(presentation.selectedTab == item ? .isSelected : [])
                 }
                 Spacer(minLength: 24)
                 VStack(alignment: .leading, spacing: 8) {
@@ -156,9 +203,9 @@ struct CompanionWorkspaceView: View {
                     .background(InkpawColors.dangerSoft)
                 }
                 Group {
-                    switch tab {
-                    case .schedule: ScheduleWorkspaceView(store: store)
-                    case .documents: DocumentWorkspaceView(store: store)
+                    switch presentation.selectedTab {
+                    case .schedule: ScheduleWorkspaceView(store: store, presentation: presentation)
+                    case .documents: DocumentWorkspaceView(store: store, presentation: presentation)
                     case .checklist: ChecklistWorkspaceView(store: store)
                     case .git: GitWorkspaceView(store: store)
                     case .settings: SettingsWorkspaceView(store: store)
@@ -242,8 +289,7 @@ struct InkpawEmptyState<Action: View>: View {
 
 struct ScheduleWorkspaceView: View {
     @ObservedObject var store: CompanionStore
-    @State private var editing = false
-    @State private var createNew = false
+    @ObservedObject var presentation: WorkspacePresentation
     @State private var milestoneTitle = ""
     @State private var milestoneDate = Date()
 
@@ -252,7 +298,7 @@ struct ScheduleWorkspaceView: View {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 HStack(alignment: .top) {
                     WorkspaceTitle(title: "比赛赛程", subtitle: "查看比赛倒计时、赛程节点和提交准备情况。", identifier: "workspace.heading.schedule")
-                    Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
+                    Button { presentation.openScheduleEditor() } label: { Label("新建比赛", systemImage: "plus") }
                         .buttonStyle(InkpawButtonStyle(store.selectedSchedule == nil ? .secondary : .primary))
                         .accessibilityIdentifier("schedule.create.header")
                 }
@@ -269,7 +315,7 @@ struct ScheduleWorkspaceView: View {
                                 InkpawTag(title: phaseTitle, accented: store.timeline?.phase == .active)
                             }
                             Spacer(minLength: 8)
-                            Button("编辑时间") { createNew = false; editing = true }
+                            Button("编辑时间") { presentation.openScheduleEditor(existing: schedule) }
                                 .buttonStyle(InkpawButtonStyle(.secondary, size: .small))
                                 .accessibilityIdentifier("schedule.edit")
                         }
@@ -336,7 +382,7 @@ struct ScheduleWorkspaceView: View {
                         InkpawEmptyState(symbol: "calendar.badge.plus", title: "从一场比赛开始",
                             detail: "记下比赛的起止日期与时区，让每一个重要节点都清晰可见。",
                             note: "还不确定准确时刻？可以先保存日期，核实后再开启精确倒计时。") {
-                            Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
+                            Button { presentation.openScheduleEditor() } label: { Label("新建比赛", systemImage: "plus") }
                                 .buttonStyle(InkpawButtonStyle(.primary))
                                 .accessibilityIdentifier("schedule.create.empty")
                         }.frame(minHeight: 272)
@@ -349,8 +395,10 @@ struct ScheduleWorkspaceView: View {
                 }
             }.frame(maxWidth: InkpawLayout.contentMeasure).padding(InkpawLayout.pagePadding).frame(maxWidth: .infinity)
         }
-        .sheet(isPresented: $editing) {
-            ScheduleEditor(store: store, existing: createNew ? nil : store.selectedSchedule)
+        .sheet(item: Binding(get: { presentation.scheduleEditor }, set: { value in
+            if value == nil { presentation.closeScheduleEditor() }
+        })) { editor in
+            ScheduleEditor(store: store, existing: editor.existing, close: presentation.closeScheduleEditor)
         }
     }
 
@@ -380,7 +428,7 @@ struct ScheduleWorkspaceView: View {
 struct ScheduleEditor: View {
     @ObservedObject var store: CompanionStore
     let existing: CompetitionSchedule?
-    @Environment(\.dismiss) private var dismiss
+    let close: () -> Void
     @State private var title = ""
     @State private var start = Date()
     @State private var end = Date().addingTimeInterval(48 * 3600)
@@ -410,13 +458,13 @@ struct ScheduleEditor: View {
             if let error { Text(error).font(InkpawType.metadata).foregroundStyle(InkpawColors.danger) }
             HStack {
                 Spacer()
-                Button("取消") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("取消", action: close).keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("schedule.editor.cancel")
                 Button("保存") {
                     do {
                         try store.saveSchedule(id: existing?.id, title: title, start: start, end: end, zone: zone,
                                                precision: dateOnly ? .day : .exact)
-                        dismiss()
+                        close()
                     } catch { self.error = error.localizedDescription }
                 }.buttonStyle(InkpawButtonStyle(.primary)).keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("schedule.editor.save")

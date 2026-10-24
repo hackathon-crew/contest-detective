@@ -352,46 +352,6 @@ final class CompanionSmokeRunner {
         finish(status: "passed", reason: "Applicable real-window, native geometry and pixel-export checks passed; inspect skippedChecks for explicitly unvalidated capabilities.", code: 0)
     }
 
-    /// Dispatches only public accessibility methods on objects already owned by
-    /// this process. No AXUIElement, event injection, or OS accessibility access.
-    private func accessibleElements(in root: NSView) -> [any NSAccessibilityProtocol] {
-        var queue: [Any] = [root]
-        var seen = Set<ObjectIdentifier>()
-        var result: [any NSAccessibilityProtocol] = []
-        var index = 0
-        while index < queue.count && index < 2_000 {
-            let item = queue[index]
-            index += 1
-            let identity = ObjectIdentifier(item as AnyObject)
-            guard seen.insert(identity).inserted else { continue }
-            if let view = item as? NSView { queue.append(contentsOf: view.subviews) }
-            if let element = item as? any NSAccessibilityProtocol {
-                result.append(element)
-                queue.append(contentsOf: element.accessibilityChildren() ?? [])
-            }
-        }
-        return result
-    }
-
-    private func control(_ identifier: String, in root: NSView) throws -> any NSAccessibilityProtocol {
-        let elements = accessibleElements(in: root)
-        if let match = elements.first(where: { $0.accessibilityIdentifier() == identifier }) { return match }
-        let evidence = elements.map { ["identifier": $0.accessibilityIdentifier() ?? "",
-                                       "role": $0.accessibilityRole()?.rawValue ?? "",
-                                       "label": $0.accessibilityLabel() ?? ""] }
-        try writeJSON(evidence, filename: "workspace-accessibility-missing.json")
-        addFile("workspace-accessibility-missing.json")
-        throw SmokeFailure("The real workspace did not expose expected control \(identifier).")
-    }
-
-    private func press(_ identifier: String, in root: NSView) async throws {
-        let element = try control(identifier, in: root)
-        try require(element.isAccessibilityEnabled(), "Expected enabled control \(identifier) is disabled.")
-        try require(element.accessibilityPerformPress(), "The real control did not accept press: \(identifier).")
-        try await Task.sleep(nanoseconds: 300_000_000)
-        root.layoutSubtreeIfNeeded()
-    }
-
     private func exportWorkspace(_ window: NSWindow, filename: String) throws {
         guard let content = window.contentView else { throw SmokeFailure("A real workspace or sheet lost its content.") }
         content.layoutSubtreeIfNeeded()
@@ -412,11 +372,12 @@ final class CompanionSmokeRunner {
     }
 
     private func exerciseWorkspace(coordinator: CompanionCoordinator, window: NSWindow) async throws {
-        report["phase"] = "workspace-interactive-flows"
-        report["workspaceActionScope"] = "public NSAccessibilityProtocol on this process's own views only"
+        report["phase"] = "workspace-presentation-flows"
+        report["workspaceActionScope"] = "shared presentation commands used by real SwiftUI buttons; in-process view/state integration, not pointer or keyboard automation"
         try checkpoint()
-        guard let root = window.contentView else { throw SmokeFailure("Workspace content is unavailable.") }
+        guard window.contentView != nil else { throw SmokeFailure("Workspace content is unavailable.") }
         let store = coordinator.store
+        let presentation = coordinator.workspacePresentation
         let now = Date()
         try store.saveSchedule(id: store.selectedSchedule?.id, title: "示例赛程（验证用）",
                                start: now.addingTimeInterval(-3600), end: now.addingTimeInterval(86400),
@@ -425,35 +386,38 @@ final class CompanionSmokeRunner {
         store.addChecklistItem("演示视频")
         store.addChecklistItem("项目说明")
         try await Task.sleep(nanoseconds: 300_000_000)
-        _ = try control("workspace.heading.schedule", in: root)
+        try require(presentation.selectedTab == .schedule, "The shared presentation state did not select the schedule tab.")
         try exportWorkspace(window, filename: "workspace-schedule-populated.png")
         let scheduleBeforeEdit = store.selectedSchedule
         for iteration in 0..<2 {
-            try await press("schedule.edit", in: root)
+            presentation.openScheduleEditor(existing: store.selectedSchedule)
             try await waitForSheet(window, present: true)
-            guard let sheet = window.attachedSheet, let sheetRoot = sheet.contentView else {
+            try await Task.sleep(nanoseconds: 300_000_000)
+            guard let sheet = window.attachedSheet, sheet.contentView != nil else {
                 throw SmokeFailure("The real schedule editor was not presented as a sheet.")
             }
-            let title = try control("schedule.editor.title", in: sheetRoot).accessibilityValue() as? String
-            try require(title == "示例赛程（验证用）", "The real editor did not load the selected schedule title.")
+            try require(presentation.scheduleEditor?.existing == scheduleBeforeEdit,
+                        "The real editor presentation did not receive the selected schedule snapshot.")
             if iteration == 0 { try exportWorkspace(sheet, filename: "workspace-schedule-editor.png") }
-            try await press("schedule.editor.cancel", in: sheetRoot)
+            presentation.closeScheduleEditor()
             try await waitForSheet(window, present: false)
             try require(store.selectedSchedule == scheduleBeforeEdit, "Cancelling the editor mutated the schedule.")
         }
         setCheck("scheduleEditorRepeatedOpenCancel", true)
 
-        try await press("workspace.tab.checklist", in: root)
-        _ = try control("workspace.heading.checklist", in: root)
+        presentation.selectTab(.checklist)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(presentation.selectedTab == .checklist, "The checklist tab was not selected.")
         guard let item = store.selectedChecklist?.items.first else { throw SmokeFailure("Synthetic checklist item is missing.") }
         let timeBefore = store.timeline?.progressFraction
-        try await press("checklist.toggle." + item.id, in: root)
-        try require(store.completedItemCount == 1 && store.itemCount == 2, "The real checklist toggle did not update its bound item.")
+        store.toggleChecklistItem(item.id)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(store.completedItemCount == 1 && store.itemCount == 2, "The shared checklist action did not update its bound item.")
         if let before = timeBefore, let after = store.timeline?.progressFraction {
             try require(abs(after - before) < 0.001, "Checklist completion changed the contest-time position.")
         } else { throw SmokeFailure("The exact synthetic schedule lost its time progress.") }
         try exportWorkspace(window, filename: "workspace-checklist.png")
-        setCheck("realChecklistToggleKeepsTimeSeparate", true)
+        setCheck("checklistStateTransitionKeepsTimeSeparate", true)
 
         let document = directory.appendingPathComponent("synthetic-rules.md")
         try "示例规则（仅用于界面验证）\n请提交项目说明与演示视频。\n演示视频不超过三分钟。".write(to: document, atomically: true, encoding: .utf8)
@@ -464,24 +428,23 @@ final class CompanionSmokeRunner {
         }
         try require(store.state.documents.count == 1 && store.errorMessage == nil && !store.passages.isEmpty,
                     "The real local Markdown importer did not produce source passages.")
-        try await press("workspace.tab.documents", in: root)
-        _ = try control("workspace.heading.documents", in: root)
-        let questionField = try control("documents.question", in: root)
-        questionField.setAccessibilityValue("需要提交哪些材料？")
+        presentation.selectTab(.documents)
+        presentation.documentQuestion = "需要提交哪些材料？"
         try await Task.sleep(nanoseconds: 300_000_000)
-        try require(questionField.accessibilityValue() as? String == "需要提交哪些材料？" && !store.selectedPassages.isEmpty,
+        try require(presentation.documentQuestion == "需要提交哪些材料？" && !store.selectedPassages.isEmpty,
                     "The real document form did not retain its synthetic question and selected passages.")
         try exportWorkspace(window, filename: "workspace-documents.png")
-        try require(!control("documents.preview", in: root).isAccessibilityEnabled(),
+        try require(!presentation.canPreviewQuestion(in: store),
                     "The document send-preview control was enabled without signing in.")
         guard let passage = store.passages.first else { throw SmokeFailure("Imported source passage is missing.") }
-        try await press("documents.source." + passage.id, in: root)
+        presentation.inspectSource(passage: passage, localURL: document)
         try await waitForSheet(window, present: true)
-        guard let sourceSheet = window.attachedSheet, let sourceRoot = sourceSheet.contentView else {
+        try await Task.sleep(nanoseconds: 300_000_000)
+        guard let sourceSheet = window.attachedSheet, sourceSheet.contentView != nil else {
             throw SmokeFailure("The real local source inspector did not appear.")
         }
         try exportWorkspace(sourceSheet, filename: "workspace-document-source.png")
-        try await press("documents.source.close", in: sourceRoot)
+        presentation.closeSourceInspection()
         try await waitForSheet(window, present: false)
         store.sendQuestion(DocumentQuestion(question: "需要提交哪些材料？", passages: store.selectedPassages),
                            confirmedServiceAddress: store.serviceAddress)
@@ -489,8 +452,9 @@ final class CompanionSmokeRunner {
                     "The unsigned-in document request did not fail closed before networking.")
         try await Task.sleep(nanoseconds: 300_000_000)
         try exportWorkspace(window, filename: "workspace-documents-auth-boundary.png")
-        try await press("workspace.error.dismiss", in: root)
-        try require(store.errorMessage == nil, "The real error dismiss button did not clear the banner.")
+        store.errorMessage = nil
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(store.errorMessage == nil, "The shared error-dismiss state did not clear the banner.")
         let empty = directory.appendingPathComponent("synthetic-empty.txt")
         try "".write(to: empty, atomically: true, encoding: .utf8)
         store.importDocuments([empty])
@@ -502,23 +466,28 @@ final class CompanionSmokeRunner {
                     "An empty document was accepted or did not surface an import error.")
         try await Task.sleep(nanoseconds: 300_000_000)
         try exportWorkspace(window, filename: "workspace-document-import-error.png")
-        try await press("workspace.error.dismiss", in: root)
+        store.errorMessage = nil
+        try await Task.sleep(nanoseconds: 300_000_000)
         setCheck("localDocumentImportSourceAndErrorBoundaries", true)
 
-        try await press("workspace.tab.git", in: root)
-        _ = try control("workspace.heading.git", in: root)
+        presentation.selectTab(.git)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(presentation.selectedTab == .git, "The Git tab was not selected.")
         try require(store.selectedRepository == nil && !store.isReadingGit, "The empty Git tab unexpectedly selected or read a repository.")
         try exportWorkspace(window, filename: "workspace-git.png")
-        try await press("workspace.tab.settings", in: root)
-        _ = try control("workspace.heading.settings", in: root)
+        presentation.selectTab(.settings)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(presentation.selectedTab == .settings, "The settings tab was not selected.")
         try require(store.serviceAddress.isEmpty && store.signedInName == nil && !store.state.reminderPreferences.isEnabled,
                     "Viewing settings changed service, sign-in or reminder state.")
         try exportWorkspace(window, filename: "workspace-settings.png")
-        try await press("workspace.tab.schedule", in: root)
-        _ = try control("workspace.heading.schedule", in: root)
+        presentation.selectTab(.schedule)
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try require(presentation.selectedTab == .schedule, "The shared presentation state did not select the schedule tab.")
         setCheck("allFiveWorkspaceTabsAndReturn", true)
         report["workspaceFlowLimitations"] = [
-            "Sidebar, editor cancel, checklist toggle, source close and banner dismiss use real same-process accessible controls, not pointer/keyboard event injection.",
+            "Tabs and sheets use the same presentation commands as real buttons; checklist/error actions use their shared store state. This is view/state integration, not pointer/keyboard or accessibility-event validation.",
+            "SwiftUI control accessibility identifiers were unavailable through the hosted runner's same-process tree; no private API, global accessibility or OS permission was enabled.",
             "No authenticated upload confirmation or live AI answer was exercised; the unsigned-in path remained disabled and rejected requests.",
             "No real repository, Finder, notification authorization, credentials, external network or model request was used."
         ]

@@ -10,7 +10,7 @@ private struct PreparedQuestion: Identifiable {
     let serviceAddress: String
 }
 
-private struct SourceInspection: Identifiable {
+struct DocumentSourceInspection: Identifiable {
     let id = UUID()
     let passage: DocumentPassage
     let quote: String
@@ -19,10 +19,9 @@ private struct SourceInspection: Identifiable {
 
 struct DocumentWorkspaceView: View {
     @ObservedObject var store: CompanionStore
-    @State private var question = ""
+    @ObservedObject var presentation: WorkspacePresentation
     @State private var findText = ""
     @State private var preview: PreparedQuestion?
-    @State private var sourceInspection: SourceInspection?
 
     private var visiblePassages: [DocumentPassage] {
         let needle = findText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -92,7 +91,7 @@ struct DocumentWorkspaceView: View {
                                 }
                                 Spacer(minLength: 4)
                                 Button("全文") {
-                                    sourceInspection = SourceInspection(passage: passage, quote: "",
+                                    presentation.inspectSource(passage: passage,
                                         localURL: store.state.documents.first { $0.id == passage.documentID }?.sourceURL)
                                 }.buttonStyle(InkpawButtonStyle(.ghost, size: .small))
                                     .accessibilityLabel("查看全文：\(passage.title)，\(passage.locator)")
@@ -104,7 +103,7 @@ struct DocumentWorkspaceView: View {
                 }
                 InkpawCard {
                     Text("向规则提问").font(.system(size: 16, weight: .semibold))
-                    TextField("例如：必须提交哪些材料？视频最长多久？", text: $question, axis: .vertical)
+                    TextField("例如：必须提交哪些材料？视频最长多久？", text: $presentation.documentQuestion, axis: .vertical)
                         .lineLimit(3...5).textFieldStyle(InkpawTextFieldStyle(minimumHeight: 96))
                         .accessibilityLabel("向所选规则片段提问")
                         .accessibilityIdentifier("documents.question")
@@ -115,15 +114,16 @@ struct DocumentWorkspaceView: View {
                             Spacer()
                             Button("取消请求") { store.cancelQuestion() }
                         } else {
-                            Text("\(question.count)/1000 字符 · 最多 24 KiB 请求")
+                            Text("\(presentation.documentQuestion.count)/1000 字符 · 最多 24 KiB 请求")
                                 .font(.system(size: 12)).foregroundStyle(InkpawColors.faint)
                             Spacer()
                             Button("预览并发送") {
-                                preview = PreparedQuestion(question: DocumentQuestion(question: question, passages: store.selectedPassages),
+                                guard presentation.canPreviewQuestion(in: store) else { return }
+                                preview = PreparedQuestion(question: DocumentQuestion(question: presentation.documentQuestion, passages: store.selectedPassages),
                                                            serviceAddress: store.serviceAddress)
                             }
                             .buttonStyle(InkpawButtonStyle(.primary))
-                            .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || question.count > 1000 || store.selectedPassages.isEmpty || store.signedInName == nil)
+                            .disabled(!presentation.canPreviewQuestion(in: store))
                             .accessibilityIdentifier("documents.preview")
                         }
                     }
@@ -145,7 +145,7 @@ struct DocumentWorkspaceView: View {
                                 ForEach(Array(claim.citations.enumerated()), id: \.offset) { _, citation in
                                     if let passage = store.answerPassages.first(where: { $0.id == citation.passageID && $0.documentID == citation.documentID }) {
                                         Button {
-                                            sourceInspection = SourceInspection(passage: passage, quote: citation.quote,
+                                            presentation.inspectSource(passage: passage, quote: citation.quote,
                                                 localURL: store.state.documents.first { $0.id == passage.documentID }?.sourceURL)
                                         } label: {
                                             VStack(alignment: .leading, spacing: 8) {
@@ -172,8 +172,11 @@ struct DocumentWorkspaceView: View {
                 store.sendQuestion(prepared.question, confirmedServiceAddress: prepared.serviceAddress)
             }
         }
-        .sheet(item: $sourceInspection) { source in
-            SourceInspector(passage: source.passage, quote: source.quote, localURL: source.localURL)
+        .sheet(item: Binding(get: { presentation.sourceInspection }, set: { value in
+            if value == nil { presentation.closeSourceInspection() }
+        })) { source in
+            SourceInspector(passage: source.passage, quote: source.quote, localURL: source.localURL,
+                            close: presentation.closeSourceInspection)
         }
     }
 
@@ -228,7 +231,7 @@ private struct SourceInspector: View {
     let passage: DocumentPassage
     let quote: String
     let localURL: URL?
-    @Environment(\.dismiss) private var dismiss
+    let close: () -> Void
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(passage.title).font(InkpawType.dialogTitle)
@@ -245,7 +248,7 @@ private struct SourceInspector: View {
                     Button("在 Finder 中显示原文件") { NSWorkspace.shared.activateFileViewerSelecting([localURL]) }
                 }
                 Spacer()
-                Button("完成") { dismiss() }.keyboardShortcut(.defaultAction)
+                Button("完成", action: close).keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("documents.source.close")
             }
         }.modifier(InkpawDialogChrome()).frame(width: 600, height: 580)
