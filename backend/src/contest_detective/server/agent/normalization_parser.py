@@ -24,10 +24,7 @@ def parse_normalized(raw: object) -> ParsedNormalization:
     if _is_raw_payload(raw):
         parsed = raw.get('parsed')
         if parsed is None:
-            error = raw.get('parsing_error')
-            raise ValueError(
-                'LangChain structured output parsing failed',
-            ) from error
+            parsed = _parse_output(raw.get('raw'))
         return ParsedNormalization(_parse_output(parsed), raw.get('raw'))
     return ParsedNormalization(_parse_output(raw), raw)
 
