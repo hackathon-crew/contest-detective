@@ -1,142 +1,194 @@
-import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from 'nuqs'
 import type { ReactNode } from 'react'
-import { ContestCard, useContests, type ContestSummary } from '@/entities/contest'
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-} from '@/shared/ui'
+import { CalendarDays, ChevronLeft, ChevronRight, List, SlidersHorizontal, X } from 'lucide-react'
+import { ContestCard, ContestSeriesRow, type LibraryRow } from '@/entities/contest'
+import { ErrorState, Skeleton } from '@/shared/ui'
+import { activeFilters, type ContestBrowserModel } from './browser-state'
 
-export function ContestBrowser({
+export function LibraryRows({
+  rows,
   renderAction,
+  reasons,
 }: {
-  renderAction?: (contest: ContestSummary) => ReactNode
+  rows: LibraryRow[]
+  renderAction?: (id: string) => ReactNode
+  reasons?: Map<string, string>
 }) {
-  const [filters, setFilters] = useQueryStates(
-    {
-      keyword: parseAsString.withDefault(''),
-      status: parseAsStringLiteral(['upcoming', 'ongoing', 'ended'] as const),
-      mode: parseAsStringLiteral(['online', 'offline', 'hybrid'] as const),
-      sort: parseAsStringLiteral(['deadline', 'start'] as const).withDefault('deadline'),
-      page: parseAsInteger.withDefault(1),
-    },
-    { history: 'replace', shallow: false },
-  )
-  const query = useContests({
-    keyword: filters.keyword || undefined,
-    status: filters.status ?? undefined,
-    mode: filters.mode ?? undefined,
-    sort: filters.sort,
-    page: Math.max(1, filters.page),
-    page_size: 20,
-  })
   return (
-    <section aria-labelledby="contest-browser-title" className="min-w-0 space-y-5 py-8">
-      <header className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 id="contest-browser-title" className="text-2xl font-bold text-ink">
-          全部赛事
-        </h2>
-        {query.data && <span className="text-xs text-muted">共 {query.data.total} 场</span>}
-      </header>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Input
-          type="search"
-          aria-label="搜索赛事"
-          placeholder="搜索赛事名称"
-          value={filters.keyword}
-          className="w-full sm:col-span-3"
-          onChange={(event) => void setFilters({ keyword: event.target.value, page: 1 })}
-        />
-        <Select
-          value={filters.status ?? 'all'}
-          onValueChange={(value) =>
-            void setFilters({
-              status: value === 'all' ? null : (value as 'upcoming' | 'ongoing' | 'ended'),
-              page: 1,
-            })
-          }
-        >
-          <SelectTrigger aria-label="赛事状态" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部状态</SelectItem>
-            <SelectItem value="upcoming">即将开始</SelectItem>
-            <SelectItem value="ongoing">进行中</SelectItem>
-            <SelectItem value="ended">已结束</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.mode ?? 'all'}
-          onValueChange={(value) =>
-            void setFilters({
-              mode: value === 'all' ? null : (value as 'online' | 'offline' | 'hybrid'),
-              page: 1,
-            })
-          }
-        >
-          <SelectTrigger aria-label="参赛形式" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部形式</SelectItem>
-            <SelectItem value="online">线上</SelectItem>
-            <SelectItem value="offline">线下</SelectItem>
-            <SelectItem value="hybrid">混合</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={filters.sort}
-          onValueChange={(value) =>
-            void setFilters({ sort: value as 'deadline' | 'start', page: 1 })
-          }
-        >
-          <SelectTrigger aria-label="排序" className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="deadline">截止优先</SelectItem>
-            <SelectItem value="start">开赛时间</SelectItem>
-          </SelectContent>
-        </Select>
+    <div className="items">
+      {rows.map((row, index) =>
+        row.type === 'series' ? (
+          <ContestSeriesRow key={row.id} row={row} index={index} />
+        ) : (
+          <ContestCard
+            key={row.id}
+            contest={row.contests[0]!}
+            index={index}
+            action={renderAction?.(row.id)}
+            reason={reasons?.get(row.id)}
+          />
+        ),
+      )}
+    </div>
+  )
+}
+export function ContestBrowser({
+  browser,
+  onOpenFilters,
+  calendar,
+  profile,
+  exportAction,
+  renderAction,
+  reasons,
+}: {
+  browser: ContestBrowserModel
+  onOpenFilters: () => void
+  calendar: ReactNode
+  profile?: ReactNode
+  exportAction?: ReactNode
+  renderAction?: (id: string) => ReactNode
+  reasons?: Map<string, string>
+}) {
+  const { filters, query, rows, params, page, pages, setParams, change, clear, total } = browser
+  const active = activeFilters(filters)
+  const empty = filters.mine && !browser.hasFollows
+  return (
+    <div className="results" aria-busy={query.isFetching}>
+      <div className="res-bar">
+        <div className="res-left">
+          <span className="res-count" aria-live="polite">
+            共 <b>{total}</b> 场
+          </span>
+          <div className="actives">
+            {active.map((item) => (
+              <button
+                className="achip"
+                type="button"
+                key={item.key}
+                aria-label={'去掉 ' + item.label}
+                onClick={() => change(item.patch)}
+              >
+                {item.label}
+                <X className="ic" />
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="res-tools">
+          <button
+            className="site-button site-button--ghost filter-btn"
+            type="button"
+            onClick={onOpenFilters}
+          >
+            <SlidersHorizontal className="ic" />
+            筛选
+            {active.filter((item) => item.key !== 'keyword').length > 0 && (
+              <span className="badge">
+                {active.filter((item) => item.key !== 'keyword').length}
+              </span>
+            )}
+          </button>
+          <div className="seg" role="group" aria-label="排序">
+            {[
+              ['deadline', '截止最近'],
+              ['start', '开赛最早'],
+            ].map(([sort, label]) => (
+              <button
+                type="button"
+                key={sort}
+                aria-pressed={params.sort === sort}
+                onClick={() => void setParams({ sort: sort as 'deadline' | 'start', page: 1 })}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="seg" role="group" aria-label="视图" id="view">
+            <button
+              type="button"
+              aria-label="列表"
+              aria-pressed={params.view === 'list'}
+              onClick={() => void setParams({ view: 'list' })}
+            >
+              <List className="ic" />
+              <span className="v-txt">列表</span>
+            </button>
+            <button
+              type="button"
+              aria-label="日历"
+              aria-pressed={params.view !== 'list'}
+              onClick={() => void setParams({ view: 'calendar' })}
+            >
+              <CalendarDays className="ic" />
+              <span className="v-txt">日历</span>
+            </button>
+          </div>
+          {exportAction}
+        </div>
       </div>
-      {query.isPending ? (
-        <Skeleton />
+      {profile}
+      {query.isPending || (query.isFetching && !!filters.keyword) ? (
+        <Skeleton className="mt-4 h-32 w-full" />
       ) : query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
-      ) : query.data.items.length === 0 ? (
-        <EmptyState />
+      ) : !total ? (
+        <div className="empty">
+          <b>{empty ? '还没有关注的比赛' : '没有符合条件的比赛'}</b>
+          <span>
+            {empty
+              ? '点每场右边的书签就能关注，关注的比赛在日历上标成蓝色。'
+              : '放宽截止时间或参赛形式再看看。'}
+          </span>
+          <button
+            className="site-button site-button--outline"
+            type="button"
+            onClick={() => (empty ? change({ mine: false }) : clear())}
+          >
+            {empty ? '看全部比赛' : '清除筛选'}
+          </button>
+        </div>
+      ) : params.view !== 'list' ? (
+        <div className="view" key="calendar">
+          {calendar}
+        </div>
       ) : (
-        <div className="grid gap-3">
-          {query.data.items.map((contest) => (
-            <ContestCard key={contest.id} contest={contest} action={renderAction?.(contest)} />
-          ))}
+        <div className="view" key="list">
+          <LibraryRows
+            rows={rows.slice((page - 1) * 20, page * 20)}
+            renderAction={renderAction}
+            reasons={reasons}
+          />
+          {pages > 1 && (
+            <nav className="pager" aria-label="赛事分页">
+              <button
+                type="button"
+                aria-label="上一页"
+                disabled={page <= 1}
+                onClick={() => void setParams({ page: page - 1 })}
+              >
+                <ChevronLeft className="ic" />
+              </button>
+              {Array.from({ length: pages }, (_, i) => (
+                <button
+                  type="button"
+                  key={i}
+                  aria-current={page === i + 1 ? 'page' : undefined}
+                  onClick={() => void setParams({ page: i + 1 })}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-label="下一页"
+                disabled={page >= pages}
+                onClick={() => void setParams({ page: page + 1 })}
+              >
+                <ChevronRight className="ic" />
+              </button>
+            </nav>
+          )}
         </div>
       )}
-      {query.data && query.data.total > 20 && (
-        <nav aria-label="赛事分页" className="flex items-center justify-between gap-3">
-          <Button
-            disabled={filters.page <= 1}
-            onClick={() => void setFilters({ page: filters.page - 1 })}
-          >
-            上一页
-          </Button>
-          <span className="text-xs text-muted">第 {Math.max(1, filters.page)} 页</span>
-          <Button
-            disabled={filters.page * 20 >= query.data.total}
-            onClick={() => void setFilters({ page: filters.page + 1 })}
-          >
-            下一页
-          </Button>
-        </nav>
-      )}
-    </section>
+    </div>
   )
 }
