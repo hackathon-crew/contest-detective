@@ -14,7 +14,7 @@ import sys
 import tarfile
 import tempfile
 import time
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 
 APP = Path('/srv/contest-detective')
@@ -22,6 +22,7 @@ RELEASES = Path('/srv/contest-detective-releases')
 BACKUPS = Path('/srv/contest-detective-backups')
 DATABASE = Path('/var/lib/contest-detective/contest.db')
 SERVICE = 'contest-detective'
+MCP_SERVICE = 'contest-detective-mcp'
 MAINTENANCE = Path('/run/contest-detective-deploying')
 MAX_BUNDLE = 256 * 1024 * 1024
 
@@ -119,6 +120,11 @@ def point_to(directory):
     os.replace(link, APP)
 
 
+def release_services(directory):
+    module = directory / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+    return (SERVICE, MCP_SERVICE) if module.is_file() else (SERVICE,)
+
+
 def healthy(expected_commit=None):
     for attempt in range(30):
         try:
@@ -135,6 +141,16 @@ def healthy(expected_commit=None):
                 with urlopen('http://127.0.0.1/version.json', timeout=2) as response:
                     if json.load(response).get('commit') != expected_commit:
                         raise RuntimeError('Frontend version does not match')
+            if MCP_SERVICE in release_services(APP):
+                request = Request('http://127.0.0.1/mcp', headers={
+                    'Content-Type': 'application/json', 'Accept': 'application/json, text/event-stream',
+                }, data=json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'initialize', 'params': {
+                    'protocolVersion': '2025-11-25', 'capabilities': {},
+                    'clientInfo': {'name': 'release-health', 'version': '1.0'},
+                }}).encode())
+                with urlopen(request, timeout=2) as response:
+                    if 'serverInfo' not in json.load(response).get('result', {}):
+                        raise RuntimeError('MCP initialization failed')
             return
         except Exception:
             if attempt == 29:
@@ -152,6 +168,7 @@ def deploy(stream):
     snapshot = None
     migration_unit = 'contest-detective-migrate-' + stage.name
     previous = APP.resolve()
+    previous_services = release_services(previous)
     try:
         with tempfile.TemporaryFile() as bundle:
             size = 0
@@ -163,6 +180,8 @@ def deploy(stream):
             bundle.seek(0)
             tag, commit = unpack(bundle, stage)
         log(f'Preparing {tag} ({commit})')
+        target_services = release_services(stage)
+        managed_services = tuple(dict.fromkeys(previous_services + target_services))
         run('/usr/local/bin/uv', 'sync', '--locked', '--no-dev', '--python', '3.12',
             cwd=stage / 'backend',
             env={**os.environ, 'UV_PYTHON_INSTALL_DIR': '/opt/contest-python',
@@ -172,7 +191,7 @@ def deploy(stream):
         backup.mkdir(mode=0o700)
         MAINTENANCE.touch(mode=0o644)
         stopped = True
-        run('systemctl', 'stop', SERVICE)
+        run('systemctl', 'stop', *managed_services)
         snapshot_database(DATABASE, backup / 'contest.db')
         snapshot = backup / 'contest.db'
         (backup / 'previous-release').write_text(str(previous) + '\n')
@@ -188,14 +207,14 @@ def deploy(stream):
             f'--property=WorkingDirectory={stage / "backend"}',
             str(stage / 'backend/.venv/bin/alembic'), 'upgrade', 'head')
         point_to(stage)
-        run('systemctl', 'start', SERVICE)
+        run('systemctl', 'start', *target_services)
         healthy(commit)
         MAINTENANCE.unlink()
         log(f'Deployed {tag} ({commit}); backup: {backup}')
     except BaseException:
         if stopped:
             log('Deployment failed; restoring the previous release')
-            run('systemctl', 'stop', SERVICE)
+            run('systemctl', 'stop', *managed_services)
             # A disconnected systemd-run client can leave its migration unit running.
             try:
                 run('systemctl', 'stop', migration_unit)
@@ -205,7 +224,7 @@ def deploy(stream):
             if snapshot is not None:
                 restore_database(snapshot, DATABASE)
             point_to(previous)
-            run('systemctl', 'start', SERVICE)
+            run('systemctl', 'start', *previous_services)
             healthy()
             MAINTENANCE.unlink(missing_ok=True)
             log(f'Restored {previous}')
