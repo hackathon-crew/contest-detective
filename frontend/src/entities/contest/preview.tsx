@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { Icon } from '@/shared/ui/site-icon'
 import type { ContestSummary, FieldValue } from './api'
 import { formatDate, modeNames, safeUrl } from './format'
-import { nextDeadline, deadlineDays } from './deadline'
+import { displayDeadline, deadlineDays } from './deadline'
 const levels = {
   official: ['check', '官方原文'],
   reposted: ['dot', '转载'],
@@ -55,7 +55,7 @@ export function ContestPreview({
   card?: boolean
 }) {
   const location = useLocation()
-  const deadline = nextDeadline(contest)
+  const deadline = displayDeadline(contest)
   const days = deadline ? deadlineDays(deadline) : null
   const mode = contest.fields.mode?.value
   const meta = [
@@ -74,8 +74,8 @@ export function ContestPreview({
       : date
   const left =
     days === null ? null : (
-      <span className={'soon-tag' + (days <= 2 ? ' hot' : '')}>
-        {days === 0 ? '今天截止' : `还有 ${days} 天`}
+      <span className={'soon-tag' + (days >= 0 && days <= 2 ? ' hot' : '')}>
+        {days < 0 ? '已截止' : days === 0 ? '今天截止' : `还有 ${days} 天`}
       </span>
     )
   return (
