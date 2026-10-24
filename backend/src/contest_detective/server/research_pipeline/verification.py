@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from hashlib import sha256
 from inspect import iscoroutinefunction
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from contest_detective.framework.db import SessionLocal
-from contest_detective.server.contest.models import Contest, ContestDetails, ContestPage, ContestPageLink
+from contest_detective.server.contest.models import Contest, ContestDetails, ContestPage
 from contest_detective.server.contest.schemas import DEADLINE_FIELDS, date_bounds
 
 from .official import is_official_page
@@ -41,14 +41,13 @@ def _pending(bounds, now):
 
 
 def _targets(session, now, limit):
-    horizon = now + timedelta(days=30)
-    statement = select(Contest, ContestDetails).join(ContestDetails, ContestDetails.contest_id == Contest.id).join(ContestPageLink).join(
-        ContestPage, ContestPage.id == ContestPageLink.page_id).where(~ContestPage.is_official).distinct()
+    statement = select(Contest, ContestDetails).join(ContestDetails, ContestDetails.contest_id == Contest.id)
     candidates = []
     for contest, details in session.execute(statement):
         values = {key: item.get('value') for key, item in details.fields.items()}
         dates = [_bounds(details.fields.get(key, {})) for key in (*DEADLINE_FIELDS, 'start_at')]
-        if not any(_pending(bounds, now) and bounds[0] <= horizon for bounds in dates):
+        end = _bounds(details.fields.get('end_at', {}))
+        if end is not None and not _pending(end, now):
             continue
         url = values.get('registration_url')
         if not url or not is_official_page(url, registration_url=url):
@@ -57,7 +56,7 @@ def _targets(session, now, limit):
         deadline = min(deadlines) if deadlines else None
         start = dates[-1][0] if dates[-1] is not None else None
         candidates.append(_Target(contest.id, url,
-            (deadline is None, deadline or start or horizon, url, contest.id)))
+            (deadline is None, deadline or start or now, url, contest.id)))
     result, seen = [], set()
     for target in sorted(candidates, key=lambda item: item.order):
         if target.url not in seen:
@@ -70,7 +69,7 @@ def _targets(session, now, limit):
 
 async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None, runner=None,
                         now=None, limit=30) -> VerificationReport:
-    """每轮最多读 30 个近期开赛或截止的报名页，只缓存成功写回的正文。"""
+    """按批次核对未明确结束的赛事，只缓存成功写回的正文。"""
     report = VerificationReport()
     if limit <= 0:
         return report
@@ -82,7 +81,7 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
         runner = run
     now = now or datetime.now(timezone.utc)
     with session_factory() as session:
-        targets = _targets(session, now, min(limit, 30))
+        targets = _targets(session, now, limit)
     for target in targets:
         report.attempted += 1
         try:
