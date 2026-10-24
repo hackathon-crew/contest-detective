@@ -67,13 +67,13 @@ it('adds source-backed cards beneath the existing answer without requiring a pro
   const card = within(screen.getByRole('article', { name: contest.name }))
   expect(card.getByText(contest.summary!)).toBeTruthy()
   expect(card.getByText('线上参赛，可以用已有的 Python 项目做原型。')).toBeTruthy()
-  expect(card.getByText('开发者社区')).toBeTruthy()
+  expect(card.getByText(/开发者社区 · 线上/)).toBeTruthy()
   expect(card.getByText('¥20,000')).toBeTruthy()
-  expect(card.getByText('仅转载')).toBeTruthy()
+  expect(card.getByText('转载')).toBeTruthy()
   const deadline = card.getByRole('link', { name: '11月1日（时刻未核实）' })
   expect(deadline.getAttribute('href')).toBe('https://example.org/event')
   expect(deadline.textContent).not.toMatch(/\d{2}:\d{2}/)
-  expect(card.getByRole('link', { name: '了解比赛' }).getAttribute('href')).toBe(
+  expect(card.getByRole('link', { name: contest.name }).getAttribute('href')).toBe(
     '/contests/agent-weekend',
   )
 })
