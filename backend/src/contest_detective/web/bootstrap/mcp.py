@@ -21,8 +21,8 @@ from contest_detective.server.user.schemas import Profile
 READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
 
-def create_server(*, session_factory=SessionLocal) -> FastMCP:
-    server = FastMCP('比赛侦探')
+def create_server(*, session_factory=SessionLocal, **transport_options) -> FastMCP:
+    server = FastMCP('比赛侦探', **transport_options)
 
     @server.tool(annotations=READ_ONLY)
     def search_contests(keyword: str | None = None, status: ContestStatus | None = None,
