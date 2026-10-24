@@ -46,7 +46,7 @@ export function LibraryDateColumn({ date }: { date: LibraryDate | null }) {
   const labels: Record<string, string> = {
     registration_deadline: '报名截止',
     submission_deadline: '作品提交截止',
-    deadline_unspecified: '截止',
+    deadline_unspecified: '截止（类型待确认）',
     start_at: '开赛',
   }
   const text = date.start
@@ -62,6 +62,14 @@ export function LibraryDateColumn({ date }: { date: LibraryDate | null }) {
         : '还有 ' + date.left + ' 天'
   const source = safeUrl(date.info.sources?.[0]?.url)
   const level = <VerificationLevel level={date.info.level} />
+  if (date.info.level === 'conflict')
+    return (
+      <div className="item-date">
+        <b className="none">日期有冲突</b>
+        <span className="k">{labels[date.field]}</span>
+        <span className="s">{level}</span>
+      </div>
+    )
   return (
     <div className="item-date">
       <b title={formatDate(date.info.value, date.info.precision)}>{dateText(date.info)}</b>
@@ -104,10 +112,22 @@ export function ContestCard({
   const location = useLocation()
   const navigate = useNavigate()
   const date = libraryDate(contest)
+  const displayDate =
+    date && contest.coverage?.fields?.[date.field]?.state === 'conflict'
+      ? { ...date, info: { ...date.info, level: 'conflict' as const } }
+      : date
+  const conditionsConflict = ['eligibility', 'team_size', 'entry_fee'].some(
+    (field) =>
+      contest.fields[field]?.level === 'conflict' ||
+      contest.coverage?.fields?.[field]?.state === 'conflict',
+  )
   const themes = contestThemes(contest)
   const themeSource = contest.theme_sources?.find((source) => safeUrl(source.url))
   const introduction = groundedIntroduction(contest)
-  const prize = normalizedPrize(contest.fields.prize?.value)
+  const prizeConflict =
+    contest.fields.prize?.level === 'conflict' ||
+    contest.coverage?.fields?.prize?.state === 'conflict'
+  const prize = prizeConflict ? null : normalizedPrize(contest.fields.prize?.value)
   const mode = contest.fields.mode?.value
   const meta = [
     contest.fields.organizer?.value,
@@ -132,6 +152,27 @@ export function ContestCard({
           {contest.name}
         </Link>
         <p className="item-meta">{meta}</p>
+        {!reason && introduction && (
+          <p className="item-description">
+            <Link
+              className="about"
+              to={to}
+              state={{ backgroundLocation: location }}
+              title={introduction.text}
+            >
+              {contestAbout(contest)}
+            </Link>
+            <a
+              className="item-source-link"
+              href={safeUrl(introduction.citations[0]?.url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="查看介绍来源"
+            >
+              来源
+            </a>
+          </p>
+        )}
         {reason ? (
           <div className="item-extra">
             <div className="reasons">
@@ -160,9 +201,11 @@ export function ContestCard({
             )}
             {prize && (
               <span className="prize-t">
-                奖金 <b>{prize}</b>
+                奖励 <b>{prize}</b>
               </span>
             )}
+            {prizeConflict && <span className="prize-t conflict">奖励有冲突</span>}
+            {conditionsConflict && <span className="tag conflict">参赛条件有冲突</span>}
             {themes.slice(0, 3).map((theme) =>
               themeSource ? (
                 <a
@@ -181,22 +224,10 @@ export function ContestCard({
                 </span>
               ),
             )}
-            {introduction && (
-              <a
-                className="about"
-                href={safeUrl(introduction.citations[0]?.url)}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="查看介绍来源"
-                title={introduction.text}
-              >
-                {contestAbout(contest)}
-              </a>
-            )}
           </div>
         )}
       </div>
-      <LibraryDateColumn date={date} />
+      <LibraryDateColumn date={displayDate} />
       {action}
     </article>
   )
