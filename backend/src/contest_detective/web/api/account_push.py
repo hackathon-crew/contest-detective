@@ -1,3 +1,4 @@
+from typing import Annotated
 from datetime import datetime, timedelta, timezone
 import uuid
 import secrets
@@ -39,7 +40,7 @@ class TrackUpdate(BaseModel):
     text: Text | None = None
 
 
-def get_tracking_parser(session: Session = Depends(get_session), user_id: str | None = Depends(query_user)):
+def get_tracking_parser(session: Session = Depends(get_session), user_id: Annotated[str | None, Depends(query_user)] = None):
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     return create_tracking_parser(lambda: create_model(settings=runtime.llm, session_factory=factory))
