@@ -5,6 +5,8 @@
 """
 
 from functools import lru_cache
+from pathlib import Path
+import sys
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +30,18 @@ class DatabaseSettings(BaseSettings):
         return value
 
 
+_offline_settings: DatabaseSettings | None = None
+
+
+def configure_offline_database(path: Path) -> None:
+    """Dedicated CLI bootstrap: bind one explicit path without reading dotenv files."""
+    global _offline_settings
+    if 'contest_detective.framework.db' in sys.modules:
+        raise RuntimeError('Offline database must be selected before runtime database imports')
+    _offline_settings = DatabaseSettings(_env_file=None, url='sqlite:///' + str(path.resolve()))
+    get_database_settings.cache_clear()
+
+
 @lru_cache
 def get_database_settings() -> DatabaseSettings:
-    return DatabaseSettings()
+    return _offline_settings if _offline_settings is not None else DatabaseSettings()

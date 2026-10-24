@@ -36,7 +36,7 @@ def test_save_preserves_deadline_type_and_detail_evidence(session, session_facto
     assert detail.status == 'upcoming'
     items, total = service.query(session, ContestQuery())
     assert total == 1
-    assert all(field.sources == [] for field in items[0].fields.values())
+    assert items[0].fields['submission_deadline'].sources == detail.fields['submission_deadline'].sources
 
 
 def test_fuzzy_names_merge_only_when_start_dates_match(session):
@@ -182,4 +182,4 @@ def test_migration_creates_foreign_keys_and_unique_source_assertions(session):
     assert {'contests', 'contest_pages', 'contest_claims'} <= set(schema.get_table_names())
     assert {f['referred_table'] for f in schema.get_foreign_keys('contest_claims')} == {'contests', 'contest_pages'}
     keys = schema.get_pk_constraint('contest_claims')['constrained_columns']
-    assert set(keys) == {'contest_id', 'page_id', 'field'}
+    assert set(keys) == {'contest_id', 'page_id', 'field', 'value'}

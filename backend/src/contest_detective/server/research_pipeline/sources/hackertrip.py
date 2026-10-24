@@ -4,6 +4,7 @@ import httpx
 
 from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
 from contest_detective.server.research_pipeline.sources.dates import parse_datetime
+from contest_detective.server.research_pipeline.sources.batch import SourceBatch
 
 API_URL = 'https://hackertrip.space/api/hackathons'
 logger = logging.getLogger(__name__)
@@ -12,14 +13,21 @@ logger = logging.getLogger(__name__)
 def fetch(client: httpx.Client) -> list[ContestDraft]:
     response = client.get(API_URL)
     response.raise_for_status()
-    drafts = []
+    drafts = SourceBatch('hackertrip')
+    drafts.inventory.listing_urls.append(API_URL)
     for item in response.json():
+        if not isinstance(item, dict):
+            drafts.inventory.failed += 1
+            continue
         if item.get('isPast'):
             continue
+        drafts.inventory.discovered += 1
         try:
             drafts.append(_draft(item))
         except (ValueError, KeyError, TypeError) as exc:
+            drafts.inventory.failed += 1
             logger.warning('HackerTrip event skipped event=%s error_type=%s', item.get('id'), type(exc).__name__)
+    drafts.inventory.fetched = len(drafts)
     return drafts
 
 

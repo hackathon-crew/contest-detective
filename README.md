@@ -87,6 +87,36 @@ uv run --directory backend contest-detective-mcp
 
 例如查询参数 `{"keyword":"Python","mode":"online","page_size":5}`，匹配参数 `{"profile":{"skills":["Python"],"preferred_modes":["online"]}}`。这些调用只读取本地赛事库，不联网获取资料、不调用模型、不保存画像，也不读取登录态。
 
+## 赛事简介与详情
+
+列表直接提供带出处的简介和主题；完整详情在打开比赛时加载。历史正文仍保留，新的来源文档默认只公开必要摘录与链接，不自动转载全文。字段的“尚未抓取”“获取失败”“抽取失败”“已查来源未找到”“来源明确未公布”和“存在冲突”分别展示，缺失不等于没有要求。
+
+## 不使用 API key 的离线更新
+
+`contest-detective-refresh` 只导入已经整理并核对的公开证据包，不联网、读取 `.env`、启动定时任务或调用模型。它不会自行抓取或理解网页。证据包使用 `contest-refresh-v1`，每项含赛事身份、实际保存文本的 SHA-256、文本表示与完整性、原文摘录及来源；可附带有引用的简介。搜索摘要与局部摘录必须标为 `partial`，不能用来证明整页没有某项规则。
+
+先迁移一个明确选择的本地 SQLite 数据库，再运行默认的只读预演：
+
+```bash
+uv run --directory backend contest-detective-refresh \
+  --database /absolute/path/to/contest.db \
+  --manifest /absolute/path/to/reviewed-public-evidence.json \
+  --output-directory /absolute/path/to/refresh-reports
+```
+
+确认预演结果后，同一命令加 `--apply` 才写入。更新按赛事隔离失败，省略的历史字段和正文不会被清空；相同包重复执行不重复写入。`created`、`updated` 按不同赛事计数，`applied_entries` 按证据包条目计数，来源发现量与分页终止原因另列。失败条目保留在报告中，可在复核后用新的包版本重试。修改包内容须使用新的 `manifest_id`；不同届次或明显不相容的日期会拒绝自动合并。
+
+写入前会在报告目录生成本地 SQLite 备份及仅包含公开赛事表差异的回滚记录。数据库备份可能含目标库的其他资料，必须留在受保护的本地目录，不上传为公开附件。回滚只撤销本次赛事变化，不恢复整库覆盖后续账号数据；发现后续修改或私人记录引用新赛事时拒绝回滚：
+
+```bash
+uv run --directory backend contest-detective-refresh \
+  --database /absolute/path/to/contest.db \
+  --rollback /absolute/path/to/refresh-reports/refresh-run/changes.json \
+  --output-directory /absolute/path/to/refresh-reports --apply
+```
+
+纠正旧字段映射需逐条指明旧来源、值、摘录、理由和新证据，并匹配预期公开数据指纹，不能靠部分抓取覆盖历史。新包也不能悄悄改变历史来源的官方身份。此命令不会部署或连接生产服务器；生产执行须使用另行审核的运维通道。普通网页 GET 与部署迁移均不会导入证据包。
+
 ## 参与开发
 
 流程与规范见 [CONTRIBUTING.md](CONTRIBUTING.md)。
