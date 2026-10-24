@@ -24,12 +24,34 @@ function show() {
 }
 
 describe('侦探输入口', () => {
-  it('提供多行编辑与参赛资料入口，空问题无法发送', () => {
+  it('加号先打开菜单，选择资料类型后才打开表单，空问题无法发送', async () => {
     const { input, onAddProfile } = show()
     expect(input.tagName).toBe('TEXTAREA')
     expect((screen.getByRole('button', { name: '查证' }) as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.click(screen.getByRole('button', { name: '添加简历或参赛资料' }))
-    expect(onAddProfile).toHaveBeenCalledOnce()
+    fireEvent.keyDown(screen.getByRole('button', { name: '添加简历或参赛资料' }), { key: 'Enter' })
+    expect(onAddProfile).not.toHaveBeenCalled()
+    expect(await screen.findAllByRole('menuitem')).toHaveLength(3)
+    fireEvent.click(screen.getByRole('menuitem', { name: '添加画像' }))
+    expect(onAddProfile).toHaveBeenCalledWith('profile')
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it.each([
+    ['连接到 GitHub', 'GitHub 用户名', '城市'],
+    ['添加画像', '上传简历', 'GitHub 用户名'],
+    ['添加比赛筛选', '城市', '上传简历'],
+  ])('%s 只打开对应的界面', async (entry, field, hiddenField) => {
+    vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ code: 200, data: null })))
+    renderDetective({}, '/detective')
+    const input = screen.getByRole('textbox', { name: '问侦探' })
+    fireEvent.change(input, { target: { value: '周末线上比赛' } })
+    fireEvent.keyDown(screen.getByRole('button', { name: '添加简历或参赛资料' }), { key: 'Enter' })
+    fireEvent.click(await screen.findByRole('menuitem', { name: entry }))
+    expect(await screen.findByRole('dialog', { name: entry })).toBeTruthy()
+    expect(screen.getByLabelText(field)).toBeTruthy()
+    expect(screen.queryByLabelText(hiddenField)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    expect((input as HTMLTextAreaElement).value).toBe('周末线上比赛')
   })
 
   it('Enter 发送完整的多行问题，并保留现有查证结果', async () => {

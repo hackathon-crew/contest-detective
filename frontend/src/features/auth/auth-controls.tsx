@@ -4,7 +4,7 @@ import { currentUserKey, useCurrentUser, type PublicUser } from '@/entities/user
 import { apiClient } from '@/shared/api'
 import { Button, Dialog, Input } from '@/shared/ui'
 
-export function AuthControls() {
+export function AuthControls({ compact = false }: { compact?: boolean }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -68,7 +68,8 @@ export function AuthControls() {
       ) : (
         <>
           <Button
-            variant="ghost"
+            variant={compact ? 'default' : 'ghost'}
+            className={compact ? 'px-4 hover:bg-accent-hover' : undefined}
             onClick={() => {
               setError(null)
               setMode('login')
@@ -77,16 +78,18 @@ export function AuthControls() {
           >
             登录
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setError(null)
-              setMode('register')
-              setOpen(true)
-            }}
-          >
-            注册
-          </Button>
+          {!compact && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setError(null)
+                setMode('register')
+                setOpen(true)
+              }}
+            >
+              注册
+            </Button>
+          )}
         </>
       )}
       {!open && error && (
@@ -123,6 +126,20 @@ export function AuthControls() {
             <p role="alert" className="text-sm text-muted">
               {error}
             </p>
+          )}
+          {compact && (
+            <Button
+              type="button"
+              variant="link"
+              disabled={pending}
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login')
+                setPassword('')
+                setError(null)
+              }}
+            >
+              {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
+            </Button>
           )}
           <Button type="submit" disabled={pending}>
             {pending ? '提交中' : mode === 'login' ? '登录' : '注册'}

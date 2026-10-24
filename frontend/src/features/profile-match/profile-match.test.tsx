@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
+import type { ComponentProps } from 'react'
 import { ProfileMatchDialog, loadConfirmedProfile } from './index'
 
 const profile = {
@@ -34,10 +35,13 @@ function envelope(data: unknown, code = 200, message = 'ok') {
     headers: { 'content-type': 'application/json' },
   })
 }
-function show(user = null as { id: string; username: string; profile: typeof profile } | null) {
+function show(
+  user = null as { id: string; username: string; profile: typeof profile } | null,
+  initialSection?: ComponentProps<typeof ProfileMatchDialog>['initialSection'],
+) {
   return render(
     <MemoryRouter>
-      <ProfileMatchDialog user={user} onClose={vi.fn()} />
+      <ProfileMatchDialog user={user} initialSection={initialSection} onClose={vi.fn()} />
     </MemoryRouter>,
   )
 }
@@ -51,6 +55,33 @@ afterEach(() => {
 })
 
 describe('profile confirmation', () => {
+  it('moves a GitHub draft into the editable profile before saving it', async () => {
+    vi.stubGlobal('fetch', async () => envelope(profile))
+    show(null, 'github')
+    expect(screen.queryByRole('button', { name: '确认并挑比赛' })).toBeNull()
+    fireEvent.change(screen.getByLabelText('GitHub 用户名'), { target: { value: 'octocat' } })
+    fireEvent.click(screen.getByRole('button', { name: '读取 GitHub' }))
+    expect(await screen.findByRole('dialog', { name: '添加画像' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '移除技能 Python' })).toBeTruthy()
+    expect(loadConfirmedProfile()).toBeNull()
+  })
+
+  it('updates filters while preserving confirmed profile fields', async () => {
+    localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
+    let matched: unknown
+    vi.stubGlobal('fetch', async (_url: RequestInfo | URL, init?: RequestInit) => {
+      matched = JSON.parse(String(init?.body))
+      return envelope([])
+    })
+    show(null, 'filters')
+    fireEvent.change(screen.getByLabelText('城市'), { target: { value: '上海' } })
+    fireEvent.click(screen.getByRole('button', { name: '线上' }))
+    fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
+    await screen.findByText('没有找到符合条件的比赛，调整画像后再试。')
+    expect(matched).toEqual({ ...profile, city: '上海', preferred_modes: ['online'] })
+    expect(loadConfirmedProfile()).toEqual(matched)
+  })
+
   it('discards an unconfirmed draft after the controlled dialog closes', () => {
     const view = show()
     fireEvent.change(screen.getByLabelText('GitHub 用户名'), {

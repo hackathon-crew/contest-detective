@@ -4,7 +4,11 @@ import { MessageCircle, PanelLeftClose, PanelLeftOpen, SquarePen } from 'lucide-
 import { Dialog as PrimitiveDialog } from 'radix-ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
-import { loadConfirmedProfile, ProfileMatchDialog } from '@/features/profile-match'
+import {
+  loadConfirmedProfile,
+  ProfileMatchDialog,
+  type ProfileMatchSection,
+} from '@/features/profile-match'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
@@ -22,7 +26,7 @@ export function DetectivePage() {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarButton = useRef<HTMLButtonElement>(null)
   const closeSidebar = () => setSidebarOpen(false)
@@ -77,7 +81,7 @@ export function DetectivePage() {
               if (id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
-            onAddProfile={() => setProfileOpen(true)}
+            onAddProfile={setProfileSection}
           />
         </div>
         <PrimitiveDialog.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -138,9 +142,10 @@ export function DetectivePage() {
         </PrimitiveDialog.Root>
       </div>
       <ProfileMatchDialog
-        open={profileOpen}
+        open={!!profileSection}
         user={user}
-        onClose={() => setProfileOpen(false)}
+        initialSection={profileSection ?? 'all'}
+        onClose={() => setProfileSection(null)}
         onConfirmed={confirmed}
       />
     </div>
@@ -160,7 +165,7 @@ function Conversation({
   storageError: boolean
   onSubmit: (question: string) => void
   onStop: () => void
-  onAddProfile: () => void
+  onAddProfile: (section: ProfileMatchSection) => void
 }) {
   const [question, setQuestion] = useState('')
   const input = useRef<HTMLTextAreaElement>(null)

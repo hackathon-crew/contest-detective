@@ -33,6 +33,16 @@ it('closes a centered dialog with Escape', () => {
   view.unmount()
   trigger.remove()
 })
+it('opens a dialog at its title without preselecting the upload control', () => {
+  render(
+    <Dialog title="添加画像" description="补充参赛资料" onClose={vi.fn()}>
+      <Input type="file" aria-label="上传简历" />
+      <Input aria-label="技能" />
+    </Dialog>,
+  )
+  expect(document.activeElement).toBe(screen.getByRole('heading', { name: '添加画像' }))
+  expect(screen.getByRole('dialog', { name: '添加画像', description: '补充参赛资料' })).toBeTruthy()
+})
 it('mounts dialog content only while open and resets its draft after closing', () => {
   const close = vi.fn()
   const content = (open: boolean) => (

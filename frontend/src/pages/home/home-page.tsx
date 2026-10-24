@@ -4,9 +4,14 @@ import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
 import { SiteHeader } from '@/shared/ui/site-header'
+import { SiteFooter } from '@/shared/ui/site-footer'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
-import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
+import {
+  ProfileMatchDialog,
+  loadConfirmedProfile,
+  type ProfileMatchSection,
+} from '@/features/profile-match'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import type { Profile } from '@/shared/api'
 import { Button } from '@/shared/ui'
@@ -21,7 +26,7 @@ import { ErrorState } from '@/shared/ui'
 export function HomePage() {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
   const follows = useFollows()
   const [showFollows, setShowFollows] = useState(false)
@@ -30,7 +35,6 @@ export function HomePage() {
     <FollowButton contestId={contest.id} follows={follows} />
   )
   const contestId = useMatch('/contests/:contestId')?.params.contestId
-  // 关闭地址先变化，详情内容保留到 Radix 退场结束；关闭期间不再请求赛事。
   const [lastContestId, setLastContestId] = useState(contestId)
   if (contestId && contestId !== lastContestId) setLastContestId(contestId)
   const detailId = contestId ?? lastContestId ?? ''
@@ -45,12 +49,7 @@ export function HomePage() {
   return (
     <div className="min-h-dvh">
       <SiteHeader
-        utilities={
-          <>
-            <AppearanceControl />
-            <AuthControls />
-          </>
-        }
+        utilities={<AuthControls compact />}
         actions={
           <Button
             variant="ghost"
@@ -77,7 +76,7 @@ export function HomePage() {
               >
                 浏览赛事
               </a>
-              <Button variant="outline" onClick={() => setProfileOpen(true)}>
+              <Button variant="outline" onClick={() => setProfileSection('all')}>
                 按我的情况挑比赛
               </Button>
             </div>
@@ -101,17 +100,20 @@ export function HomePage() {
         </div>
       </main>
 
+      <SiteFooter appearance={<AppearanceControl segmented />} />
       <DetectiveDock
         key={user?.id ?? 'guest'}
         profile={user?.profile ?? guestProfile}
-        onAddProfile={() => setProfileOpen(true)}
+        onAddProfile={setProfileSection}
       />
       <ProfileMatchDialog
-        open={profileOpen}
+        open={!!profileSection}
         user={user}
-        onClose={() => setProfileOpen(false)}
+        initialSection={profileSection ?? 'all'}
+        onClose={() => setProfileSection(null)}
         onConfirmed={confirmed}
       />
+
       <ContestDetail
         open={!!contestId}
         contestId={detailId}

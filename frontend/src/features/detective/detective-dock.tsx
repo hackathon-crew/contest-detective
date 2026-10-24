@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import type { Profile } from '@/shared/api'
-import { DetectiveComposer } from './detective-composer'
+import { DetectiveComposer, type DetectiveContextAction } from './detective-composer'
 import { useDetective } from './detective-context'
 import './detective-composer.css'
 
@@ -10,7 +10,7 @@ export function DetectiveDock({
   onAddProfile,
 }: {
   profile?: Profile | null
-  onAddProfile?: () => void
+  onAddProfile?: (section: DetectiveContextAction) => void
 }) {
   const [question, setQuestion] = useState('')
   const { send } = useDetective()

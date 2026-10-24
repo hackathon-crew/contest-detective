@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import { execFileSync } from 'node:child_process'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -10,6 +11,12 @@ const apiTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    'import.meta.env.VITE_BUILD_VERSION': JSON.stringify(
+      process.env.RELEASE_TAG ??
+        execFileSync('git', ['describe', '--tags', '--always'], { encoding: 'utf8' }).trim(),
+    ),
+  },
   resolve: {
     alias: {
       // @/xxx 指向 src/xxx，需与 tsconfig.app.json 的 paths 一致
