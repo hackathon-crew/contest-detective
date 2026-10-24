@@ -14,14 +14,28 @@ struct InkpawCompanionApp: App {
 
 @MainActor
 final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
-    private let coordinator = CompanionCoordinator()
+    private var coordinator: CompanionCoordinator?
+    private var smokeRunner: CompanionSmokeRunner?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApplication.shared.setActivationPolicy(.accessory)
-        coordinator.start()
+        do {
+            let smoke = try CompanionSmokeRunner.prepare(arguments: CommandLine.arguments)
+            smokeRunner = smoke
+            let coordinator = CompanionCoordinator(store: smoke?.makeStore() ?? CompanionStore())
+            self.coordinator = coordinator
+            if let smoke { smoke.start(coordinator: coordinator) }
+            else { coordinator.start() }
+        } catch {
+            CompanionSmokeRunner.failSetup(error)
+        }
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let coordinator else { return .terminateNow }
+        if let smokeRunner {
+            smokeRunner.interrupted()
+        }
         Task {
             do { try await coordinator.store.prepareForTermination() }
             catch {
@@ -46,13 +60,22 @@ final class CompanionAppDelegate: NSObject, NSApplicationDelegate {
 
 @MainActor
 final class CompanionCoordinator: NSObject, NSWindowDelegate {
-    let store = CompanionStore()
+    let store: CompanionStore
     private var panel: NSPanel?
     private var workspace: NSWindow?
     private var statusItem: NSStatusItem?
     private var subscriptions = Set<AnyCancellable>()
     private var applyingGeometry = false
     private var hasRestoredState = false
+
+    init(store: CompanionStore) {
+        self.store = store
+        super.init()
+    }
+
+    // Read-only handles for the explicit, isolated native smoke launch mode.
+    var smokePetWindow: NSWindow? { panel }
+    var smokeWorkspaceWindow: NSWindow? { workspace }
 
     func start() {
         let menu = NSMenu()

@@ -34,3 +34,13 @@ jobs:
           path: plugins/inkpaw-macos/.build/unsigned/InkpawCompanion-unsigned.zip
           retention-days: 7
           if-no-files-found: error
+      - name: Smoke actual native app and export render evidence
+        run: bash scripts/smoke-app.sh
+      - name: Preserve native smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: InkpawCompanion-native-smoke
+          path: ${{ runner.temp }}/inkpaw-ui-smoke-${{ github.run_id }}-${{ github.run_attempt }}/
+          retention-days: 7
+          if-no-files-found: warn
