@@ -63,6 +63,9 @@
   --color-surface: light-dark(#ffffff, #242625);
   --color-surface-muted: light-dark(#f7f7f7, #202221);
   --color-surface-strong: light-dark(#ededed, #303331);
+  /* 首页画布和展台沿用同一套中性色。 */
+  --color-page: light-dark(#ffffff, #1c1e1d);
+  --color-stage: light-dark(#f5f5f5, #222423);
   --color-scrim: light-dark(rgb(17 17 17 / 32%), rgb(0 0 0 / 56%));
 
   /* 墨色：ink 是标题与强调，ink-soft 是正文，muted 是元信息，faint 是几乎不看的定位符 */
@@ -73,11 +76,12 @@
   --color-rule: light-dark(#e3e3e3, #383d38);
   --color-rule-strong: light-dark(#cccccc, #50574f);
 
-  /* 强调色就是墨黑，on-accent 是压在它上面的字 */
-  --color-accent: light-dark(#111111, #e0e4db);
-  --color-accent-hover: light-dark(#303030, #c9d0c4);
-  --color-accent-soft: light-dark(#ececec, #303630);
-  --color-on-accent: light-dark(#ffffff, #20241f);
+  /* 品牌蓝用于主要操作；soft 是浅底，line 是描边。 */
+  --color-accent: light-dark(#3f5fd6, #93a9f6);
+  --color-accent-hover: light-dark(#3550bd, #a9bbf8);
+  --color-accent-soft: light-dark(#e9eefc, #2a3150);
+  --color-accent-line: light-dark(#cdd7f7, #3a4670);
+  --color-on-accent: light-dark(#ffffff, #121a33);
 
   /* 状态色只有 danger 是彩色的；普通提示用中性灰加一道细线，不另起一种黄 */
   --color-danger: light-dark(#98434b, #e2a3a6);
