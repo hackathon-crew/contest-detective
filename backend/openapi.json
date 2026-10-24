@@ -538,7 +538,6 @@
         "properties": {
           "question": {
             "type": "string",
-            "maxLength": 500,
             "minLength": 1,
             "title": "Question"
           },
@@ -557,7 +556,6 @@
               "$ref": "#/components/schemas/ConversationMessage"
             },
             "type": "array",
-            "maxItems": 12,
             "title": "History"
           }
         },
@@ -786,7 +784,6 @@
           },
           "content": {
             "type": "string",
-            "maxLength": 4000,
             "minLength": 1,
             "title": "Content"
           }
