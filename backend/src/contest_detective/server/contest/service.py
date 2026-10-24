@@ -4,6 +4,9 @@ from contextvars import ContextVar
 from hashlib import sha256
 import json
 from typing import get_args
+from types import SimpleNamespace
+import re
+from urllib.parse import urlsplit
 import unicodedata
 from uuid import uuid4
 
@@ -17,6 +20,8 @@ from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
 from .verification import resolve
+from .content import ContentCoverage, ContestDocument, ContestIntroduction, CoverageObservation
+from .content_service import build_introduction, document_key, normalized_text, public_document, validate_document, validate_introduction
 
 
 def _now():
@@ -121,10 +126,66 @@ def _status(contest, details, now):
     return 'ongoing' if now < end else 'ended'
 
 
+def _read_details(session, contest):
+    details = session.get(ContestDetails, contest.id)
+    if details is not None:
+        return details
+    # A read must not silently create rows in a legacy/incomplete database.
+    return SimpleNamespace(**{name: getattr(contest, name) for name in (
+        'cover_url', 'summary', 'start_at', 'end_at', 'next_deadline', 'mode', 'city', 'fields',
+    )}, introduction=None, documents=[], coverage={}, themes=[], theme_sources=[])
+
+
+_THEME_NAMES = {
+    'Machine Learning/AI', 'Beginner Friendly', 'Social Good', 'Open Ended', 'Education',
+    'Design', 'Health', 'Gaming', 'Blockchain', 'Productivity', 'Low/No Code', 'Fintech',
+    'Cybersecurity', 'Communication', 'Databases', 'Enterprise', 'Music/Art', 'Mobile',
+    'Robotic Process Automation', 'Quantum', 'E-commerce/Retail', 'Lifehacks',
+    'AI', 'Web', 'AR/VR', 'IoT', 'DevOps', 'Serverless',
+}
+
+
+def _theme_projection(details, fields):
+    if details.themes:
+        return details.themes, [Source.model_validate(item) for item in details.theme_sources]
+    header = (details.summary or '').split('\n')[0].strip()
+    header = re.sub(r'^(?:主题|Themes?)\s*[:：]\s*', '', header, flags=re.I)
+    themes = [part.strip() for part in re.split(r'[,，、|]', header) if part.strip()]
+    if not themes or not all(theme in _THEME_NAMES for theme in themes):
+        return [], []
+    pages = {source.url: source for field in fields.values() for source in field.sources
+             if (urlsplit(source.url).hostname or '').endswith('.devpost.com')}
+    if not pages:
+        return [], []
+    return themes, [source.model_copy(update={'value': '、'.join(themes), 'excerpt': header})
+                    for source in pages.values()]
+
+
+def _coverage(details, fields, introduction):
+    coverage = ContentCoverage.model_validate(details.coverage or {})
+    for field, value in fields.items():
+        observation = coverage.fields.get(field, CoverageObservation())
+        if value.value is not None:
+            state = 'conflict' if value.level == 'conflict' or observation.state == 'conflict' else 'found'
+            observation = observation.model_copy(update={'state': state,
+                'urls': list(dict.fromkeys([*observation.urls, *(source.url for source in value.sources)]))})
+        coverage.fields[field] = observation
+    if introduction is not None:
+        coverage.introduction = coverage.introduction.model_copy(update={
+            'state': 'found', 'citations': introduction.citations,
+            'urls': list(dict.fromkeys(citation.url for citation in introduction.citations)),
+        })
+    return coverage
+
+
 def _summary(session, contest, now):
-    details = _details(session, contest)
+    details = _read_details(session, contest)
+    fields = _fields(session, contest.id)
+    introduction = ContestIntroduction.model_validate(details.introduction) if details.introduction else None
+    themes, theme_sources = _theme_projection(details, fields)
     return ContestSummary(id=contest.id, name=contest.name, cover_url=details.cover_url,
-        status=_status(contest, details, now), fields={field: FieldValue(**value) for field, value in details.fields.items()})
+        status=_status(contest, details, now), fields=fields, introduction=introduction,
+        coverage=_coverage(details, fields, introduction), themes=themes, theme_sources=theme_sources)
 
 
 def match_id(session: Session, draft: ContestDraft) -> str | None:
@@ -169,6 +230,10 @@ def _version(session, contest):
 
 
 def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None, commit: bool = True) -> str:
+    for document in draft.documents:
+        validate_document(document)
+    if draft.introduction is not None:
+        validate_introduction(draft.introduction, draft.documents)
     page = session.scalar(select(ContestPage).where(ContestPage.url == draft.page.url))
     contest = session.get(Contest, contest_id) if contest_id else _match(session, draft, page)
     if contest_id and contest is None:
@@ -180,6 +245,31 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     affected = set(session.scalars(select(ContestPageLink.contest_id).where(ContestPageLink.page_id == page.id))) if page else set()
     before = {key: _version(session, session.get(Contest, key)) for key in affected | {contest.id} if not (created and key == contest.id)}
     details = _details(session, contest)
+    documents = {document_key(item): item for item in (details.documents or [])}
+    for item in draft.documents:
+        previous = documents.get(document_key(item))
+        if previous and datetime.fromisoformat(previous['retrieved_at']) > item.retrieved_at:
+            continue
+        documents[document_key(item)] = item.model_dump(mode='json')
+    details.documents = list(documents.values())
+    introduction = draft.introduction or next((intro for doc in draft.documents
+                                               if (intro := build_introduction(doc)) is not None), None)
+    if introduction is not None:
+        details.introduction = introduction.model_dump(mode='json')
+    coverage = ContentCoverage.model_validate(details.coverage or {})
+    coverage.fields.update(draft.coverage.fields)
+    coverage.sources.update(draft.coverage.sources)
+    if draft.coverage.introduction.state != 'not_fetched':
+        coverage.introduction = draft.coverage.introduction
+    details.coverage = coverage.model_dump(mode='json')
+    if draft.themes is not None:
+        theme_sources = [source for source in (details.theme_sources or []) if source['url'] != draft.page.url]
+        labels = list(dict.fromkeys(draft.themes))
+        if labels:
+            theme_sources.append(Source(**draft.page.model_dump(), value='、'.join(labels),
+                excerpt='、'.join(labels)).model_dump(mode='json'))
+        details.theme_sources = theme_sources
+        details.themes = list(dict.fromkeys(label for source in theme_sources for label in source['value'].split('、')))
     if draft.cover_url is not None:
         details.cover_url = draft.cover_url
     if draft.summary is not None:
@@ -194,7 +284,20 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         session.add(ContestPageLink(contest_id=contest.id, page_id=page.id))
     affected = set(session.scalars(select(ContestPageLink.contest_id).where(ContestPageLink.page_id == page.id)))
     session.execute(delete(ContestClaim).where(ContestClaim.contest_id == contest.id, ContestClaim.page_id == page.id))
-    for claim in {claim.field: claim for claim in draft.claims}.values():
+    unique_claims = {}
+    for claim in draft.claims:
+        key = (claim.field, claim.value)
+        previous = unique_claims.get(key)
+        if previous and claim.field in DATE_FIELDS and previous.precision == 'datetime' and claim.precision == 'day':
+            continue
+        unique_claims[key] = claim
+    claims = list(unique_claims.values())
+    # A more precise same-day assertion supersedes its own sorting anchor, not a contradictory instant.
+    claims = [claim for claim in claims if not (claim.field in DATE_FIELDS and claim.precision == 'day'
+        and any(other.field == claim.field and other.precision == 'datetime'
+                and calendar_date(other.value, other.precision) == calendar_date(claim.value, 'day')
+                for other in claims))]
+    for claim in claims:
         session.add(ContestClaim(contest_id=contest.id, page_id=page.id, **claim.model_dump()))
     session.flush()
     for contest_id in affected | {contest.id}:
@@ -244,7 +347,7 @@ def query(session: Session, q: ContestQuery, *, accept=None) -> tuple[list[Conte
             if not any(inside(summary.fields[field]) for field in DATE_FIELDS
                        if summary.fields[field].value is not None):
                 continue
-        details = _details(session, contest)
+        details = _read_details(session, contest)
         value = details.start_at if q.sort == 'start' else _next_deadline(summary.fields, now)
         results.append(((value is None, value or '', details.start_at or '', contest.name, contest.id), summary))
     results.sort(key=lambda item: item[0])
@@ -256,6 +359,15 @@ def get(session: Session, contest_id: str) -> ContestDetail | None:
     contest = session.get(Contest, contest_id)
     if contest is None:
         return None
-    details = _details(session, contest)
-    return ContestDetail(**(_summary(session, contest, _now()).model_dump() | {
-        'summary': details.summary, 'fields': _fields(session, contest.id)}))
+    details = _read_details(session, contest)
+    summary = _summary(session, contest, _now())
+    documents = []
+    for raw in details.documents or []:
+        document = ContestDocument.model_validate(raw)
+        excerpts = [citation.excerpt for citation in (summary.introduction.citations if summary.introduction else [])
+                    if citation.url == document.url and citation.content_hash == document.content_hash]
+        excerpts.extend(source.excerpt for value in summary.fields.values() for source in value.sources
+                        if source.url == document.url and normalized_text(source.excerpt)
+                        and normalized_text(source.excerpt) in normalized_text(document.body))
+        documents.append(public_document(document, excerpts))
+    return ContestDetail(**(summary.model_dump() | {'summary': details.summary, 'documents': documents}))

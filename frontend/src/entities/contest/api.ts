@@ -1,7 +1,17 @@
 import { apiClient } from '@/shared/api'
 import type { ContestDetail, ContestSummary } from '@/shared/api/generated'
 
-export type { ContestDetail, ContestSummary, FieldValue, Source } from '@/shared/api/generated'
+export type {
+  ContestDetail,
+  ContestSummary,
+  FieldValue,
+  Source,
+  ContentCitation,
+  ContestIntroduction,
+  CoverageObservation,
+  ContentCoverage,
+  PublicContestDocument,
+} from '@/shared/api/generated'
 export interface ContestFilters {
   keyword?: string
   status?: 'upcoming' | 'ongoing' | 'ended'

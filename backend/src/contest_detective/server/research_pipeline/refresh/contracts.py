@@ -6,9 +6,9 @@ from typing import Literal, Protocol
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 from contest_detective.server.contest.content import (
-    ContentCoverage, ContestDocument, ContestIntroduction,
+    ContentCoverage, ContentCitation, ContestDocument, ContestIntroduction,
 )
-from contest_detective.server.contest.schemas import ClaimIn
+from contest_detective.server.contest.schemas import ClaimIn, ContestField
 
 
 class SourceInventory(BaseModel):
@@ -30,6 +30,17 @@ class RefreshDocument(BaseModel):
     claims: list[ClaimIn] = Field(default_factory=list)
 
 
+class ClaimRetirement(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    url: str
+    field: ContestField
+    value: str
+    excerpt: str
+    reason: str = Field(min_length=1)
+    citations: list[ContentCitation] = Field(min_length=1)
+
+
 class RefreshEntry(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
@@ -41,6 +52,7 @@ class RefreshEntry(BaseModel):
     introduction: ContestIntroduction | None = None
     documents: list[RefreshDocument] = Field(min_length=1)
     coverage: ContentCoverage = Field(default_factory=ContentCoverage)
+    retire_claims: list[ClaimRetirement] = Field(default_factory=list)
 
 
 class RefreshManifest(BaseModel):
@@ -68,6 +80,8 @@ class RefreshReport(BaseModel):
     dry_run: bool = True
     attempted: int = Field(default=0, ge=0)
     validated: int = Field(default=0, ge=0)
+    applied_entries: int = Field(default=0, ge=0)
+    inventory: list[SourceInventory] = Field(default_factory=list)
     created: int = Field(default=0, ge=0)
     updated: int = Field(default=0, ge=0)
     unchanged: int = Field(default=0, ge=0)

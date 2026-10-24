@@ -4,6 +4,8 @@ from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from .content import ContentCoverage, ContestDocument, ContestIntroduction, PublicContestDocument
+
 ContestField = Literal[
     'start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified',
     'city', 'mode', 'prize', 'registration_url', 'organizer', 'venue', 'eligibility', 'team_size',
@@ -92,6 +94,10 @@ class ContestDraft(BaseModel):
     name: str = Field(min_length=1, max_length=500)
     cover_url: str | None = None
     summary: str | None = None
+    introduction: ContestIntroduction | None = None
+    documents: list[ContestDocument] = Field(default_factory=list)
+    coverage: ContentCoverage = Field(default_factory=ContentCoverage)
+    themes: list[str] | None = None
     page: PageIn
     claims: list[ClaimIn]
 
@@ -141,7 +147,13 @@ class ContestSummary(BaseModel):
     cover_url: str | None
     status: ContestStatus
     fields: dict[ContestField, FieldValue]
+    introduction: ContestIntroduction | None = None
+    coverage: ContentCoverage = Field(default_factory=ContentCoverage)
+    themes: list[str] = Field(default_factory=list)
+    theme_sources: list[Source] = Field(default_factory=list)
+    content_version: Literal['content-v1'] = 'content-v1'
 
 
 class ContestDetail(ContestSummary):
     summary: str | None
+    documents: list[PublicContestDocument] = Field(default_factory=list)

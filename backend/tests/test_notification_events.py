@@ -27,16 +27,27 @@ def test_events_commit_with_contests_and_ignore_source_wording(session):
     assert session.scalars(select(ContestEvent).order_by(ContestEvent.id)).all()[-1].kind == 'updated'
 
 
-def test_pipeline_can_suppress_notifications_without_skipping_storage(session):
-    with service.event_publication(False):
-        key = service.save(session, draft())
-    assert service.get(session, key) is not None
+def test_pipeline_can_suppress_notifications_without_skipping_storage(session, monkeypatch):
+    import importlib
+    from sqlalchemy.orm import sessionmaker
+    from contest_detective.server.contest.models import Contest
+    from contest_detective.server.research_pipeline.pipeline.models import ContestSyncOutput
+    module = importlib.import_module('contest_detective.server.research_pipeline.pipeline.execute')
+    calls = []
+    async def write(*_):
+        with sessionmaker(bind=session.get_bind())() as current:
+            calls.append(service.save(current, draft('北京' if calls else '上海')))
+        return ContestSyncOutput(records=[], saved=1)
+    monkeypatch.setattr(module, '_run', write)
+    module.run_pipeline(sessionmaker(bind=session.get_bind()), publish_notifications=False)
+    assert session.scalar(select(Contest)) is not None
     assert session.scalar(select(ContestEvent)) is None
+    module.run_pipeline(sessionmaker(bind=session.get_bind()), publish_notifications=True)
+    assert session.scalar(select(ContestEvent)).kind == 'updated'
 
 
 def test_multiple_sources_rollback_as_one_contest_transaction(session, monkeypatch):
     import importlib
-    import pytest
     from sqlalchemy.orm import sessionmaker
     from contest_detective.server.contest.models import Contest
     from contest_detective.server.research_pipeline.pipeline.models import ContestRecord, ContestSyncContext, ContestSyncInput
@@ -52,7 +63,7 @@ def test_multiple_sources_rollback_as_one_contest_transaction(session, monkeypat
             {'url': 'https://example.com/one', 'site': 'one', 'title': 'one', 'is_official': True, 'value': '上海', 'excerpt': '上海'},
             {'url': 'https://example.com/two', 'site': 'two', 'title': 'two', 'is_official': True, 'value': '上海', 'excerpt': '上海'},
         ]}})])
-    with pytest.raises(ValueError):
-        module.persist(sessionmaker(bind=session.get_bind()), ctx)
+    assert module.persist(sessionmaker(bind=session.get_bind()), ctx) == 0
+    assert ctx.failed == 1
     assert session.scalar(select(Contest)) is None
     assert session.scalar(select(ContestEvent)) is None
