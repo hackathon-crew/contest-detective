@@ -19,7 +19,7 @@ TAG = 'v0.1.2'
 
 
 class ReleaseTests(unittest.TestCase):
-    def bundle(self, entries=None):
+    def bundle(self, entries=None, *, mcp=False):
         files = {
             'backend/pyproject.toml': b'[project]',
             'backend/uv.lock': b'version = 1',
@@ -29,6 +29,8 @@ class ReleaseTests(unittest.TestCase):
             'RELEASE_COMMIT': SHA.encode(),
             'RELEASE_TAG': TAG.encode(),
         }
+        if mcp:
+            files['backend/src/contest_detective/web/bootstrap/mcp_http.py'] = b'# HTTP transport'
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w:gz') as archive:
             for name, content in files.items():
@@ -145,6 +147,75 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(calls[-2][:2], ('systemctl', 'stop'))
                 self.assertTrue(calls[-2][2].startswith('contest-detective-migrate-'))
                 self.assertEqual(calls[-1], ('systemctl', 'start', release.SERVICE))
+
+    def test_http_service_follows_release_switch_and_rollback(self):
+        for previous_mcp, fail in [(False, False), (False, True), (True, True)]:
+            with self.subTest(previous_mcp=previous_mcp, fail=fail), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                app = root / 'app'
+                app.mkdir()
+                (app / 'old-code').touch()
+                if previous_mcp:
+                    module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+                    module.parent.mkdir(parents=True)
+                    module.touch()
+                database = root / 'contest.db'
+                with sqlite3.connect(database) as connection:
+                    connection.execute('CREATE TABLE marker (value TEXT)')
+                calls = []
+
+                def command(*args, **kwargs):
+                    calls.append(args)
+
+                def readiness(expected_commit=None):
+                    if expected_commit and fail:
+                        raise RuntimeError('MCP is unhealthy')
+
+                with ExitStack() as patches:
+                    for name, value in {
+                        'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
+                        'DATABASE': database, 'MAINTENANCE': root / 'maintenance',
+                        'run': command, 'healthy': readiness,
+                    }.items():
+                        patches.enter_context(patch.object(release, name, value))
+                    if fail:
+                        with self.assertRaisesRegex(RuntimeError, 'MCP is unhealthy'):
+                            release.deploy(self.bundle(mcp=True))
+                    else:
+                        release.deploy(self.bundle(mcp=True))
+                service_calls = [call for call in calls if call[:1] == ('systemctl',)]
+                self.assertEqual(service_calls[0], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
+                self.assertEqual(service_calls[1], ('systemctl', 'start', release.SERVICE, 'contest-detective-mcp'))
+                if fail:
+                    self.assertEqual(service_calls[2], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
+                    expected = (release.SERVICE, 'contest-detective-mcp') if previous_mcp else (release.SERVICE,)
+                    self.assertEqual(service_calls[-1], ('systemctl', 'start', *expected))
+                    self.assertTrue((app / 'old-code').exists())
+                else:
+                    self.assertEqual((app / 'RELEASE_COMMIT').read_text(), SHA)
+
+    def test_readiness_requires_mcp_initialization_when_transport_is_present(self):
+        for mcp_reply, succeeds in [({'result': {'serverInfo': {'name': '比赛侦探'}}}, True),
+                                    ({'error': {'message': 'unavailable'}}, False)]:
+            with self.subTest(succeeds=succeeds), tempfile.TemporaryDirectory() as folder:
+                app = Path(folder)
+                module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+                module.parent.mkdir(parents=True)
+                module.touch()
+
+                def response(request, timeout):
+                    content = mcp_reply if isinstance(request, release.Request) else {}
+                    result = io.BytesIO(json.dumps(content).encode())
+                    result.status = 200
+                    return result
+
+                with patch.object(release, 'APP', app), patch.object(release, 'urlopen', response), \
+                        patch.object(release.time, 'sleep'):
+                    if succeeds:
+                        release.healthy()
+                    else:
+                        with self.assertRaisesRegex(RuntimeError, 'MCP initialization failed'):
+                            release.healthy()
 
 
 if __name__ == '__main__':
