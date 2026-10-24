@@ -15,7 +15,9 @@ from contest_detective.web.api.agent import get_investigator, limiter
 
 
 @pytest.fixture(autouse=True)
-def clear_limits():
+def clear_limits(monkeypatch):
+    from contest_detective.framework.config.app import get_app_settings
+    monkeypatch.setattr(get_app_settings(), "query_limits_enabled", True)
     limiter.reset()
     yield
     limiter.reset()
@@ -95,3 +97,10 @@ def test_disabled_provider_remains_json_and_validates_question_first(client, mon
     assert disabled.headers['content-type'].startswith('application/json')
     assert disabled.json()['code'] == 503
     assert 'event:' not in disabled.text
+
+
+def test_campaign_switch_removes_query_count_cap(local_client, monkeypatch):
+    from contest_detective.framework.config.app import get_app_settings
+    monkeypatch.setattr(get_app_settings(), 'query_limits_enabled', False)
+    for _ in range(7):
+        assert 'event: answer' in local_client.post('/agent/ask', json={'question': '找比赛'}).text
