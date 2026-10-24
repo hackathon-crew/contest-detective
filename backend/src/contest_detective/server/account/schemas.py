@@ -1,8 +1,9 @@
 from datetime import date, datetime, timezone
 from datetime import date as CalendarDate
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator, field_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
 
@@ -87,6 +88,20 @@ class SearchPreferences(BaseModel):
     scope: Literal['all', 'cn', 'intl'] = 'all'
     exclude_ended: bool = True
     blocked_domains: list[Text] = Field(default_factory=list, max_length=50)
+
+    @field_validator('blocked_domains')
+    @classmethod
+    def domains(cls, values):
+        result = []
+        for value in values:
+            host = urlsplit(value if '://' in value else 'https://' + value).hostname
+            if not host or '.' not in host or any(char.isspace() for char in host):
+                raise ValueError('请填写网站域名')
+            host = host.lower().rstrip('.')
+            if host not in result:
+                result.append(host)
+        return result
+
 
 
 class TokenMetadata(BaseModel):
