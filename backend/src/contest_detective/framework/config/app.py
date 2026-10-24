@@ -20,6 +20,7 @@ class AppSettings(BaseSettings):
     )
 
     log_level: str = "INFO"
+    query_limits_enabled: bool = False
     sync_interval_minutes: int = Field(default=0, ge=0)
     # 北京时间 HH:MM。非空时每天在该窗口跑一轮，并忽略小时间隔。
     sync_daily_at: str = ""
