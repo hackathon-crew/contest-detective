@@ -68,7 +68,9 @@ describe('侦探过程', () => {
   it('开流前的业务拒绝显示原消息，保留问题供重试', async () => {
     renderStream('', true)
     expect(await screen.findByText('提问过于频繁，请稍后再试')).toBeTruthy()
-    expect((screen.getByLabelText('问侦探') as HTMLInputElement).value).toContain('这周末')
+    await waitFor(() =>
+      expect((screen.getByLabelText('问侦探') as HTMLInputElement).value).toContain('这周末'),
+    )
   })
   it('没有终态就断流时不当成已完成', async () => {
     renderStream(event('step', { tool: 'search_contests', label: '查询比赛库' }))
