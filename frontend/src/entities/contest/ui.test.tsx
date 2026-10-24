@@ -26,6 +26,7 @@ it('卡片保留仅日期精度，不显示排序锚点的时刻', () => {
       />
     </MemoryRouter>,
   )
-  expect(screen.getByText(/10月25日（时刻未核实）/)).toBeTruthy()
+  expect(screen.getByText('10月25日')).toBeTruthy()
+  expect(screen.getByTitle('10月25日（时刻未核实）')).toBeTruthy()
   expect(screen.queryByText(/08:00/)).toBeNull()
 })
