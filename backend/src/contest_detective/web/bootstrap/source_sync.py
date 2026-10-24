@@ -8,6 +8,8 @@ from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.server.agent.config import get_llm_settings
 from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
+logger = logging.getLogger(__name__)
+
 
 def configured_extractor(session_factory):
     if get_app_settings().sync_collect == 'structured' or not get_llm_settings().enabled:
@@ -19,7 +21,11 @@ def configured_extractor(session_factory):
 def configured_normalizer():
     settings = get_llm_settings()
     key = getattr(settings, 'api_key', None)
-    if not settings.enabled or not key or not key.get_secret_value():
+    if not settings.enabled:
+        logger.info('Structured normalizer unavailable reason=llm_disabled')
+        return None
+    if not key or not key.get_secret_value():
+        logger.warning('Structured normalizer unavailable reason=missing_api_key')
         return None
     from contest_detective.server.agent.normalization import create_normalizer
     return create_normalizer(settings, session_factory=SessionLocal)

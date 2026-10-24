@@ -6,6 +6,7 @@ from urllib.parse import urlsplit
 
 from contest_detective.server.contest.identity import can_merge, normalized_url
 from contest_detective.server.contest.schemas import ContestDraft, PageIn
+from contest_detective.server.research_pipeline.official import is_official_page
 from contest_detective.server.research_pipeline.search.base import SearchHit
 
 
@@ -17,10 +18,24 @@ class StructuredCandidate:
     context_url: str | None = None
     group: list['StructuredCandidate'] = field(default_factory=list)
     claim_pages: dict[int, PageIn] = field(default_factory=dict)
+    context_page: PageIn | None = None
 
     def __post_init__(self):
         self.context = (self.draft.summary or '').strip()
         self.claim_pages.update({id(claim): self.draft.page for claim in self.draft.claims})
+        self.context_page = self.context_page or self.draft.page
+
+    @property
+    def evidence_page(self) -> PageIn:
+        """同一 URL 沿用适配器已核实的身份，搜索结果不能覆盖它。"""
+        url = self.context_url or self.draft.page.url
+        for candidate in self.group or [self]:
+            if candidate.draft.page.url == url:
+                return candidate.draft.page
+        if self.context_page is not None and self.context_page.url == url:
+            return self.context_page
+        return PageIn(url=url, site=urlsplit(url).hostname or url, title=self.draft.name,
+                      is_official=is_official_page(url))
 
     @property
     def has_description(self) -> bool:
@@ -57,6 +72,10 @@ class StructuredDescriptionEnrich:
             if hit is not None:
                 candidate.context = hit.snippet.strip()
                 candidate.context_url = hit.url
+                candidate.context_page = PageIn(
+                    url=hit.url, site=hit.site or urlsplit(hit.url).hostname or hit.url,
+                    title=hit.title or candidate.draft.name, is_official=is_official_page(hit.url),
+                )
 
 
 def deduplicate_structured(candidates: list[StructuredCandidate]) -> list[StructuredCandidate]:
@@ -72,8 +91,10 @@ def deduplicate_structured(candidates: list[StructuredCandidate]) -> list[Struct
         representative = group[0]
         representative.group = group
         longest = max(group, key=lambda item: len(item.context))
+        context_page = longest.evidence_page
         representative.context = longest.context
-        representative.context_url = longest.context_url or longest.draft.page.url
+        representative.context_url = context_page.url
+        representative.context_page = context_page
         representative.draft = _merge_drafts(group, representative)
         representative.claim_pages = {
             id(claim): candidate.claim_pages.get(id(claim), candidate.draft.page)
