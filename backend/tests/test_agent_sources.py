@@ -1,7 +1,9 @@
 import asyncio
 
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 
 from contest_detective.server.agent.loop import Investigator
 from contest_detective.server.contest.schemas import ContestDraft
@@ -26,7 +28,7 @@ def test_final_sources_distinguish_verified_official_pages_from_search_leads(ses
             return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id})])
         if len(results) == 2:
             return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://organizer.example/rules'})])
-        return ModelResponse([TextPart('大学生可以参加：[参赛规则](https://organizer.example/rules)。')])
+        return ModelResponse([answer_part('大学生可以参加：[参赛规则](https://organizer.example/rules)。')])
 
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory,
         search=lambda *args, **kwargs: [{'title': '搜索线索', 'url': 'https://directory.example/event', 'site': '目录'}],
