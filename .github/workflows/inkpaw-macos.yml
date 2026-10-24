@@ -1,0 +1,46 @@
+name: Inkpaw macOS
+
+on:
+  pull_request:
+    paths:
+      - 'plugins/inkpaw-macos/**'
+      - '.github/workflows/inkpaw-macos.yml'
+  push:
+    branches: [main, feat/176-inkpaw-macos-companion]
+    paths:
+      - 'plugins/inkpaw-macos/**'
+      - '.github/workflows/inkpaw-macos.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native-build-and-tests:
+    runs-on: macos-15
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: plugins/inkpaw-macos
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - run: swift test
+      - run: swift build -c release --product InkpawCompanion
+      - name: Package unsigned development app
+        run: bash scripts/package-app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: InkpawCompanion-unsigned
+          path: plugins/inkpaw-macos/.build/unsigned/InkpawCompanion-unsigned.zip
+          retention-days: 7
+          if-no-files-found: error
+      - name: Smoke actual native app and export render evidence
+        run: bash scripts/smoke-app.sh
+      - name: Preserve native smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: InkpawCompanion-native-smoke
+          path: ${{ runner.temp }}/inkpaw-ui-smoke-${{ github.run_id }}-${{ github.run_attempt }}/
+          retention-days: 7
+          if-no-files-found: warn
