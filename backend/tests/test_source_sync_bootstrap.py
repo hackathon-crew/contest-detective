@@ -96,8 +96,10 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
     else:
         stopped = []
 
-        def start(factory, interval, *, extractor=None):
+        def start(factory, interval, *, extractor=None, daily_at='', window_minutes=60):
             assert interval == 360
+            assert daily_at == ''
+            assert window_minutes == 60
             sync(factory, extractor=extractor)
             return SimpleNamespace(shutdown=lambda *, wait: stopped.append(wait))
 

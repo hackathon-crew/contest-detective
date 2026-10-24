@@ -1,4 +1,5 @@
 import threading
+from time import monotonic as time_monotonic
 
 import httpx
 
@@ -46,6 +47,157 @@ def test_sync_updates_existing_source_claims_without_duplicate_events(session_fa
     assert first.saved == second.saved == 1
     with session_factory() as session:
         assert query(session, ContestQuery())[1] == 1
+
+
+def test_daily_window_bounds_include_the_start_and_stop_at_the_end():
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    from contest_detective.server.research_pipeline.scheduler import within_daily_window
+
+    shanghai = ZoneInfo('Asia/Shanghai')
+    start = datetime(2026, 10, 24, 3, 0, tzinfo=shanghai)
+    assert within_daily_window(start, '03:00', 60)
+    assert within_daily_window(start + timedelta(minutes=59), '03:00', 60)
+    assert not within_daily_window(start + timedelta(minutes=60), '03:00', 60)
+    assert not within_daily_window(start - timedelta(minutes=1), '03:00', 60)
+    after_midnight = datetime(2026, 10, 24, 0, 10, tzinfo=shanghai)
+    assert within_daily_window(after_midnight, '23:30', 90)
+    assert not within_daily_window(after_midnight, '23:30', 30)
+    from contest_detective.server.research_pipeline.scheduler import window_key
+    assert window_key(after_midnight, '23:30', 90) == '2026-10-23'
+    assert window_key(start + timedelta(minutes=60), '03:00', 60) is None
+
+
+def test_daily_clock_rejects_values_that_are_not_hours_and_minutes():
+    import pytest
+    from pydantic import ValidationError
+    from contest_detective.framework.config.app import AppSettings
+
+    assert AppSettings(_env_file=None, sync_daily_at='').sync_daily_at == ''
+    assert AppSettings(_env_file=None, sync_daily_at='03:00').sync_window_minutes == 60
+    with pytest.raises(ValidationError):
+        AppSettings(_env_file=None, sync_daily_at='25:00')
+
+
+def test_daily_window_runs_once_when_the_process_starts_inside_it(session_factory, monkeypatch):
+    from datetime import datetime, timedelta
+    from contest_detective.server.research_pipeline import scheduler as scheduling
+
+    completed = threading.Event()
+    calls = []
+
+    def one_round(factory, *, extractor=None):
+        calls.append((factory, extractor))
+        completed.set()
+
+    monkeypatch.setattr(scheduling, 'run_pipeline', one_round)
+    now = datetime.now(scheduling.SHANGHAI)
+    scheduler = scheduling.start_scheduler(
+        session_factory, 360, daily_at=now.strftime('%H:%M'), window_minutes=60,
+    )
+    try:
+        assert completed.wait(timeout=3)
+        deadline = time_monotonic() + 2
+        job = scheduler.get_job('contest-source-sync')
+        while job.next_run_time is None or job.next_run_time - datetime.now(scheduling.SHANGHAI) < timedelta(hours=20):
+            if time_monotonic() > deadline:
+                break
+            threading.Event().wait(0.05)
+            job = scheduler.get_job('contest-source-sync')
+        assert job.next_run_time - datetime.now(scheduling.SHANGHAI) > timedelta(hours=20)
+    finally:
+        scheduler.shutdown(wait=True)
+    assert calls == [(session_factory, None)]
+
+
+def test_restart_inside_the_same_window_does_not_run_again(session_factory, monkeypatch):
+    from datetime import datetime, timedelta
+    from contest_detective.server.research_pipeline import scheduler as scheduling
+
+    completed = threading.Event()
+    calls = []
+
+    def one_round(factory, *, extractor=None):
+        calls.append(1)
+        completed.set()
+
+    monkeypatch.setattr(scheduling, 'run_pipeline', one_round)
+    now = datetime.now(scheduling.SHANGHAI)
+    daily_at = now.strftime('%H:%M')
+    first = scheduling.start_scheduler(session_factory, 0, daily_at=daily_at, window_minutes=60)
+    try:
+        assert completed.wait(timeout=3)
+    finally:
+        first.shutdown(wait=True)
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('同一窗口重启不得再跑一轮')
+
+    monkeypatch.setattr(scheduling, 'run_pipeline', forbidden)
+    second = scheduling.start_scheduler(session_factory, 0, daily_at=daily_at, window_minutes=60)
+    try:
+        job = second.get_job('contest-source-sync')
+        assert job.next_run_time - datetime.now(scheduling.SHANGHAI) > timedelta(hours=20)
+    finally:
+        second.shutdown(wait=False)
+    assert calls == [1]
+
+
+def test_daily_window_waits_when_the_process_starts_outside_it(session_factory, monkeypatch):
+    from datetime import datetime, timedelta
+    from apscheduler.triggers.cron import CronTrigger
+    from contest_detective.server.research_pipeline import scheduler as scheduling
+
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('窗口外不得补跑同步')
+
+    monkeypatch.setattr(scheduling, 'run_pipeline', forbidden)
+    later = datetime.now(scheduling.SHANGHAI) + timedelta(hours=2)
+    daily_at = later.strftime('%H:%M')
+    scheduler = scheduling.start_scheduler(session_factory, 360, daily_at=daily_at, window_minutes=60)
+    try:
+        job = scheduler.get_job('contest-source-sync')
+        upcoming = job.next_run_time.astimezone(scheduling.SHANGHAI)
+        assert isinstance(job.trigger, CronTrigger)
+        assert (upcoming.hour, upcoming.minute) == (later.hour, later.minute)
+        assert upcoming - datetime.now(scheduling.SHANGHAI) > timedelta(minutes=59)
+    finally:
+        scheduler.shutdown(wait=False)
+
+
+def test_daily_schedule_arms_page_extraction_in_the_same_run(session_factory, monkeypatch):
+    from types import SimpleNamespace
+    from fastapi.testclient import TestClient
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.agent import extraction
+    from contest_detective.web.bootstrap import app as bootstrap
+    from contest_detective.web.bootstrap import source_sync
+
+    settings = AppSettings(
+        _env_file=None, sync_collect='both', sync_daily_at='03:00', sync_interval_minutes=360,
+    )
+    monkeypatch.setattr(bootstrap, 'get_app_settings', lambda: settings)
+    monkeypatch.setattr(source_sync, 'get_app_settings', lambda: settings)
+    monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: SimpleNamespace(enabled=True))
+    extractor = object()
+
+    def create(*, session_factory):
+        assert session_factory.kw['bind'] is session_factory_bind
+        return extractor
+
+    session_factory_bind = session_factory.kw['bind']
+    monkeypatch.setattr(extraction, 'create_page_extractor', create)
+    received = {}
+
+    def start(factory, interval, *, extractor=None, daily_at='', window_minutes=60):
+        received.update(interval=interval, daily_at=daily_at, window_minutes=window_minutes, extractor=extractor)
+        return SimpleNamespace(shutdown=lambda *, wait: None)
+
+    monkeypatch.setattr(bootstrap, 'start_scheduler', start)
+    application = bootstrap.create_app(db_engine=session_factory_bind)
+    with TestClient(application):
+        pass
+    assert received == {'interval': 360, 'daily_at': '03:00', 'window_minutes': 60, 'extractor': extractor}
 
 
 def test_disabled_interval_does_not_start_a_scheduler(session_factory):
@@ -205,13 +357,15 @@ def test_application_passes_an_injected_extractor_to_background_sync(session_fac
         def shutdown(self, *, wait):
             assert wait is True
 
-    def start(factory, interval, *, extractor=None):
-        received.append((factory.kw['bind'], interval, extractor))
+    def start(factory, interval, *, extractor=None, daily_at='', window_minutes=60):
+        received.append((factory.kw['bind'], interval, daily_at, window_minutes, extractor))
         return Scheduler()
 
     monkeypatch.setattr(bootstrap, 'start_scheduler', start)
-    application = bootstrap.create_app(db_engine=session_factory.kw['bind'], sync_interval_minutes=360,
-                                       sync_extractor=extractor)
+    application = bootstrap.create_app(
+        db_engine=session_factory.kw['bind'], sync_interval_minutes=360, sync_daily_at='',
+        sync_window_minutes=60, sync_extractor=extractor,
+    )
     with TestClient(application) as client:
         assert client.get('/health').json()['code'] == 200
-    assert received == [(session_factory.kw['bind'], 360, extractor)]
+    assert received == [(session_factory.kw['bind'], 360, '', 60, extractor)]

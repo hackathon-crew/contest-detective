@@ -30,7 +30,9 @@ sudoedit /etc/contest-detective.env
 
 比赛库查询支持 `page` 和 `page_size` 翻页，联网搜索使用请求的条数。网页读取保留完整正文，也支持用 `offset` 和 `length` 分段继续读，正常解压 gzip 等受支持的编码；下载仍按解压后的大小限制资源占用。提问与完整的已完成对话前文直接传给模型，不再按500字、六轮、12KB或每条2500字截断，实际上下文容量由模型服务处理。
 
-同步间隔默认 360 分钟，启用后立即执行首轮，再按间隔运行；设为 0 可关闭同步。必须只运行一个 worker。
+同步在北京时间每天 03:00 起的 60 分钟内运行一次。进程在窗口内启动且当天还没跑过时补跑这一轮，窗口外启动则等到下一个钟点。配置了 `DETECTIVE_SYNC_DAILY_AT` 后忽略 `DETECTIVE_SYNC_INTERVAL_MINUTES`。每日时刻留空且间隔大于 0 时，仍按间隔运行，并在启动时立即执行。两者都关闭时不自动同步。必须只运行一个 worker。
+
+`DETECTIVE_SYNC_COLLECT=both` 时，这一轮先采集 HackerTrip、WaytoAGI、Devpost，再做页面发现、抽取，以及 30 天内仍未截止的报名页核对。页面发现和核对只在模型启用时进行。重复赛事按已有规则合并，不另建一条。
 
 `DETECTIVE_SYNC_EXTRACT_ENABLED` 默认 `true`，周期同步和 `contest-detective-sync` 只有在它与 `DETECTIVE_LLM_ENABLED` 都为 `true` 时才启用来源抽取。设为 `false` 后，HackerTrip、WaytoAGI、Devpost 的结构化入库照常运行，跳过主办方核对及依赖模型的来源发现；侦探和简历功能仍由 `DETECTIVE_LLM_ENABLED` 控制，不受这个来源开关影响。服务器修改 `/etc/contest-detective.env` 后重启服务即可生效；手动同步可在后端目录运行 `DETECTIVE_SYNC_EXTRACT_ENABLED=false uv run contest-detective-sync`，输出中的 `extraction_enabled` 应为 `false`。
 

@@ -17,16 +17,22 @@ from contest_detective.web.bootstrap.source_sync import configured_extractor
 
 
 def create_app(*, db_engine=None, async_session_factory=None,
-               sync_interval_minutes: int | None = None, sync_extractor=None) -> FastAPI:
+               sync_interval_minutes: int | None = None, sync_daily_at: str | None = None,
+               sync_window_minutes: int | None = None, sync_extractor=None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(_app):
         init_db(db_engine)
         factory = sessionmaker(bind=db_engine, expire_on_commit=False) if db_engine is not None else SessionLocal
-        interval = sync_interval_minutes if sync_interval_minutes is not None else get_app_settings().sync_interval_minutes
+        settings = get_app_settings()
+        interval = sync_interval_minutes if sync_interval_minutes is not None else settings.sync_interval_minutes
+        daily_at = sync_daily_at if sync_daily_at is not None else settings.sync_daily_at
+        window_minutes = sync_window_minutes if sync_window_minutes is not None else settings.sync_window_minutes
         extractor = sync_extractor
-        if interval > 0 and extractor is None:
+        if (daily_at or interval > 0) and extractor is None:
             extractor = configured_extractor(factory)
-        scheduler = start_scheduler(factory, interval, extractor=extractor) if extractor is not None else start_scheduler(factory, interval)
+        scheduler = start_scheduler(
+            factory, interval, extractor=extractor, daily_at=daily_at, window_minutes=window_minutes,
+        )
         try:
             yield
         finally:
