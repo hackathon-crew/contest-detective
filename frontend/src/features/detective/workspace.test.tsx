@@ -5,9 +5,13 @@ import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
+import { stubResizeObserver } from './detective.test.utils'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  stubResizeObserver()
+})
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -54,6 +58,71 @@ it('聊天页保留网站导航，记录栏默认收起，点小按钮才展开'
   expect(screen.queryByRole('navigation', { name: '对话记录' })).toBeNull()
 })
 
+it('新对话用捧书章鱼引导建立画像，点加号后收起提示并进入现有表单', async () => {
+  vi.stubGlobal('fetch', async () => json(null))
+  show('/detective')
+  expect(await screen.findByRole('img', { name: '捧书的 Inkpaw 八爪鱼' })).toBeTruthy()
+  expect(await screen.findByRole('dialog', { name: '建立参赛画像' })).toBeTruthy()
+  fireEvent.keyDown(screen.getByRole('button', { name: '添加简历或参赛资料' }), { key: 'Enter' })
+  expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
+  fireEvent.click(await screen.findByRole('menuitem', { name: '添加画像' }))
+  expect(await screen.findByRole('dialog', { name: '添加画像' })).toBeTruthy()
+  expect(screen.getByLabelText('上传简历')).toBeTruthy()
+})
+
+it('画像提示可以关闭，建立画像按钮打开现有画像表单', async () => {
+  vi.stubGlobal('fetch', async () => json(null))
+  const first = show('/detective')
+  const guide = await screen.findByRole('dialog', { name: '建立参赛画像' })
+  fireEvent.click(within(guide).getByRole('button', { name: '关闭画像提示' }))
+  expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
+  first.unmount()
+  show('/detective')
+  const nextGuide = await screen.findByRole('dialog', { name: '建立参赛画像' })
+  fireEvent.click(within(nextGuide).getByRole('button', { name: '建立画像' }))
+  expect(await screen.findByRole('dialog', { name: '添加画像' })).toBeTruthy()
+  expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
+})
+
+it.each(['guest', 'account'])('已有 %s 画像时保留章鱼但不再提示建立画像', async (scope) => {
+  const profile = { skills: ['Python'] }
+  if (scope === 'guest') localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
+  vi.stubGlobal('fetch', async () =>
+    json(
+      scope === 'account' ? { id: 'profile-user', username: 'reader@example.org', profile } : null,
+    ),
+  )
+  show('/detective')
+  expect(await screen.findByRole('img', { name: '捧书的 Inkpaw 八爪鱼' })).toBeTruthy()
+  if (scope === 'account') expect(await screen.findByText('reader@example.org')).toBeTruthy()
+  expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
+})
+
+it('账号的空画像默认值仍显示引导', async () => {
+  vi.stubGlobal('fetch', async () =>
+    json({
+      id: 'new-user',
+      username: 'new@example.org',
+      profile: {
+        skills: [],
+        topics: [],
+        preferred_modes: [],
+        github_evidence: [],
+        language_repo_share: {},
+        availability: { weekdays: [], windows: [], max_consecutive_days: null },
+        identity: null,
+        identity_kind: null,
+        github: null,
+        city: null,
+        available_time: null,
+        github_last_active_at: null,
+      },
+    }),
+  )
+  show('/detective')
+  expect(await screen.findByRole('dialog', { name: '建立参赛画像' })).toBeTruthy()
+})
+
 it('首页入口进入独立侦探页，发送后有独立会话记录', async () => {
   vi.stubGlobal('fetch', async (url: RequestInfo | URL) =>
     String(url).includes('/agent/ask')
@@ -68,6 +137,7 @@ it('首页入口进入独立侦探页，发送后有独立会话记录', async (
   send('大学生线上比赛')
   expect(await screen.findByText('可以继续挑比赛。')).toBeTruthy()
   expect(screen.queryByRole('dialog')).toBeNull()
+  expect(screen.queryByRole('img', { name: '捧书的 Inkpaw 八爪鱼' })).toBeNull()
   expect(within(history()).getByRole('link', { name: '大学生线上比赛' })).toBeTruthy()
 })
 

@@ -19,6 +19,8 @@
   --chat-control-size: 0.875rem;
   --chat-display-size: 2.25rem;
   --chat-display-leading: 1.25;
+  /* 为加号下的画像气泡留位置，收起提示时开场内容也不跳动。 */
+  --chat-profile-guide-space: 12rem;
   /* 与 Everplain 当前 Agent 相同：新字先显为头像蓝，再收回正文墨色。 */
   --chat-stream-accent: #5d8fe6;
   --stream-light: light-dark(
@@ -287,6 +289,9 @@
 .detective-conversation[data-empty='true'] .detective-conversation__scroll {
   flex: none;
   overflow: visible;
+}
+.detective-conversation__scroll:has(.detective-greeting__mascot) {
+  padding-bottom: var(--chat-profile-guide-space);
 }
 .detective-greeting {
   display: grid;
