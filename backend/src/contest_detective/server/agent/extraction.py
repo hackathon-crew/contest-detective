@@ -35,7 +35,7 @@ def create_page_extractor(*, model: Model | None = None, session_factory=Session
         guarded = model if model is not None else owned
         try:
             extractor = Agent(guarded, output_type=ExtractedContest, instructions=RULES,
-                              retries={'tools': 0, 'output': 1})
+                              retries={'tools': 0, 'output': 2})
             result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text[:6000]}',
                 usage=usage, usage_limits=usage_limits or UsageLimits(request_limit=6),
                 model_settings={'max_tokens': 8192}, timeout=300)

@@ -121,7 +121,7 @@ class Investigator:
         self.session_factory = session_factory
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
-        self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries={'tools': 0, 'output': 1},
+        self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries={'tools': 3, 'output': 2},
                            model_settings={'parallel_tool_calls': False, 'max_tokens': 8192})
         register_tools(self.agent, web_enabled=search is not None)
         self.agent.output_validator(_validate_output)
