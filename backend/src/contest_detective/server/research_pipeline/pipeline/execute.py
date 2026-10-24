@@ -9,16 +9,17 @@ from contest_detective.framework.config.app import AppSettings, get_app_settings
 from contest_detective.server.research_pipeline.pipeline.models import ContestSyncContext, ContestSyncInput, ContestSyncOutput
 from contest_detective.server.research_pipeline.pipeline.persist import persist
 from contest_detective.server.research_pipeline.pipeline.stages import (
-    DraftVerify, PageExtract, PageRetrieve, StructuredCollect,
+    DraftVerify, PageExtract, PageRetrieve, StructuredCollect, StructuredDeduplicate, StructuredEnrich, StructuredNormalize,
 )
 
 
-def run_pipeline(session_factory, *, extractor=None, client=None, settings: AppSettings | None = None,
-                 sources=None, searcher=None, fetcher=None, listings=None, sleep=None, now=None) -> ContestSyncOutput:
+def run_pipeline(session_factory, *, extractor=None, normalizer=None, tavily=None, client=None,
+                 settings: AppSettings | None = None, sources=None, searcher=None, fetcher=None,
+                 listings=None, sleep=None, now=None) -> ContestSyncOutput:
     resolved = settings if settings is not None else get_app_settings()
     ctx = ContestSyncContext(request=ContestSyncInput(keywords=('黑客松',)))
     coroutine = _run(
-        ctx, session_factory, resolved, extractor, client, sources, searcher, fetcher, listings, sleep, now,
+        ctx, session_factory, resolved, extractor, normalizer, tavily, client, sources, searcher, fetcher, listings, sleep, now,
     )
     try:
         asyncio.get_running_loop()
@@ -29,7 +30,7 @@ def run_pipeline(session_factory, *, extractor=None, client=None, settings: AppS
         return pool.submit(asyncio.run, coroutine).result()
 
 
-async def _run(ctx, session_factory, settings, extractor, client, sources, searcher, fetcher, listings, sleep, now):
+async def _run(ctx, session_factory, settings, extractor, normalizer, tavily, client, sources, searcher, fetcher, listings, sleep, now):
     owned = client is None
     active = client if client is not None else httpx.Client(timeout=10, headers={
         'User-Agent': 'ContestDetective/0.1 (+https://github.com/hackathon-crew/contest-detective)',
@@ -40,7 +41,12 @@ async def _run(ctx, session_factory, settings, extractor, client, sources, searc
         with context:
             if settings.sync_collect in {'structured', 'both'}:
                 await StructuredCollect(active, sources).run(ctx)
-            await DraftVerify(session_factory).run(ctx)
+                await StructuredEnrich(tavily).run(ctx)
+                await StructuredDeduplicate().run(ctx)
+                if normalizer is not None:
+                    await StructuredNormalize(normalizer).run(ctx)
+            if ctx.extracted_items:
+                await DraftVerify(session_factory).run(ctx)
             saved += persist(session_factory, ctx)
             kept = list(ctx.records)
             ctx.extracted_items.clear()
@@ -55,7 +61,8 @@ async def _run(ctx, session_factory, settings, extractor, client, sources, searc
                 ctx.failed += checked.failed
                 await PageRetrieve(searcher, listings, active).run(ctx)
                 await PageExtract(extractor, fetcher, sleep).run(ctx)
-                await DraftVerify(session_factory).run(ctx)
+                if ctx.extracted_items:
+                    await DraftVerify(session_factory).run(ctx)
                 saved += persist(session_factory, ctx)
                 kept.extend(ctx.records)
     finally:

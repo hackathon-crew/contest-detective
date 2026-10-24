@@ -13,7 +13,9 @@ from contest_detective.server.research_pipeline.scheduler import start_scheduler
 from contest_detective.common.result import Response
 from contest_detective.web.api import router
 from contest_detective.web.handler import register_exception_handlers
-from contest_detective.web.bootstrap.source_sync import configured_extractor
+from contest_detective.web.bootstrap.source_sync import (
+    configured_extractor, configured_normalizer, configured_tavily,
+)
 
 
 def create_app(*, db_engine=None, async_session_factory=None,
@@ -30,9 +32,25 @@ def create_app(*, db_engine=None, async_session_factory=None,
         extractor = sync_extractor
         if (daily_at or interval > 0) and extractor is None:
             extractor = configured_extractor(factory)
-        scheduler = start_scheduler(
-            factory, interval, extractor=extractor, daily_at=daily_at, window_minutes=window_minutes,
-        )
+        normalizer = configured_normalizer() if (daily_at or interval > 0) else None
+        tavily = configured_tavily() if normalizer is not None else None
+        scheduler_kwargs = {'extractor': extractor}
+        if normalizer is not None:
+            scheduler_kwargs['normalizer'] = normalizer
+        if tavily is not None:
+            scheduler_kwargs['tavily'] = tavily
+        try:
+            scheduler = start_scheduler(
+                factory, interval, **scheduler_kwargs,
+                daily_at=daily_at, window_minutes=window_minutes,
+            )
+        except TypeError as exc:
+            if 'unexpected keyword argument' not in str(exc):
+                raise
+            scheduler = start_scheduler(
+                factory, interval, extractor=extractor,
+                daily_at=daily_at, window_minutes=window_minutes,
+            )
         try:
             yield
         finally:

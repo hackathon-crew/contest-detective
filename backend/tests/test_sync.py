@@ -268,7 +268,8 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
 
     def handle(request):
         if request.url.host == 'devpost.com':
-            return httpx.Response(200, json=snapshots['devpost'][request.url.params['page']])
+            return httpx.Response(200, json=snapshots['devpost'].get(
+                request.url.params['page'], {'hackathons': []}))
         if request.url.host == 'hackertrip.space':
             return httpx.Response(200, json=snapshots['hackertrip'])
         if request.url.path == '/api/events':

@@ -17,7 +17,7 @@ def values(draft):
     return {claim.field: claim.value for claim in draft.claims}
 
 
-def test_devpost_replays_five_public_pages_without_confusing_submission_and_schedule():
+def test_devpost_replays_twenty_public_pages_without_confusing_submission_and_schedule():
     from contest_detective.server.research_pipeline.sources.devpost import fetch
 
     pages = snapshots()
@@ -27,12 +27,12 @@ def test_devpost_replays_five_public_pages_without_confusing_submission_and_sche
         assert request.url.params.get_list('status[]') == ['upcoming', 'open']
         page = request.url.params['page']
         calls.append(page)
-        return httpx.Response(200, json=pages[page])
+        return httpx.Response(200, json=pages.get(page, {'hackathons': []}))
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         drafts = fetch(client)
 
-    assert calls == ['1', '2', '3', '4', '5']
+    assert calls == ['1', '2', '3', '4', '5', '6']
     assert len(drafts) == 45
     first = drafts[0]
     assert first.page.url == 'https://amazonappdev2026.devpost.com/'
