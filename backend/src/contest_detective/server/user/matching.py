@@ -153,7 +153,7 @@ def _rank_and_reason(detail, profile):
     return float(len(topics) * 3 + len(skills) * 2), '；'.join(reasons) + '。'
 
 
-def match(session, profile: Profile) -> list[MatchItem]:
+def match(session, profile: Profile, *, limit: int | None = 20) -> list[MatchItem]:
     if not has_preferences(profile):
         return []
     now = _now()
@@ -167,4 +167,4 @@ def match(session, profile: Profile) -> list[MatchItem]:
         summary.fields = {key: value.model_copy(update={'sources': []}) for key, value in summary.fields.items()}
         results.append(MatchItem(contest=summary, score=score, reason=reason))
     results.sort(key=lambda item: (-item.score, item.contest.name, item.contest.id))
-    return results[:20]
+    return results if limit is None else results[:limit]
