@@ -141,8 +141,10 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual((app / 'old-code').read_text(), 'previous release')
                 with sqlite3.connect(database) as connection:
                     self.assertEqual(connection.execute('SELECT name FROM users').fetchall(), [('original',)])
-                self.assertEqual(calls[-2:], [('systemctl', 'stop', release.SERVICE),
-                                             ('systemctl', 'start', release.SERVICE)])
+                self.assertEqual(calls[-3], ('systemctl', 'stop', release.SERVICE))
+                self.assertEqual(calls[-2][:2], ('systemctl', 'stop'))
+                self.assertTrue(calls[-2][2].startswith('contest-detective-migrate-'))
+                self.assertEqual(calls[-1], ('systemctl', 'start', release.SERVICE))
 
 
 if __name__ == '__main__':
