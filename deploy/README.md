@@ -57,3 +57,43 @@ systemctl is-active contest-detective
 `/api/agent/ask` 关闭代理缓冲，nginx 每个 IP 限每分钟 5 次；应用继续执行每分钟 5 次、每天 30 次限制。nginx 覆盖客户端的转发头，后端只信任回环代理。云控制台还需放行 TCP 80，之后通过 `http://43.142.60.212/` 访问。
 
 查看日志用 `journalctl -u contest-detective`。更新先保留旧发布目录与数据库副本，再换到新发布文件并重启服务。已有的其他服务不参与此流程。
+
+## 自动部署
+
+只有一个生产环境。发布正式 GitHub Release 后，`Deploy production` 自动构建对应 tag 并部署；草稿、预发布、未合入 main 的提交不会部署。tag 使用 `vX.Y.Z`。发布前应确认该提交的常规 CI 已通过。
+
+重新部署或回退时，在 Actions → Deploy production → Run workflow 中选择 main，填写一个已发布的正式版本 tag。流程使用同一套生产凭据，按顺序执行，不取消正在进行的部署。
+
+管理员首次安装部署入口（服务器需有 Python 3、systemd、uv 和现有生产服务）：
+
+```sh
+sudo install -m 755 deploy/release.py /usr/local/sbin/contest-detective-deploy
+sudo install -m 644 deploy/nginx.conf /etc/nginx/sites-available/contest-detective
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
+
+```text
+restrict,command="sudo -n /usr/local/sbin/contest-detective-deploy" ssh-ed25519 <public-key>
+```
+
+部署用户须能免密码 sudo 执行这个固定入口；密钥只允许向入口传输发布包，不能用于交互登录或端口转发。服务器主机公钥从已有可信 SSH 连接读取，不在 Action 中临时信任扫描结果。
+
+仓库 Actions 配置：
+
+| 类型 | 名称 | 内容 |
+| --- | --- | --- |
+| Variable | `PRODUCTION_HOST` | 生产服务器地址 |
+| Variable | `PRODUCTION_USER` | 部署 SSH 用户 |
+| Variable | `PRODUCTION_URL` | 生产访问地址，无末尾 `/` |
+| Secret | `PRODUCTION_SSH_KEY` | 专用部署私钥 |
+| Secret | `PRODUCTION_KNOWN_HOSTS` | 已核验的 SSH known_hosts 条目 |
+
+Action 通过 SSH 标准输入发送构建包。服务器先在 `/srv/contest-detective-releases/` 准备依赖，再暂停公网访问、停止服务、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。后端、nginx 和前端版本检查通过后恢复访问。失败会恢复旧代码与数据库；恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective` 后处理。`/etc/contest-detective.env` 保持原样，健康检查不调用模型或搜索。
+
+数据库快照在 `/srv/contest-detective-backups/release-*/contest.db`，同目录的 `previous-release` 指向更新前代码。旧发布目录与快照保留供恢复，管理员应按磁盘容量定期清理，当前链接指向的发布目录必须保留。回退到旧 tag 会保留当前数据库并执行该版本迁移，不等同于还原历史数据库；存在不兼容迁移时应由管理员先确认恢复方案。
+
+修改部署入口脚本或 nginx 配置后，管理员须重新执行安装命令；业务版本的日常发布无需登录服务器。
+
+本地验证部署入口：`python3 -m unittest discover -s deploy/tests -v`。

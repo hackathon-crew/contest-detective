@@ -1,0 +1,117 @@
+name: Deploy production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing published release tag (vX.Y.Z)'
+        required: true
+        type: string
+  pull_request:
+    paths: ['deploy/**', '.github/workflows/deploy.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('deploy-validation-{0}', github.event.pull_request.number) || 'production-deploy' }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m unittest discover -s deploy/tests -v
+      - name: Validate workflow
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color .github/workflows/deploy.yml
+
+  deploy:
+    if: github.event_name != 'pull_request' && (github.event_name != 'release' || !github.event.release.prerelease)
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve published release
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/release.json"
+          jq -e '.draft == false and .prerelease == false and .published_at != null' "$RUNNER_TEMP/release.json"
+          commit=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
+          git merge-base --is-ancestor "$commit" origin/main
+          git checkout --detach "$commit"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build release bundle
+        shell: bash
+        env:
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+          printf '%s\n' "$RELEASE_COMMIT" > RELEASE_COMMIT
+          printf '%s\n' "$RELEASE_TAG" > RELEASE_TAG
+          jq -n --arg tag "$RELEASE_TAG" --arg commit "$RELEASE_COMMIT" \
+            '{tag: $tag, commit: $commit}' > frontend/dist/version.json
+          git archive --format=tar "$RELEASE_COMMIT" backend > "$RUNNER_TEMP/release.tar"
+          tar -rf "$RUNNER_TEMP/release.tar" frontend/dist RELEASE_COMMIT RELEASE_TAG
+          gzip "$RUNNER_TEMP/release.tar"
+      - name: Deploy through restricted SSH key
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ vars.PRODUCTION_HOST }}
+          DEPLOY_USER: ${{ vars.PRODUCTION_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_USER"
+          test -n "$SSH_PRIVATE_KEY" && test -n "$SSH_KNOWN_HOSTS"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/production"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/production" "$HOME/.ssh/known_hosts"
+          trap 'rm -f "$HOME/.ssh/production"' EXIT
+          ssh -T -i "$HOME/.ssh/production" -o IdentitiesOnly=yes \
+            -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+            -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+            "$DEPLOY_USER@$DEPLOY_HOST" deploy < "$RUNNER_TEMP/release.tar.gz"
+      - name: Check public production version
+        shell: bash
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 "$PRODUCTION_URL/api/health"
+          curl --fail --silent --show-error --max-time 20 "$PRODUCTION_URL/" -o /dev/null
+          curl --fail --silent --show-error --max-time 20 \
+            "$PRODUCTION_URL/version.json?commit=$RELEASE_COMMIT" \
+            | jq -e --arg commit "$RELEASE_COMMIT" --arg tag "$RELEASE_TAG" \
+              '.commit == $commit and .tag == $tag'
+          {
+            echo "### Deployed $RELEASE_TAG"
+            echo "Commit: $RELEASE_COMMIT"
+            echo "Production: $PRODUCTION_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
