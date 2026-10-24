@@ -237,6 +237,7 @@ class OfflineImporter:
             try:
                 # Import here, only after the CLI bound its explicit database without dotenv.
                 from .models import ContentRefreshEntry, ContentRefreshRun
+                from contest_detective.server.contest.service import event_publication
                 with engine.connect() as connection:
                     connection.exec_driver_sql('PRAGMA foreign_keys=ON')
                     connection.exec_driver_sql('BEGIN IMMEDIATE')
@@ -258,7 +259,8 @@ class OfflineImporter:
                         created_ids, updated_ids = set(), set()
                         for entry in pending:
                             try:
-                                with session.begin_nested():
+                                # 离线校正需能独立回滚，不能排入用户邮件。
+                                with session.begin_nested(), event_publication(False):
                                     created, contest_id = _apply_entry(session, entry, manifest.manifest_id, digest(entry.model_dump(mode='json')))
                                     session.flush()
                             except Exception as error:

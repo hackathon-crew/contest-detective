@@ -356,3 +356,11 @@ def test_integer_edition_change_is_not_merged_on_reused_url(database, tmp_path):
     package = manifest(contest_id, name='Builder Cup 14')
     report = OfflineImporter().run(package, database=database, output_directory=tmp_path / 'reports')
     assert report.failed == 1 and 'editions' in report.failures[0].reason
+
+
+def test_offline_import_does_not_publish_runtime_notifications(database, tmp_path):
+    OfflineImporter().run(manifest(), database=database, dry_run=False,
+                          output_directory=tmp_path / 'reports')
+    with sqlite3.connect(database) as connection:
+        assert connection.execute('SELECT count(*) FROM contests').fetchone()[0] == 1
+        assert connection.execute('SELECT count(*) FROM contest_events').fetchone()[0] == 0
