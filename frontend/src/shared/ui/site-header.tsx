@@ -5,7 +5,7 @@ import inkpawMark from '@/shared/assets/inkpaw-mark-56.webp'
 
 export function SiteHeader({ actions, utilities }: { actions?: ReactNode; utilities?: ReactNode }) {
   return (
-    <header className="border-b border-rule bg-surface">
+    <header className="sticky top-0 z-30 border-b border-rule bg-surface/70 backdrop-blur-lg">
       <div className="mx-auto flex min-h-14 max-w-7xl flex-wrap items-center justify-between gap-2 px-6 py-2 sm:px-8">
         <Link
           to="/"
