@@ -2,7 +2,7 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
     "target": "es2023",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "skipLibCheck": true,
 
@@ -20,5 +20,10 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "openapi-ts.config.ts"]
+  "include": [
+    "vite.config.ts",
+    "openapi-ts.config.ts",
+    "playwright.detail-preview.config.ts",
+    "e2e/**/*.ts"
+  ]
 }
