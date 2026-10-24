@@ -1,4 +1,6 @@
-from sqlalchemy import JSON, Boolean, ForeignKey, String, Text, UniqueConstraint
+from datetime import datetime, timezone
+
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from contest_detective.framework.db import Base
@@ -68,3 +70,14 @@ class ContestPageLink(Base):
 
     contest_id: Mapped[str] = mapped_column(ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True)
     page_id: Mapped[str] = mapped_column(ForeignKey('contest_pages.id', ondelete='CASCADE'), primary_key=True)
+
+
+class ContestEvent(Base):
+    """已提交的赛事版本；与赛事一起回滚，消费者只读递增序号。"""
+    __tablename__ = 'contest_events'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    contest_id: Mapped[str] = mapped_column(ForeignKey('contests.id', ondelete='CASCADE'), index=True)
+    kind: Mapped[str] = mapped_column(String(10))
+    version: Mapped[str] = mapped_column(String(64))
+    occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

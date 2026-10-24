@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+import { stubResizeObserver } from '@/features/detective/detective.test.utils'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
@@ -14,6 +15,7 @@ afterEach(() => {
 })
 
 function renderAt(path: string) {
+  stubResizeObserver()
   window.history.replaceState(null, '', path)
   vi.stubGlobal(
     'fetch',

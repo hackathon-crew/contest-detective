@@ -155,6 +155,60 @@ export type Credentials = {
 };
 
 /**
+ * DocumentAnswer
+ */
+export type DocumentAnswer = {
+    /**
+     * Status
+     */
+    status: 'answered' | 'insufficient_evidence';
+    /**
+     * Claims
+     */
+    claims?: Array<GroundedClaim>;
+};
+
+/**
+ * DocumentPassage
+ */
+export type DocumentPassage = {
+    /**
+     * Document Id
+     */
+    document_id: string;
+    /**
+     * Passage Id
+     */
+    passage_id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Locator
+     */
+    locator: string;
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * DocumentQuestion
+ */
+export type DocumentQuestion = {
+    /**
+     * Question
+     */
+    question: string;
+    /**
+     * Passages
+     */
+    passages: Array<DocumentPassage>;
+};
+
+/**
  * FieldValue
  */
 export type FieldValue = {
@@ -214,6 +268,20 @@ export type GitHubInput = {
      * Username
      */
     username: string;
+};
+
+/**
+ * GroundedClaim
+ */
+export type GroundedClaim = {
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Citations
+     */
+    citations: Array<SourceCitation>;
 };
 
 /**
@@ -409,6 +477,34 @@ export type ResponseContestDetail = {
      * 业务数据
      */
     data?: ContestDetail | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[DocumentAnswer]
+ */
+export type ResponseDocumentAnswer = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: DocumentAnswer | null;
     /**
      * Timestamp
      *
@@ -663,6 +759,24 @@ export type Source = {
      * Precision
      */
     precision?: 'day' | 'datetime';
+};
+
+/**
+ * SourceCitation
+ */
+export type SourceCitation = {
+    /**
+     * Document Id
+     */
+    document_id: string;
+    /**
+     * Passage Id
+     */
+    passage_id: string;
+    /**
+     * Quote
+     */
+    quote: string;
 };
 
 /**
@@ -1061,3 +1175,28 @@ export type AskQuestionAgentAskPostResponses = {
      */
     200: unknown;
 };
+
+export type AskDocumentCompanionDocumentsAskPostData = {
+    body: DocumentQuestion;
+    path?: never;
+    query?: never;
+    url: '/companion/documents/ask';
+};
+
+export type AskDocumentCompanionDocumentsAskPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AskDocumentCompanionDocumentsAskPostError = AskDocumentCompanionDocumentsAskPostErrors[keyof AskDocumentCompanionDocumentsAskPostErrors];
+
+export type AskDocumentCompanionDocumentsAskPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseDocumentAnswer;
+};
+
+export type AskDocumentCompanionDocumentsAskPostResponse = AskDocumentCompanionDocumentsAskPostResponses[keyof AskDocumentCompanionDocumentsAskPostResponses];

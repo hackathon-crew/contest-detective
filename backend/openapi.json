@@ -586,6 +586,44 @@
           }
         }
       }
+    },
+    "/companion/documents/ask": {
+      "post": {
+        "summary": "Ask Document",
+        "operationId": "ask_document_companion_documents_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentQuestion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_DocumentAnswer_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -900,6 +938,102 @@
         ],
         "title": "Credentials"
       },
+      "DocumentAnswer": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "answered",
+              "insufficient_evidence"
+            ],
+            "title": "Status"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/GroundedClaim"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Claims"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "DocumentAnswer"
+      },
+      "DocumentPassage": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Document Id"
+          },
+          "passage_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Passage Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "locator": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Locator"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_id",
+          "passage_id",
+          "title",
+          "locator",
+          "text"
+        ],
+        "title": "DocumentPassage"
+      },
+      "DocumentQuestion": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "passages": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentPassage"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Passages"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question",
+          "passages"
+        ],
+        "title": "DocumentQuestion"
+      },
       "FieldValue": {
         "properties": {
           "value": {
@@ -1027,6 +1161,32 @@
           "username"
         ],
         "title": "GitHubInput"
+      },
+      "GroundedClaim": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 1200,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/SourceCitation"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "citations"
+        ],
+        "title": "GroundedClaim"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1402,6 +1562,48 @@
         "type": "object",
         "title": "Response[ContestDetail]"
       },
+      "Response_DocumentAnswer_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DocumentAnswer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[DocumentAnswer]"
+      },
       "Response_NoneType_": {
         "properties": {
           "code": {
@@ -1765,6 +1967,36 @@
           "excerpt"
         ],
         "title": "Source"
+      },
+      "SourceCitation": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Document Id"
+          },
+          "passage_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Passage Id"
+          },
+          "quote": {
+            "type": "string",
+            "maxLength": 1200,
+            "minLength": 1,
+            "title": "Quote"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_id",
+          "passage_id",
+          "quote"
+        ],
+        "title": "SourceCitation"
       },
       "ToolSource": {
         "properties": {
