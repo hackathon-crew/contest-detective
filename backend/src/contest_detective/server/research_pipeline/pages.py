@@ -37,7 +37,8 @@ def _public_target(url: str, resolver) -> tuple[httpx.URL, httpx.URL]:
         raise ValueError('只能抓取公开的 HTTP(S) 网页') from exc
 
 
-def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -> str:
+def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None,
+               before_request=None, resolved_url: list[str] | None = None) -> str:
     resolver = resolver or socket.getaddrinfo
     deadline = time.monotonic() + TIMEOUT_SECONDS
     context = nullcontext(client) if client else httpx.Client(
@@ -48,6 +49,9 @@ def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -
         current = url
         for _ in range(6):
             original, pinned = _public_target(current, resolver)
+            if before_request is not None:
+                # Recheck each redirect before connecting, not just the initial URL.
+                before_request(str(original))
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise httpx.ReadTimeout('网页读取超时')
@@ -83,6 +87,8 @@ def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -
                     if time.monotonic() > deadline:
                         raise httpx.ReadTimeout('网页读取超时')
                     body.extend(chunk)
+                if resolved_url is not None:
+                    resolved_url.append(str(original))
                 if media_type == 'text/plain':
                     return bytes(body).decode(response.encoding or 'utf-8', errors='replace').strip()
                 return (trafilatura.extract(bytes(body), url=str(original), include_comments=False) or '')

@@ -32,7 +32,8 @@ def resolve(field: ContestField, claims: list[Source]) -> FieldValue:
         selected = refine(max(official, key=publication), official)
         for source in sources:
             source.stale = not source.is_official and not compatible(source, selected)
-        return FieldValue(value=selected.value, precision=selected.precision, level='official', sources=sources)
+        level = 'official' if all(compatible(left, right) for left in official for right in official) else 'conflict'
+        return FieldValue(value=selected.value, precision=selected.precision, level=level, sources=sources)
 
     if all(compatible(left, right) for left in sources for right in sources):
         selected = refine(max(sources, key=publication), sources)

@@ -42,6 +42,10 @@ def build_messages(
 ) -> list[BaseMessage]:
     """为单场赛事构造隔离的 system/user 消息。"""
     system = load_prompt(prompt_path).render()
+    if item.allow_conflicts:
+        system += ('\n本次包含多个已读取的详情或规则正文。覆盖前述沿用旧字段规则：'
+                   '若正文明确给出与已有字段不同的事实，也返回独立 claim，保留所有互相矛盾的原文。'
+                   '不选择赢家，不隐去官方之间的冲突，不拼接跨文档 excerpt。')
     system += '\n输出 JSON Schema：\n' + json.dumps(NormalizedContest.model_json_schema(), ensure_ascii=False)
     claims = '\n'.join(
         f'- {claim.field}: {claim.value}（精度：{claim.precision}，来源：{item.draft.page.url}）'
