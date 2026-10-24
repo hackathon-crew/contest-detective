@@ -2,6 +2,15 @@
 @import 'tw-animate-css';
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+@font-face {
+  font-family: 'Inkpaw Wordmark';
+  src: url('./shared/assets/figtree-inkpaw-700.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  unicode-range: U+0049, U+0061, U+006B, U+006E, U+0070, U+0077;
+}
+
 /*
  * 用途对照：页面标题 text-4xl font-bold；分区标题 text-2xl font-bold；
  * 卡片标题 text-base font-semibold；正文 text-sm；元信息 text-xs text-muted。
@@ -38,6 +47,8 @@
   --font-sans:
     Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  /* 品牌字体只覆盖 Inkpaw 字标，界面正文继续使用原有字体。 */
+  --font-brand: 'Inkpaw Wordmark', var(--font-sans);
 
   /* 中文字面几乎占满字身，行高低于 1.45 相邻两行会贴上；Tailwind 默认的 xs、sm 只有 1.33 和 1.43 */
   --text-xs--line-height: 1.5;

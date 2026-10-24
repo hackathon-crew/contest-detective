@@ -1,6 +1,7 @@
-import { Check, ChevronRight, LoaderCircle, Search, Square } from 'lucide-react'
+import { Check, ChevronRight, LoaderCircle, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { safeUrl } from '@/entities/contest'
+import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
 import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
 import { rehypeStreamReveal } from './rehype-stream-reveal'
@@ -106,8 +107,16 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
         <p>{turn.question}</p>
       </div>
       <div className="detective-turn__answer">
-        <div className="detective-turn__avatar" aria-label="比赛侦探">
-          <Search aria-hidden="true" strokeWidth={1.5} />
+        <div className="detective-turn__avatar">
+          <img
+            src={inkpawMark}
+            alt="Inkpaw"
+            width={30}
+            height={26}
+            className="[image-rendering:pixelated]"
+            loading="lazy"
+            decoding="async"
+          />
         </div>
         <div className="detective-turn__body">
           <ToolActivity turn={turn} />
