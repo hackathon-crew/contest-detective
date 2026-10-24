@@ -91,8 +91,13 @@
   z-index: 30;
   background: color-mix(in srgb, var(--color-page) 78%, transparent);
   backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
   border-bottom: 1px solid var(--color-rule);
+}
+/* 分开声明，避免构建压缩把标准属性合并成仅 WebKit 可用的前缀。 */
+@supports not (backdrop-filter: blur(0)) {
+  .site-header {
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
 }
 .site-header > .site-wrap {
   min-height: 64px;
