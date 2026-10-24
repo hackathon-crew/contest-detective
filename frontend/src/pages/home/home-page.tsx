@@ -1,9 +1,9 @@
 import { lazy, Suspense, useCallback, useRef, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, Link } from 'react-router'
 import {
   ContestPreview,
-  loadContestCollection,
+  useContestCollection,
   nextDeadline,
   deadlineDays,
   officialDeadlineCount,
@@ -49,10 +49,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
   const location = useLocation()
   const { send } = useDetective()
   const follows = useFollows()
-  const collection = useQuery({
-    queryKey: ['contests', 'collection'],
-    queryFn: () => loadContestCollection(),
-  })
+  const collection = useContestCollection()
   const contests = collection.data?.items ?? []
   const total = collection.data?.total
   const covers = contests.filter((contest) => safeUrl(contest.cover_url)).slice(0, 46)
@@ -181,6 +178,12 @@ export function HomePage({ contestId }: { contestId?: string }) {
             ))}
           </div>
           <div className="wrap">
+            {collection.data && !collection.data.complete && (
+              <p className="note" role="status">
+                已加载 {contests.length} / {total} 场
+                {collection.isFetching ? '，继续读取中。' : '。'}
+              </p>
+            )}
             {collection.isError && (
               <ErrorState error={collection.error} retry={() => void collection.refetch()} />
             )}
@@ -190,7 +193,11 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 <span>场比赛在库</span>
               </div>
               <div className="stat">
-                <b>{collection.data ? officialDeadlineCount(contests) : '—'}</b>
+                <b>
+                  {collection.data
+                    ? `${collection.data.complete ? '' : '≥'}${officialDeadlineCount(contests)}`
+                    : '—'}
+                </b>
                 <span>场的截止时间对过官方原文</span>
               </div>
               <div className="stat">
@@ -247,14 +254,14 @@ export function HomePage({ contestId }: { contestId?: string }) {
             </div>
             {collection.isPending ? (
               <Skeleton />
-            ) : collection.isError ? (
-              <ErrorState error={collection.error} retry={() => void collection.refetch()} />
-            ) : soon.length ? (
+            ) : collection.isError && !collection.data ? null : soon.length ? (
               <div className="grid">
                 {soon.map(({ contest }) => (
                   <ContestPreview key={contest.id} contest={contest} card />
                 ))}
               </div>
+            ) : !collection.data?.complete ? (
+              <p className="empty">其余赛事尚未读取完成。</p>
             ) : (
               <p className="empty">两周内没有已公布截止时间的比赛，去赛事库看看。</p>
             )}

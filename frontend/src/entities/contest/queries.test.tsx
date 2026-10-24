@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
-import { useContest, useContestLibrary } from './queries'
+import { useContest, useContestCollection, useContestLibrary } from './queries'
 
 const items = ['one', 'two'].map((id) => ({
   id,
@@ -106,4 +106,75 @@ it('does not show a previous contest as the detail for a newly selected id', asy
   rerender({ id: 'two' })
   expect(result.current.data?.id).not.toBe('one')
   await waitFor(() => expect(result.current.data?.id).toBe('two'))
+})
+
+it('publishes the first page while the remaining page is still loading', async () => {
+  let finish!: (response: Response) => void
+  const remaining = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  const first = Array.from({ length: 100 }, (_, index) => ({ ...items[0], id: String(index) }))
+  vi.stubGlobal('fetch', async (input: string) => {
+    const page = new URL(input, 'https://example.com').searchParams.get('page')
+    if (page === '2') return remaining
+    return Response.json({
+      code: 200,
+      message: 'ok',
+      data: first,
+      total: 101,
+      page: 1,
+      page_size: 100,
+    })
+  })
+  const { result } = renderHook(() => useContestLibrary(), { wrapper: wrapper() })
+  try {
+    await waitFor(() => expect(result.current.data).toHaveLength(100))
+    expect(result.current.isFetching).toBe(true)
+  } finally {
+    finish(
+      Response.json({
+        code: 200,
+        message: 'ok',
+        data: [items[1]],
+        total: 101,
+        page: 2,
+        page_size: 100,
+      }),
+    )
+  }
+  await waitFor(() => expect(result.current.data).toHaveLength(101))
+})
+
+it('shares the same request between the homepage collection and the library', async () => {
+  let requests = 0
+  vi.stubGlobal('fetch', async () => {
+    requests++
+    return Response.json({
+      code: 200,
+      message: 'ok',
+      data: items,
+      total: 2,
+      page: 1,
+      page_size: 100,
+    })
+  })
+  const { result } = renderHook(
+    () => ({ home: useContestCollection(), library: useContestLibrary() }),
+    { wrapper: wrapper() },
+  )
+  await waitFor(() => expect(result.current.home.data?.items).toHaveLength(2))
+  expect(result.current.library.data).toHaveLength(2)
+  expect(requests).toBe(1)
+})
+
+it('aborts the collection request when its observer is removed', async () => {
+  let requestSignal: AbortSignal | null | undefined
+  vi.stubGlobal('fetch', (_input: string, init?: RequestInit) => {
+    requestSignal = init?.signal
+    return new Promise<Response>(() => {})
+  })
+  const hook = renderHook(() => useContestLibrary(), { wrapper: wrapper() })
+  await waitFor(() => expect(requestSignal).toBeDefined())
+  hook.unmount()
+  expect(requestSignal?.aborted).toBe(true)
 })
