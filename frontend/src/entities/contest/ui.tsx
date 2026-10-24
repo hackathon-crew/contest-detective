@@ -1,9 +1,25 @@
-import type { ReactNode } from 'react'
-import { Link, useLocation } from 'react-router'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router'
+import { ChevronDown, Check } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import { Badge } from '@/shared/ui'
-import type { ContestSummary, FieldValue } from './api'
-import { fieldNames, formatDate, modeNames, safeUrl, statusNames } from './format'
-import { cardDate } from './card-date'
+import type { FieldValue } from './api'
+import { formatDate, modeNames, safeUrl, statusNames } from './format'
+import { ContestCover, VerificationLevel } from './preview'
+import {
+  contestCity,
+  contestAbout,
+  contestThemes,
+  dateText,
+  fieldDay,
+  libraryDate,
+  monthDay,
+  normalizedPrize,
+  seriesCity,
+  type LibraryContest,
+  type LibraryDate,
+  type LibraryRow,
+} from './library'
 
 export function LevelBadge({ level }: { level: FieldValue['level'] }) {
   const names = { official: '官方', reposted: '仅转载', conflict: '冲突', not_found: '未找到' }
@@ -19,46 +35,244 @@ export function LevelBadge({ level }: { level: FieldValue['level'] }) {
     </Badge>
   )
 }
-export function ContestCard({ contest, action }: { contest: ContestSummary; action?: ReactNode }) {
-  const location = useLocation()
-  const date = cardDate(contest)
-  const cover = safeUrl(contest.cover_url)
+export function LibraryDateColumn({ date }: { date: LibraryDate | null }) {
+  if (!date)
+    return (
+      <div className="item-date">
+        <b className="none">日期未公布</b>
+      </div>
+    )
+  const labels: Record<string, string> = {
+    registration_deadline: '报名截止',
+    submission_deadline: '作品提交截止',
+    deadline_unspecified: '截止',
+    start_at: '开赛',
+  }
+  const text = date.start
+    ? date.left < 0
+      ? ''
+      : date.left === 0
+        ? '今天开赛'
+        : date.left + ' 天后开赛'
+    : date.left < 0
+      ? '已截止'
+      : date.left === 0
+        ? '今天截止'
+        : '还有 ' + date.left + ' 天'
+  const source = safeUrl(date.info.sources?.[0]?.url)
+  const level = <VerificationLevel level={date.info.level} />
   return (
-    <article className="flex min-w-0 items-start gap-4 rounded-2xl border border-rule bg-surface p-4">
-      {cover && (
-        <img
-          src={cover}
-          alt=""
-          loading="lazy"
-          className="h-20 w-20 shrink-0 rounded-xl object-cover sm:h-24 sm:w-24"
-        />
-      )}
-      <div className="min-w-0 flex-1 space-y-2">
-        <h3 className="break-words text-base font-semibold text-ink">
-          <Link
-            className="hover:underline focus-visible:outline-2 focus-visible:outline-ink"
-            to={`/contests/${contest.id}${location.search}`}
-            state={{ backgroundLocation: location }}
+    <div className="item-date">
+      <b title={formatDate(date.info.value, date.info.precision)}>{dateText(date.info)}</b>
+      <span className="k">{labels[date.field]}</span>
+      <span className="s">
+        {source ? (
+          <a
+            href={source}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={'查看' + labels[date.field] + '来源'}
           >
-            {contest.name}
-          </Link>
-        </h3>
-        <p className="text-xs text-muted">
-          {statusNames[contest.status]} ·{' '}
-          {modeNames[contest.fields.mode?.value ?? ''] ?? '形式未找到'}
-          {contest.fields.city?.value ? ` · ${contest.fields.city.value}` : ''}
+            {level}
+          </a>
+        ) : (
+          level
+        )}
+        {text && (
+          <span
+            className={'soon-tag' + (!date.start && date.left >= 0 && date.left <= 2 ? ' hot' : '')}
+          >
+            {text}
+          </span>
+        )}
+      </span>
+    </div>
+  )
+}
+export function ContestCard({
+  contest,
+  action,
+  reason,
+  index = 0,
+}: {
+  contest: LibraryContest
+  action?: ReactNode
+  reason?: string
+  index?: number
+}) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const date = libraryDate(contest)
+  const themes = contestThemes(contest)
+  const prize = normalizedPrize(contest.fields.prize?.value)
+  const mode = contest.fields.mode?.value
+  const meta = [
+    contest.fields.organizer?.value,
+    mode === 'hybrid' ? '线上+线下' : modeNames[mode ?? ''],
+    contestCity(contest),
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const to = '/contests/' + encodeURIComponent(contest.id) + location.search
+  return (
+    <article
+      className={'item' + (contest.status === 'ended' ? ' ended' : '')}
+      style={{ '--i': Math.min(index, 12) } as CSSProperties}
+      onClick={(event) => {
+        if (!(event.target as Element).closest('a,button'))
+          void navigate(to, { state: { backgroundLocation: location } })
+      }}
+    >
+      <ContestCover contest={contest} className="item-cover" />
+      <div className="item-main">
+        <Link className="item-name" to={to} state={{ backgroundLocation: location }}>
+          {contest.name}
+        </Link>
+        <p className="item-meta">{meta}</p>
+        {reason ? (
+          <div className="item-extra">
+            <div className="reasons">
+              <Check className="ic" />
+              <ReactMarkdown
+                urlTransform={(url) => safeUrl(url) ?? ''}
+                components={{
+                  p: ({ children }) => <span>{children}</span>,
+                  a: ({ children, ...props }) => (
+                    <a {...props} target="_blank" rel="noreferrer">
+                      {children}
+                    </a>
+                  ),
+                }}
+              >
+                {reason}
+              </ReactMarkdown>
+            </div>
+          </div>
+        ) : (
+          <div className="item-extra">
+            {contest.status !== 'upcoming' && (
+              <span className={'tag' + (contest.status === 'ongoing' ? ' live' : '')}>
+                {statusNames[contest.status]}
+              </span>
+            )}
+            {prize && (
+              <span className="prize-t">
+                奖金 <b>{prize}</b>
+              </span>
+            )}
+            {themes.length
+              ? themes.slice(0, 3).map((theme) => (
+                  <span className="tag" key={theme}>
+                    {theme}
+                  </span>
+                ))
+              : contestAbout(contest) && <span className="about">{contestAbout(contest)}</span>}
+          </div>
+        )}
+      </div>
+      <LibraryDateColumn date={date} />
+      {action}
+    </article>
+  )
+}
+
+export function ContestSeriesRow({ row, index = 0 }: { row: LibraryRow; index?: number }) {
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const kids = row.contests,
+    first = kids[0]!
+  const starts = kids
+    .map((c) => fieldDay(c.fields.start_at))
+    .filter((s): s is string => !!s)
+    .sort()
+  const ends = kids
+    .map((c) => fieldDay(c.fields.end_at))
+    .filter((s): s is string => !!s)
+    .sort()
+  const a = starts[0],
+    b = ends.at(-1)
+  const range = a
+    ? monthDay(a) +
+      (b && b !== a
+        ? '–' + (b.slice(5, 7) === a.slice(5, 7) ? Number(b.slice(8, 10)) + '日' : monthDay(b))
+        : '')
+    : '日期未公布'
+  const offline = new Set(
+    kids.filter((c) => c.fields.mode?.value !== 'online').map((c) => seriesCity(c).city),
+  ).size
+  const sorted = [...kids].sort((x, y) =>
+    seriesCity(x).city.localeCompare(seriesCity(y).city, 'zh'),
+  )
+  return (
+    <article
+      className={'item' + (open ? ' open' : '')}
+      style={{ '--i': Math.min(index, 12) } as CSSProperties}
+      onClick={(event) => {
+        if (!(event.target as Element).closest('a,button')) setOpen(!open)
+      }}
+    >
+      <ContestCover contest={first} className="item-cover" />
+      <div className="item-main">
+        <button
+          className="item-name"
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          AI 切磋大会 · 1024 超能 Coding 周末
+        </button>
+        <p className="item-meta">
+          WaytoAGI · {offline} 座城市线下
+          {kids.some((c) => c.fields.mode?.value === 'online') ? ' + 线上会场' : ''}
         </p>
-        <p className="text-sm">
-          {date ? (
-            <>
-              {fieldNames[date.field]} {formatDate(date.info.value, date.info.precision)}{' '}
-              <LevelBadge level={date.info.level} />
-            </>
-          ) : (
-            '时间未找到'
-          )}
-        </p>
-        {action}
+        <div className="item-extra">
+          {kids.some((c) => c.status === 'ongoing') && <span className="tag live">进行中</span>}
+          <span className="about">
+            {kids
+              .slice(0, 8)
+              .map((c) => seriesCity(c).city)
+              .join('、')}{' '}
+            等 {kids.length} 场
+          </span>
+        </div>
+      </div>
+      <div className="item-date">
+        <b>{range}</b>
+        <span className="k">各城市同场</span>
+        <span className="s">
+          <VerificationLevel level={first.fields.start_at?.level ?? 'not_found'} />
+        </span>
+      </div>
+      <button
+        className="follow expand"
+        type="button"
+        aria-expanded={open}
+        aria-label={'展开 ' + kids.length + ' 个城市'}
+        onClick={() => setOpen(!open)}
+      >
+        <ChevronDown className="ic" />
+      </button>
+      <div className="series-body" aria-hidden={!open} inert={!open}>
+        <div>
+          <div className="city-grid">
+            {sorted.map((contest) => {
+              const city = seriesCity(contest)
+              return (
+                <Link
+                  key={contest.id}
+                  className="city-link"
+                  to={'/contests/' + encodeURIComponent(contest.id) + location.search}
+                  state={{ backgroundLocation: location }}
+                >
+                  <b>{city.city}</b>
+                  <span>
+                    {city.venue || (contest.fields.mode?.value === 'online' ? '线上' : '线下')}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </article>
   )

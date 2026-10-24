@@ -1,16 +1,34 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router'
-import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
+import { MemoryRouter, useLocation, useNavigate } from 'react-router'
+import { NuqsTestingAdapter } from 'nuqs/adapters/testing'
+import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
+vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 const fields = {
   start_at: { value: '2026-10-25T02:00:00Z', level: 'reposted', sources: [] },
   mode: { value: 'online', level: 'reposted', sources: [] },
 }
 const item = { id: 'one', name: '真实接口赛事', cover_url: null, status: 'upcoming', fields }
 let requested: string[] = []
+function LocationValue() {
+  return <output data-testid="query">{useLocation().search}</output>
+}
+function QueryAdapter({ children }: { children: ReactNode }) {
+  const { search } = useLocation()
+  const navigate = useNavigate()
+  return (
+    <NuqsTestingAdapter
+      searchParams={search}
+      hasMemory
+      onUrlUpdate={({ queryString }) => void navigate({ search: queryString }, { replace: true })}
+    >
+      {children}
+    </NuqsTestingAdapter>
+  )
+}
 function start(path = '/contests') {
   window.history.replaceState(null, '', path)
   requested = []
@@ -56,13 +74,14 @@ function start(path = '/contests') {
   })
   render(
     <MemoryRouter initialEntries={[path]}>
-      <NuqsAdapter>
+      <QueryAdapter>
         <QueryClientProvider
           client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
         >
           <AppRoutes />
+          <LocationValue />
         </QueryClientProvider>
-      </NuqsAdapter>
+      </QueryAdapter>
     </MemoryRouter>,
   )
 }
@@ -74,6 +93,7 @@ it('opens field sources and preserves filters after closing', async () => {
   start('/contests?keyword=真实')
   const links = await screen.findAllByRole('link', { name: '真实接口赛事' })
   fireEvent.click(links[0]!)
+  fireEvent.click(await screen.findByText('查看原文摘录'))
   expect(await screen.findByRole('link', { name: '赛事规则' })).toBeTruthy()
   expect(screen.getByText('10月25日开赛').closest('.contest-detail-source')?.className).toContain(
     'line-through',
@@ -84,18 +104,53 @@ it('opens field sources and preserves filters after closing', async () => {
     '真实',
   )
 })
-it('sends URL filters to the real client and shows an empty result', async () => {
+it('loads the whole collection then filters locally without a second keyword request', async () => {
   start()
   await screen.findAllByRole('link', { name: '真实接口赛事' })
   fireEvent.change(screen.getByRole('searchbox', { name: '搜索赛事' }), {
     target: { value: '无结果' },
   })
+  expect(await screen.findByText('没有符合条件的比赛')).toBeTruthy()
+  expect(
+    requested.some((url) => new URL(url, 'https://example.com').searchParams.has('keyword')),
+  ).toBe(false)
+  await waitFor(() =>
+    expect(new URLSearchParams(screen.getByTestId('query').textContent ?? '').get('keyword')).toBe(
+      '无结果',
+    ),
+  )
+})
+
+it('restores multiple URL filters and keeps inactive alternatives countable', async () => {
+  start('/contests?mode=online,hybrid&due=none&official=true&view=calendar')
+  await screen.findByText('没有符合条件的比赛')
+  expect(screen.getByRole('button', { name: /^线上\s*0$/ }).getAttribute('aria-pressed')).toBe(
+    'true',
+  )
+  expect(
+    screen.getByRole('button', { name: /^线上\+线下\s*0$/ }).getAttribute('aria-pressed'),
+  ).toBe('true')
+  expect(screen.getByRole('button', { name: '日历' }).getAttribute('aria-pressed')).toBe('true')
+  fireEvent.click(screen.getByRole('button', { name: '清除全部' }))
+  fireEvent.click(screen.getByRole('button', { name: '列表' }))
+  await screen.findAllByRole('link', { name: '真实接口赛事' })
+  await waitFor(() => expect(screen.getByTestId('query').textContent).toBe(''))
+})
+
+it('date survives in result links and can be toggled without erasing other day counts', async () => {
+  start('/contests?date=2026-10-24')
+  await screen.findByText('没有符合条件的比赛')
+  const mini = screen.getByRole('group', { name: '小日历' })
+  const day = within(mini).getByRole('button', { name: '10月25日，1 场' })
+  fireEvent.click(day)
+  const links = await screen.findAllByRole('link', { name: '真实接口赛事' })
+  await waitFor(() => expect(links[0]!.getAttribute('href')).toContain('date=2026-10-25'))
+  expect(screen.getByRole('button', { name: '去掉 10月25日' })).toBeTruthy()
+  fireEvent.click(day)
+  await waitFor(() => expect(screen.queryByRole('button', { name: '去掉 10月25日' })).toBeNull())
   await waitFor(() =>
     expect(
-      requested.some(
-        (url) => new URL(url, 'https://example.com').searchParams.get('keyword') === '无结果',
-      ),
-    ).toBe(true),
+      new URLSearchParams(screen.getByTestId('query').textContent ?? '').get('date'),
+    ).toBeNull(),
   )
-  expect(await screen.findByText('没有找到赛事，换个条件再试试。')).toBeTruthy()
 })

@@ -9,6 +9,7 @@ import {
   modeNames,
   safeUrl,
   useContest,
+  dateText,
 } from '@/entities/contest'
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
@@ -20,6 +21,7 @@ export interface ContestDetailProps {
   onClose: () => void
   action?: ReactNode
   onAsk?: (question: string) => void
+  variant?: 'default' | 'library'
 }
 export function ContestDetail({
   contestId,
@@ -27,11 +29,57 @@ export function ContestDetail({
   onClose,
   action,
   onAsk,
+  variant = 'default',
 }: ContestDetailProps) {
   const query = useContest(contestId, open)
   const title = useRef<HTMLHeadingElement>(null)
   const contest = query.data
   const registration = safeUrl(contest?.fields.registration_url?.value)
+  const library = variant === 'library'
+  const names = library
+    ? {
+        ...fieldNames,
+        registration_deadline: '报名截止',
+        submission_deadline: '提交截止',
+        start_at: '开赛',
+        end_at: '结束',
+        venue: '地点',
+        prize: '奖金',
+      }
+    : fieldNames
+  const order = library
+    ? [
+        'registration_deadline',
+        'submission_deadline',
+        'deadline_unspecified',
+        'start_at',
+        'end_at',
+        'mode',
+        'city',
+        'venue',
+        'prize',
+        'organizer',
+        ...Object.keys(fieldNames).filter(
+          (field) =>
+            ![
+              'registration_deadline',
+              'submission_deadline',
+              'deadline_unspecified',
+              'start_at',
+              'end_at',
+              'mode',
+              'city',
+              'venue',
+              'prize',
+              'organizer',
+            ].includes(field),
+        ),
+      ]
+    : Object.keys(fieldNames)
+  const about = contest?.summary
+    ?.replace(/^#+\s+.*\n+/, '')
+    .split(/\n\s*\n/)[0]
+    ?.slice(0, 300)
   return (
     <Dialog
       open={open}
@@ -40,7 +88,7 @@ export function ContestDetail({
       }}
     >
       <DialogContent
-        className="contest-detail"
+        className={'contest-detail' + (library ? ' contest-detail--library' : '')}
         aria-describedby={undefined}
         onOpenAutoFocus={(event) => {
           event.preventDefault()
@@ -64,8 +112,10 @@ export function ContestDetail({
           ) : (
             contest && (
               <>
+                {library && about && <p className="contest-detail-about">{about}</p>}
                 <dl className="contest-detail-fields">
-                  {Object.entries(fieldNames).map(([field, label]) => {
+                  {order.map((field) => {
+                    const label = names[field]
                     const item = contest.fields[field]
                     const value = item?.value
                     return (
@@ -75,7 +125,15 @@ export function ContestDetail({
                           <p>
                             {value ? (
                               dateFields.includes(field) ? (
-                                formatDate(value, item.precision)
+                                library ? (
+                                  item.precision === 'day' ? (
+                                    Number(value.slice(0, 4)) + '年' + dateText(item)
+                                  ) : (
+                                    formatDate(value, item.precision, true)
+                                  )
+                                ) : (
+                                  formatDate(value, item.precision)
+                                )
                               ) : field === 'mode' ? (
                                 (modeNames[value] ?? value)
                               ) : field === 'registration_url' && safeUrl(value) ? (
@@ -89,28 +147,63 @@ export function ContestDetail({
                               <span className="text-faint">未找到</span>
                             )}
                           </p>
-                          {item?.sources?.map((source, index) => (
-                            <div
-                              className={
-                                'contest-detail-source' + (source.stale ? ' line-through' : '')
-                              }
-                              key={source.url + index}
-                            >
-                              <a
-                                href={safeUrl(source.url)}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                          {!library &&
+                            item?.sources?.map((source, index) => (
+                              <div
+                                className={
+                                  'contest-detail-source' + (source.stale ? ' line-through' : '')
+                                }
+                                key={source.url + index}
                               >
-                                {source.title || source.site}
-                              </a>
-                              <p>{source.excerpt}</p>
-                            </div>
-                          ))}
+                                <a
+                                  href={safeUrl(source.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {source.title || source.site}
+                                </a>
+                                <p>{source.excerpt}</p>
+                              </div>
+                            ))}
+                          {library && !!item?.sources?.length && (
+                            <details className="contest-detail-evidence">
+                              <summary>查看原文摘录</summary>
+                              {item.sources.map((source, index) => (
+                                <div
+                                  className={
+                                    'contest-detail-source' + (source.stale ? ' line-through' : '')
+                                  }
+                                  key={source.url + index}
+                                >
+                                  <a href={safeUrl(source.url)} target="_blank" rel="noreferrer">
+                                    {source.title || source.site}
+                                  </a>
+                                  <p>{source.excerpt}</p>
+                                </div>
+                              ))}
+                            </details>
+                          )}
                           {value && !item?.sources?.length && (
                             <p className="contest-detail-source">没有可显示的出处。</p>
                           )}
                         </dd>
-                        <VerificationLevel level={item?.level ?? 'not_found'} />
+                        {library ? (
+                          <span className="contest-detail-first-source">
+                            <VerificationLevel level={item?.level ?? 'not_found'} />
+                            {item?.sources?.[0] && (
+                              <a
+                                href={safeUrl(item.sources[0].url)}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {item.sources[0].site || item.sources[0].title}
+                                <Icon name="arrow-right" />
+                              </a>
+                            )}
+                          </span>
+                        ) : (
+                          <VerificationLevel level={item?.level ?? 'not_found'} />
+                        )}
                       </div>
                     )
                   })}

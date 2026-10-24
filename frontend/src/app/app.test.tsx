@@ -62,13 +62,12 @@ describe('路由', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: '添加画像' }))
     expect(await screen.findByRole('button', { name: '确认并挑比赛' })).toBeTruthy()
   })
-  it('关注入口切换赛事列表，返回后恢复浏览区块', () => {
+  it('关注入口打开关注筛选，返回后恢复浏览区块', async () => {
     renderAt('/contests')
     fireEvent.click(screen.getByRole('button', { name: '我的关注' }))
-    expect(screen.getByRole('heading', { name: '我的关注' })).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: '全部赛事' }))
-    expect(screen.getByRole('heading', { name: '全部赛事' })).toBeTruthy()
+    expect(await screen.findByText('还没有关注的比赛')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '看全部比赛' }))
+    expect(await screen.findByText('没有符合条件的比赛')).toBeTruthy()
   })
   it('首页展示新入口，完整浏览保留在独立赛事库', () => {
     renderAt('/')
@@ -79,8 +78,8 @@ describe('路由', () => {
   })
   it('赛事库保留完整浏览、日历和常驻侦探', () => {
     renderAt('/contests')
-    for (const name of ['全部赛事', '赛事日历'])
-      expect(screen.getByRole('heading', { name })).toBeTruthy()
+    expect(screen.getByRole('region', { name: '全部赛事' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '日历' })).toBeTruthy()
     expect(screen.getByRole('region', { name: '侦探' })).toBeTruthy()
   })
 

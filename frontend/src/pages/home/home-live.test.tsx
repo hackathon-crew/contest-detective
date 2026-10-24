@@ -46,7 +46,10 @@ function show(path = '/') {
     const data = url.pathname.endsWith('/auth/me')
       ? null
       : url.pathname.includes('/contests/')
-        ? { ...contests[0], summary: null }
+        ? {
+            ...contests.find(({ id }) => url.pathname.endsWith(`/contests/${id}`)),
+            summary: null,
+          }
         : items
     return Response.json({
       code: 200,

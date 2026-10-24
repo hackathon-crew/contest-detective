@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { listAllContests } from './collection'
+import { listAllContests, loadContestLibrary } from './collection'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -39,4 +39,64 @@ it('空关注集合不退化为查询全站', async () => {
     throw new Error('不应请求全部赛事')
   })
   expect(await listAllContests({ ids: [] })).toEqual([])
+})
+
+it('全量加载补齐详情摘要和来源，限定并发并复用详情缓存', async () => {
+  let active = 0,
+    peak = 0
+  const cached: string[] = []
+  vi.stubGlobal('fetch', async (input: string) => {
+    const url = new URL(input, 'https://example.com')
+    const id = url.pathname.split('/').at(-1)!
+    const base = { name: '赛事', cover_url: null, status: 'upcoming', fields: {} }
+    if (url.pathname === '/api/contests')
+      return new Response(
+        JSON.stringify({
+          code: 200,
+          message: 'success',
+          data: Array.from({ length: 8 }, (_, i) => ({ ...base, id: String(i) })),
+          total: 8,
+          page: 1,
+          page_size: 100,
+        }),
+      )
+    active++
+    peak = Math.max(peak, active)
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    active--
+    return new Response(
+      JSON.stringify({
+        code: 200,
+        message: 'success',
+        data: { ...base, id, summary: 'Education、Health' },
+      }),
+    )
+  })
+  const result = await loadContestLibrary((detail) => cached.push(detail.id))
+  expect(result).toHaveLength(8)
+  expect(result.every((c) => c.summary === 'Education、Health')).toBe(true)
+  expect(cached).toHaveLength(8)
+  expect(peak).toBeLessThanOrEqual(6)
+})
+
+it('先交付完整列表，详情读取不挡住已知字段和计数', async () => {
+  let seeded = false
+  const item = { id: 'one', name: '赛事', cover_url: null, status: 'upcoming', fields: {} }
+  vi.stubGlobal('fetch', async (input: string) => {
+    const detail = String(input).includes('/contests/one')
+    if (detail) expect(seeded).toBe(true)
+    return Response.json({
+      code: 200,
+      message: 'ok',
+      data: detail ? { ...item, summary: 'Education' } : [item],
+      total: 1,
+      page: 1,
+      page_size: 100,
+    })
+  })
+  await loadContestLibrary(undefined, (items) => {
+    expect(items).toHaveLength(1)
+    seeded = true
+  })
+  expect(seeded).toBe(true)
 })

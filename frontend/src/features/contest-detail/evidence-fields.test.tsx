@@ -113,3 +113,49 @@ it('displays participation facts with their original source links', async () => 
     expect(source.getAttribute('href')).toBe(url)
   }
 })
+
+it('赛事库布局保留全部字段、缺失等级和首条来源', async () => {
+  const source = {
+    url: 'https://example.com/rules',
+    title: '规则页',
+    site: '主办方',
+    is_official: true,
+    value: '2026-10-25T00:00:00Z',
+    excerpt: '10月25日开赛',
+    stale: false,
+  }
+  vi.stubGlobal('fetch', async () =>
+    Response.json({
+      code: 200,
+      message: 'ok',
+      data: {
+        id: 'library',
+        name: '赛事库详情',
+        status: 'upcoming',
+        cover_url: null,
+        summary: '一段公开介绍',
+        fields: {
+          start_at: {
+            value: '2026-10-25T00:00:00Z',
+            precision: 'day',
+            level: 'official',
+            sources: [source],
+          },
+        },
+      },
+    }),
+  )
+  render(
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <ContestDetail contestId="library" variant="library" onClose={() => {}} />
+    </QueryClientProvider>,
+  )
+  expect(await screen.findByText('开赛')).toBeTruthy()
+  expect(screen.getByText('2026年10月25日')).toBeTruthy()
+  expect(screen.getByRole('link', { name: '主办方' }).getAttribute('href')).toBe(source.url)
+  expect(screen.getByText('往届数据')).toBeTruthy()
+  expect(screen.getAllByText('未找到').length).toBeGreaterThan(10)
+  expect(screen.queryByText(/08:00/)).toBeNull()
+})
