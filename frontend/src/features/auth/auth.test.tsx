@@ -9,7 +9,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function setup(fail = false) {
+function setup(fail = false, compact = false) {
   const calls: { path: string; body?: unknown }[] = []
   const user = { id: 'user-one', username: 'night@example.com', profile: { skills: [] } }
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -27,7 +27,7 @@ function setup(fail = false) {
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <AuthControls />
+      <AuthControls compact={compact} />
     </QueryClientProvider>,
   )
   return calls
@@ -73,4 +73,13 @@ describe('账户入口', () => {
     expect(screen.getByRole('dialog')).toBeTruthy()
     expect(screen.getByRole('button', { name: '登录' }).hasAttribute('disabled')).toBe(false)
   })
+})
+
+it('keeps registration reachable from the compact login entry', () => {
+  setup(false, true)
+  expect(screen.queryByRole('button', { name: '注册' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '登录' }))
+  fireEvent.click(screen.getByRole('button', { name: '还没有账号？注册' }))
+  expect(screen.getByRole('dialog', { name: '注册' })).toBeTruthy()
+  expect(screen.getByLabelText('密码').getAttribute('autocomplete')).toBe('new-password')
 })
