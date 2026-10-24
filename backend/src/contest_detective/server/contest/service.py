@@ -210,7 +210,7 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     return contest.id
 
 
-def query(session: Session, q: ContestQuery) -> tuple[list[ContestSummary], int]:
+def query(session: Session, q: ContestQuery, *, accept=None) -> tuple[list[ContestSummary], int]:
     statement = select(Contest)
     if q.ids is not None:
         statement = statement.where(Contest.id.in_(q.ids))
@@ -232,6 +232,8 @@ def query(session: Session, q: ContestQuery) -> tuple[list[ContestSummary], int]
     results = []
     for contest in session.scalars(statement):
         summary = _summary(session, contest, now)
+        if accept is not None and not accept(get(session, contest.id)):
+            continue
         if q.status and summary.status != q.status:
             continue
         if q.date_from or q.date_to:
