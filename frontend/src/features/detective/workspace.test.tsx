@@ -43,7 +43,7 @@ function history() {
 it('聊天页保留网站导航，记录栏默认收起，点小按钮才展开', () => {
   vi.stubGlobal('fetch', async () => json(null))
   show('/detective')
-  expect(screen.getByRole('link', { name: 'Inkpaw' })).toBeTruthy()
+  expect(screen.getByRole('link', { name: 'Inkpaw 首页' })).toBeTruthy()
   expect(screen.getByRole('link', { name: '侦探' })).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: '对话记录' })).toBeNull()
   expect(history()).toBeTruthy()
