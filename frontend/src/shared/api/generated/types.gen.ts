@@ -5,6 +5,32 @@ export type ClientOptions = {
 };
 
 /**
+ * AccountRead
+ */
+export type AccountRead = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Email Verified
+     */
+    email_verified: boolean;
+    /**
+     * Follows Count
+     */
+    follows_count: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Password Changed At
+     */
+    password_changed_at: string | null;
+};
+
+/**
  * AskRequest
  */
 export type AskRequest = {
@@ -288,6 +314,16 @@ export type Credentials = {
 };
 
 /**
+ * DeleteInput
+ */
+export type DeleteInput = {
+    /**
+     * Email
+     */
+    email: string;
+};
+
+/**
  * DocumentAnswer
  */
 export type DocumentAnswer = {
@@ -339,6 +375,16 @@ export type DocumentQuestion = {
      * Passages
      */
     passages: Array<DocumentPassage>;
+};
+
+/**
+ * EmailInput
+ */
+export type EmailInput = {
+    /**
+     * Email
+     */
+    email: string;
 };
 
 /**
@@ -659,6 +705,20 @@ export type MatchItem = {
 };
 
 /**
+ * PasswordInput
+ */
+export type PasswordInput = {
+    /**
+     * Current Password
+     */
+    current_password: string;
+    /**
+     * New Password
+     */
+    new_password: string;
+};
+
+/**
  * Profile
  */
 export type Profile = {
@@ -971,6 +1031,34 @@ export type ResolveRecommendations = {
      * Sources
      */
     sources?: Array<ToolSource>;
+};
+
+/**
+ * Response[AccountRead]
+ */
+export type ResponseAccountRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: AccountRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
 };
 
 /**
@@ -1527,6 +1615,38 @@ export type ResponseUnionTokenMetadataNoneType = {
      * 业务数据
      */
     data?: TokenMetadata | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[dict]
+ */
+export type ResponseDict = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: {
+        [key: string]: unknown;
+    } | null;
     /**
      * Timestamp
      *
@@ -2673,6 +2793,141 @@ export type ReadQuotaAccountQuotaGetResponses = {
 };
 
 export type ReadQuotaAccountQuotaGetResponse = ReadQuotaAccountQuotaGetResponses[keyof ReadQuotaAccountQuotaGetResponses];
+
+export type ReadAccountAccountSettingsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/settings';
+};
+
+export type ReadAccountAccountSettingsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseAccountRead;
+};
+
+export type ReadAccountAccountSettingsGetResponse = ReadAccountAccountSettingsGetResponses[keyof ReadAccountAccountSettingsGetResponses];
+
+export type RequestEmailAccountEmailPostData = {
+    body: EmailInput;
+    path?: never;
+    query?: never;
+    url: '/account/email';
+};
+
+export type RequestEmailAccountEmailPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RequestEmailAccountEmailPostError = RequestEmailAccountEmailPostErrors[keyof RequestEmailAccountEmailPostErrors];
+
+export type RequestEmailAccountEmailPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type RequestEmailAccountEmailPostResponse = RequestEmailAccountEmailPostResponses[keyof RequestEmailAccountEmailPostResponses];
+
+export type VerifyEmailAccountEmailVerifyGetData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Token
+         */
+        token: string;
+    };
+    url: '/account/email/verify';
+};
+
+export type VerifyEmailAccountEmailVerifyGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type VerifyEmailAccountEmailVerifyGetError = VerifyEmailAccountEmailVerifyGetErrors[keyof VerifyEmailAccountEmailVerifyGetErrors];
+
+export type VerifyEmailAccountEmailVerifyGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type ChangePasswordAccountPasswordPostData = {
+    body: PasswordInput;
+    path?: never;
+    query?: never;
+    url: '/account/password';
+};
+
+export type ChangePasswordAccountPasswordPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ChangePasswordAccountPasswordPostError = ChangePasswordAccountPasswordPostErrors[keyof ChangePasswordAccountPasswordPostErrors];
+
+export type ChangePasswordAccountPasswordPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type ChangePasswordAccountPasswordPostResponse = ChangePasswordAccountPasswordPostResponses[keyof ChangePasswordAccountPasswordPostResponses];
+
+export type ExportAccountAccountExportGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/export';
+};
+
+export type ExportAccountAccountExportGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseDict;
+};
+
+export type ExportAccountAccountExportGetResponse = ExportAccountAccountExportGetResponses[keyof ExportAccountAccountExportGetResponses];
+
+export type DeleteAccountAccountDeleteData = {
+    body: DeleteInput;
+    path?: never;
+    query?: never;
+    url: '/account';
+};
+
+export type DeleteAccountAccountDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteAccountAccountDeleteError = DeleteAccountAccountDeleteErrors[keyof DeleteAccountAccountDeleteErrors];
+
+export type DeleteAccountAccountDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type DeleteAccountAccountDeleteResponse = DeleteAccountAccountDeleteResponses[keyof DeleteAccountAccountDeleteResponses];
 
 export type RegisterAuthRegisterPostData = {
     body: Credentials;

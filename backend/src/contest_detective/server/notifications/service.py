@@ -129,7 +129,7 @@ def _utc(value):
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
 
 
-def deliver(session, user, mailer, message, *, key, kind, now):
+def deliver(session, user, mailer, message, *, key, kind, now, sensitive=False):
     config = get_account_runtime_settings()
     session.commit()
     # SQLite 写锁只保护额度与投递认领，网络调用放在事务之外。
@@ -152,18 +152,24 @@ def deliver(session, user, mailer, message, *, key, kind, now):
         if daily >= config.mail_daily_limit or monthly >= config.mail_monthly_limit:
             session.rollback()
             raise BizException('邮件免费额度已到上限，请稍后再试', code=429)
-        row = MailDelivery(user_id=user.id, message_key=key, kind=kind, status='sending', attempts=0, created_at=now, **message.model_dump())
+        values = message.model_dump()
+        if sensitive:
+            # 验证链接只用于这次投递，账本不能保留可用于改邮箱的凭据。
+            values.update(html='验证链接不保存，请重新发起验证。', text='验证链接不保存，请重新发起验证。')
+        row = MailDelivery(user_id=user.id, message_key=key, kind=kind, status='sending', attempts=0, created_at=now, **values)
         session.add(row)
     row.attempts += 1
     row.status = 'sending'
     row.retry_at = now+timedelta(minutes=2)
     session.commit()
     outgoing = OutgoingMail(key=str(user.id)+':'+row.message_key, sender=row.sender, recipient=row.recipient,
-                            subject=row.subject, html=row.html, text=row.text)
+                            subject=row.subject, html=message.html if sensitive else row.html, text=message.text if sensitive else row.text)
     try:
         receipt = mailer.send(outgoing)
     except Exception as exc:
         row.status, row.error = 'failed', type(exc).__name__
+        if sensitive:
+            row.attempts = 5
         row.retry_at = now+timedelta(seconds=60*2**(row.attempts-1)) if row.attempts < 5 else None
         session.commit()
         if isinstance(exc, BizException): raise
