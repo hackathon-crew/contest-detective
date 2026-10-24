@@ -21,6 +21,7 @@ dependencies = [
     "slowapi>=0.1.10",
     "sqlalchemy>=2",
     "sse-starlette>=3.5.0",
+    "tavily-python>=0.8.5",
     "trafilatura>=2",
     "uvicorn[standard]>=0.30",
 ]
