@@ -26,6 +26,8 @@ sudoedit /etc/contest-detective.env
 
 两种模式都会逐次记录用量。单次查证最多 64 次模型请求、64 次工具调用，总超时 600 秒；每次模型请求超时 120 秒，网页抽取超时 300 秒，默认输出上限为 8192 tokens。网页抽取和回答纠正共用本次提问的请求计数；独立运行的网页抽取仍限制为 6 次模型请求。修改默认输出上限时同步调整服务环境文件中的 `DETECTIVE_LLM_MAX_TOKENS`。失败请求未取得用量时保留预留记录，不能将其当作实际费用。
 
+工具参数校验失败时允许模型纠正 3 次；回答或网页抽取格式不合要求时允许纠正 2 次，纠正请求仍计入总请求预算。工具执行和 SDK 请求异常不自动重试。
+
 同步间隔默认 360 分钟，启用后立即执行首轮，再按间隔运行；设为 0 可关闭同步。必须只运行一个 worker。
 
 `DETECTIVE_SYNC_EXTRACT_ENABLED` 默认 `true`，周期同步和 `contest-detective-sync` 只有在它与 `DETECTIVE_LLM_ENABLED` 都为 `true` 时才启用来源抽取。设为 `false` 后，HackerTrip、WaytoAGI、Devpost 的结构化入库照常运行，跳过主办方核对及依赖模型的来源发现；侦探和简历功能仍由 `DETECTIVE_LLM_ENABLED` 控制，不受这个来源开关影响。服务器修改 `/etc/contest-detective.env` 后重启服务即可生效；手动同步可在后端目录运行 `DETECTIVE_SYNC_EXTRACT_ENABLED=false uv run contest-detective-sync`，输出中的 `extraction_enabled` 应为 `false`。
