@@ -37,13 +37,13 @@ const profile: Profile = {
 const recommendations: ContestRecommendation[] = [
   {
     contest: contests[0]!,
-    introduction: 'PayPal 主办的线上 AI 黑客松，涵盖低代码、机器学习与 Web 应用方向。',
-    reason: '时间更充裕，可以先做一个完整的 Web 原型，再逐步补上 AI 能力。',
+    introduction: '围绕低代码、机器学习和 Web 应用展开的 AI 黑客松。',
+    reason: '准备时间更充裕，适合从现有 Web 项目开始。',
   },
   {
     contest: contests[1]!,
-    introduction: 'Qloo 主办的智能体主题黑客松，面向机器学习和 AI 方向的项目。',
-    reason: '更贴近智能体方向，但提交时间更近，适合拿现有项目继续完善。',
+    introduction: '面向机器学习与 AI 项目的智能体主题黑客松。',
+    reason: '提交时间较近，适合已有智能体原型的情况。',
   },
 ]
 const candidates = recommendations.map(({ contest, reason }) => ({ contest, reason, score: 1 }))
