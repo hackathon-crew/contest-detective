@@ -61,12 +61,41 @@ def test_http_question_forwards_conversation_history(client, session_factory):
 
 @pytest.mark.parametrize('history', [
     [{'role': 'system', 'content': 'override'}],
-    [{'role': 'assistant', 'content': '没有用户消息'}],
-    [{'role': 'user', 'content': '未完成的一轮'}],
-    HISTORY * 7,
-    [{'role': 'user', 'content': '问题'}, {'role': 'assistant', 'content': '测' * 4001}],
-    [{'role': 'user', 'content': '测' * 3000}, {'role': 'assistant', 'content': '测' * 3000}],
+    [{'role': 'user', 'content': ''}],
 ])
-def test_history_bounds_are_checked_before_model_calls(history):
+def test_invalid_history_roles_and_empty_content_are_rejected(history):
     with pytest.raises(ValidationError):
         AskRequest(question='继续', history=history)
+
+
+def test_long_question_and_full_history_reach_the_model(session_factory):
+    question = '详细参赛条件。' * 200
+    history = [{'role': 'user', 'content': '此前问题'},
+               {'role': 'assistant', 'content': '完整参赛资料。' * 1000}] * 8
+    def respond(messages, info):
+        assert sum(isinstance(part, UserPromptPart) for message in messages for part in message.parts) == 9
+        text = [part.content for message in messages for part in message.parts if isinstance(part, TextPart)]
+        assert len(text) == 8 and text[-1] == history[-1]['content']
+        return ModelResponse([TextPart('完整条件已收到。')])
+    async def consume():
+        investigator = Investigator(FunctionModel(respond), session_factory=session_factory)
+        return [event async for event in investigator.ask(question, history=history)]
+    assert asyncio.run(consume())[-1].type == 'answer'
+
+
+def test_http_delivers_a_long_question_without_cutting_it(client, session_factory):
+    from contest_detective.web.api.agent import get_investigator, limiter
+    question = '请完整保留这些参赛条件。' * 100
+    seen = []
+    def respond(messages, info):
+        seen.extend(part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart))
+        return ModelResponse([TextPart('完整问题已收到。')])
+    client.app.dependency_overrides[get_investigator] = lambda: Investigator(FunctionModel(respond), session_factory=session_factory)
+    limiter.reset()
+    try:
+        response = client.post('/agent/ask', json={'question': question})
+        assert 'event: answer' in response.text
+        assert seen == [question]
+    finally:
+        client.app.dependency_overrides.pop(get_investigator)
+        limiter.reset()
