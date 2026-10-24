@@ -1106,6 +1106,52 @@
   }
 }
 
+/* 接入弹窗复用首页 MCP 区块；只收紧版心，颜色、展台和配置窗口仍用原有令牌。 */
+.inkpaw-home.mcp-dialog-body {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: transparent;
+  padding: calc(var(--spacing) * 8) var(--spacing) var(--spacing);
+
+  .mcp-dialog-grid {
+    gap: calc(var(--spacing) * 8);
+  }
+
+  .stage {
+    padding: calc(var(--spacing) * 10) calc(var(--spacing) * 5) calc(var(--spacing) * 5);
+  }
+
+  .stk {
+    left: 0 !important;
+    width: calc(var(--spacing) * 28);
+    height: auto;
+  }
+
+  @media (max-width: 1080px) and (min-width: 881px) {
+    .mcp-dialog-grid {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    }
+  }
+
+  @media (max-width: 880px) {
+    .mcp-dialog-grid {
+      gap: calc(var(--spacing) * 16);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stage {
+      padding-inline: calc(var(--spacing) * 3);
+    }
+    .win-bar {
+      flex-wrap: wrap;
+      gap: calc(var(--spacing) * 2);
+      padding: calc(var(--spacing) * 3);
+    }
+  }
+}
+
 @keyframes inkpaw-wall {
   from {
     transform: translateX(0);
