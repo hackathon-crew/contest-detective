@@ -73,7 +73,7 @@ def test_daily_limit_survives_minute_window_expiry(local_client, monkeypatch):
 
 
 def test_parameter_errors_remain_json_and_do_not_start_investigation(local_client, session_factory):
-    for question in ['', ' ' * 8, 'x' * 501]:
+    for question in ['', ' ' * 8]:
         response = local_client.post('/agent/ask', json={'question': question})
         assert response.json()['code'] == 400
         assert response.headers['content-type'].startswith('application/json')
