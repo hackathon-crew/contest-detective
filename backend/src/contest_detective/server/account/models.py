@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi_users_db_sqlalchemy import GUID
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from contest_detective.framework.db import Base
@@ -58,6 +58,9 @@ class MailDelivery(Base):
     recipient: Mapped[str] = mapped_column(String(320))
     status: Mapped[str] = mapped_column(String(10), default='sending')
     error: Mapped[str | None] = mapped_column(Text)
+    provider_id: Mapped[str | None] = mapped_column(String(100), index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
