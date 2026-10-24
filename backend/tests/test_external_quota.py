@@ -49,6 +49,20 @@ def test_external_request_errors_keep_the_unconfirmed_reservation(session_factor
         assert row.status == 'reserved' and row.cost_cny == row.reserved_cny > 0
 
 
+def test_external_context_uses_provider_capacity_and_still_records_usage(session_factory):
+    question = '赛事原文：在校大学生可参加。' * 3000
+    def respond(messages, info):
+        assert messages[0].parts[0].content == question
+        return ModelResponse([TextPart('已核对赛事出处。')],
+                             usage=RequestUsage(input_tokens=24000, output_tokens=500))
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, config(max_input_tokens=8192)),
+                         balance_reader=no_balance_endpoint)
+    assert asyncio.run(Agent(model).run(question)).output == '已核对赛事出处。'
+    with session_factory() as session:
+        row = session.scalars(select(LLMUsage)).one()
+        assert row.status == 'settled' and row.cache_miss_tokens == 24000 and row.output_tokens == 500
+
+
 def test_external_quotas_do_not_apply_a_local_reservation_ceiling(session_factory):
     budget = Budget(session_factory, config())
     first = budget.reserve()
