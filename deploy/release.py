@@ -21,6 +21,7 @@ APP = Path('/srv/contest-detective')
 RELEASES = Path('/srv/contest-detective-releases')
 BACKUPS = Path('/srv/contest-detective-backups')
 DATABASE = Path('/var/lib/contest-detective/contest.db')
+ENVIRONMENT_FILE = Path('/etc/contest-detective.env')
 SERVICE = 'contest-detective'
 MCP_SERVICE = 'contest-detective-mcp'
 MAINTENANCE = Path('/run/contest-detective-deploying')
@@ -38,7 +39,11 @@ def unpack(stream, destination):
             parts = path.parts
             allowed = (parts and parts[0] == 'backend') or (
                 parts[:2] == ('frontend', 'dist')
-            ) or member.name in ('frontend', 'RELEASE_COMMIT', 'RELEASE_TAG')
+            ) or member.name in ('frontend', 'RELEASE_COMMIT', 'RELEASE_TAG') or (
+                member.name == 'deploy' and member.isdir()
+            ) or (
+                member.name == 'deploy/server.env.example' and member.isfile()
+            )
             forbidden = any(
                 part in ('.git', '.venv', '__pycache__')
                 or (part.startswith('.env') and part != '.env.example')
@@ -125,6 +130,58 @@ def release_services(directory):
     return (SERVICE, MCP_SERVICE) if module.is_file() else (SERVICE,)
 
 
+def replace_environment(content):
+    owner = ENVIRONMENT_FILE.stat()
+    descriptor, name = tempfile.mkstemp(prefix=ENVIRONMENT_FILE.name + '.', dir=ENVIRONMENT_FILE.parent)
+    temporary = Path(name)
+    try:
+        with os.fdopen(descriptor, 'wb') as output:
+            output.write(content)
+        os.chown(temporary, owner.st_uid, owner.st_gid)
+        temporary.chmod(owner.st_mode & 0o777)
+        os.replace(temporary, ENVIRONMENT_FILE)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def configure_environment(directory, snapshot):
+    example = directory / 'deploy/server.env.example'
+    if not example.is_file():  # Older published bundles do not carry deployment defaults.
+        return
+    key = b'DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH'
+    original = ENVIRONMENT_FILE.read_bytes()
+    if re.search(rb'(?m)^[ \t]*' + key + rb'[ \t]*=', original):
+        return
+    # Only this new field is migrated. Example credentials and schedules are not runtime defaults.
+    defaults = [line for line in example.read_bytes().splitlines() if line.startswith(key + b'=')]
+    if len(defaults) > 1:
+        raise ValueError('Duplicate normalization prompt default')
+    if defaults:
+        shutil.copy2(ENVIRONMENT_FILE, snapshot)
+        snapshot.chmod(0o600)
+        separator = b'' if not original or original.endswith(b'\n') else b'\n'
+        replace_environment(original + separator + defaults[0] + b'\n')
+        log('Added the missing normalization prompt setting')
+
+
+def validate_configuration(directory, unit):
+    module = directory / 'backend/src/contest_detective/server/agent/normalization_prompts.py'
+    if not module.is_file():
+        return
+    # Load settings and render the template without constructing a model or starting the application.
+    check = (
+        'from contest_detective.server.agent.config import get_llm_settings; '
+        'from contest_detective.server.agent.normalization_prompts import load_prompt; '
+        'assert load_prompt(get_llm_settings().normalization_prompt_path).render().strip(); '
+        'print("Normalization prompt configuration validated")'
+    )
+    run('systemd-run', '--wait', '--pipe', '--collect', f'--unit={unit}',
+        '--property=User=contest-detective', '--property=Group=contest-detective',
+        f'--property=EnvironmentFile={ENVIRONMENT_FILE}',
+        f'--property=WorkingDirectory={directory / "backend"}',
+        str(directory / 'backend/.venv/bin/python'), '-c', check)
+
+
 def healthy(expected_commit=None):
     for attempt in range(30):
         try:
@@ -166,6 +223,7 @@ def deploy(stream):
     stage.chmod(0o755)
     stopped = False
     snapshot = None
+    environment_snapshot = None
     migration_unit = 'contest-detective-migrate-' + stage.name
     previous = APP.resolve()
     previous_services = release_services(previous)
@@ -189,6 +247,9 @@ def deploy(stream):
         # Keep the original directory on the first deployment. Later switches replace a symlink.
         backup = BACKUPS / stage.name
         backup.mkdir(mode=0o700)
+        environment_snapshot = backup / 'environment'
+        configure_environment(stage, environment_snapshot)
+        validate_configuration(stage, 'contest-detective-config-' + stage.name)
         MAINTENANCE.touch(mode=0o644)
         stopped = True
         run('systemctl', 'stop', *managed_services)
@@ -203,7 +264,7 @@ def deploy(stream):
         # Migrations receive the same env file and Unix identity as the production service.
         run('systemd-run', '--wait', '--pipe', '--collect', f'--unit={migration_unit}',
             '--property=User=contest-detective', '--property=Group=contest-detective',
-            '--property=EnvironmentFile=/etc/contest-detective.env',
+            f'--property=EnvironmentFile={ENVIRONMENT_FILE}',
             f'--property=WorkingDirectory={stage / "backend"}',
             str(stage / 'backend/.venv/bin/alembic'), 'upgrade', 'head')
         point_to(stage)
@@ -212,6 +273,8 @@ def deploy(stream):
         MAINTENANCE.unlink()
         log(f'Deployed {tag} ({commit}); backup: {backup}')
     except BaseException:
+        if environment_snapshot is not None and environment_snapshot.is_file():
+            replace_environment(environment_snapshot.read_bytes())
         if stopped:
             log('Deployment failed; restoring the previous release')
             run('systemctl', 'stop', *managed_services)
