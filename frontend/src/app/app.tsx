@@ -12,6 +12,7 @@ import {
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 
 import { HomePage } from '@/pages/home'
+import { McpDialog } from '@/pages/home/mcp-dialog'
 import { ContestsPage } from '@/pages/contests'
 import { DetectivePage } from '@/pages/detective'
 import { DetectiveProvider } from '@/features/detective'
@@ -54,6 +55,7 @@ export function AppRoutes() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </RouteMotionSurface>
+      <McpDialog />
     </DetectiveProvider>
   )
 }
