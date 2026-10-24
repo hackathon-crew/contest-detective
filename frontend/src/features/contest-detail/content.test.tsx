@@ -247,3 +247,20 @@ it('retries a failed detail and reopens a cached result without another request'
   await screen.findByRole('heading', { name: base.name })
   expect(fetch).toHaveBeenCalledTimes(2)
 })
+
+it.each([true, false])(
+  'preserves source qualification in the combined location row (all reposted: %s)',
+  async (allReposted) => {
+    const reposted = (value: string): FieldValue => ({
+      value,
+      level: 'reposted',
+      sources: [{ ...source, value, is_official: false }],
+    })
+    show({
+      fields: { mode: reposted('offline'), city: allReposted ? reposted('北京') : field('北京') },
+    })
+    const overview = await screen.findByRole('region', { name: '参赛要点' })
+    expect(within(overview).getByText('线下 · 北京')).toBeTruthy()
+    expect(within(overview).getByText(allReposted ? '仅见转载' : '部分信息仅见转载')).toBeTruthy()
+  },
+)
