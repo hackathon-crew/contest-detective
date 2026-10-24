@@ -100,11 +100,11 @@ it('opens field sources and preserves filters after closing', async () => {
   const links = await screen.findAllByRole('link', { name: '真实接口赛事' })
   expect(requested.filter((url) => url.includes('/contests/one'))).toHaveLength(0)
   fireEvent.click(links[0]!)
-  fireEvent.click(await screen.findByText('查看原文摘录'))
-  expect(await screen.findByRole('link', { name: '赛事规则' })).toBeTruthy()
-  expect(screen.getByText('10月25日开赛').closest('.contest-detail-source')?.className).toContain(
-    'line-through',
-  )
+  fireEvent.click(await screen.findByText(/^信息来源（/))
+  expect(await screen.findByRole('link', { name: /赛事规则/ })).toBeTruthy()
+  const versions = document.querySelector<HTMLDetailsElement>('.contest-detail-source-versions')
+  if (versions) versions.open = true
+  expect(screen.getByText('可能过期')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: '关闭' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   expect((screen.getByRole('searchbox', { name: '搜索赛事' }) as HTMLInputElement).value).toBe(

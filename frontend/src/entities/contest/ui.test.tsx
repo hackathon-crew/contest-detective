@@ -88,7 +88,39 @@ it('uses lightweight theme metadata and gives card introductions a clickable sou
     'https://example.com/themes',
   )
   expect(screen.getByText('设计学习工具。')).toBeTruthy()
+  expect(screen.getByRole('link', { name: '设计学习工具。' }).getAttribute('href')).toBe(
+    '/contests/grounded',
+  )
   expect(screen.getByRole('link', { name: '查看介绍来源' }).getAttribute('href')).toBe(
     'https://example.com/about',
   )
+})
+
+it('does not present conflicting dates, rewards or conditions as settled card facts', () => {
+  render(
+    <MemoryRouter>
+      <ContestCard
+        contest={{
+          id: 'conflict',
+          name: '有冲突的赛事',
+          status: 'upcoming',
+          cover_url: null,
+          fields: {
+            registration_deadline: {
+              value: '2026-11-01T12:00:00Z',
+              level: 'conflict',
+              sources: [],
+            },
+            prize: { value: '100000 元', level: 'conflict', sources: [] },
+            eligibility: { value: '所有人', level: 'conflict', sources: [] },
+          },
+        }}
+      />
+    </MemoryRouter>,
+  )
+  expect(screen.getByText('日期有冲突')).toBeTruthy()
+  expect(screen.getByText('奖励有冲突')).toBeTruthy()
+  expect(screen.getByText('参赛条件有冲突')).toBeTruthy()
+  expect(screen.queryByText('100000 元')).toBeNull()
+  expect(screen.queryByText(/还有.*天/)).toBeNull()
 })

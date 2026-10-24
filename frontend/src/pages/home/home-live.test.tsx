@@ -128,13 +128,14 @@ it('sends the exact hero question into a real conversation route', async () => {
 })
 it('asks the detective about the opened contest instead of replaying the demo', async () => {
   const calls = show('/contests/python')
-  fireEvent.click(await screen.findByRole('button', { name: '问侦探这场比赛' }))
+  fireEvent.click(await screen.findByRole('button', { name: '问侦探' }))
   await waitFor(() =>
     expect(
       calls.some(
         ({ url, init }) =>
           url.pathname.endsWith('/agent/ask') &&
-          JSON.parse(String(init?.body)).question === '帮我核实一下「Python Hack」的截止时间',
+          JSON.parse(String(init?.body)).question ===
+            '帮我核实一下「Python Hack」的截止时间、参赛资格、费用，并给出来源。',
       ),
     ).toBe(true),
   )

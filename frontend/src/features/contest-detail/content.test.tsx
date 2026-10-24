@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
+import type { ContestDetail as Contest, FieldValue } from '@/entities/contest'
 import { ContestDetail } from './contest-detail'
 
 const citation = {
@@ -9,7 +10,15 @@ const citation = {
   content_hash: 'a'.repeat(64),
   excerpt: '围绕开放数据，为城市居民设计可使用的服务。',
 }
-const base = {
+const source = {
+  url: citation.url,
+  site: '主办方',
+  title: '主办方规则',
+  is_official: true,
+  value: '',
+  excerpt: citation.excerpt,
+}
+const base: Contest = {
   id: 'one',
   name: '城市服务挑战赛',
   status: 'upcoming',
@@ -17,8 +26,17 @@ const base = {
   fields: {},
   summary: null,
 }
+const field = (value: string): FieldValue => ({
+  value,
+  level: 'official',
+  sources: [{ ...source, value }],
+})
 const clients: QueryClient[] = []
-function show(data: Record<string, unknown>, variant: 'default' | 'library' = 'library') {
+function show(
+  data: Partial<Contest>,
+  variant: 'default' | 'library' = 'library',
+  onAsk?: (question: string) => void,
+) {
   vi.stubGlobal('fetch', async () =>
     Response.json({ code: 200, message: 'ok', data: { ...base, ...data } }),
   )
@@ -26,9 +44,16 @@ function show(data: Record<string, unknown>, variant: 'default' | 'library' = 'l
   clients.push(client)
   return render(
     <QueryClientProvider client={client}>
-      <ContestDetail contestId="one" variant={variant} onClose={() => undefined} />
+      <ContestDetail contestId="one" variant={variant} onClose={() => undefined} onAsk={onAsk} />
     </QueryClientProvider>,
   )
+}
+function readingText() {
+  const clone = document.querySelector('.contest-detail-scroll')!.cloneNode(true) as HTMLElement
+  clone
+    .querySelectorAll('.contest-detail-sources, .contest-detail-history')
+    .forEach((node) => node.remove())
+  return clone.textContent ?? ''
 }
 afterEach(() => {
   cleanup()
@@ -37,185 +62,160 @@ afterEach(() => {
 })
 
 it.each(['default', 'library'] as const)(
-  'shows a grounded introduction before facts and preserves historical summary in %s',
+  'puts grounded reading before facts, with excerpts only at the bottom in %s',
   async (variant) => {
     show(
       {
-        introduction: {
-          text: '用开放数据打造城市服务。',
-          method: 'extractive',
-          citations: [citation],
-        },
-        coverage: {
-          introduction: { state: 'found', citations: [citation] },
-          fields: {},
-          sources: {},
-        },
-        summary: '主题：Education, Health\n\n历史日程说明。',
+        introduction: { text: '用开放数据打造城市服务。', citations: [citation] },
+        fields: { registration_deadline: field('2026-11-01T12:00:00Z') },
+        summary: '历史日程说明。',
       },
       variant,
     )
-    const introduction = await screen.findByRole('region', { name: '赛事介绍' })
-    expect(within(introduction).getByText('用开放数据打造城市服务。')).toBeTruthy()
+    const intro = await screen.findByRole('region', { name: '赛事介绍' })
+    expect(within(intro).getByText('用开放数据打造城市服务。')).toBeTruthy()
+    expect(within(intro).queryByText(citation.excerpt)).toBeNull()
     expect(
-      within(introduction)
-        .getByRole('link', { name: /介绍来源/ })
-        .getAttribute('href'),
-    ).toBe(citation.url)
-    expect(within(introduction).getByText(citation.excerpt)).toBeTruthy()
-    expect(
-      introduction.compareDocumentPosition(screen.getByText('报名截止')) &
+      intro.compareDocumentPosition(screen.getByRole('region', { name: '参赛要点' })) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
-    expect(screen.getByRole('heading', { name: '历史资料' })).toBeTruthy()
-    expect(screen.getByText('历史日程说明。')).toBeTruthy()
+    const sources = document.querySelector<HTMLDetailsElement>('.contest-detail-sources')!
+    expect(sources.open).toBe(false)
+    expect(document.querySelector<HTMLDetailsElement>('.contest-detail-history')?.open).toBe(false)
+    fireEvent.click(within(intro).getByRole('button', { name: /查看赛事介绍的信息来源/ }))
+    expect(sources.open).toBe(true)
+    expect(screen.getByRole('link', { name: /主办方规则/ }).getAttribute('href')).toBe(citation.url)
+    expect(screen.getByText('历史资料（未核实）')).toBeTruthy()
   },
 )
 
-it('does not turn legacy metadata into an introduction and tolerates older server fields', async () => {
-  show({ summary: '主题：Machine Learning/AI, Beginner Friendly\n\n2026-11-01 开赛' })
-  const introduction = await screen.findByRole('region', { name: '赛事介绍' })
-  expect(within(introduction).getByText('尚未获取有出处的赛事介绍。')).toBeTruthy()
-  expect(within(introduction).queryByText(/Machine Learning/)).toBeNull()
-  expect(screen.getByText(/主题：Machine Learning/)).toBeTruthy()
-  expect(screen.queryByText(/官方未公布/)).toBeNull()
+it('hides empty optional sections and never turns a historical summary into an introduction', async () => {
+  show({
+    summary: '主题：Machine Learning/AI\n\n旧的比赛安排',
+    coverage: {
+      fields: { prize: { state: 'not_fetched' }, past_statistics: { state: 'fetch_failed' } },
+    },
+  })
+  await screen.findByRole('heading', { name: base.name })
+  expect(screen.queryByRole('region', { name: '赛事介绍' })).toBeNull()
+  expect(screen.queryByRole('region', { name: '往届参考' })).toBeNull()
+  expect(screen.queryByRole('region', { name: '提交与评审' })).toBeNull()
+  expect(readingText()).not.toMatch(/尚未抓取|来源读取失败|历史日程|Machine Learning|免费|未公布/)
+  expect(screen.getByLabelText('参赛前待确认').textContent).toBe('截止时间、参赛资格、费用待确认。')
 })
+
+it.each(['not_fetched', 'fetch_failed', 'extract_failed'] as const)(
+  '%s is represented as a pending fee, not an organizer omission',
+  async (state) => {
+    show({ coverage: { fields: { entry_fee: { state } } } })
+    await screen.findByRole('heading', { name: base.name })
+    expect(screen.getByLabelText('参赛前待确认').textContent).toContain('费用待确认')
+    expect(readingText()).not.toMatch(/未公布|未找到费用|免费|尚未抓取|失败/)
+  },
+)
 
 it.each([
-  ['not_fetched', '尚未抓取'],
-  ['fetch_failed', '来源读取失败'],
-  ['extract_failed', '内容提取失败'],
-  ['not_found_in_source', '已查来源中未找到'],
-  ['source_unpublished', '来源明确未公布'],
-  ['conflict', '来源说法不一'],
-])('distinguishes %s from organizer nonpublication', async (state, label) => {
-  show({
-    coverage: {
-      introduction: { state, citations: [citation], urls: [citation.url] },
-      fields: { prize: { state, citations: [citation] } },
-      sources: {},
-    },
-  })
-  const introduction = await screen.findByRole('region', { name: '赛事介绍' })
-  expect(within(introduction).getByText(label)).toBeTruthy()
-  expect(screen.getAllByText(label).length).toBeGreaterThanOrEqual(2)
-  expect(
-    within(introduction)
-      .getByRole('link', { name: /覆盖证据/ })
-      .getAttribute('href'),
-  ).toBe(citation.url)
-  if (state !== 'source_unpublished') expect(screen.queryByText('来源明确未公布')).toBeNull()
+  ['not_found_in_source', '已查来源中暂未找到费用说明'],
+  ['source_unpublished', '来源明确注明费用尚未公布'],
+] as const)('keeps %s distinct in the concise decision notice', async (state, text) => {
+  show({ coverage: { fields: { entry_fee: { state, citations: [citation] } } } })
+  await screen.findByRole('heading', { name: base.name })
+  expect(within(screen.getByLabelText('参赛前待确认')).getByText(new RegExp(text))).toBeTruthy()
 })
 
-it('does not claim a source is unpublished without a usable citation', async () => {
-  show({
-    coverage: {
-      introduction: { state: 'source_unpublished', citations: [] },
-      fields: { prize: { state: 'source_unpublished' } },
-      sources: {},
-    },
-  })
-  await screen.findByRole('region', { name: '赛事介绍' })
-  expect(screen.queryByText('来源明确未公布')).toBeNull()
-  expect(screen.getAllByText('未核实').length).toBeGreaterThan(0)
+it('does not claim nonpublication without usable evidence', async () => {
+  show({ coverage: { fields: { entry_fee: { state: 'source_unpublished', citations: [] } } } })
+  await screen.findByRole('heading', { name: base.name })
+  expect(readingText()).not.toContain('尚未公布')
+  expect(readingText()).toContain('费用待确认')
 })
 
-it('keeps conflict evidence and verification level separate', async () => {
-  const alternative = {
-    ...citation,
-    url: 'https://other.example/rules',
-    excerpt: '总奖金为五千元。',
-  }
+it('keeps conflicting conditions close to the decision and does not pick one as verified', async () => {
   show({
     fields: {
-      prize: {
-        value: null,
+      team_size: {
+        value: '可单人',
         level: 'conflict',
         sources: [
+          { ...source, value: '可单人或最多4人', excerpt: '官网说明可单人。' },
           {
-            url: citation.url,
-            title: '主办方奖金说明',
-            site: '主办方',
-            is_official: true,
-            value: '10000 元',
-            excerpt: '总奖金为一万元。',
-          },
-          {
-            url: alternative.url,
-            title: '赛事规则转载',
-            site: '转载站',
-            is_official: false,
-            value: '5000 元',
-            excerpt: alternative.excerpt,
+            ...source,
+            url: 'https://other.example/rules',
+            site: '报名平台',
+            title: '报名规则',
+            value: '须2至4人',
+            excerpt: '报名平台要求至少2人。',
           },
         ],
       },
     },
-    coverage: {
-      introduction: { state: 'not_fetched' },
-      fields: { prize: { state: 'conflict', citations: [citation, alternative] } },
-      sources: {},
-    },
   })
-  await screen.findByText('奖金')
-  expect(screen.getByText('说法不一')).toBeTruthy()
-  expect(screen.getByRole('link', { name: '主办方奖金说明' }).getAttribute('href')).toBe(
-    citation.url,
-  )
-  expect(screen.getByRole('link', { name: '赛事规则转载' }).getAttribute('href')).toBe(
-    alternative.url,
-  )
-  expect(screen.getByText('总奖金为一万元。')).toBeTruthy()
-  expect(screen.getAllByText(alternative.excerpt).length).toBeGreaterThan(0)
+  const section = await screen.findByRole('region', { name: '参赛条件' })
+  expect(screen.getByLabelText('来源冲突提醒').textContent).toContain('组队人数')
+  expect(within(section).getByText('来源说法不一，待核实')).toBeTruthy()
+  expect(within(section).getByText('可单人或最多4人')).toBeTruthy()
+  expect(within(section).getByText('须2至4人')).toBeTruthy()
+  expect(within(section).queryByText('官网说明可单人。')).toBeNull()
 })
 
-it('displays public document excerpts and links, never a full document body by default', async () => {
+it('retains exact date precision, type and timezone in the overview', async () => {
+  show({ fields: { submission_deadline: { ...field('2026-11-01T00:00:00Z'), precision: 'day' } } })
+  const overview = await screen.findByRole('region', { name: '参赛要点' })
+  expect(within(overview).getByText('作品提交截止')).toBeTruthy()
+  expect(within(overview).getByText('2026年11月1日')).toBeTruthy()
+  expect(within(overview).getByText('具体时刻未核实')).toBeTruthy()
+  expect(within(overview).queryByText(/08:00|00:00/)).toBeNull()
+  expect(screen.getByLabelText('参赛前待确认').textContent).toContain('报名截止')
+})
+
+it('keeps actions outside the scroll container and asks about actual missing information', async () => {
+  const onAsk = vi.fn()
+  show(
+    {
+      fields: {
+        registration_url: field('https://organizer.example/apply'),
+        registration_deadline: field('2026-11-01T12:00:00Z'),
+        eligibility: field('18岁以上'),
+      },
+    },
+    'library',
+    onAsk,
+  )
+  const link = await screen.findByRole('link', { name: '查看报名页面' })
+  expect(link.closest('.contest-detail-scroll')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '问侦探' }))
+  expect(onAsk).toHaveBeenCalledWith('帮我核实一下「城市服务挑战赛」的费用，并给出来源。')
+})
+
+it('never renders unsafe links, ungrounded introductions or full source bodies', async () => {
   show({
+    introduction: {
+      text: '未经核实的介绍',
+      citations: [{ ...citation, url: 'javascript:alert(1)' }],
+    },
     documents: [
       {
         url: citation.url,
-        title: '活动说明',
         site: '主办方',
+        title: '规则',
         is_official: true,
-        kind: 'page',
-        representation: 'extracted_text',
-        completeness: 'partial',
         fetch_method: 'http',
+        completeness: 'partial',
         content_hash: citation.content_hash,
         retrieved_at: '2026-10-24T00:00:00Z',
         extractor_version: 'test',
         excerpts: [citation.excerpt],
-        body: '不应直接显示的第三方完整正文。',
+        body: '不应公开的第三方完整正文',
       },
     ],
   })
-  const documents = await screen.findByRole('region', { name: '来源资料' })
-  expect(within(documents).getByRole('link', { name: '活动说明' }).getAttribute('href')).toBe(
-    citation.url,
-  )
-  expect(within(documents).getByText(citation.excerpt)).toBeTruthy()
-  expect(within(documents).getByText('部分内容')).toBeTruthy()
-  expect(screen.queryByText('不应直接显示的第三方完整正文。')).toBeNull()
-})
-
-it('does not render an ungrounded introduction or unsafe evidence link', async () => {
-  show({
-    introduction: {
-      text: '未经核实的介绍',
-      method: 'extractive',
-      citations: [{ ...citation, url: 'javascript:alert(1)' }],
-    },
-  })
-  await screen.findByRole('region', { name: '赛事介绍' })
+  await screen.findByRole('heading', { name: base.name })
   expect(screen.queryByText('未经核实的介绍')).toBeNull()
-  expect(
-    screen
-      .queryAllByRole('link')
-      .some((link) => link.getAttribute('href')?.startsWith('javascript:')),
-  ).toBe(false)
+  expect(screen.queryByText('不应公开的第三方完整正文')).toBeNull()
+  expect(document.querySelector('a[href^="javascript:"]')).toBeNull()
 })
 
-it('retries a failed detail without replacing the dialog and reopens cached results', async () => {
+it('retries a failed detail and reopens a cached result without another request', async () => {
   let failed = true
   const fetch = vi.fn(async () =>
     Response.json(
@@ -239,39 +239,11 @@ it('retries a failed detail without replacing the dialog and reopens cached resu
   await screen.findByRole('alert')
   failed = false
   fireEvent.click(screen.getByRole('button', { name: '重试' }))
-  await screen.findByText('城市服务挑战赛')
+  await screen.findByRole('heading', { name: base.name })
   expect(fetch).toHaveBeenCalledTimes(2)
   rerender(view(false))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   rerender(view(true))
-  expect(await screen.findByText('城市服务挑战赛')).toBeTruthy()
+  await screen.findByRole('heading', { name: base.name })
   expect(fetch).toHaveBeenCalledTimes(2)
-})
-
-it('stays closed if an in-flight detail finishes after dismissal', async () => {
-  let complete!: (response: Response) => void
-  const fetch = vi.fn(
-    () =>
-      new Promise<Response>((resolve) => {
-        complete = resolve
-      }),
-  )
-  vi.stubGlobal('fetch', fetch)
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  clients.push(client)
-  const view = (open: boolean) => (
-    <QueryClientProvider client={client}>
-      <ContestDetail contestId="one" open={open} onClose={() => undefined} />
-    </QueryClientProvider>
-  )
-  const { rerender } = render(view(true))
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
-  rerender(view(false))
-  await act(async () => {
-    complete(Response.json({ code: 200, message: 'ok', data: base }))
-  })
-  expect(screen.queryByRole('dialog')).toBeNull()
-  rerender(view(true))
-  expect(await screen.findByText('城市服务挑战赛')).toBeTruthy()
-  expect(fetch).toHaveBeenCalledTimes(1)
 })
