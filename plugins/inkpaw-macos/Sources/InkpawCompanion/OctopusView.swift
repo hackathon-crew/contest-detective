@@ -314,13 +314,13 @@ private final class OctopusSceneCoordinator {
         magnifier.orientation = rotation(pose.magnifier.rotation)
     }
 
-    private func ellipsoid(scale: SIMD3<Float>, material: any Material) -> ModelEntity {
+    private func ellipsoid(scale: SIMD3<Float>, material: any RealityKit.Material) -> ModelEntity {
         let entity = ModelEntity(mesh: sphere, materials: [material])
         entity.scale = scale
         return entity
     }
 
-    private func box(size: SIMD3<Float>, at position: SIMD3<Float>, material: any Material) -> ModelEntity {
+    private func box(size: SIMD3<Float>, at position: SIMD3<Float>, material: any RealityKit.Material) -> ModelEntity {
         let entity = ModelEntity(mesh: .generateBox(size: size), materials: [material])
         entity.position = position
         return entity
