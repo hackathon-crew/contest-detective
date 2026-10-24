@@ -5,17 +5,38 @@ import { TZDate } from '@date-fns/tz'
 import { deadlineDays, formatDate, nextDeadline, type ContestSummary } from '@/entities/contest'
 import { Icon } from '@/shared/ui/site-icon'
 import plug from '@/shared/assets/stickers/plug.png'
-const endpoint = 'http://43.142.60.212/mcp'
+const endpoint = new URL('/mcp', window.location.origin).href
 const config = {
-  cc: 'claude mcp add --transport http inkpaw ' + endpoint,
+  cc:
+    'claude mcp add --transport http inkpaw ' +
+    endpoint +
+    ' --header "Authorization: Bearer YOUR_PERSONAL_TOKEN"',
   cursor:
-    '// ~/.cursor/mcp.json\n{\n  "mcpServers": {\n    "inkpaw": { "url": "' +
-    endpoint +
-    '" }\n  }\n}',
+    '// ~/.cursor/mcp.json\n' +
+    JSON.stringify(
+      {
+        mcpServers: {
+          inkpaw: { url: endpoint, headers: { Authorization: 'Bearer YOUR_PERSONAL_TOKEN' } },
+        },
+      },
+      null,
+      2,
+    ),
   other:
-    '// 支持 Streamable HTTP 的客户端都能用\n{\n  "mcpServers": {\n    "inkpaw": {\n      "type": "http",\n      "url": "' +
-    endpoint +
-    '"\n    }\n  }\n}',
+    '// 支持 Streamable HTTP 的客户端都能用\n' +
+    JSON.stringify(
+      {
+        mcpServers: {
+          inkpaw: {
+            type: 'http',
+            url: endpoint,
+            headers: { Authorization: 'Bearer YOUR_PERSONAL_TOKEN' },
+          },
+        },
+      },
+      null,
+      2,
+    ),
 }
 export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
   const [tab, setTab] = useState<keyof typeof config>('cc')

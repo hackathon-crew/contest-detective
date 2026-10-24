@@ -96,7 +96,8 @@ export function McpIntro() {
         </div>
       </div>
       <p className="text-muted" style={{ fontSize: '14px' }}>
-        三个工具都只读比赛库，画像用完即弃。
+        不带令牌时只读比赛库。在个人中心的「搜索与密钥」生成个人令牌，填入下方 Authorization
+        请求头，MCP 就能读取你的画像、关注和追踪条件。
       </p>
     </div>
   )
