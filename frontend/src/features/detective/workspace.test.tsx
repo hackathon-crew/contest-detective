@@ -68,6 +68,41 @@ it('首页入口进入独立侦探页，发送后有独立会话记录', async (
   expect(within(history()).getByRole('link', { name: '大学生线上比赛' })).toBeTruthy()
 })
 
+it('HTTP 环境没有 randomUUID 时仍能发送、追问并恢复不同会话', async () => {
+  vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
+  vi.stubGlobal('fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (!String(url).includes('/agent/ask'))
+      return json(String(url).includes('/auth/me') ? null : [])
+    const body = JSON.parse(init!.body as string)
+    return new Response(event('answer', { content: `回复：${body.question}`, sources: [] }), {
+      headers: { 'content-type': 'text/event-stream' },
+    })
+  })
+  const first = show('/detective')
+  const submit = (text: string) => {
+    fireEvent.change(screen.getByRole('textbox', { name: '问侦探' }), {
+      target: { value: text },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '查证' }))
+  }
+  submit('线上第一条消息')
+  expect(await screen.findByText('回复：线上第一条消息')).toBeTruthy()
+  submit('继续第一段对话')
+  expect(await screen.findByText('回复：继续第一段对话')).toBeTruthy()
+  fireEvent.click(screen.getByRole('link', { name: '新对话' }))
+  submit('另开一段对话')
+  expect(await screen.findByText('回复：另开一段对话')).toBeTruthy()
+
+  first.unmount()
+  show('/detective')
+  const records = history()
+  expect(within(records).getAllByRole('link')).toHaveLength(2)
+  fireEvent.click(within(records).getByRole('link', { name: '线上第一条消息' }))
+  expect(screen.getByText('回复：线上第一条消息')).toBeTruthy()
+  expect(screen.getByText('回复：继续第一段对话')).toBeTruthy()
+  expect(screen.queryByText('回复：另开一段对话')).toBeNull()
+})
+
 it('首页发送直接进入聊天页，新建与切换会话不混用前文，刷新恢复记录', async () => {
   const requests: { question: string; history?: unknown[] }[] = []
   vi.stubGlobal('fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
