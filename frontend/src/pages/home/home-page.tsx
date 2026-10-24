@@ -1,123 +1,280 @@
-import { useCallback, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { useLocation, useMatch, useNavigate } from 'react-router'
-
-import { ContestBrowser } from '@/features/contest-browser'
-import { SiteHeader } from '@/shared/ui/site-header'
-import { SiteFooter } from '@/shared/ui/site-footer'
+import { lazy, Suspense, useCallback, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocation, useNavigate, Link } from 'react-router'
+import {
+  ContestPreview,
+  loadContestCollection,
+  nextDeadline,
+  deadlineDays,
+  officialDeadlineCount,
+  safeUrl,
+} from '@/entities/contest'
+import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
+import { ContestDetail } from '@/features/contest-detail'
+import { DetectiveComposer, useDetective } from '@/features/detective'
+import { FollowButton, useFollows } from '@/features/follow'
 import {
   ProfileMatchDialog,
   loadConfirmedProfile,
   type ProfileMatchSection,
 } from '@/features/profile-match'
-import { currentUserKey, useCurrentUser } from '@/entities/user'
 import type { Profile } from '@/shared/api'
-import { Button } from '@/shared/ui'
-import { ContestCalendar } from '@/features/contest-calendar'
-import { ContestDetail } from '@/features/contest-detail'
-import { DetectiveDock } from '@/features/detective'
-import { WeeklyPicks } from '@/features/weekly-picks'
-import { FollowButton, FollowedContests, useFollows } from '@/features/follow'
-import { ErrorState } from '@/shared/ui'
-
-/** 首页只负责摆放各个区块，数据由各个 feature 自己取。 */
-export function HomePage() {
+import { ErrorState, Skeleton } from '@/shared/ui'
+import { SiteHeader } from '@/shared/ui/site-header'
+import { SiteFooter } from '@/shared/ui/site-footer'
+import { Icon } from '@/shared/ui/site-icon'
+import calendar from '@/shared/assets/stickers/calendar.png'
+import searchFrame from '@/shared/assets/mascot/octo-search.png'
+import { ClosingCallout, DetectiveIntro, FilterIntro, McpIntro } from './home-content'
+import { HomeFilter } from './home-filter'
+import { DetectiveDemo } from './detective-demo'
+import { McpPanel } from './mcp-panel'
+import '@/features/detective/detective-composer.css'
+import './home-page.css'
+const Octopus = lazy(() =>
+  import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
+)
+const chips = ['这周截止的线上比赛', '上海的线下黑客松', '奖金过万的 AI 比赛', '按我的 GitHub 推荐']
+export function HomePage({ contestId }: { contestId?: string }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
+  const [question, setQuestion] = useState('')
+  const [size, setSize] = useState(() => (window.innerWidth <= 880 ? 120 : 360))
+  const input = useRef<HTMLTextAreaElement>(null)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { send } = useDetective()
   const follows = useFollows()
-  const [showFollows, setShowFollows] = useState(false)
-  const listArea = useRef<HTMLDivElement | null>(null)
-  const followAction = (contest: { id: string }) => (
-    <FollowButton contestId={contest.id} follows={follows} />
-  )
-  const contestId = useMatch('/contests/:contestId')?.params.contestId
+  const collection = useQuery({
+    queryKey: ['contests', 'collection'],
+    queryFn: () => loadContestCollection(),
+  })
+  const contests = collection.data?.items ?? []
+  const total = collection.data?.total
+  const covers = contests.filter((contest) => safeUrl(contest.cover_url)).slice(0, 46)
+  const half = Math.ceil(covers.length / 2)
+  const soon = contests
+    .flatMap((contest) => {
+      const deadline = nextDeadline(contest)
+      return deadline && deadlineDays(deadline) <= 14 ? [{ contest, end: deadline.end }] : []
+    })
+    .sort((a, b) => a.end - b.end)
+    .slice(0, 8)
   const [lastContestId, setLastContestId] = useState(contestId)
   if (contestId && contestId !== lastContestId) setLastContestId(contestId)
   const detailId = contestId ?? lastContestId ?? ''
-  const navigate = useNavigate()
-  const { search } = useLocation()
-  const closeDetail = useCallback(() => navigate({ pathname: '/', search }), [navigate, search])
+  const closeDetail = useCallback(
+    () => navigate({ pathname: '/', search: location.search }),
+    [navigate, location.search],
+  )
   function confirmed(profile: Profile) {
     if (user) void client.invalidateQueries({ queryKey: currentUserKey })
     else setGuestProfile(profile)
   }
-
+  function ask(text: string) {
+    const value = text.trim()
+    if (!value) return
+    const id = send(value, user?.profile ?? guestProfile)
+    navigate(`/detective/${id}`)
+  }
+  function focusAsk() {
+    input.current?.scrollIntoView({
+      block: 'center',
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
+    input.current?.focus({ preventScroll: true })
+  }
+  const octopusHost = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    const update = () => setSize(window.innerWidth <= 880 ? 120 : 360)
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(update)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
   return (
-    <div className="min-h-dvh">
-      <SiteHeader
-        utilities={<AuthControls compact />}
-        actions={
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowFollows((value) => !value)
-              listArea.current?.scrollIntoView?.({ block: 'start' })
-            }}
-          >
-            {showFollows ? '全部赛事' : '我的关注'}
-          </Button>
-        }
-      />
-
-      {/* 底部留白给常驻的侦探输入条，免得最后一个区块被它挡住 */}
-      <main className="mx-auto max-w-7xl px-6 pb-32 sm:px-8">
-        <section className="grid items-start gap-10 py-10 md:grid-cols-2 lg:py-14">
-          <div className="space-y-6 lg:py-12">
-            <h1 className="text-4xl font-bold text-balance text-ink">近期值得参加的黑客松</h1>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href="#explore"
-                onClick={() => setShowFollows(false)}
-                className="inline-flex h-10 items-center rounded-xl bg-accent px-4 text-sm font-medium text-on-accent transition-colors duration-140 hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
+    <div className="bg-page min-h-dvh">
+      <SiteHeader utilities={<AuthControls compact />} />
+      <main className="inkpaw-home">
+        <section className="hero">
+          <div className="wrap hero-main">
+            <div className="hero-copy">
+              <Link className="lib-pill" to="/contests">
+                已收录 <b>{total ?? '—'}</b> 场比赛 <Icon name="arrow-right" />
+              </Link>
+              <h1>
+                说出你的条件，
+                <br />
+                侦探替你<span className="hl">找比赛</span>
+              </h1>
+              <p className="hero-lead">
+                Inkpaw 检索
+                Devpost、ETHGlobal、WaytoAGI、主办方官网和公众号，每个报名截止和提交截止都追到原文核对，并告诉你出处。
+              </p>
+              <div id="top-ask">
+                <DetectiveComposer
+                  value={question}
+                  pending={false}
+                  onChange={setQuestion}
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    ask(question)
+                  }}
+                  onStop={() => {}}
+                  onAddProfile={setProfileSection}
+                  inputRef={input}
+                  placeholder="比如：我会 Python，想找 11 月截止、线上能参加的 AI 黑客松"
+                />
+              </div>
+              <div className="chips">
+                {chips.map((chip) => (
+                  <button
+                    type="button"
+                    className="chip"
+                    key={chip}
+                    onClick={() => {
+                      setQuestion(chip)
+                      input.current?.focus()
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="hero-octo" ref={octopusHost} title="点一下它">
+              <Suspense
+                fallback={
+                  <img
+                    className="px"
+                    src={searchFrame}
+                    width={106 * (size / 120)}
+                    height={85 * (size / 120)}
+                    alt="Inkpaw 八爪鱼"
+                  />
+                }
               >
-                浏览赛事
-              </a>
-              <Button variant="outline" onClick={() => setProfileSection('all')}>
-                按我的情况挑比赛
-              </Button>
+                <Octopus size={size} mood="search" />
+              </Suspense>
             </div>
           </div>
-          <WeeklyPicks renderAction={followAction} />
+          <div className="wall" aria-hidden="true">
+            {[covers.slice(0, half), covers.slice(half)].map((row, index) => (
+              <div className={'wall-row' + (index ? ' rev' : '')} key={index}>
+                {[...row, ...row].map((contest, index) => (
+                  <img
+                    key={contest.id + index}
+                    src={contest.cover_url!}
+                    alt=""
+                    title={contest.name}
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.style.visibility = 'hidden'
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="wrap">
+            {collection.isError && (
+              <ErrorState error={collection.error} retry={() => void collection.refetch()} />
+            )}
+            <div className="stats">
+              <div className="stat">
+                <b>{total ?? '—'}</b>
+                <span>场比赛在库</span>
+              </div>
+              <div className="stat">
+                <b>{collection.data ? officialDeadlineCount(contests) : '—'}</b>
+                <span>场的截止时间对过官方原文</span>
+              </div>
+              <div className="stat">
+                <b>6</b>
+                <span>个比赛来源，另加联网检索</span>
+              </div>
+              <div className="stat">
+                <b>3</b>
+                <span>个 MCP 工具，接进你的 AI</span>
+              </div>
+            </div>
+          </div>
         </section>
-        {!showFollows && follows.error && <ErrorState error={new Error(follows.error)} />}
-        <div
-          id="explore"
-          ref={listArea}
-          className="grid items-start gap-8 md:grid-cols-2 lg:grid-cols-3"
-        >
-          <div className="min-w-0 lg:col-span-2">
-            {showFollows ? (
-              <FollowedContests follows={follows} />
+        <section className="feature" id="filter">
+          <div className="wrap feature-grid">
+            <FilterIntro />
+            <HomeFilter
+              profile={user?.profile ?? guestProfile}
+              total={total}
+              onAddProfile={() => setProfileSection('all')}
+            />
+          </div>
+        </section>
+        <section className="feature" id="agent">
+          <div className="wrap feature-grid flip">
+            <DetectiveIntro />
+            <DetectiveDemo contests={contests} onAsk={ask} onAddProfile={setProfileSection} />
+          </div>
+        </section>
+        <section className="feature" id="mcp">
+          <div className="wrap feature-grid">
+            <McpIntro />
+            <McpPanel contests={contests} />
+          </div>
+        </section>
+        <section className="soon" id="soon">
+          <div className="wrap">
+            <div className="sec-head">
+              <div>
+                <h2>两周内截止</h2>
+                <p>按截止时间排，点开看每个字段的出处。</p>
+              </div>
+              <Link to="/contests">
+                查看全部 {total ?? '—'} 场 <Icon name="arrow-right" />
+              </Link>
+              <img
+                className="stk px x2"
+                src={calendar}
+                width={160}
+                height={144}
+                alt=""
+                style={{ right: '132px', top: '-96px' }}
+              />
+            </div>
+            {collection.isPending ? (
+              <Skeleton />
+            ) : collection.isError ? (
+              <ErrorState error={collection.error} retry={() => void collection.refetch()} />
+            ) : soon.length ? (
+              <div className="grid">
+                {soon.map(({ contest }) => (
+                  <ContestPreview key={contest.id} contest={contest} card />
+                ))}
+              </div>
             ) : (
-              <ContestBrowser renderAction={followAction} />
+              <p className="empty">两周内没有已公布截止时间的比赛，去赛事库看看。</p>
             )}
           </div>
-          <ContestCalendar followedIds={follows.ids} />
-        </div>
+        </section>
+        <ClosingCallout onAsk={focusAsk} />
       </main>
-
       <SiteFooter appearance={<AppearanceControl segmented />} />
-      <DetectiveDock
-        key={user?.id ?? 'guest'}
-        profile={user?.profile ?? guestProfile}
-        onAddProfile={setProfileSection}
-      />
       <ProfileMatchDialog
         open={!!profileSection}
-        user={user}
         initialSection={profileSection ?? 'all'}
+        user={user}
         onClose={() => setProfileSection(null)}
         onConfirmed={confirmed}
       />
-
       <ContestDetail
         open={!!contestId}
         contestId={detailId}
         onClose={closeDetail}
+        onAsk={ask}
         action={<FollowButton contestId={detailId} follows={follows} />}
       />
     </div>

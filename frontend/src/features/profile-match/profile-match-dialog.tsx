@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import ReactMarkdown from 'react-markdown'
 import { ArrowRight, FileUp, X } from 'lucide-react'
 
@@ -129,6 +129,7 @@ function ProfileMatchForm({
   const [section, setSection] = useState(initialSection)
   const showProfile = section === 'all' || section === 'profile'
   const showFilters = section === 'all' || section === 'filters'
+  const location = useLocation()
   const [profile, setProfile] = useState<Profile>(
     () => user?.profile ?? loadConfirmedProfile() ?? {},
   )
@@ -584,6 +585,11 @@ function ProfileMatchForm({
                   <article key={item.contest.id} className="space-y-2 py-4 first:pt-0">
                     <Link
                       to={`/contests/${encodeURIComponent(item.contest.id)}`}
+                      state={
+                        location.pathname.startsWith('/detective')
+                          ? undefined
+                          : { backgroundLocation: location }
+                      }
                       onClick={onClose}
                       className="block break-words text-base font-semibold hover:underline"
                     >

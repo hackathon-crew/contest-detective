@@ -7,6 +7,7 @@ import { Link, MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
   cleanup()
@@ -62,31 +63,39 @@ describe('全局页面动效边界', () => {
     const { container } = renderAt('/')
     const home = container.querySelector('[data-route-motion="home"]')
     expect(home).not.toBeNull()
+    document.documentElement.scrollTop = 400
 
     fireEvent.click(screen.getByRole('link', { name: '侦探' }))
     const detective = container.querySelector('[data-route-motion="detective"]')
     expect(detective).not.toBeNull()
     expect(detective).not.toBe(home)
+    expect(document.documentElement.scrollTop).toBe(0)
 
     fireEvent.click(screen.getByRole('link', { name: '浏览赛事' }))
-    const returnedHome = container.querySelector('[data-route-motion="home"]')
-    expect(returnedHome).not.toBeNull()
-    expect(returnedHome).not.toBe(home)
+    const catalog = container.querySelector('[data-route-motion="contests"]')
+    expect(catalog).not.toBeNull()
+    expect(catalog).not.toBe(home)
   })
 
   it('筛选、锚点与详情地址保持首页容器和关注状态', () => {
     const { container } = renderAt('/')
-    fireEvent.click(screen.getByRole('button', { name: '我的关注' }))
+    fireEvent.click(screen.getByRole('button', { name: '按我的情况' }))
+    document.documentElement.scrollTop = 400
     const home = container.querySelector('[data-route-motion="home"]')
     expect(home).not.toBeNull()
 
     fireEvent.click(screen.getByRole('link', { name: '筛选赛事' }))
     expect(container.querySelector('[data-route-motion="home"]')).toBe(home)
-    expect(screen.getByRole('heading', { name: '我的关注' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: '按我的情况' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
 
     fireEvent.click(screen.getByRole('link', { name: '赛事详情地址' }))
     expect(container.querySelector('[data-route-motion="home"]')).toBe(home)
-    expect(screen.getByRole('heading', { name: '我的关注', hidden: true })).toBeTruthy()
+    expect(document.documentElement.scrollTop).toBe(400)
+    expect(
+      screen.getByRole('button', { name: '按我的情况', hidden: true }).getAttribute('aria-pressed'),
+    ).toBe('true')
   })
 
   it('会话地址变化不重建工作区，也不重播全页入场', () => {

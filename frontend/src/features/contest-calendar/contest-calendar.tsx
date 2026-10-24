@@ -23,7 +23,8 @@ export function ContestCalendar({ followedIds }: { followedIds?: string[] }) {
   const [month, setMonth] = useState<Date>(today)
   const [selected, setSelected] = useState<Date>(today)
   const [onlyFollowed, setOnlyFollowed] = useState(false)
-  const { search } = useLocation()
+  const location = useLocation()
+  const { search } = location
   const ids = onlyFollowed ? (followedIds ?? []) : undefined
   const enabled = !onlyFollowed || Boolean(ids?.length)
   const monthFilters = { ...monthBounds(month), ids }
@@ -130,6 +131,7 @@ export function ContestCalendar({ followedIds }: { followedIds?: string[] }) {
               <li key={contest.id} className="space-y-1 py-3">
                 <Link
                   to={`/contests/${contest.id}${search}`}
+                  state={{ backgroundLocation: location }}
                   className="block text-base font-semibold text-ink hover:underline focus-visible:outline-2 focus-visible:outline-ink"
                 >
                   {contest.name}

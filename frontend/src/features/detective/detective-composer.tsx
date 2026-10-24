@@ -14,6 +14,7 @@ export function DetectiveComposer({
   onStop,
   onAddProfile,
   inputRef,
+  placeholder = '问一个问题',
 }: {
   value: string
   pending: boolean
@@ -22,6 +23,7 @@ export function DetectiveComposer({
   onStop: () => void
   onAddProfile?: (section: DetectiveContextAction) => void
   inputRef?: Ref<HTMLTextAreaElement>
+  placeholder?: string
 }) {
   return (
     <form
@@ -77,7 +79,7 @@ export function DetectiveComposer({
       <textarea
         ref={inputRef}
         aria-label="问侦探"
-        placeholder="问一个问题"
+        placeholder={placeholder}
         value={value}
         rows={1}
         disabled={pending}

@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
   cleanup()
@@ -55,47 +56,54 @@ function renderAt(path: string) {
 describe('路由', () => {
   it('首页可打开画像确认入口', async () => {
     renderAt('/')
-    fireEvent.click(screen.getByRole('button', { name: '按我的情况挑比赛' }))
+    fireEvent.keyDown(screen.getAllByRole('button', { name: '添加简历或参赛资料' })[0], {
+      key: 'Enter',
+    })
+    fireEvent.click(await screen.findByRole('menuitem', { name: '添加画像' }))
     expect(await screen.findByRole('button', { name: '确认并挑比赛' })).toBeTruthy()
   })
   it('关注入口切换赛事列表，返回后恢复浏览区块', () => {
-    renderAt('/')
+    renderAt('/contests')
     fireEvent.click(screen.getByRole('button', { name: '我的关注' }))
     expect(screen.getByRole('heading', { name: '我的关注' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '全部赛事' }))
     expect(screen.getByRole('heading', { name: '全部赛事' })).toBeTruthy()
   })
-  it('首页显示四个区块，不开详情', () => {
+  it('首页展示新入口，完整浏览保留在独立赛事库', () => {
     renderAt('/')
-
-    for (const name of ['本周值得看', '全部赛事', '赛事日历']) {
-      expect(screen.getByRole('heading', { name })).toBeTruthy()
-    }
-    expect(screen.getByRole('region', { name: '侦探' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '两周内截止' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
+  })
+  it('赛事库保留完整浏览、日历和常驻侦探', () => {
+    renderAt('/contests')
+    for (const name of ['全部赛事', '赛事日历'])
+      expect(screen.getByRole('heading', { name })).toBeTruthy()
+    expect(screen.getByRole('region', { name: '侦探' })).toBeTruthy()
   })
 
   it('直接打开详情地址时，首页和详情弹窗都在', () => {
     renderAt('/contests/tme-ai-hackathon')
 
     expect(screen.getByRole('dialog', { name: '赛事详情' })).toBeTruthy()
-    expect(screen.getByText('全部赛事', { selector: 'h2' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /说出你的条件/, hidden: true })).toBeTruthy()
   })
 
-  it('关闭详情回到首页，首页区块不重新挂载', () => {
+  it('关闭详情回到首页，首页区块不重新挂载', async () => {
     renderAt('/contests/tme-ai-hackathon')
-    const list = screen.getByText('全部赛事', { selector: 'h2' })
+    const list = screen.getByRole('heading', { name: /说出你的条件/, hidden: true })
 
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
 
-    expect(screen.queryByRole('dialog')).toBeNull()
-    expect(screen.getByText('全部赛事', { selector: 'h2' })).toBe(list)
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBe(list)
   })
 
   it('未知地址回到首页', () => {
     renderAt('/no-such-page')
 
-    expect(screen.getByRole('heading', { name: '本周值得看' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
   })
 })

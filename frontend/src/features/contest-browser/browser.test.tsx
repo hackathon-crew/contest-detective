@@ -11,7 +11,7 @@ const fields = {
 }
 const item = { id: 'one', name: '真实接口赛事', cover_url: null, status: 'upcoming', fields }
 let requested: string[] = []
-function start(path = '/') {
+function start(path = '/contests') {
   window.history.replaceState(null, '', path)
   requested = []
   vi.stubGlobal('fetch', async (input: string) => {
@@ -41,6 +41,7 @@ function start(path = '/') {
           },
         },
       }
+    else if (url.pathname === '/api/auth/me') data = null
     else data = url.searchParams.get('keyword') === '无结果' ? [] : [item]
     return new Response(
       JSON.stringify({
@@ -70,13 +71,15 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 it('opens field sources and preserves filters after closing', async () => {
-  start('/?keyword=真实')
+  start('/contests?keyword=真实')
   const links = await screen.findAllByRole('link', { name: '真实接口赛事' })
   fireEvent.click(links[0]!)
   expect(await screen.findByRole('link', { name: '赛事规则' })).toBeTruthy()
-  expect(screen.getByText('10月25日开赛').closest('li')?.className).toContain('line-through')
+  expect(screen.getByText('10月25日开赛').closest('.contest-detail-source')?.className).toContain(
+    'line-through',
+  )
   fireEvent.click(screen.getByRole('button', { name: '关闭' }))
-  expect(screen.queryByRole('dialog')).toBeNull()
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   expect((screen.getByRole('searchbox', { name: '搜索赛事' }) as HTMLInputElement).value).toBe(
     '真实',
   )

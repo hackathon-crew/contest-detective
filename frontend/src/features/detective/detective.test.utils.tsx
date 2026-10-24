@@ -27,6 +27,7 @@ export function renderDetective(
                 </>
               }
             />
+            <Route path="/contests" element={<Link to="/detective">侦探</Link>} />
             <Route path="/detective" element={<DetectivePage />} />
             <Route path="/detective/:conversationId" element={<DetectivePage />} />
           </Routes>

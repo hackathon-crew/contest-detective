@@ -1,0 +1,116 @@
+.contest-detail[data-slot='dialog-content'] {
+  width: min(560px, calc(100% - 32px));
+  max-width: 560px;
+  max-height: calc(100dvh - 48px);
+  padding: 0;
+  display: block;
+  overflow-y: auto;
+  gap: 0;
+  box-shadow: 0 24px 64px light-dark(rgb(17 17 17 / 18%), rgb(0 0 0 / 48%));
+}
+.contest-detail-cover {
+  height: 200px;
+  width: 100%;
+  object-fit: cover;
+  background: var(--color-surface-strong);
+}
+.contest-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+.contest-detail [data-slot='dialog-title'] {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-wrap: balance;
+  outline: none;
+}
+.contest-detail [data-slot='dialog-close'] {
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-ink) 16%, transparent);
+}
+.contest-detail-organizer {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--color-muted);
+}
+.contest-detail-fields {
+  border-top: 1px solid var(--color-rule);
+}
+.contest-detail-fields > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: baseline;
+  padding-block: 10px;
+  border-bottom: 1px solid var(--color-rule);
+  font-size: 14px;
+}
+.contest-detail-fields dt {
+  color: var(--color-muted);
+}
+.contest-detail-fields dd {
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+.contest-detail-source {
+  font-size: 12px;
+  color: var(--color-muted);
+  margin-top: 8px;
+}
+.contest-detail a:not(.site-button) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.contest-detail-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.contest-detail-summary {
+  font-size: 14px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.contest-detail .lv {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.contest-detail .lv .ic {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.25;
+}
+.contest-detail .lv-official {
+  color: var(--color-ink);
+}
+.contest-detail .lv-reposted {
+  color: var(--color-muted);
+}
+.contest-detail .lv-conflict {
+  color: var(--color-danger);
+}
+.contest-detail .lv-not_found {
+  color: var(--color-faint);
+}
+@media (max-width: 390px) {
+  .contest-detail-fields > div {
+    grid-template-columns: 68px minmax(0, 1fr);
+    gap: 6px 12px;
+  }
+  .contest-detail-fields .lv {
+    grid-column: 2;
+  }
+}

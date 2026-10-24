@@ -1,5 +1,6 @@
 .detective-dock,
-.detective-workspace {
+.detective-workspace,
+.inkpaw-home {
   /* Everplain 对话输入口的尺寸与表面；仅作用于侦探入口。 */
   --composer-width: 45rem;
   --composer-control: 2.25rem;

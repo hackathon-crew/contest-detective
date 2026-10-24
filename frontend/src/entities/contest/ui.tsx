@@ -38,6 +38,7 @@ export function ContestCard({ contest, action }: { contest: ContestSummary; acti
           <Link
             className="hover:underline focus-visible:outline-2 focus-visible:outline-ink"
             to={`/contests/${contest.id}${location.search}`}
+            state={{ backgroundLocation: location }}
           >
             {contest.name}
           </Link>
