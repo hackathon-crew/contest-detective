@@ -4,6 +4,7 @@ import { useLocation, useMatch, useNavigate } from 'react-router'
 
 import { ContestBrowser } from '@/features/contest-browser'
 import { SiteHeader } from '@/shared/ui/site-header'
+import { SiteFooter } from '@/shared/ui/site-footer'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
@@ -41,12 +42,7 @@ export function HomePage() {
   return (
     <div className="min-h-dvh">
       <SiteHeader
-        utilities={
-          <>
-            <AppearanceControl />
-            <AuthControls />
-          </>
-        }
+        utilities={<AuthControls compact />}
         actions={
           <Button
             variant="ghost"
@@ -97,6 +93,7 @@ export function HomePage() {
         </div>
       </main>
 
+      <SiteFooter appearance={<AppearanceControl segmented />} />
       <DetectiveDock
         key={user?.id ?? 'guest'}
         profile={user?.profile ?? guestProfile}
