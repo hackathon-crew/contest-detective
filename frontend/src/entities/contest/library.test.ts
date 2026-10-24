@@ -237,10 +237,42 @@ it('系列按各场开赛日，其他按关键日期；点阵计数忽略date但
   ])
 })
 
-it('列表简介只取首段正文，去掉标题和排版标记', () => {
+it('列表介绍只取有出处的介绍，不再把历史主题或日期拼成简介', () => {
+  const citation = {
+    url: 'https://example.com/about',
+    content_hash: 'a'.repeat(64),
+    excerpt: '这是有出处的介绍。',
+  }
   expect(
     contestAbout(
-      contest('摘要', {}, { summary: '## 活动简介\n\n这是**真实**介绍。\n\n## 日程\n下周开赛' }),
+      contest(
+        '摘要',
+        {},
+        {
+          introduction: { text: '这是有出处的介绍。', citations: [citation] },
+          summary: '主题：Education\n2026-11-01 开赛',
+        },
+      ),
     ),
-  ).toBe('这是真实介绍。')
+  ).toBe('这是有出处的介绍。')
+  expect(
+    contestAbout(contest('元数据', {}, { summary: '主题：Education\n2026-11-01 开赛' })),
+  ).toBeNull()
+  expect(
+    contestAbout(contest('无出处', {}, { introduction: { text: '缺少出处', citations: [] } })),
+  ).toBeNull()
+})
+
+it('列表优先使用主题投影，旧主题头兼容但不把正文识别成主题', () => {
+  expect(
+    contestThemes(
+      contest('新主题', {}, { themes: ['Education', 'Health'], summary: '主题：Gaming' }),
+    ),
+  ).toEqual(['教育', '健康'])
+  expect(contestThemes(contest('空投影', {}, { themes: [], summary: '主题：Gaming' }))).toEqual([])
+  expect(contestThemes(contest('旧主题', {}, { summary: 'Themes: Education, Health' }))).toEqual([
+    '教育',
+    '健康',
+  ])
+  expect(contestThemes(contest('正文', {}, { summary: 'Education, Health' }))).toEqual([])
 })

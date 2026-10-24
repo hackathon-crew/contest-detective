@@ -92,6 +92,7 @@ afterEach(() => {
 it('opens field sources and preserves filters after closing', async () => {
   start('/contests?keyword=真实')
   const links = await screen.findAllByRole('link', { name: '真实接口赛事' })
+  expect(requested.filter((url) => url.includes('/contests/one'))).toHaveLength(0)
   fireEvent.click(links[0]!)
   fireEvent.click(await screen.findByText('查看原文摘录'))
   expect(await screen.findByRole('link', { name: '赛事规则' })).toBeTruthy()
@@ -103,10 +104,14 @@ it('opens field sources and preserves filters after closing', async () => {
   expect((screen.getByRole('searchbox', { name: '搜索赛事' }) as HTMLInputElement).value).toBe(
     '真实',
   )
+  fireEvent.click(screen.getAllByRole('link', { name: '真实接口赛事' })[0]!)
+  await screen.findByRole('dialog')
+  expect(requested.filter((url) => url.includes('/contests/one'))).toHaveLength(1)
 })
 it('loads the whole collection then filters locally without a second keyword request', async () => {
   start()
   await screen.findAllByRole('link', { name: '真实接口赛事' })
+  expect(requested.some((url) => url.includes('/contests/one'))).toBe(false)
   fireEvent.change(screen.getByRole('searchbox', { name: '搜索赛事' }), {
     target: { value: '无结果' },
   })
