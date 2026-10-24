@@ -134,13 +134,12 @@ def test_provider_error_keeps_the_reserved_liability(session_factory):
         assert row.cost_cny == row.reserved_cny > 0
 
 
-def test_missing_usage_keeps_reservation_and_returns_failure(session_factory):
+def test_missing_usage_keeps_reservation_and_delivers_the_answer(session_factory):
     async def enough():
         return Decimal('100')
     model = GuardedModel(FunctionModel(lambda *_: ModelResponse([TextPart('ok')], usage=RequestUsage(unmeasured_requests=1))),
                          Budget(session_factory, settings()), balance_reader=enough)
-    with pytest.raises(ValueError):
-        asyncio.run(Agent(model).run('查询'))
+    assert asyncio.run(Agent(model).run('查询')).output == 'ok'
     with session_factory() as session:
         row = session.scalars(select(LLMUsage)).one()
         assert row.status == 'reserved' and row.cost_cny > 0
