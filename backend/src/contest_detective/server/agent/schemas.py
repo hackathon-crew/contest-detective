@@ -42,6 +42,8 @@ class ToolSource(BaseModel):
     title: str
     url: str
     site: str = ''
+    is_official: bool = False
+    stale: bool = False
 
 
 class Step(BaseModel):

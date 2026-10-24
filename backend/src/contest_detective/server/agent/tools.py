@@ -33,6 +33,19 @@ def plain(value):
     return dict(value)
 
 
+def contest_sources(contest):
+    sources = {}
+    for value in contest.fields.values():
+        for source in value.sources:
+            previous = sources.get(source.url)
+            if previous is None or (previous['stale'] and not source.stale):
+                sources[source.url] = {
+                    'title': source.title, 'url': source.url, 'site': source.site,
+                    'is_official': source.is_official, 'stale': source.stale,
+                }
+    return list(sources.values())
+
+
 @dataclass
 class ToolDeps:
     session_factory: Callable
@@ -48,6 +61,9 @@ class ToolDeps:
         for source in sources:
             item = ToolSource.model_validate(source)
             if urlsplit(item.url).scheme in {'http', 'https'}:
+                # 搜索与正文读取没有核实身份；不能覆盖比赛库已给出的来源等级。
+                if item.url in self.sources and 'is_official' not in item.model_fields_set:
+                    continue
                 self.sources[item.url] = item
 
     def remember_dates(self, contest):
@@ -79,11 +95,10 @@ def register_tools(agent: Agent, *, web_enabled: bool):
             item = contests.get(session, contest_id)
         if item is None:
             return {'contest': None, 'summary': '比赛未找到', 'sources': []}
-        sources = {source.url: {'title': source.title, 'url': source.url, 'site': source.site}
-                   for value in item.fields.values() for source in value.sources}
-        ctx.deps.remember(sources.values())
+        sources = contest_sources(item)
+        ctx.deps.remember(sources)
         ctx.deps.remember_dates(item)
-        return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': list(sources.values())}
+        return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
     @agent.tool
     async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None) -> dict:
@@ -146,7 +161,6 @@ def register_tools(agent: Agent, *, web_enabled: bool):
                 item = contests.get(session, contest_id)
             if item:
                 ctx.deps.remember_dates(item)
-                sources = list({source.url: {'title': source.title, 'url': source.url, 'site': source.site}
-                    for value in item.fields.values() for source in value.sources}.values())
+                sources = contest_sources(item)
                 ctx.deps.remember(sources)
         return {'contest_id': contest_id, 'summary': '赛事已写回比赛库' if contest_id else '未找到可写入的赛事字段', 'sources': sources}
