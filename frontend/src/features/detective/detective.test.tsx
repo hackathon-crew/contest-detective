@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DetectiveDock } from './detective-dock'
+import { renderDetective } from './detective.test.utils'
 import { parseTrace } from './events'
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.unstubAllGlobals()
 })
 
@@ -21,13 +21,7 @@ function renderStream(text: string, business = false) {
       ),
   )
   vi.stubGlobal('fetch', fetch)
-  render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <DetectiveDock profile={{ skills: ['Python'] }} />
-    </QueryClientProvider>,
-  )
+  renderDetective({ profile: { skills: ['Python'] } })
   fireEvent.change(screen.getByLabelText('问侦探'), {
     target: { value: '这周末有哪些线上黑客松？' },
   })
@@ -38,7 +32,12 @@ const event = (type: string, data: unknown) => `event: ${type}\ndata: ${JSON.str
 
 describe('侦探过程', () => {
   it('依次显示两轮步骤、结论与出处，并带上已确认画像', async () => {
-    const source = { title: '主办方公告', url: 'https://example.com/event', site: 'example.com' }
+    const source = {
+      title: '主办方公告',
+      url: 'https://example.com/event',
+      site: 'example.com',
+      is_official: true,
+    }
     const fetch = renderStream(
       [
         event('step', { tool: 'search_contests', label: '查询比赛库' }),
@@ -105,14 +104,10 @@ describe('侦探过程', () => {
           { headers: { 'content-type': 'text/event-stream' } },
         ),
     )
-    render(
-      <QueryClientProvider client={new QueryClient()}>
-        <DetectiveDock />
-      </QueryClientProvider>,
-    )
+    renderDetective()
     fireEvent.change(screen.getByLabelText('问侦探'), { target: { value: '查一下报名时间' } })
     fireEvent.submit(screen.getByRole('button', { name: '查证' }).closest('form')!)
-    fireEvent.click(await screen.findByRole('button', { name: '停止' }))
+    fireEvent.click(await screen.findByRole('button', { name: '停止查证' }))
     await waitFor(() =>
       expect((screen.getByLabelText('问侦探') as HTMLInputElement).disabled).toBe(false),
     )
