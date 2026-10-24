@@ -44,8 +44,6 @@ private struct NativeOctopusView: NSViewRepresentable {
         // are iOS-only APIs, so neither belongs in this native macOS implementation.
         let view = TransparentOctopusARView(frame: .zero)
         view.environment.background = .color(.clear)
-        view.renderOptions.insert(.disableMotionBlur)
-        view.renderOptions.insert(.disableDepthOfField)
         let pixels = view.pixelRenderer
         pixels.observeFailures { [weak view] message in view?.showPixelFailure(message) }
         // Bound nonisolated methods avoid inheriting makeNSView's MainActor
