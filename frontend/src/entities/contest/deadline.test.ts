@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { nextDeadline, officialDeadlineCount } from './deadline'
+import { displayDeadline, nextDeadline, officialDeadlineCount } from './deadline'
 import type { ContestSummary, FieldValue } from './api'
 const field = (
   value: string | null,
@@ -41,4 +41,10 @@ it('keeps day precision deadlines open through the Beijing calendar day', () => 
   expect(
     nextDeadline(contest({ start_at: field('2026-10-25') }), new Date('2026-10-24T02:00:00Z')),
   ).toBeNull()
+})
+it('retains a known past deadline for display while excluding it from upcoming contests', () => {
+  const ended = contest({ submission_deadline: field('2026-10-20') })
+  const now = new Date('2026-10-24T02:00:00Z')
+  expect(nextDeadline(ended, now)).toBeNull()
+  expect(displayDeadline(ended, now)?.info.value).toBe('2026-10-20')
 })
