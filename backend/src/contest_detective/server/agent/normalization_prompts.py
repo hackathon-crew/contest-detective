@@ -40,7 +40,7 @@ def build_messages(
     """为单场赛事构造隔离的 system/user 消息。"""
     system = load_prompt(prompt_path).render()
     claims = '\n'.join(
-        f'- {claim.field}: {claim.value}（来源：{item.draft.page.url}）'
+        f'- {claim.field}: {claim.value}（精度：{claim.precision}，来源：{item.draft.page.url}）'
         for claim in item.draft.claims
     ) or '（适配器没有已映射字段）'
     human = (

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft
+from contest_detective.server.contest.schemas import DATE_FIELDS, ClaimIn, ContestDraft, calendar_date
 
 
 @dataclass(frozen=True)
@@ -21,10 +21,12 @@ def supported_claims(text: str, claims: list[ClaimIn]) -> list[ClaimIn]:
 
 
 def merge_normalized(item: NormalizationInput, output) -> ContestDraft:
-    existing = {claim.field for claim in item.draft.claims}
+    existing: dict[str, list[ClaimIn]] = {}
+    for claim in item.draft.claims:
+        existing.setdefault(claim.field, []).append(claim)
     context_claims = [
         claim for claim in output.claims
-        if claim.field not in existing
+        if claim.field not in existing or _refines_date(claim, existing[claim.field])
     ]
     supported = supported_claims(item.context, context_claims)
     return item.draft.model_copy(update={
@@ -33,3 +35,12 @@ def merge_normalized(item: NormalizationInput, output) -> ContestDraft:
         'summary': item.draft.summary or output.summary,
         'claims': [*item.draft.claims, *supported],
     })
+
+
+def _refines_date(claim: ClaimIn, existing: list[ClaimIn]) -> bool:
+    return (
+        claim.field in DATE_FIELDS and claim.precision == 'datetime'
+        and all(original.precision == 'day'
+                and calendar_date(original.value, 'day') == calendar_date(claim.value)
+                for original in existing)
+    )
