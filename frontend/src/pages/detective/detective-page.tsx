@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { MessageCircle, PanelLeftClose, PanelLeftOpen, SquarePen } from 'lucide-react'
-import { Dialog as PrimitiveDialog } from 'radix-ui'
+import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } from 'lucide-react'
+import { Collapsible, Dialog as PrimitiveDialog } from 'radix-ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import {
@@ -13,7 +13,12 @@ import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import type { Profile } from '@/shared/api'
-import { DetectiveComposer, DetectiveMessage, useDetective } from '@/features/detective'
+import {
+  DetectiveComposer,
+  DetectiveMessage,
+  ResearchPanel,
+  useDetective,
+} from '@/features/detective'
 import '@/features/detective/detective-composer.css'
 import '@/features/detective/detective-conversation.css'
 import '@/features/detective/detective-workspace.css'
@@ -22,6 +27,19 @@ export function DetectivePage() {
   const { conversationId } = useParams()
   const { sessions, storageError, send, stop } = useDetective()
   const session = sessions.find((item) => item.id === conversationId)
+  const [researchState, setResearchState] = useState<{
+    conversationId?: string
+    mode: 'auto' | 'open' | 'closed'
+  }>({ conversationId, mode: 'auto' })
+  // 切换对话只重置面板偏好，保留工作区节点，避免重播整页入场动画。
+  if (researchState.conversationId !== conversationId) {
+    setResearchState({ conversationId, mode: 'auto' })
+  }
+  const researchMode = researchState.mode
+  const setResearchMode = (mode: 'open' | 'closed') => setResearchState({ conversationId, mode })
+  const hasResearch =
+    session?.turns.some((turn) => turn.trace.length || turn.sources.length) ?? false
+  const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
@@ -29,7 +47,12 @@ export function DetectivePage() {
   const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const sidebarButton = useRef<HTMLButtonElement>(null)
+  const researchButton = useRef<HTMLButtonElement>(null)
   const closeSidebar = () => setSidebarOpen(false)
+  const closeResearch = () => {
+    setResearchMode('closed')
+    researchButton.current?.focus({ preventScroll: true })
+  }
   function confirmed(profile: Profile) {
     if (user) void client.invalidateQueries({ queryKey: currentUserKey })
     else setGuestProfile(profile)
@@ -53,7 +76,11 @@ export function DetectivePage() {
           </Link>
         }
       />
-      <div className="detective-workspace__body">
+      <Collapsible.Root
+        className="detective-workspace__body"
+        open={researchOpen}
+        onOpenChange={(open) => setResearchMode(open ? 'open' : 'closed')}
+      >
         <div className="detective-workspace__main">
           <header className="detective-workspace__header">
             <button
@@ -70,6 +97,18 @@ export function DetectivePage() {
             <Link to="/detective" className="detective-icon" aria-label="新对话">
               <SquarePen aria-hidden="true" strokeWidth={1.5} />
             </Link>
+            <Collapsible.Trigger asChild>
+              <button
+                ref={researchButton}
+                type="button"
+                className="detective-icon"
+                aria-label="研究面板"
+                title="研究面板"
+                aria-pressed={researchOpen}
+              >
+                <PanelRight aria-hidden="true" strokeWidth={1.5} />
+              </button>
+            </Collapsible.Trigger>
           </header>
           <Conversation
             key={conversationId ?? 'new'}
@@ -84,6 +123,21 @@ export function DetectivePage() {
             onAddProfile={setProfileSection}
           />
         </div>
+        <Collapsible.Content asChild>
+          <aside
+            className="detective-research"
+            aria-label="研究面板"
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') closeResearch()
+            }}
+          >
+            <ResearchPanel
+              key={conversationId ?? 'new'}
+              turns={session?.turns ?? []}
+              onClose={closeResearch}
+            />
+          </aside>
+        </Collapsible.Content>
         <PrimitiveDialog.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <PrimitiveDialog.Overlay className="detective-sidebar-overlay" />
           <PrimitiveDialog.Content
@@ -140,7 +194,7 @@ export function DetectivePage() {
             </nav>
           </PrimitiveDialog.Content>
         </PrimitiveDialog.Root>
-      </div>
+      </Collapsible.Root>
       <ProfileMatchDialog
         open={!!profileSection}
         user={user}
