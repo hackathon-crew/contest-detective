@@ -19,7 +19,7 @@ TAG = 'v0.1.2'
 
 
 class ReleaseTests(unittest.TestCase):
-    def bundle(self, entries=None, *, mcp=False):
+    def bundle(self, entries=None, *, mcp=False, configuration=False):
         files = {
             'backend/pyproject.toml': b'[project]',
             'backend/uv.lock': b'version = 1',
@@ -31,8 +31,18 @@ class ReleaseTests(unittest.TestCase):
         }
         if mcp:
             files['backend/src/contest_detective/web/bootstrap/mcp_http.py'] = b'# HTTP transport'
+        if configuration:
+            files['deploy/server.env.example'] = (
+                b'DETECTIVE_LLM_MODEL=must-not-overwrite\n'
+                b'DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH=templates/contest_normalization.jinja2\n'
+            )
+            files['backend/src/contest_detective/server/agent/normalization_prompts.py'] = b'# Prompt loader'
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w:gz') as archive:
+            if configuration:
+                directory = tarfile.TarInfo('deploy')
+                directory.type = tarfile.DIRTYPE
+                archive.addfile(directory)
             for name, content in files.items():
                 member = tarfile.TarInfo(name)
                 member.size = len(content)
@@ -57,6 +67,9 @@ class ReleaseTests(unittest.TestCase):
             ('backend/.env', tarfile.REGTYPE),
             ('backend/.venv/bin/python', tarfile.REGTYPE),
             ('RELEASE_COMMIT', tarfile.REGTYPE),
+            ('deploy/release.py', tarfile.REGTYPE),
+            ('deploy/other.env', tarfile.REGTYPE),
+            ('deploy/server.env.example', tarfile.DIRTYPE),
         ]:
             with self.subTest(name=name, kind=kind), tempfile.TemporaryDirectory() as folder:
                 member = tarfile.TarInfo(name)
@@ -65,6 +78,87 @@ class ReleaseTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     release.unpack(self.bundle([(member, b'')]), Path(folder))
                 self.assertEqual(list(Path(folder).iterdir()), [])
+
+    def test_extracts_the_release_configuration_example(self):
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(release.unpack(self.bundle(configuration=True), Path(folder)), (TAG, SHA))
+            self.assertTrue((Path(folder) / 'deploy/server.env.example').is_file())
+
+    def test_configuration_is_preserved_validated_and_restored_with_the_release(self):
+        key = 'DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH'
+        for scenario in ('missing', 'custom', 'preflight', 'migration', 'readiness'):
+            with self.subTest(scenario=scenario), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                app = root / 'app'
+                app.mkdir()
+                (app / 'old-code').touch()
+                environment = root / 'server.env'
+                original = b'# Existing production values\nDETECTIVE_LLM_MODEL="existing"\nDETECTIVE_LLM_API_KEY="fixture-only"'
+                if scenario == 'custom':
+                    original += f'\n{key}="/custom prompt.jinja2"\n'.encode()
+                environment.write_bytes(original)
+                environment.chmod(0o600)
+                database = root / 'contest.db'
+                with sqlite3.connect(database) as connection:
+                    connection.execute('CREATE TABLE marker (value TEXT)')
+                    connection.execute("INSERT INTO marker VALUES ('original')")
+                maintenance = root / 'maintenance'
+                calls = []
+                preflight = []
+
+                def command(*args, **kwargs):
+                    calls.append(args)
+                    if args[0] == 'systemd-run' and '-c' in args:
+                        preflight.append(args)
+                        self.assertFalse(maintenance.exists())
+                        self.assertTrue((app / 'old-code').exists())
+                        self.assertIn('--property=User=contest-detective', args)
+                        self.assertIn(f'--property=EnvironmentFile={environment}', args)
+                        if scenario == 'preflight':
+                            raise RuntimeError('template preflight failed')
+                    elif args[0] == 'systemd-run':
+                        self.assertTrue(maintenance.exists())
+                        with sqlite3.connect(database) as connection:
+                            connection.execute("UPDATE marker SET value = 'migrated'")
+                        if scenario == 'migration':
+                            raise RuntimeError('migration failed')
+
+                def readiness(expected_commit=None):
+                    if expected_commit and scenario == 'readiness':
+                        raise RuntimeError('readiness failed')
+                    if expected_commit is None:
+                        self.assertEqual(environment.read_bytes(), original)
+
+                with ExitStack() as patches:
+                    for name, value in {
+                        'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
+                        'DATABASE': database, 'MAINTENANCE': maintenance,
+                        'run': command, 'healthy': readiness, 'ENVIRONMENT_FILE': environment,
+                    }.items():
+                        patches.enter_context(patch.object(release, name, value, create=True))
+                    if scenario in ('preflight', 'migration', 'readiness'):
+                        with self.assertRaisesRegex(RuntimeError, 'failed'):
+                            release.deploy(self.bundle(configuration=True))
+                        self.assertEqual(environment.read_bytes(), original)
+                        self.assertTrue((app / 'old-code').exists())
+                        with sqlite3.connect(database) as connection:
+                            self.assertEqual(connection.execute('SELECT value FROM marker').fetchall(), [('original',)])
+                    else:
+                        release.deploy(self.bundle(configuration=True))
+                        expected = original if scenario == 'custom' else original + (
+                            f'\n{key}=templates/contest_normalization.jinja2\n'.encode()
+                        )
+                        self.assertEqual(environment.read_bytes(), expected)
+                    self.assertEqual(len(preflight), 1)
+                self.assertFalse(maintenance.exists())
+                self.assertEqual(environment.stat().st_mode & 0o777, 0o600)
+                snapshots = list((root / 'backups').glob('*/environment'))
+                self.assertEqual(len(snapshots), 0 if scenario == 'custom' else 1)
+                for snapshot in snapshots:
+                    self.assertEqual(snapshot.read_bytes(), original)
+                    self.assertEqual(snapshot.stat().st_mode & 0o777, 0o600)
+                if scenario == 'preflight':
+                    self.assertFalse(any(call[0] == 'systemctl' for call in calls))
 
     def test_rejects_missing_metadata_and_mismatched_version(self):
         for name, data in [('RELEASE_TAG', b'not-a-release'),
