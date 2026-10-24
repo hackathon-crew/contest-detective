@@ -57,14 +57,45 @@ def test_two_tools_stream_real_database_results_in_order(session_factory):
         assert all(item.investigation_id == record.id for item in traces)
 
 
-def test_six_requests_limit_cannot_be_bypassed_with_more_tools(session_factory):
+def test_ten_contest_query_can_read_every_source_before_answering(session_factory):
+    urls = {f'https://organizer.example/student-{i}' for i in range(10)}
+    with session_factory() as session:
+        for i, url in enumerate(sorted(urls)):
+            save(session, ContestDraft(name=f'大学生黑客松 {i}', page={
+                'url': url, 'site': '主办方', 'title': '参赛规则', 'is_official': True,
+            }, claims=[{'field': 'eligibility', 'value': '在校大学生', 'excerpt': '在校大学生可参加'}]))
+        session.commit()
+
+    def respond(messages, info):
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        if not results:
+            return ModelResponse([ToolCallPart('search_contests', {'keyword': '大学生'})])
+        items = results[0].content['items']
+        details = [part.content for part in results if part.tool_name == 'get_contest']
+        if len(details) < len(items):
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': items[len(details)]['id']},
+                                               tool_call_id=f'detail-{len(details)}')])
+        return ModelResponse([TextPart('\n'.join(
+            f"{detail['contest']['name']}：[参赛规则]({detail['sources'][0]['url']})" for detail in details
+        ))])
+
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory), '适合大学生的黑客松')
+    assert events[-1].type == 'answer', events[-1].payload
+    assert {source['url'] for source in events[-1].payload['sources']} == urls
+    assert sum(event.type == 'observation' for event in events) == 11
+    with session_factory() as session:
+        record = session.scalars(select(Investigation)).one()
+        assert record.status == 'completed' and record.answer == events[-1].payload['content']
+
+
+def test_twenty_four_request_limit_cannot_be_bypassed_with_more_tools(session_factory):
     calls = 0
     def repeat(*_):
         nonlocal calls
         calls += 1
         return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')])
     events = run(Investigator(FunctionModel(repeat), session_factory=session_factory))
-    assert calls == 6
+    assert calls == 24
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'failed'
@@ -229,7 +260,33 @@ def test_unconfigured_optional_tools_do_not_open_network_connections(session_fac
     assert '比赛未找到' in summaries
 
 
-def test_page_extraction_shares_the_six_request_limit_with_investigation(session_factory):
+def test_page_extraction_can_follow_seven_detail_lookups(session_factory):
+    contest_id = seed(session_factory)
+    calls, extracted = 0, []
+    url = 'https://organizer.example/new-rules'
+
+    async def record(page_url, *, extractor, session_factory):
+        extracted.append(await extractor(page_url, '公开规则，暂未公布截止日期。'))
+        return None
+
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if info.output_tools:
+            return ModelResponse([ToolCallPart(info.output_tools[0].name, {'name': '网页赛事', 'claims': []})])
+        if calls <= 7:
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id}, tool_call_id=f'detail-{calls}')])
+        if calls == 8:
+            return ModelResponse([ToolCallPart('record_page', {'url': url})])
+        return ModelResponse([TextPart('已核对公开规则，未找到新的截止日期。')])
+
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
+    assert events[-1].type == 'answer', events[-1].payload
+    assert calls == 10
+    assert len(extracted) == 1 and extracted[0].page.url == url
+
+
+def test_page_extraction_shares_the_twenty_four_request_limit_with_investigation(session_factory):
     calls = 0
     url = 'https://organizer.example/rules'
     draft = {'name': '待核对赛事', 'page': {'url': url, 'site': '主办方', 'title': '规则', 'is_official': False}, 'claims': []}
@@ -242,7 +299,7 @@ def test_page_extraction_shares_the_six_request_limit_with_investigation(session
         tool = info.output_tools[0].name if info.output_tools else 'record_page'
         return ModelResponse([ToolCallPart(tool, draft if info.output_tools else {'url': url})])
     events = run(Investigator(FunctionModel(repeat), session_factory=session_factory, record=record))
-    assert calls == 6
+    assert calls == 24
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
 
 
@@ -281,7 +338,7 @@ def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_facto
         calls += 1
         if calls == 1:
             return ModelResponse([ToolCallPart('fetch_page', {'url': f'https://organizer.example/{i}'}, tool_call_id=str(i))
-                                  for i in range(7)])
+                                  for i in range(25)])
         return ModelResponse([TextPart('未找到明确资料。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']

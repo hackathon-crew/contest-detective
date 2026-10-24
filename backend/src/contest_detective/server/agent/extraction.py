@@ -28,7 +28,7 @@ class ExtractedContest(BaseModel):
 
 
 def create_page_extractor(*, model: Model | None = None, session_factory=SessionLocal,
-                          usage: RunUsage | None = None):
+                          usage: RunUsage | None = None, usage_limits: UsageLimits | None = None):
     async def extract(url: str, text: str) -> ContestDraft:
         from .llm import create_model
         owned = create_model(session_factory=session_factory) if model is None else None
@@ -37,7 +37,7 @@ def create_page_extractor(*, model: Model | None = None, session_factory=Session
             extractor = Agent(guarded, output_type=ExtractedContest, instructions=RULES,
                               retries={'tools': 0, 'output': 1})
             result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text[:6000]}',
-                usage=usage, usage_limits=UsageLimits(request_limit=6),
+                usage=usage, usage_limits=usage_limits or UsageLimits(request_limit=6),
                 model_settings={'max_tokens': 4096}, timeout=60)
             page = PageIn(url=url, site=urlsplit(url).hostname or url, title=result.output.name,
                           is_official=is_official_page(url))

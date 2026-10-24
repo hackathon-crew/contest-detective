@@ -176,7 +176,7 @@ class Investigator:
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
-            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=6, tool_calls_limit=6),
+            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=24, tool_calls_limit=24),
                                        instructions=instructions, timeout=120) as run:
                 async for node in run:
                     if Agent.is_call_tools_node(node):
