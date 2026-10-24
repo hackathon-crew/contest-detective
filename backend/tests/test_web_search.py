@@ -89,3 +89,17 @@ def test_no_key_disables_search_without_network(monkeypatch):
     ))
     assert research_pipeline.web_search_available() is False
     assert research_pipeline.search_web('黑客松') == []
+
+
+def test_mixed_search_distinguishes_total_provider_failure_from_empty_results():
+    import httpx
+    from contest_detective.server.research_pipeline.search.mixed import MixedSearch
+    class Unavailable:
+        def search(self, *args, **kwargs):
+            raise httpx.ReadTimeout('offline')
+    class Empty:
+        def search(self, *args, **kwargs):
+            return []
+    with pytest.raises(ValueError, match='搜索'):
+        MixedSearch(Unavailable()).search('黑客松')
+    assert MixedSearch(Unavailable(), [Empty()]).search('黑客松') == []
