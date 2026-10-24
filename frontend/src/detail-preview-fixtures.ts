@@ -5,9 +5,23 @@ import longRewardSnapshot from '../preview/detail-long-reward-public-snapshot.js
 import fullCover from '../preview/covers/detail-huairou.webp'
 import conflictCover from '../preview/covers/detail-calhacks.png'
 import longRewardCover from '../preview/covers/detail-mcd.webp'
+import historyImage1 from '../preview/covers/detail-mcd-history-1.png'
+import historyImage2 from '../preview/covers/detail-mcd-history-2.png'
+import historyImage3 from '../preview/covers/detail-mcd-history-3.png'
+import historyImage4 from '../preview/covers/detail-mcd-history-4.webp'
 
 // The JSON files retain the complete public API response and its capture metadata.
-// Only the cover's transport changes to a local, byte-identical copy for offline CI.
+// Only image transport changes to local, byte-identical copies for offline CI.
+const localHistoryImages: Record<string, string> = {
+  'https://cdn-waic.waytoagi.com/covers/85b39e5adfc9963d.png': historyImage1,
+  'https://cdn-waic.waytoagi.com/covers/f02c30f91efef0ec.png': historyImage2,
+  'https://cdn-waic.waytoagi.com/covers/a13451aa13669815.png': historyImage3,
+  'https://cdn-waic.waytoagi.com/covers/27f1475a93d96e3e.webp': historyImage4,
+}
+const localHistory = Object.entries(localHistoryImages).reduce(
+  (summary, [source, asset]) => summary.replaceAll(source, new URL(asset, location.origin).href),
+  longRewardSnapshot.response.data.summary,
+)
 export const previewClock = '2026-10-24T21:35:51Z'
 export const publicFull: ContestDetail = {
   ...(fullSnapshot.response.data as ContestDetail),
@@ -20,6 +34,7 @@ export const publicConflict: ContestDetail = {
 export const publicLongReward: ContestDetail = {
   ...(longRewardSnapshot.response.data as ContestDetail),
   cover_url: new URL(longRewardCover, location.origin).href,
+  summary: localHistory,
 }
 
 // This boundary sample is deliberately synthetic, named as such wherever rendered.

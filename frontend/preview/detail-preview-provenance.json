@@ -45,7 +45,41 @@
         "media_type": "image/webp",
         "sha256": "79e8d3e4da9e0e499e8583ab8e6fbf33715ec925f894806752d10d543501f3d5",
         "file": "covers/detail-mcd.webp"
-      }
+      },
+      "embedded_images": [
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/85b39e5adfc9963d.png",
+          "file": "covers/detail-mcd-history-1.png",
+          "media_type": "image/png",
+          "sha256": "1238b1f1b1b96ccf6b4419d4a56fe12bdea494b9d1e98c4a82a043776e1de7c1",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:50 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/f02c30f91efef0ec.png",
+          "file": "covers/detail-mcd-history-2.png",
+          "media_type": "image/png",
+          "sha256": "528b5f83810842800eab24746502d2e1ae3ca55e5a2a28fa7ab4b7c56817b2a5",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:54 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/a13451aa13669815.png",
+          "file": "covers/detail-mcd-history-3.png",
+          "media_type": "image/png",
+          "sha256": "cd93f49b1661ccc6b2ba91f7cffec409ee600f2703d4555b2ea80eda95fd6a20",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:57 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/27f1475a93d96e3e.webp",
+          "file": "covers/detail-mcd-history-4.webp",
+          "media_type": "image/webp",
+          "sha256": "09bd146afb4b831779de9b187f70c68e93b2532b17b351e1808b15f4b8d8c97d",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:10:00 GMT"
+        }
+      ]
     }
   ],
   "synthetic_scenarios": [
