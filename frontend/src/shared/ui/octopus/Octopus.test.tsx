@@ -7,12 +7,20 @@ vi.mock('./inkpaw-octopus', () => ({ mountOctopus: vi.fn() }))
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  vi.unstubAllGlobals()
 })
 it('keeps a visible brand image when WebGL cannot initialize', () => {
   vi.mocked(mountOctopus).mockReturnValue(null)
   render(<Octopus size={240} />)
   const image = screen.getByRole('img', { name: 'Inkpaw 八爪鱼' })
   expect(image.querySelector('img')?.getAttribute('src')).toContain('octo-search')
+})
+it.each(['WebGL unavailable', 'reduced motion'])('keeps the book pose with %s', (reason) => {
+  if (reason === 'reduced motion') vi.stubGlobal('matchMedia', () => ({ matches: true }))
+  vi.mocked(mountOctopus).mockReturnValue(null)
+  render(<Octopus size={180} mood="read" />)
+  const image = screen.getByRole('img', { name: 'Inkpaw 八爪鱼' })
+  expect(image.querySelector('img')?.getAttribute('src')).toContain('octo-read')
 })
 it('reuses the renderer for mood and size changes and releases it on unmount', () => {
   const canvas = document.createElement('canvas')
