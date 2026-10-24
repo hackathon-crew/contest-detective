@@ -7,14 +7,14 @@ def _secret(value) -> str:
     return value.get_secret_value() if value and value.get_secret_value() else ''
 
 
-def web_search_available() -> bool:
-    config = get_search_settings()
+def web_search_available(config=None) -> bool:
+    config = config or get_search_settings()
     yuanbao = _secret(config.yuanbao_secret_id) and _secret(config.yuanbao_secret_key)
     return bool(yuanbao or _secret(config.tavily_api_key))
 
 
-def search_web(query: str, site: str | None = None, count: int = 10) -> list[SearchHit]:
-    config = get_search_settings()
+def search_web(query: str, site: str | None = None, count: int = 10, *, config=None) -> list[SearchHit]:
+    config = config or get_search_settings()
     providers = []
     secret_id, secret_key = _secret(config.yuanbao_secret_id), _secret(config.yuanbao_secret_key)
     if secret_id and secret_key:
