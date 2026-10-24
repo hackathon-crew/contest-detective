@@ -1,5 +1,6 @@
 """所有模型请求（包括网页抽取）通过费用包装；步骤流式不开放模型字节流。"""
 import json
+import logging
 from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from decimal import Decimal
@@ -17,6 +18,8 @@ from contest_detective.framework.db import SessionLocal
 
 from .budget import Budget, read_balance
 from .config import LLMSettings, get_llm_settings
+
+logger = logging.getLogger(__name__)
 
 
 class GuardedModel(WrapperModel):
@@ -66,7 +69,10 @@ class GuardedModel(WrapperModel):
         if config.deepseek_options:
             settings['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self.wrapped.request(messages, settings, model_request_parameters)
-        self.budget.settle(call_id, response.usage)
+        try:
+            self.budget.settle(call_id, response.usage)
+        except Exception as exc:
+            logger.warning('Usage settlement pending for %s: %s', call_id, type(exc).__name__)
         return response
 
     @asynccontextmanager
