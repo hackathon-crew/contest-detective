@@ -78,6 +78,29 @@ it('adds source-backed cards beneath the existing answer without requiring a pro
   )
 })
 
+it.each(['summary', 'introduction'] as const)(
+  'shows the first body line of a Markdown %s in a recommendation card',
+  (field) => {
+    const markdown =
+      '\r\n  ## 活动简介\r\n\r\n  用 AI 开发可以现场演示的支付应用。  \r\n\r\n## 挑战内容\r\n后续赛题说明。'
+    show({
+      ...turn,
+      recommendations: [
+        {
+          contest: { ...contest, summary: field === 'summary' ? markdown : contest.summary },
+          introduction: field === 'introduction' ? markdown : undefined,
+          reason: '适合支付应用开发者。',
+        },
+      ],
+    })
+    const card = within(screen.getByRole('article', { name: contest.name }))
+    const intro = card.getByText('用 AI 开发可以现场演示的支付应用。')
+    expect(intro.getAttribute('title')).toBe('用 AI 开发可以现场演示的支付应用。')
+    expect(card.queryByText(/活动简介|挑战内容|后续赛题说明/)).toBeNull()
+    expect(card.getByText('适合支付应用开发者。')).toBeTruthy()
+  },
+)
+
 it('restores a profile file with its candidate data and lets the user inspect it', () => {
   const saved = {
     ...turn,

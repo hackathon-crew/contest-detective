@@ -42,7 +42,10 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
           : null
         const note = deadline?.info.precision === 'day' ? '时刻未核实' : undefined
         const left = deadline ? deadlineDays(deadline) : null
-        const intro = introduction || contest.summary
+        const intro = (introduction || contest.summary)
+          ?.split(/\r?\n/)
+          .map((line) => line.trim())
+          .find((line) => line && !/^#{1,6}\s/.test(line))
         return (
           <article
             key={contest.id}
