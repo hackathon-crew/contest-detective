@@ -62,6 +62,16 @@ export type CalendarRead = {
 };
 
 /**
+ * ConnectionRead
+ */
+export type ConnectionRead = {
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
  * ContestDetail
  */
 export type ContestDetail = {
@@ -607,6 +617,74 @@ export type Profile = {
 };
 
 /**
+ * ProviderInput
+ */
+export type ProviderInput = {
+    /**
+     * Llm Vendor
+     */
+    llm_vendor?: 'deepseek' | 'openai';
+    /**
+     * Llm Base Url
+     */
+    llm_base_url?: string;
+    /**
+     * Llm Model
+     */
+    llm_model?: string;
+    /**
+     * Llm Api Key
+     */
+    llm_api_key?: string | null;
+    /**
+     * Yuanbao Secret Id
+     */
+    yuanbao_secret_id?: string | null;
+    /**
+     * Yuanbao Secret Key
+     */
+    yuanbao_secret_key?: string | null;
+    /**
+     * Tavily Api Key
+     */
+    tavily_api_key?: string | null;
+};
+
+/**
+ * ProviderUndo
+ */
+export type ProviderUndo = {
+    /**
+     * Undo Token
+     */
+    undo_token: string;
+};
+
+/**
+ * ProvidersRead
+ */
+export type ProvidersRead = {
+    /**
+     * Llm Vendor
+     */
+    llm_vendor: string;
+    /**
+     * Llm Base Url
+     */
+    llm_base_url: string;
+    /**
+     * Llm Model
+     */
+    llm_model: string;
+    /**
+     * Secrets
+     */
+    secrets: {
+        [key: string]: SecretMetadata;
+    };
+};
+
+/**
  * PublicUser
  */
 export type PublicUser = {
@@ -687,6 +765,16 @@ export type PushSettings = {
 };
 
 /**
+ * QuotaRead
+ */
+export type QuotaRead = {
+    /**
+     * Unlimited
+     */
+    unlimited: boolean;
+};
+
+/**
  * ResolveRecommendations
  */
 export type ResolveRecommendations = {
@@ -720,6 +808,34 @@ export type ResponseCalendarRead = {
      * 业务数据
      */
     data?: CalendarRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[ConnectionRead]
+ */
+export type ResponseConnectionRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: ConnectionRead | null;
     /**
      * Timestamp
      *
@@ -899,6 +1015,62 @@ export type ResponseProfile = {
 };
 
 /**
+ * Response[ProviderUndo]
+ */
+export type ResponseProviderUndo = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: ProviderUndo | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[ProvidersRead]
+ */
+export type ResponseProvidersRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: ProvidersRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[PublicUser]
  */
 export type ResponsePublicUser = {
@@ -946,6 +1118,90 @@ export type ResponsePushRead = {
      * 业务数据
      */
     data?: PushRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[QuotaRead]
+ */
+export type ResponseQuotaRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: QuotaRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[SearchPreferences]
+ */
+export type ResponseSearchPreferences = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: SearchPreferences | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[TokenCreated]
+ */
+export type ResponseTokenCreated = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: TokenCreated | null;
     /**
      * Timestamp
      *
@@ -1058,6 +1314,34 @@ export type ResponseUnionPublicUserNoneType = {
      * 业务数据
      */
     data?: PublicUser | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[Union[TokenMetadata, NoneType]]
+ */
+export type ResponseUnionTokenMetadataNoneType = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: TokenMetadata | null;
     /**
      * Timestamp
      *
@@ -1249,6 +1533,34 @@ export type ResponseListTrackRead = {
 };
 
 /**
+ * SearchPreferences
+ */
+export type SearchPreferences = {
+    /**
+     * Scope
+     */
+    scope?: 'all' | 'cn' | 'intl';
+    /**
+     * Exclude Ended
+     */
+    exclude_ended?: boolean;
+    /**
+     * Blocked Domains
+     */
+    blocked_domains?: Array<string>;
+};
+
+/**
+ * SecretMetadata
+ */
+export type SecretMetadata = {
+    /**
+     * Last Four
+     */
+    last_four: string;
+};
+
+/**
  * Source
  */
 export type Source = {
@@ -1306,6 +1618,39 @@ export type SourceCitation = {
      * Quote
      */
     quote: string;
+};
+
+/**
+ * TokenCreated
+ */
+export type TokenCreated = {
+    /**
+     * Token
+     */
+    token: string;
+    metadata: TokenMetadata;
+};
+
+/**
+ * TokenMetadata
+ */
+export type TokenMetadata = {
+    /**
+     * Prefix
+     */
+    prefix: string;
+    /**
+     * Last Four
+     */
+    last_four: string;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Last Used At
+     */
+    last_used_at?: string | null;
 };
 
 /**
@@ -1933,6 +2278,216 @@ export type CalendarCalendarSecretIcsGetResponses = {
      */
     200: unknown;
 };
+
+export type ReadProvidersAccountProvidersGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/providers';
+};
+
+export type ReadProvidersAccountProvidersGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProvidersRead;
+};
+
+export type ReadProvidersAccountProvidersGetResponse = ReadProvidersAccountProvidersGetResponses[keyof ReadProvidersAccountProvidersGetResponses];
+
+export type SaveProvidersAccountProvidersPutData = {
+    body: ProviderInput;
+    path?: never;
+    query?: never;
+    url: '/account/providers';
+};
+
+export type SaveProvidersAccountProvidersPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SaveProvidersAccountProvidersPutError = SaveProvidersAccountProvidersPutErrors[keyof SaveProvidersAccountProvidersPutErrors];
+
+export type SaveProvidersAccountProvidersPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProvidersRead;
+};
+
+export type SaveProvidersAccountProvidersPutResponse = SaveProvidersAccountProvidersPutResponses[keyof SaveProvidersAccountProvidersPutResponses];
+
+export type RemoveProviderAccountProvidersProviderDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Provider
+         */
+        provider: 'llm' | 'yuanbao' | 'tavily';
+    };
+    query?: never;
+    url: '/account/providers/{provider}';
+};
+
+export type RemoveProviderAccountProvidersProviderDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RemoveProviderAccountProvidersProviderDeleteError = RemoveProviderAccountProvidersProviderDeleteErrors[keyof RemoveProviderAccountProvidersProviderDeleteErrors];
+
+export type RemoveProviderAccountProvidersProviderDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProviderUndo;
+};
+
+export type RemoveProviderAccountProvidersProviderDeleteResponse = RemoveProviderAccountProvidersProviderDeleteResponses[keyof RemoveProviderAccountProvidersProviderDeleteResponses];
+
+export type RestoreProviderAccountProvidersRestorePostData = {
+    body: ProviderUndo;
+    path?: never;
+    query?: never;
+    url: '/account/providers/restore';
+};
+
+export type RestoreProviderAccountProvidersRestorePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreProviderAccountProvidersRestorePostError = RestoreProviderAccountProvidersRestorePostErrors[keyof RestoreProviderAccountProvidersRestorePostErrors];
+
+export type RestoreProviderAccountProvidersRestorePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseProvidersRead;
+};
+
+export type RestoreProviderAccountProvidersRestorePostResponse = RestoreProviderAccountProvidersRestorePostResponses[keyof RestoreProviderAccountProvidersRestorePostResponses];
+
+export type TestProviderAccountProvidersTestPostData = {
+    body: ProviderInput;
+    path?: never;
+    query?: never;
+    url: '/account/providers/test';
+};
+
+export type TestProviderAccountProvidersTestPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TestProviderAccountProvidersTestPostError = TestProviderAccountProvidersTestPostErrors[keyof TestProviderAccountProvidersTestPostErrors];
+
+export type TestProviderAccountProvidersTestPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseConnectionRead;
+};
+
+export type TestProviderAccountProvidersTestPostResponse = TestProviderAccountProvidersTestPostResponses[keyof TestProviderAccountProvidersTestPostResponses];
+
+export type ReadTokenAccountTokenGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/token';
+};
+
+export type ReadTokenAccountTokenGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseUnionTokenMetadataNoneType;
+};
+
+export type ReadTokenAccountTokenGetResponse = ReadTokenAccountTokenGetResponses[keyof ReadTokenAccountTokenGetResponses];
+
+export type RegenerateTokenAccountTokenRegeneratePostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/token/regenerate';
+};
+
+export type RegenerateTokenAccountTokenRegeneratePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTokenCreated;
+};
+
+export type RegenerateTokenAccountTokenRegeneratePostResponse = RegenerateTokenAccountTokenRegeneratePostResponses[keyof RegenerateTokenAccountTokenRegeneratePostResponses];
+
+export type ReadSearchAccountSearchGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/search';
+};
+
+export type ReadSearchAccountSearchGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseSearchPreferences;
+};
+
+export type ReadSearchAccountSearchGetResponse = ReadSearchAccountSearchGetResponses[keyof ReadSearchAccountSearchGetResponses];
+
+export type SaveSearchAccountSearchPutData = {
+    body: SearchPreferences;
+    path?: never;
+    query?: never;
+    url: '/account/search';
+};
+
+export type SaveSearchAccountSearchPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SaveSearchAccountSearchPutError = SaveSearchAccountSearchPutErrors[keyof SaveSearchAccountSearchPutErrors];
+
+export type SaveSearchAccountSearchPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseSearchPreferences;
+};
+
+export type SaveSearchAccountSearchPutResponse = SaveSearchAccountSearchPutResponses[keyof SaveSearchAccountSearchPutResponses];
+
+export type ReadQuotaAccountQuotaGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/quota';
+};
+
+export type ReadQuotaAccountQuotaGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseQuotaRead;
+};
+
+export type ReadQuotaAccountQuotaGetResponse = ReadQuotaAccountQuotaGetResponses[keyof ReadQuotaAccountQuotaGetResponses];
 
 export type RegisterAuthRegisterPostData = {
     body: Credentials;
