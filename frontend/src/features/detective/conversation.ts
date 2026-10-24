@@ -64,18 +64,12 @@ export function loadConversation(scope: string, value?: unknown): DetectiveTurn[
   }
 }
 
-/** 本地保留完整记录；模型只接最近六轮、最多 12KB 的已完成前文。 */
+/** 将已完成对话的完整内容交给模型，保留用户此前给出的条件与上下文。 */
 export function historyFor(turns: DetectiveTurn[]): ConversationMessage[] {
-  const history: ConversationMessage[] = []
-  const encoder = new TextEncoder()
-  let bytes = 0
-  for (const turn of turns.toReversed()) {
-    if (turn.status !== 'completed' || !turn.content.trim()) continue
-    const content = Array.from(turn.content).slice(0, 2500).join('')
-    const size = encoder.encode(turn.question + content).length
-    if (history.length >= 12 || bytes + size > 12000) break
-    history.unshift({ role: 'user', content: turn.question }, { role: 'assistant', content })
-    bytes += size
-  }
-  return history
+  return turns
+    .filter((turn) => turn.status === 'completed' && turn.content.trim())
+    .flatMap((turn) => [
+      { role: 'user' as const, content: turn.question },
+      { role: 'assistant' as const, content: turn.content },
+    ])
 }
