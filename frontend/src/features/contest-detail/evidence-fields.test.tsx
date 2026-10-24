@@ -19,6 +19,33 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it('does not request contest details while its dialog is closed', () => {
+  const fetch = vi.fn(async () =>
+    Response.json({
+      code: 200,
+      message: 'ok',
+      data: {
+        id: 'facts',
+        name: '参赛规则',
+        fields: {},
+        summary: null,
+        cover_url: null,
+        status: 'upcoming',
+      },
+    }),
+  )
+  vi.stubGlobal('fetch', fetch)
+  render(
+    <QueryClientProvider
+      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+    >
+      <ContestDetail contestId="facts" open={false} onClose={() => undefined} />
+    </QueryClientProvider>,
+  )
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(fetch).not.toHaveBeenCalled()
+})
+
 it('displays participation facts with their original source links', async () => {
   const url = 'https://organizer.example/rules'
   const fields = Object.fromEntries(

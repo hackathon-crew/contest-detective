@@ -106,17 +106,26 @@ const descriptions = {
   filters: '设置地点、参与形式和可投入时间，筛选适合的比赛。',
 }
 
-export function ProfileMatchDialog({
-  user = null,
-  onClose,
-  onConfirmed,
-  initialSection = 'all',
-}: {
+interface ProfileMatchDialogProps {
+  open?: boolean
   user?: PublicUser | null
   onClose: () => void
   onConfirmed?: (profile: Profile) => void
   initialSection?: ProfileMatchSection
-}) {
+}
+export function ProfileMatchDialog({ open = true, ...props }: ProfileMatchDialogProps) {
+  const [session, setSession] = useState({ open, revision: 0 })
+  if (session.open !== open) setSession({ open, revision: session.revision + (open ? 1 : 0) })
+  return <ProfileMatchForm key={session.revision} open={open} {...props} />
+}
+// 关闭时让 Radix 保留退场内容，重新打开时以确认过的画像重建表单。
+function ProfileMatchForm({
+  open = true,
+  user = null,
+  onClose,
+  onConfirmed,
+  initialSection = 'all',
+}: ProfileMatchDialogProps) {
   const [section, setSection] = useState(initialSection)
   const showProfile = section === 'all' || section === 'profile'
   const showFilters = section === 'all' || section === 'filters'
@@ -133,6 +142,9 @@ export function ProfileMatchDialog({
     if (results !== null) resultsRef.current?.scrollIntoView?.({ block: 'start' })
   }, [results])
   const controller = useRef<AbortController | null>(null)
+  useEffect(() => {
+    if (!open) controller.current?.abort()
+  }, [open])
   useEffect(() => () => controller.current?.abort(), [])
   const id = useId()
 
@@ -197,6 +209,7 @@ export function ProfileMatchDialog({
 
   return (
     <Dialog
+      open={open}
       title={titles[section]}
       description={section === 'all' ? undefined : descriptions[section]}
       icon={

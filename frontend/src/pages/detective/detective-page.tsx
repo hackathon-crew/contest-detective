@@ -141,14 +141,13 @@ export function DetectivePage() {
           </PrimitiveDialog.Content>
         </PrimitiveDialog.Root>
       </div>
-      {profileSection && (
-        <ProfileMatchDialog
-          user={user}
-          initialSection={profileSection}
-          onClose={() => setProfileSection(null)}
-          onConfirmed={confirmed}
-        />
-      )}
+      <ProfileMatchDialog
+        open={!!profileSection}
+        user={user}
+        initialSection={profileSection ?? 'all'}
+        onClose={() => setProfileSection(null)}
+        onConfirmed={confirmed}
+      />
     </div>
   )
 }

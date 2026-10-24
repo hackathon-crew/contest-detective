@@ -82,6 +82,25 @@ describe('profile confirmation', () => {
     expect(loadConfirmedProfile()).toEqual(matched)
   })
 
+  it('discards an unconfirmed draft after the controlled dialog closes', () => {
+    const view = show()
+    fireEvent.change(screen.getByLabelText('GitHub 用户名'), {
+      target: { value: 'unsaved-draft' },
+    })
+    view.rerender(
+      <MemoryRouter>
+        <ProfileMatchDialog open={false} onClose={vi.fn()} />
+      </MemoryRouter>,
+    )
+    expect(screen.queryByRole('dialog')).toBeNull()
+    view.rerender(
+      <MemoryRouter>
+        <ProfileMatchDialog open onClose={vi.fn()} />
+      </MemoryRouter>,
+    )
+    expect((screen.getByLabelText('GitHub 用户名') as HTMLInputElement).value).toBe('')
+    expect(loadConfirmedProfile()).toBeNull()
+  })
   it('clears the draft without changing the confirmed profile until reconfirmed', async () => {
     localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
     const fetch = vi.fn(async () => envelope([]))

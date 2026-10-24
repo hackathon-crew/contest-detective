@@ -35,6 +35,9 @@ export function HomePage() {
     <FollowButton contestId={contest.id} follows={follows} />
   )
   const contestId = useMatch('/contests/:contestId')?.params.contestId
+  const [lastContestId, setLastContestId] = useState(contestId)
+  if (contestId && contestId !== lastContestId) setLastContestId(contestId)
+  const detailId = contestId ?? lastContestId ?? ''
   const navigate = useNavigate()
   const { search } = useLocation()
   const closeDetail = useCallback(() => navigate({ pathname: '/', search }), [navigate, search])
@@ -103,21 +106,20 @@ export function HomePage() {
         profile={user?.profile ?? guestProfile}
         onAddProfile={setProfileSection}
       />
-      {profileSection && (
-        <ProfileMatchDialog
-          user={user}
-          initialSection={profileSection}
-          onClose={() => setProfileSection(null)}
-          onConfirmed={confirmed}
-        />
-      )}
-      {contestId && (
-        <ContestDetail
-          contestId={contestId}
-          onClose={closeDetail}
-          action={<FollowButton contestId={contestId} follows={follows} />}
-        />
-      )}
+      <ProfileMatchDialog
+        open={!!profileSection}
+        user={user}
+        initialSection={profileSection ?? 'all'}
+        onClose={() => setProfileSection(null)}
+        onConfirmed={confirmed}
+      />
+
+      <ContestDetail
+        open={!!contestId}
+        contestId={detailId}
+        onClose={closeDetail}
+        action={<FollowButton contestId={detailId} follows={follows} />}
+      />
     </div>
   )
 }

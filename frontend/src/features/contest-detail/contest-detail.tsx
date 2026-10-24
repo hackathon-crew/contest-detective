@@ -12,13 +12,14 @@ import {
 import { Dialog, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 export interface ContestDetailProps {
   contestId: string
+  open?: boolean
   onClose: () => void
   action?: ReactNode
 }
-export function ContestDetail({ contestId, onClose, action }: ContestDetailProps) {
-  const query = useContest(contestId)
+export function ContestDetail({ contestId, open = true, onClose, action }: ContestDetailProps) {
+  const query = useContest(contestId, open)
   return (
-    <Dialog title={query.data?.name ?? '赛事详情'} onClose={onClose}>
+    <Dialog open={open} title={query.data?.name ?? '赛事详情'} onClose={onClose}>
       {query.isPending ? (
         <Skeleton />
       ) : query.isError ? (

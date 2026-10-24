@@ -35,6 +35,7 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
 }
 
 export function Dialog({
+  open = true,
   title,
   onClose,
   children,
@@ -43,6 +44,7 @@ export function Dialog({
   className,
   footer,
 }: {
+  open?: boolean
   title: string
   onClose: () => void
   children: ReactNode
@@ -55,7 +57,7 @@ export function Dialog({
   const titleRef = useRef<HTMLHeadingElement>(null)
   return (
     <DialogRoot
-      open
+      open={open}
       onOpenChange={(open) => {
         if (!open) onClose()
       }}
