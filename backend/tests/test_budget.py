@@ -236,7 +236,8 @@ def test_deepseek_wire_request_preserves_the_reserved_output_cap(session_factory
     real_client = llm.AsyncOpenAI
     def handle(request):
         payload = json.loads(request.content)
-        assert payload['max_tokens'] == 4096
+        assert payload['max_tokens'] == 8192
+        assert request.extensions['timeout']['read'] == 120
         assert 'max_completion_tokens' not in payload
         assert payload['thinking'] == {'type': 'disabled'}
         assert payload['messages'][0]['content'] == '查询'

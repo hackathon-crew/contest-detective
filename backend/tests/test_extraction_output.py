@@ -52,7 +52,7 @@ def test_invalid_claim_objects_get_one_library_correction_and_each_request_is_ac
     def respond(messages, info):
         nonlocal calls
         calls += 1
-        assert info.model_settings['max_retries'] == 0 and info.model_settings['max_tokens'] == 4096
+        assert info.model_settings['max_retries'] == 0 and info.model_settings['max_tokens'] == 8192
         if calls == 1:
             return response(info, {**FACTS, 'claims': ['city: 上海']})
         feedback.extend(part for message in messages for part in message.parts

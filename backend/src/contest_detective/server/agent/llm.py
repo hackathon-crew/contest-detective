@@ -41,12 +41,12 @@ class GuardedModel(WrapperModel):
     async def request(self, messages, model_settings, model_request_parameters):
         self.budget.ensure_enabled()
         config = self.budget.settings
-        # A text-only token needs at least one UTF-8 byte. Include tool schemas and a
-        # conservative framing allowance; reject oversized context before any provider call.
-        size = len(ModelMessagesTypeAdapter.dump_json(messages))
-        size += len(json.dumps(model_request_parameters.declared_tool_defs, default=str, ensure_ascii=False).encode())
-        if size + 4096 > config.max_input_tokens:
-            raise BizException('查证上下文过长，请缩小问题范围', code=400)
+        # 本地金额预留需要保守的输入上界；外部模式由网关和模型限制真实上下文容量。
+        if config.limits_mode == 'local':
+            size = len(ModelMessagesTypeAdapter.dump_json(messages))
+            size += len(json.dumps(model_request_parameters.declared_tool_defs, default=str, ensure_ascii=False).encode())
+            if size + 4096 > config.max_input_tokens:
+                raise BizException('查证上下文过长，请缩小问题范围', code=400)
         call_id = self.budget.reserve()
         if config.limits_mode == 'local':
             try:
@@ -62,7 +62,7 @@ class GuardedModel(WrapperModel):
         # generation controls that cannot bypass the input/output spending bound.
         allowed = {'parallel_tool_calls', 'temperature', 'top_p', 'seed', 'stop_sequences'}
         settings = {key: value for key, value in (model_settings or {}).items() if key in allowed}
-        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=30)
+        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=120)
         if config.deepseek_options:
             settings['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self.wrapped.request(messages, settings, model_request_parameters)
@@ -82,7 +82,7 @@ def create_model(settings: LLMSettings | None = None, *, session_factory=Session
     if not config.api_key.get_secret_value():
         raise BizException('侦探模型尚未配置', code=503)
     client = AsyncOpenAI(api_key=config.api_key.get_secret_value(), base_url=config.base_url,
-                         max_retries=0, timeout=30)
+                         max_retries=0, timeout=120)
     model = OpenAIChatModel(config.model, provider=OpenAIProvider(openai_client=client),
         profile=OpenAIModelProfile(openai_chat_supports_max_completion_tokens=False))
     return GuardedModel(model, budget, owned_client=client)

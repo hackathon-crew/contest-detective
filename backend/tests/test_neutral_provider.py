@@ -17,7 +17,7 @@ def test_neutral_provider_sends_no_vendor_options_and_keeps_wire_limits(session_
         payload = json.loads(request.content)
         requests.append(payload)
         assert 'thinking' not in payload
-        assert payload['max_tokens'] == 4096
+        assert payload['max_tokens'] == 8192
         assert 'max_completion_tokens' not in payload
         assert payload['messages'][0]['content'] == '查询'
         return httpx.Response(200, json={

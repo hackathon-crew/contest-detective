@@ -122,7 +122,7 @@ class Investigator:
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
         self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries={'tools': 0, 'output': 1},
-                           model_settings={'parallel_tool_calls': False, 'max_tokens': 4096})
+                           model_settings={'parallel_tool_calls': False, 'max_tokens': 8192})
         register_tools(self.agent, web_enabled=search is not None)
         self.agent.output_validator(_validate_output)
 
@@ -176,8 +176,8 @@ class Investigator:
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
-            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=24, tool_calls_limit=24),
-                                       instructions=instructions, timeout=120) as run:
+            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=64, tool_calls_limit=64),
+                                       instructions=instructions, timeout=600) as run:
                 async for node in run:
                     if Agent.is_call_tools_node(node):
                         async with node.stream(run.ctx) as events:

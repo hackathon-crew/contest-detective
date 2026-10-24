@@ -18,7 +18,7 @@ class LLMSettings(BaseSettings):
     model: str = 'deepseek-flash'
     budget_cny: Decimal = Field(default=Decimal('1.5'), gt=0, le=5)
     balance_floor_cny: Decimal = Field(default=Decimal('90'), ge=0)
-    max_tokens: int = Field(default=4096, ge=2000, le=8192)
+    max_tokens: int = Field(default=8192, ge=2000, le=32768)
     max_input_tokens: int = Field(default=65536, ge=8192, le=131072)
 
 
