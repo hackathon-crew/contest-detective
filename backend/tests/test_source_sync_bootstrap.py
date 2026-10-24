@@ -52,6 +52,26 @@ def test_environment_switch_stops_before_reading_model_configuration(monkeypatch
     assert source_sync.configured_extractor(object()) is None
 
 
+def test_configured_normalizer_passes_production_session_factory(monkeypatch):
+    from contest_detective.server.agent import normalization
+
+    settings = normalization.LLMSettings(_env_file=None, enabled=True, api_key='test-only')
+    marker = object()
+    captured = {}
+
+    def create(settings, **kwargs):
+        captured['settings'] = settings
+        captured.update(kwargs)
+        return marker
+
+    monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: settings)
+    monkeypatch.setattr(normalization, 'create_normalizer', create)
+
+    assert source_sync.configured_normalizer() is marker
+    assert captured['settings'] is settings
+    assert captured['session_factory'] is source_sync.SessionLocal
+
+
 @pytest.mark.parametrize('entrypoint', ['cli', 'scheduled'])
 def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verification(
     session_factory, monkeypatch, capsys, entrypoint,
