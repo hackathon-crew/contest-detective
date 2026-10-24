@@ -1,1 +1,1 @@
-export { ContestCalendar } from './contest-calendar'
+export { ContestCalendar, ContestDatePicker } from './contest-calendar'
