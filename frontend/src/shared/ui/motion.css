@@ -1,0 +1,107 @@
+:root {
+  /* 全站共用节奏：控件 140ms、浮层 240ms、页面 420ms。 */
+  --motion-fast: 140ms;
+  --motion-surface: 240ms;
+  --motion-page: 420ms;
+  --motion-dialog-offset: 0.75rem;
+  --motion-surface-scale: 0.98;
+  --motion-exit-ease: cubic-bezier(0.4, 0, 1, 1);
+}
+
+[data-slot='dialog-overlay'][data-state='open'] {
+  animation: popup-fade-in var(--motion-fast) var(--ease-out) both;
+}
+
+[data-slot='dialog-content'][data-state='open'] {
+  animation: popup-dialog-in var(--motion-surface) var(--ease-out) both;
+}
+
+[data-slot='select-content'][data-state='open'] {
+  animation: popup-menu-in var(--motion-fast) var(--ease-out) both;
+}
+
+/* 对齐当前选项的菜单保留原位置，避免与原生选项定位叠加缩放。 */
+[data-slot='select-content'][data-align-trigger='true'][data-state='open'] {
+  animation-name: popup-fade-in;
+}
+
+[data-slot='dialog-content'][data-state='closed'] {
+  animation: popup-dialog-out var(--motion-fast) var(--motion-exit-ease) both;
+}
+
+:is([data-slot='dialog-overlay'], [data-slot='select-content'])[data-state='closed'] {
+  animation: popup-fade-out var(--motion-fast) var(--motion-exit-ease) both;
+}
+
+:is(
+  [data-slot='dialog-overlay'],
+  [data-slot='dialog-content'],
+  [data-slot='select-content']
+)[data-state='closed'] {
+  pointer-events: none;
+}
+
+@keyframes popup-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-dialog-offset)) scale(var(--motion-surface-scale));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popup-dialog-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(var(--motion-dialog-offset)) scale(var(--motion-surface-scale));
+  }
+}
+
+@keyframes popup-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--motion-surface-scale));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes popup-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popup-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is([data-slot='dialog-content'], [data-slot='select-content'])[data-state='open'] {
+    animation-name: popup-fade-in;
+  }
+
+  :is([data-slot='dialog-content'], [data-slot='select-content'])[data-state='closed'] {
+    animation-name: popup-fade-out;
+  }
+
+  :is([data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='select-content']) {
+    animation-duration: var(--motion-fast) !important;
+  }
+}

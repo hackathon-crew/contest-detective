@@ -1,0 +1,60 @@
+.route-motion-surface {
+  /* 页面按阅读顺序轻轻进入；导航和常驻输入条不参与位移。 */
+  --page-motion-duration: var(--motion-page);
+  --page-motion-distance: 0.75rem;
+  --page-motion-step: 40ms;
+  --page-motion-reduced-duration: var(--motion-fast);
+}
+
+.route-motion-surface[data-route-motion='home'] > * > main > *,
+.route-motion-surface[data-route-motion='detective'] .detective-workspace__header,
+.route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
+  animation: route-content-enter var(--page-motion-duration) var(--ease-out) both;
+  animation-delay: var(--page-motion-delay, 0ms);
+}
+
+.route-motion-surface[data-route-motion='home'] > * > main > :nth-child(2),
+.route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
+  --page-motion-delay: var(--page-motion-step);
+}
+
+.route-motion-surface[data-route-motion='home'] > * > main > :nth-child(n + 3) {
+  --page-motion-delay: calc(var(--page-motion-step) * 2);
+}
+
+/* 工作区已有的整页淡入由此接管，避免与内容入场叠加。 */
+.route-motion-surface > .detective-workspace {
+  animation: none;
+}
+
+@keyframes route-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--page-motion-distance));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes route-content-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-motion-surface[data-route-motion='home'] > * > main > *,
+  .route-motion-surface[data-route-motion='detective'] .detective-workspace__header,
+  .route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
+    animation-name: route-content-fade;
+    animation-duration: var(--page-motion-reduced-duration) !important;
+    animation-delay: 0ms;
+  }
+}

@@ -7,7 +7,8 @@ import { Button, Dialog, Input } from '@/shared/ui'
 export function AuthControls({ compact = false }: { compact?: boolean }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [mode, setMode] = useState<'login' | 'register' | null>(null)
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [pending, setPending] = useState(false)
@@ -15,14 +16,14 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
 
   function close() {
     if (pending) return
-    setMode(null)
+    setOpen(false)
     setPassword('')
     setError(null)
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
-    if (pending || !mode) return
+    if (pending || !open) return
     setPending(true)
     setError(null)
     try {
@@ -32,7 +33,7 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
       await client.cancelQueries({ queryKey: currentUserKey })
       client.setQueryData(currentUserKey, current)
       setPassword('')
-      setMode(null)
+      setOpen(false)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '账户请求失败，请重试。')
     } finally {
@@ -72,6 +73,7 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
             onClick={() => {
               setError(null)
               setMode('login')
+              setOpen(true)
             }}
           >
             登录
@@ -82,6 +84,7 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
               onClick={() => {
                 setError(null)
                 setMode('register')
+                setOpen(true)
               }}
             >
               注册
@@ -89,62 +92,60 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
           )}
         </>
       )}
-      {!mode && error && (
+      {!open && error && (
         <p role="alert" className="text-sm text-muted">
           {error}
         </p>
       )}
-      {mode && (
-        <Dialog title={mode === 'login' ? '登录' : '注册'} onClose={close}>
-          <form className="space-y-5" onSubmit={(event) => void submit(event)}>
-            <label className="block space-y-2 text-sm">
-              <span>邮箱</span>
-              <Input
-                type="email"
-                autoComplete="email"
-                required
-                maxLength={320}
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            <label className="block space-y-2 text-sm">
-              <span>密码</span>
-              <Input
-                type="password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                required
-                minLength={mode === 'register' ? 8 : 1}
-                maxLength={128}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            {error && (
-              <p role="alert" className="text-sm text-muted">
-                {error}
-              </p>
-            )}
-            {compact && (
-              <Button
-                type="button"
-                variant="link"
-                disabled={pending}
-                onClick={() => {
-                  setMode(mode === 'login' ? 'register' : 'login')
-                  setPassword('')
-                  setError(null)
-                }}
-              >
-                {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
-              </Button>
-            )}
-            <Button type="submit" disabled={pending}>
-              {pending ? '提交中' : mode === 'login' ? '登录' : '注册'}
+      <Dialog open={open} title={mode === 'login' ? '登录' : '注册'} onClose={close}>
+        <form className="space-y-5" onSubmit={(event) => void submit(event)}>
+          <label className="block space-y-2 text-sm">
+            <span>邮箱</span>
+            <Input
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={320}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <label className="block space-y-2 text-sm">
+            <span>密码</span>
+            <Input
+              type="password"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              required
+              minLength={mode === 'register' ? 8 : 1}
+              maxLength={128}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          {error && (
+            <p role="alert" className="text-sm text-muted">
+              {error}
+            </p>
+          )}
+          {compact && (
+            <Button
+              type="button"
+              variant="link"
+              disabled={pending}
+              onClick={() => {
+                setMode(mode === 'login' ? 'register' : 'login')
+                setPassword('')
+                setError(null)
+              }}
+            >
+              {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
             </Button>
-          </form>
-        </Dialog>
-      )}
+          )}
+          <Button type="submit" disabled={pending}>
+            {pending ? '提交中' : mode === 'login' ? '登录' : '注册'}
+          </Button>
+        </form>
+      </Dialog>
     </div>
   )
 }
