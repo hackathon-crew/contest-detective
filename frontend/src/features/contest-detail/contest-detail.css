@@ -166,3 +166,39 @@
     justify-self: start;
   }
 }
+.contest-detail-introduction h2,
+.contest-detail-documents h2,
+.contest-detail-summary h2 {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 650;
+  color: var(--color-ink);
+}
+.contest-detail-about {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.contest-detail-empty,
+.contest-detail-coverage {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.contest-detail-documents,
+.contest-detail-summary {
+  border-top: 1px solid var(--color-rule);
+  padding-top: 16px;
+}
+.contest-detail-document {
+  margin-top: 12px;
+  overflow-wrap: anywhere;
+}
+.contest-detail-document-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}

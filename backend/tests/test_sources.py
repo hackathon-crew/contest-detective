@@ -36,7 +36,10 @@ def test_one_waytoagi_detail_failure_does_not_discard_other_events():
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         drafts = fetch(client)
 
-    assert [draft.name for draft in drafts] == [healthy['title']]
+    assert [draft.name for draft in drafts] == [healthy['title'], healthy['title']]
+    assert drafts[0].page.url.endswith('/unavailable')
+    assert drafts.inventory.failed == 1
+    assert drafts.inventory.reason == 'partial_detail_failure'
 
 
 def test_one_invalid_hackertrip_event_does_not_discard_other_events():
@@ -154,3 +157,40 @@ def test_waytoagi_self_hosted_registration_is_official_only_with_trusted_metadat
     assert draft.page.is_official is official
     if official:
         assert values(draft)['registration_url'] == draft.page.url
+
+
+@pytest.mark.parametrize(('location', 'city', 'mode'), [
+    ({'location': 'Harbor Hall'}, None, 'offline'),
+    ({'location': 'Harbor Hall', 'city': 'Bay City'}, 'Bay City', 'offline'),
+    ({'location': 'Online'}, None, 'online'),
+])
+def test_devpost_generic_location_is_not_guessed_to_be_a_city(location, city, mode):
+    from contest_detective.server.research_pipeline.sources.devpost import _draft
+    result = _draft({'title': 'Builder Cup', 'url': 'https://builder-cup.devpost.com/',
+        'open_state': 'open', 'displayed_location': location})
+    assert values(result).get('city') == city
+    assert values(result)['mode'] == mode
+    assert next(claim for claim in result.claims if claim.field == 'mode').excerpt == 'location: ' + location['location']
+
+
+def test_later_devpost_sync_does_not_revive_corrected_venue_as_city(session_factory):
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.contest import service
+    from contest_detective.server.contest.schemas import ContestDraft, ClaimIn, PageIn
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.server.research_pipeline.sources.devpost import _draft
+    incoming = _draft({'title': 'Builder Cup', 'url': 'https://builder-cup.devpost.com/',
+        'open_state': 'open', 'displayed_location': {'location': 'Harbor Hall'}})
+    with session_factory() as session:
+        cid = service.save(session, incoming)
+        service.save(session, ContestDraft(name='Builder Cup', page=PageIn(
+            url='https://organizer.example/builder-cup', site='Organizer', title='Builder Cup', is_official=True),
+            claims=[ClaimIn(field='city', value='Bay City', excerpt='Harbor Hall, Bay City')]), contest_id=cid)
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
+        result = run_pipeline(session_factory, client=client, sources=[('devpost', lambda _: [incoming])],
+            settings=AppSettings(_env_file=None, sync_collect='structured'))
+    assert result.saved == 1 and result.failed == 0
+    with session_factory() as session:
+        city = service.get(session, cid).fields['city']
+    assert city.value == 'Bay City' and city.level == 'official'
+    assert [source.url for source in city.sources] == ['https://organizer.example/builder-cup']

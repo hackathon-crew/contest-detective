@@ -4,8 +4,9 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha256
 from inspect import iscoroutinefunction
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from contest_detective.framework.db import SessionLocal
@@ -13,6 +14,9 @@ from contest_detective.server.contest.models import Contest, ContestDetails, Con
 from contest_detective.server.contest.schemas import DEADLINE_FIELDS, date_bounds
 
 from .official import is_official_page
+from .detail import EXTRACTOR_VERSION, document_for
+from contest_detective.server.contest.schemas import PageIn
+from .refresh.contracts import RefreshFailure
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +26,7 @@ class VerificationReport(BaseModel):
     verified: int = 0
     unchanged: int = 0
     failed: int = 0
+    failures: list[RefreshFailure] = Field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -71,7 +76,7 @@ def _targets(session, now, limit):
 
 
 async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None, runner=None,
-                        now=None, limit=30) -> VerificationReport:
+                        now=None, limit=30, extractor_version=EXTRACTOR_VERSION) -> VerificationReport:
     """按批次核对未明确结束的赛事，只缓存成功写回的正文。"""
     report = VerificationReport()
     if limit <= 0:
@@ -79,7 +84,8 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
     if fetcher is None:
         from .pages import fetch_page
         fetcher = fetch_page
-    if runner is None:
+    default_runner = runner is None
+    if default_runner:
         from contest_detective.server.research_pipeline.record import run
         runner = run
     now = now or datetime.now(timezone.utc)
@@ -87,6 +93,7 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
         targets = _targets(session, now, limit)
     for target in targets:
         report.attempted += 1
+        stage = 'fetch'
         try:
             body = await fetcher(target.url) if iscoroutinefunction(fetcher) else await asyncio.to_thread(fetcher, target.url)
             if not body or not body.strip():
@@ -94,12 +101,21 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
             digest = sha256(body.encode('utf-8')).hexdigest()
             with session_factory() as session:
                 page = session.scalar(select(ContestPage).where(ContestPage.url == target.url))
-                if page is not None and page.is_official and page.content_hash == digest:
+                if (page is not None and page.is_official and page.content_hash == digest
+                        and page.extractor_version == extractor_version):
                     report.unchanged += 1
                     logger.info('Page verification skipped contest_id=%s reason=unchanged_body', target.contest_id)
                     continue
+            stage = 'extract'
+            kwargs = {}
+            if default_runner:
+                page = PageIn(url=target.url, site=urlsplit(target.url).hostname or '',
+                    title=target.url, is_official=True)
+                kwargs['document'] = document_for(page, body, now=now).model_copy(update={
+                    'extractor_version': extractor_version})
             saved_id = await runner(target.url, extractor=extractor, session_factory=session_factory,
-                page_text=body, registration_url=target.url, contest_id=target.contest_id)
+                page_text=body, registration_url=target.url, contest_id=target.contest_id, **kwargs)
+            stage = 'persist'
             if saved_id != target.contest_id:
                 raise ValueError('核对结果没有写回赛事')
             with session_factory() as session:
@@ -107,12 +123,15 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
                 if page is None or not page.is_official:
                     raise ValueError('核对结果缺少官方页面')
                 page.content_hash = digest
+                page.extractor_version = extractor_version
                 session.commit()
             report.verified += 1
             logger.info('Page verification completed contest_id=%s', target.contest_id)
         except Exception as exc:
             # 单个官网超时或无可证字段，下轮仍重试，不缓存失败正文。
             report.failed += 1
+            report.failures.append(RefreshFailure(key=target.contest_id, stage=stage,
+                url=target.url, reason=type(exc).__name__))
             logger.warning('Page verification failed contest_id=%s error_type=%s',
                            target.contest_id, type(exc).__name__)
     return report

@@ -39,6 +39,8 @@ class ContestDocument(BaseModel):
     representation: Literal['extracted_text', 'markdown', 'plain_text', 'structured_json'] = 'extracted_text'
     fetch_method: Literal['http', 'browser', 'web_tool', 'cached_web_excerpt', 'structured_adapter']
     completeness: Literal['full', 'partial']
+    publication: Literal['excerpt_only', 'full_text_allowed'] = 'excerpt_only'
+    publication_license_url: str | None = None
     body: str = Field(min_length=1)
     content_hash: str = Field(pattern=r'^[a-f0-9]{64}$')
     retrieved_at: AwareDatetime
@@ -67,3 +69,10 @@ class ContentCoverage(BaseModel):
     introduction: CoverageObservation = Field(default_factory=CoverageObservation)
     fields: dict[str, CoverageObservation] = Field(default_factory=dict)
     sources: dict[str, CoverageObservation] = Field(default_factory=dict)
+
+
+class PublicContestDocument(ContestDocument):
+    """Public projection; internal evidence bodies are not republished by default."""
+
+    body: str | None = None
+    excerpts: list[str] = Field(default_factory=list)

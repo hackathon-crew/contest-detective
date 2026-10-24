@@ -9,6 +9,8 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from contest_detective.server.contest.schemas import ContestDraft, ContestField, FieldValue
+from contest_detective.server.contest.content import ContentCoverage, ContestDocument, ContestIntroduction
+from contest_detective.server.research_pipeline.refresh.contracts import RefreshFailure, SourceInventory
 from contest_detective.server.research_pipeline.structured import StructuredCandidate
 
 
@@ -57,6 +59,9 @@ class ContestSyncContext(BaseModel):
     failed: int = Field(default=0, ge=0)
     skipped: int = Field(default=0, ge=0)
     verified: int = Field(default=0, ge=0)
+    stage_counts: dict[str, dict[str, int]] = Field(default_factory=dict)
+    source_inventory: list[SourceInventory] = Field(default_factory=list)
+    failures: list[RefreshFailure] = Field(default_factory=list)
 
 
 class ContestRecord(BaseModel):
@@ -67,6 +72,11 @@ class ContestRecord(BaseModel):
     summary: str | None = None
     contest_id: str | None = None
     fields: dict[ContestField, FieldValue] = Field(default_factory=dict)
+    introduction: ContestIntroduction | None = None
+    documents: list[ContestDocument] = Field(default_factory=list)
+    coverage: ContentCoverage = Field(default_factory=ContentCoverage)
+    themes: list[str] | None = None
+    theme_pages: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class ContestSyncOutput(BaseModel):
@@ -77,3 +87,6 @@ class ContestSyncOutput(BaseModel):
     failed: int = Field(default=0, ge=0)
     skipped: int = Field(default=0, ge=0)
     verified: int = Field(default=0, ge=0)
+    stage_counts: dict[str, dict[str, int]] = Field(default_factory=dict)
+    source_inventory: list[SourceInventory] = Field(default_factory=list)
+    failures: list[RefreshFailure] = Field(default_factory=list)

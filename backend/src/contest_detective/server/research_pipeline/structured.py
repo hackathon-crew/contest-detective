@@ -6,6 +6,8 @@ from urllib.parse import urlsplit
 
 from contest_detective.server.contest.identity import can_merge, normalized_url
 from contest_detective.server.contest.schemas import ContestDraft, PageIn
+from contest_detective.server.contest.content import CoverageObservation
+from contest_detective.server.research_pipeline.detail import document_for, distinct_documents
 from contest_detective.server.research_pipeline.official import is_official_page
 from contest_detective.server.research_pipeline.search.base import SearchHit
 
@@ -19,11 +21,31 @@ class StructuredCandidate:
     group: list['StructuredCandidate'] = field(default_factory=list)
     claim_pages: dict[int, PageIn] = field(default_factory=dict)
     context_page: PageIn | None = None
+    detail_attempted: bool = False
+    theme_pages: dict[str, list[str]] = field(default_factory=dict)
 
     def __post_init__(self):
         self.context = (self.draft.summary or '').strip()
         self.claim_pages.update({id(claim): self.draft.page for claim in self.draft.claims})
         self.context_page = self.context_page or self.draft.page
+        if self.draft.themes is not None:
+            self.theme_pages[self.draft.page.url] = list(self.draft.themes)
+        # Adapter descriptions are real evidence. Devpost's theme/date stub is not.
+        if self.source in {'hackertrip', 'waytoagi'} and self.context:
+            from contest_detective.server.contest.content_service import MAX_DOCUMENT_BYTES, build_introduction
+            if len(self.context.encode('utf-8')) > MAX_DOCUMENT_BYTES:
+                coverage = self.draft.coverage.model_copy(deep=True)
+                coverage.sources[self.draft.page.url] = CoverageObservation(state='extract_failed',
+                    urls=[self.draft.page.url], reason='source_body_exceeds_size_limit')
+                self.draft = self.draft.model_copy(update={'coverage': coverage})
+                self.context = ''
+                return
+            document = document_for(self.draft.page, self.context, kind='structured',
+                fetch_method='structured_adapter', completeness='partial')
+            self.draft = self.draft.model_copy(update={
+                'documents': distinct_documents([*self.draft.documents, document]),
+                'introduction': self.draft.introduction or build_introduction(document),
+            })
 
     @property
     def evidence_page(self) -> PageIn:
@@ -76,6 +98,11 @@ class StructuredDescriptionEnrich:
                     url=hit.url, site=hit.site or urlsplit(hit.url).hostname or hit.url,
                     title=hit.title or candidate.draft.name, is_official=is_official_page(hit.url),
                 )
+                document = document_for(candidate.evidence_page, candidate.context,
+                    kind='search_snippet', fetch_method='cached_web_excerpt', completeness='partial')
+                candidate.draft = candidate.draft.model_copy(update={
+                    'documents': distinct_documents([*candidate.draft.documents, document]),
+                })
 
 
 def deduplicate_structured(candidates: list[StructuredCandidate]) -> list[StructuredCandidate]:
@@ -90,6 +117,7 @@ def deduplicate_structured(candidates: list[StructuredCandidate]) -> list[Struct
     for group in groups:
         representative = group[0]
         representative.group = group
+        representative.theme_pages = {url: themes for item in group for url, themes in item.theme_pages.items()}
         longest = max(group, key=lambda item: len(item.context))
         context_page = longest.evidence_page
         representative.context = longest.context
@@ -113,4 +141,8 @@ def _merge_drafts(group: list[StructuredCandidate], representative: StructuredCa
         'cover_url': cover,
         'summary': summary,
         'claims': claims,
+        'documents': distinct_documents([doc for item in group for doc in item.draft.documents]),
+        'introduction': next((item.draft.introduction for item in group if item.draft.introduction), None),
+        'themes': (list(dict.fromkeys(theme for item in group for theme in (item.draft.themes or [])))
+                   if any(item.draft.themes is not None for item in group) else None),
     })

@@ -28,6 +28,12 @@ class Contest(Base):
 class ContestDetails(Base):
     __tablename__ = 'contest_details'
 
+    introduction: Mapped[dict | None] = mapped_column(JSON)
+    documents: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
+    coverage: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
+    themes: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
+    theme_sources: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
+
     contest_id: Mapped[str] = mapped_column(
         ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True,
     )
@@ -51,6 +57,7 @@ class ContestPage(Base):
     published_at: Mapped[str | None] = mapped_column(String(20))
     is_official: Mapped[bool] = mapped_column(Boolean)
     content_hash: Mapped[str | None] = mapped_column(String(64))
+    extractor_version: Mapped[str | None] = mapped_column(String(100))
 
 
 class ContestClaim(Base):
@@ -59,7 +66,7 @@ class ContestClaim(Base):
     contest_id: Mapped[str] = mapped_column(ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True)
     page_id: Mapped[str] = mapped_column(ForeignKey('contest_pages.id', ondelete='CASCADE'), primary_key=True)
     field: Mapped[str] = mapped_column(String(32), primary_key=True)
-    value: Mapped[str] = mapped_column(Text)
+    value: Mapped[str] = mapped_column(Text, primary_key=True)
     excerpt: Mapped[str] = mapped_column(Text)
     precision: Mapped[str] = mapped_column(String(8), default='datetime', server_default='datetime')
 

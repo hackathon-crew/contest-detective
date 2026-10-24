@@ -52,4 +52,4 @@ def test_source_claims_resolve_to_the_recorded_values(session, filename):
         assert [service.save(session, draft) for draft in drafts] == ids, case['id']
     summaries, total = service.query(session, ContestQuery(page_size=100))
     assert total == sum(len(case['expected_groups']) for case in cases)
-    assert all(not value.sources for item in summaries for value in item.fields.values())
+    assert all(value.value is None or value.sources for item in summaries for value in item.fields.values())

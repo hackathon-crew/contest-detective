@@ -1,6 +1,6 @@
+from __future__ import annotations
+
 from contest_detective.framework.config.search import get_search_settings
-from contest_detective.server.research_pipeline.pages import fetch_page
-from contest_detective.server.research_pipeline.search import SearchHit, MixedSearch, YuanbaoSearch, TavilySearch
 
 
 def _secret(value) -> str:
@@ -14,6 +14,10 @@ def web_search_available(config=None) -> bool:
 
 
 def search_web(query: str, site: str | None = None, count: int = 10, *, config=None) -> list[SearchHit]:
+    # Load provider classes only on the search execution path; retain monkeypatchable exports.
+    for name in ('SearchHit', 'MixedSearch', 'YuanbaoSearch', 'TavilySearch'):
+        if name not in globals():
+            globals()[name] = __getattr__(name)
     config = config or get_search_settings()
     providers = []
     secret_id, secret_key = _secret(config.yuanbao_secret_id), _secret(config.yuanbao_secret_key)
@@ -31,7 +35,13 @@ __all__ = ['SearchHit', 'fetch_page', 'run', 'search_web', 'web_search_available
 
 
 def __getattr__(name):
-    # Contract-only imports must not initialize the default database.
+    # Contract/offline imports must not initialize databases or load providers.
+    if name == 'fetch_page':
+        from contest_detective.server.research_pipeline.pages import fetch_page
+        return fetch_page
+    if name in {'SearchHit', 'MixedSearch', 'YuanbaoSearch', 'TavilySearch'}:
+        from importlib import import_module
+        return getattr(import_module('contest_detective.server.research_pipeline.search'), name)
     if name == 'run':
         from contest_detective.server.research_pipeline.record import run
         return run
