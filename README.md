@@ -20,7 +20,11 @@
 
 ## 远程只读 MCP
 
-服务地址为 `http://43.142.60.212/mcp`，使用 Streamable HTTP，无需登录或 API key，直接读取网站同一份赛事库。
+服务使用 Streamable HTTP，不带令牌时直接读取网站同一份赛事库。
+
+登录后在「个人中心 → 搜索与密钥」生成个人令牌，在 MCP 客户端配置里增加 `Authorization: Bearer YOUR_PERSONAL_TOKEN` 请求头，即可读取本人画像、关注和追踪条件。页面只完整显示新令牌一次，重新生成会立即作废旧令牌。个人令牌请通过 HTTPS 连接传输。
+
+个人模型与搜索密钥加密保存在账号下，只用于本人发起的查询；保存后只显示末 4 位。自托管时先在 `.env` 配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY`，生成命令见 `.env.example`。活动期间默认不限提问次数，`DETECTIVE_QUERY_LIMITS_ENABLED=true` 可恢复次数限制。
 
 Claude Code 按[官方 HTTP 配置方式](https://code.claude.com/docs/en/mcp)添加：
 
