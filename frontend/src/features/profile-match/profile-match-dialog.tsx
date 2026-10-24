@@ -111,6 +111,7 @@ interface ProfileMatchDialogProps {
   user?: PublicUser | null
   onClose: () => void
   onConfirmed?: (profile: Profile) => void
+  onMatched?: (profile: Profile, results: MatchItem[]) => void
   initialSection?: ProfileMatchSection
 }
 export function ProfileMatchDialog({ open = true, ...props }: ProfileMatchDialogProps) {
@@ -124,6 +125,7 @@ function ProfileMatchForm({
   user = null,
   onClose,
   onConfirmed,
+  onMatched,
   initialSection = 'all',
 }: ProfileMatchDialogProps) {
   const [section, setSection] = useState(initialSection)
@@ -178,7 +180,9 @@ function ProfileMatchForm({
       const confirmed = user ? (await confirmAccountProfile(profile, signal)).profile : profile
       if (!user) saveConfirmedProfile(confirmed)
       onConfirmed?.(confirmed)
-      setResults(await matchProfile(confirmed, signal))
+      const matched = await matchProfile(confirmed, signal)
+      setResults(matched)
+      onMatched?.(confirmed, matched)
     })
   }
 
