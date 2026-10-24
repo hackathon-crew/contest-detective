@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } from 'lucide-react'
 import { Collapsible, Dialog as PrimitiveDialog } from 'radix-ui'
@@ -13,6 +13,7 @@ import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import type { Profile } from '@/shared/api'
+import readingFrame from '@/shared/assets/mascot/octo-read.png'
 import {
   DetectiveComposer,
   DetectiveMessage,
@@ -22,6 +23,10 @@ import {
 import '@/features/detective/detective-composer.css'
 import '@/features/detective/detective-conversation.css'
 import '@/features/detective/detective-workspace.css'
+
+const Octopus = lazy(() =>
+  import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
+)
 
 export function DetectivePage() {
   const { conversationId } = useParams()
@@ -41,11 +46,26 @@ export function DetectivePage() {
     session?.turns.some((turn) => turn.trace.length || turn.sources.length) ?? false
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
-  const { data: user } = useCurrentUser()
+  const { data: user, isPending: userPending } = useCurrentUser()
   const client = useQueryClient()
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
   const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [profileGuideDismissed, setProfileGuideDismissed] = useState(false)
+  const profile = user?.profile ?? guestProfile
+  const hasProfile = Boolean(
+    profile?.github ||
+    profile?.skills?.length ||
+    profile?.topics?.length ||
+    profile?.identity ||
+    profile?.identity_kind ||
+    profile?.city ||
+    profile?.available_time ||
+    profile?.preferred_modes?.length ||
+    profile?.availability?.weekdays?.length ||
+    profile?.availability?.windows?.length ||
+    profile?.availability?.max_consecutive_days,
+  )
   const sidebarButton = useRef<HTMLButtonElement>(null)
   const researchButton = useRef<HTMLButtonElement>(null)
   const closeSidebar = () => setSidebarOpen(false)
@@ -121,6 +141,8 @@ export function DetectivePage() {
             }}
             onStop={() => session && stop(session.id)}
             onAddProfile={setProfileSection}
+            showProfileGuide={!userPending && !hasProfile && !profileGuideDismissed}
+            onDismissProfileGuide={() => setProfileGuideDismissed(true)}
           />
         </div>
         <Collapsible.Content asChild>
@@ -213,6 +235,8 @@ function Conversation({
   onSubmit,
   onStop,
   onAddProfile,
+  showProfileGuide,
+  onDismissProfileGuide,
 }: {
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
@@ -220,6 +244,8 @@ function Conversation({
   onSubmit: (question: string) => void
   onStop: () => void
   onAddProfile: (section: ProfileMatchSection) => void
+  showProfileGuide: boolean
+  onDismissProfileGuide: () => void
 }) {
   const [question, setQuestion] = useState('')
   const input = useRef<HTMLTextAreaElement>(null)
@@ -275,6 +301,23 @@ function Conversation({
           </div>
         ) : (
           <div className="detective-greeting">
+            {!missing && (
+              <div className="detective-greeting__mascot grid size-45 place-items-center">
+                <Suspense
+                  fallback={
+                    <img
+                      src={readingFrame}
+                      alt="捧书的 Inkpaw 八爪鱼"
+                      width={159}
+                      height={128}
+                      className="[image-rendering:pixelated]"
+                    />
+                  }
+                >
+                  <Octopus size={180} mood="read" shadow={false} label="捧书的 Inkpaw 八爪鱼" />
+                </Suspense>
+              </div>
+            )}
             <h2>{missing ? '这段对话不在当前浏览器中' : '想找什么样的比赛？'}</h2>
             {missing && <p>从左侧选择已有记录，或发起一段新对话。</p>}
           </div>
@@ -293,6 +336,17 @@ function Conversation({
             onStop={onStop}
             inputRef={input}
             onAddProfile={onAddProfile}
+            profileGuide={
+              showProfileGuide && !missing && !turns.length
+                ? {
+                    onDismiss: onDismissProfileGuide,
+                    onCreate: () => {
+                      onDismissProfileGuide()
+                      onAddProfile('profile')
+                    },
+                  }
+                : undefined
+            }
           />
         </div>
       </div>
