@@ -1,4 +1,5 @@
 import { loadConversation, type DetectiveTurn } from './conversation'
+import { createId } from './id'
 
 export interface DetectiveSession {
   id: string
@@ -19,7 +20,7 @@ export function sessionWithTurn(
   return previous
     ? { ...previous, updatedAt: now, turns: [...previous.turns, turn] }
     : {
-        id: crypto.randomUUID(),
+        id: createId(),
         title: Array.from(question.replace(/\s+/g, ' ')).slice(0, 32).join(''),
         createdAt: now,
         updatedAt: now,

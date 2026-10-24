@@ -5,6 +5,7 @@ import { historyFor, type DetectiveTurn } from './conversation'
 import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
 import { parseTrace } from './events'
 import { DetectiveContext } from './detective-context'
+import { createId } from './id'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
   const client = useQueryClient()
@@ -72,7 +73,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     const text = question.trim()
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
-    const turnId = crypto.randomUUID()
+    const turnId = createId()
     const turn: DetectiveTurn = {
       id: turnId,
       question: text,
