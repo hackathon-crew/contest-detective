@@ -52,6 +52,43 @@ export type AvailabilityWindow = {
 };
 
 /**
+ * ContentCitation
+ */
+export type ContentCitation = {
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Content Hash
+     */
+    content_hash: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+};
+
+/**
+ * ContentCoverage
+ */
+export type ContentCoverage = {
+    introduction?: CoverageObservation;
+    /**
+     * Fields
+     */
+    fields?: {
+        [key: string]: CoverageObservation;
+    };
+    /**
+     * Sources
+     */
+    sources?: {
+        [key: string]: CoverageObservation;
+    };
+};
+
+/**
  * ContestDetail
  */
 export type ContestDetail = {
@@ -77,10 +114,46 @@ export type ContestDetail = {
     fields: {
         [key: string]: FieldValue;
     };
+    introduction?: ContestIntroduction | null;
+    coverage?: ContentCoverage;
+    /**
+     * Themes
+     */
+    themes?: Array<string>;
+    /**
+     * Theme Sources
+     */
+    theme_sources?: Array<Source>;
+    /**
+     * Content Version
+     */
+    content_version?: 'content-v1';
     /**
      * Summary
      */
     summary: string | null;
+    /**
+     * Documents
+     */
+    documents?: Array<PublicContestDocument>;
+};
+
+/**
+ * ContestIntroduction
+ */
+export type ContestIntroduction = {
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Method
+     */
+    method?: 'extractive' | 'reviewed';
+    /**
+     * Citations
+     */
+    citations: Array<ContentCitation>;
 };
 
 /**
@@ -124,6 +197,20 @@ export type ContestSummary = {
     fields: {
         [key: string]: FieldValue;
     };
+    introduction?: ContestIntroduction | null;
+    coverage?: ContentCoverage;
+    /**
+     * Themes
+     */
+    themes?: Array<string>;
+    /**
+     * Theme Sources
+     */
+    theme_sources?: Array<Source>;
+    /**
+     * Content Version
+     */
+    content_version?: 'content-v1';
 };
 
 /**
@@ -138,6 +225,32 @@ export type ConversationMessage = {
      * Content
      */
     content: string;
+};
+
+/**
+ * CoverageObservation
+ */
+export type CoverageObservation = {
+    /**
+     * State
+     */
+    state?: 'not_fetched' | 'fetch_failed' | 'extract_failed' | 'not_found_in_source' | 'source_unpublished' | 'found' | 'conflict';
+    /**
+     * Urls
+     */
+    urls?: Array<string>;
+    /**
+     * Checked At
+     */
+    checked_at?: string | null;
+    /**
+     * Reason
+     */
+    reason?: string | null;
+    /**
+     * Citations
+     */
+    citations?: Array<ContentCitation>;
 };
 
 /**
@@ -426,6 +539,78 @@ export type Profile = {
      * Github Last Active At
      */
     github_last_active_at?: string | null;
+};
+
+/**
+ * PublicContestDocument
+ *
+ * Public projection; internal evidence bodies are not republished by default.
+ */
+export type PublicContestDocument = {
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Site
+     */
+    site: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Is Official
+     */
+    is_official: boolean;
+    /**
+     * Published At
+     */
+    published_at?: string | null;
+    /**
+     * Kind
+     */
+    kind?: 'page' | 'structured' | 'search_snippet';
+    /**
+     * Representation
+     */
+    representation?: 'extracted_text' | 'markdown' | 'plain_text' | 'structured_json';
+    /**
+     * Fetch Method
+     */
+    fetch_method: 'http' | 'browser' | 'web_tool' | 'cached_web_excerpt' | 'structured_adapter';
+    /**
+     * Completeness
+     */
+    completeness: 'full' | 'partial';
+    /**
+     * Publication
+     */
+    publication?: 'excerpt_only' | 'full_text_allowed';
+    /**
+     * Publication License Url
+     */
+    publication_license_url?: string | null;
+    /**
+     * Body
+     */
+    body?: string | null;
+    /**
+     * Content Hash
+     */
+    content_hash: string;
+    /**
+     * Retrieved At
+     */
+    retrieved_at: string;
+    /**
+     * Extractor Version
+     */
+    extractor_version: string;
+    /**
+     * Excerpts
+     */
+    excerpts?: Array<string>;
 };
 
 /**

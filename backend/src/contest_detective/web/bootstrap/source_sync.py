@@ -40,10 +40,16 @@ def configured_tavily():
     return TavilySearch(api_key=key)
 
 
+def configured_detail_fetcher():
+    """Public HTTP evidence needs no model or search-provider credentials."""
+    from contest_detective.server.research_pipeline.detail import BoundedPublicDetailFetcher
+    return BoundedPublicDetailFetcher()
+
+
 def main() -> None:
     logging.basicConfig(level=get_app_settings().log_level)
     init_db()
-    kwargs = {'extractor': configured_extractor(SessionLocal)}
+    kwargs = {'extractor': configured_extractor(SessionLocal), 'detail_fetcher': configured_detail_fetcher()}
     normalizer = configured_normalizer()
     tavily = configured_tavily()
     if normalizer is not None:

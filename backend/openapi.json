@@ -716,6 +716,57 @@
         ],
         "title": "AvailabilityWindow"
       },
+      "ContentCitation": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Hash"
+          },
+          "excerpt": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Excerpt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "content_hash",
+          "excerpt"
+        ],
+        "title": "ContentCitation"
+      },
+      "ContentCoverage": {
+        "properties": {
+          "introduction": {
+            "$ref": "#/components/schemas/CoverageObservation"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CoverageObservation"
+            },
+            "type": "object",
+            "title": "Fields"
+          },
+          "sources": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CoverageObservation"
+            },
+            "type": "object",
+            "title": "Sources"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ContentCoverage"
+      },
       "ContestDetail": {
         "properties": {
           "id": {
@@ -774,6 +825,39 @@
             "type": "object",
             "title": "Fields"
           },
+          "introduction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestIntroduction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/ContentCoverage"
+          },
+          "themes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Themes"
+          },
+          "theme_sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Theme Sources"
+          },
+          "content_version": {
+            "type": "string",
+            "const": "content-v1",
+            "title": "Content Version",
+            "default": "content-v1"
+          },
           "summary": {
             "anyOf": [
               {
@@ -784,6 +868,13 @@
               }
             ],
             "title": "Summary"
+          },
+          "documents": {
+            "items": {
+              "$ref": "#/components/schemas/PublicContestDocument"
+            },
+            "type": "array",
+            "title": "Documents"
           }
         },
         "type": "object",
@@ -796,6 +887,40 @@
           "summary"
         ],
         "title": "ContestDetail"
+      },
+      "ContestIntroduction": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "extractive",
+              "reviewed"
+            ],
+            "title": "Method",
+            "default": "extractive"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/ContentCitation"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "citations"
+        ],
+        "title": "ContestIntroduction"
       },
       "ContestRecommendation": {
         "properties": {
@@ -882,6 +1007,39 @@
             },
             "type": "object",
             "title": "Fields"
+          },
+          "introduction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestIntroduction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/ContentCoverage"
+          },
+          "themes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Themes"
+          },
+          "theme_sources": {
+            "items": {
+              "$ref": "#/components/schemas/Source"
+            },
+            "type": "array",
+            "title": "Theme Sources"
+          },
+          "content_version": {
+            "type": "string",
+            "const": "content-v1",
+            "title": "Content Version",
+            "default": "content-v1"
           }
         },
         "type": "object",
@@ -916,6 +1074,64 @@
           "content"
         ],
         "title": "ConversationMessage"
+      },
+      "CoverageObservation": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "not_fetched",
+              "fetch_failed",
+              "extract_failed",
+              "not_found_in_source",
+              "source_unpublished",
+              "found",
+              "conflict"
+            ],
+            "title": "State",
+            "default": "not_fetched"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Urls"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/ContentCitation"
+            },
+            "type": "array",
+            "title": "Citations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CoverageObservation"
       },
       "Credentials": {
         "properties": {
@@ -1477,6 +1693,148 @@
         },
         "type": "object",
         "title": "Profile"
+      },
+      "PublicContestDocument": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Url"
+          },
+          "site": {
+            "type": "string",
+            "title": "Site"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "is_official": {
+            "type": "boolean",
+            "title": "Is Official"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "page",
+              "structured",
+              "search_snippet"
+            ],
+            "title": "Kind",
+            "default": "page"
+          },
+          "representation": {
+            "type": "string",
+            "enum": [
+              "extracted_text",
+              "markdown",
+              "plain_text",
+              "structured_json"
+            ],
+            "title": "Representation",
+            "default": "extracted_text"
+          },
+          "fetch_method": {
+            "type": "string",
+            "enum": [
+              "http",
+              "browser",
+              "web_tool",
+              "cached_web_excerpt",
+              "structured_adapter"
+            ],
+            "title": "Fetch Method"
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "full",
+              "partial"
+            ],
+            "title": "Completeness"
+          },
+          "publication": {
+            "type": "string",
+            "enum": [
+              "excerpt_only",
+              "full_text_allowed"
+            ],
+            "title": "Publication",
+            "default": "excerpt_only"
+          },
+          "publication_license_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication License Url"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "content_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Hash"
+          },
+          "retrieved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Retrieved At"
+          },
+          "extractor_version": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Extractor Version"
+          },
+          "excerpts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excerpts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "site",
+          "title",
+          "is_official",
+          "fetch_method",
+          "completeness",
+          "content_hash",
+          "retrieved_at",
+          "extractor_version"
+        ],
+        "title": "PublicContestDocument",
+        "description": "Public projection; internal evidence bodies are not republished by default."
       },
       "PublicUser": {
         "properties": {

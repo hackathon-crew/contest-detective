@@ -13,6 +13,7 @@ class NormalizationInput:
     draft: ContestDraft
     context: str
     context_url: str
+    allow_conflicts: bool = False
 
 
 def supported_claims(text: str, claims: list[ClaimIn]) -> list[ClaimIn]:
@@ -29,7 +30,7 @@ def merge_normalized(item: NormalizationInput, output) -> ContestDraft:
         existing.setdefault(claim.field, []).append(claim)
     context_claims = [
         claim for claim in output.claims
-        if claim.field not in existing or _refines_date(claim, existing[claim.field])
+        if item.allow_conflicts or claim.field not in existing or _refines_date(claim, existing[claim.field])
     ]
     supported = supported_claims(item.context, context_claims)
     logger.info('Normalization claims accepted=%s rejected_evidence=%s skipped_existing=%s',

@@ -98,7 +98,7 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
         ])]
     reports = []
 
-    def sync(factory, *, extractor=None):
+    def sync(factory, *, extractor=None, detail_fetcher=None):
         with httpx.Client(transport=httpx.MockTransport(forbidden)) as client:
             report = run_pipeline(factory, client=client, extractor=extractor, settings=settings,
                 sources=[(draft.page.site, lambda _, draft=draft: [draft]) for draft in drafts],
