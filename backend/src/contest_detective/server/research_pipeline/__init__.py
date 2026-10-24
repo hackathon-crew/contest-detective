@@ -5,16 +5,25 @@ from contest_detective.server.research_pipeline.record import run
 from contest_detective.server.research_pipeline.search import SearchHit, MixedSearch, YuanbaoSearch, TavilySearch
 
 
+def _secret(value) -> str:
+    return value.get_secret_value() if value and value.get_secret_value() else ''
+
+
 def web_search_available() -> bool:
     config = get_search_settings()
-    return any(key and key.get_secret_value() for key in (config.yuanbao_api_key, config.tavily_api_key))
+    yuanbao = _secret(config.yuanbao_secret_id) and _secret(config.yuanbao_secret_key)
+    return bool(yuanbao or _secret(config.tavily_api_key))
 
 
 def search_web(query: str, site: str | None = None, count: int = 10) -> list[SearchHit]:
     config = get_search_settings()
-    providers = [provider(api_key=key.get_secret_value()) for key, provider in (
-        (config.yuanbao_api_key, YuanbaoSearch), (config.tavily_api_key, TavilySearch),
-    ) if key and key.get_secret_value()]
+    providers = []
+    secret_id, secret_key = _secret(config.yuanbao_secret_id), _secret(config.yuanbao_secret_key)
+    if secret_id and secret_key:
+        providers.append(YuanbaoSearch(secret_id=secret_id, secret_key=secret_key))
+    tavily_key = _secret(config.tavily_api_key)
+    if tavily_key:
+        providers.append(TavilySearch(api_key=tavily_key))
     if not providers:
         return []
     return MixedSearch(providers[0], providers[1:]).search(query, site=site, count=count)

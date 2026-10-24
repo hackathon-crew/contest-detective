@@ -61,6 +61,8 @@ def test_registration_discovery_throttles_requests_and_saves_supported_pages(ses
 
 def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_pipeline(session_factory, monkeypatch):
     import json
+    from types import SimpleNamespace
+
     from contest_detective.server.research_pipeline import record
     from contest_detective.server.research_pipeline.pages import fetch_page
     from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
@@ -74,20 +76,21 @@ def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_p
             claims=[{'field': 'city', 'value': '上海', 'excerpt': '上海'}])
 
     def handle(request):
-        if request.method == 'POST':
-            body = json.loads(request.content)
-            assert body['Site'] == 'mp.weixin.qq.com'
-            assert body['Cnt'] == 10
-            queries.append(body['Query'])
-            return httpx.Response(200, json={'Response': {'Pages': [json.dumps({'url': url}) for url in [
-                'https://mp.weixin.qq.com/s/one', 'https://mp.weixin.qq.com/s/one#tracking',
-                'https://mp.weixin.qq.com/s/two', 'https://mp.weixin.qq.com.evil.example/s/no',
-            ]]}})
         assert request.url.path in {'/s/one', '/s/two'}
         return httpx.Response(200, text='本活动在上海举行', headers={'content-type': 'text/plain'})
 
+    class FakeYuanbao:
+        def SearchPro(self, request):
+            assert request.Site == 'mp.weixin.qq.com'
+            assert request.Cnt == 10
+            queries.append(request.Query)
+            return SimpleNamespace(Pages=[json.dumps({'url': url}) for url in [
+                'https://mp.weixin.qq.com/s/one', 'https://mp.weixin.qq.com/s/one#tracking',
+                'https://mp.weixin.qq.com/s/two', 'https://mp.weixin.qq.com.evil.example/s/no',
+            ]])
+
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        searcher = YuanbaoSearch(api_key='test-key', client=client).search
+        searcher = YuanbaoSearch(secret_id='id', secret_key='key', client=FakeYuanbao()).search
         monkeypatch.setattr(record, 'fetch_page', lambda url: fetch_page(url, client=client,
             resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))]))
         report = asyncio.run(sync(extractor=extractor, session_factory=session_factory, searcher=searcher))
