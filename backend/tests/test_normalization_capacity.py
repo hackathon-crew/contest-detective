@@ -1,5 +1,6 @@
 import asyncio
 import json
+from decimal import Decimal
 
 import httpx
 import pytest
@@ -11,7 +12,7 @@ from contest_detective.server.research_pipeline.normalization import Normalizati
 
 
 @pytest.mark.parametrize(('mode', 'expected_limit'), [('external', None), ('local', 2048)])
-def test_normalizer_leaves_external_output_capacity_to_the_provider(monkeypatch, mode, expected_limit):
+def test_normalizer_leaves_external_output_capacity_to_the_provider(monkeypatch, session_factory, mode, expected_limit):
     requests = []
     facts = {'name': '公开赛事', 'claims': [{'field': 'city', 'value': '上海', 'excerpt': '在上海参赛'}]}
 
@@ -32,7 +33,8 @@ def test_normalizer_leaves_external_output_capacity_to_the_provider(monkeypatch,
             normalizer = normalization.create_normalizer(LLMSettings(
                 _env_file=None, enabled=True, api_key='test-only', base_url='https://provider.example/v1',
                 model='test-model', limits_mode=mode, max_tokens=2048,
-            ))
+            ), session_factory=session_factory,
+                balance_reader=lambda: asyncio.sleep(0, result=Decimal('100')))
             draft = ContestDraft(name='公开赛事', page=PageIn(
                 url='https://organizer.example/contest', site='主办方', title='公开赛事', is_official=True,
             ), claims=[])
