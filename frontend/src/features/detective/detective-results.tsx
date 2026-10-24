@@ -1,142 +1,135 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { ArrowUpRight, FileText } from 'lucide-react'
+import { Check, FileText } from 'lucide-react'
 import {
   ContestCover,
-  LevelBadge,
+  Level,
+  deadlineDays,
   displayDeadline,
   fieldNames,
   formatDate,
   modeNames,
+  prizeText,
   safeUrl,
-  type FieldValue,
 } from '@/entities/contest'
-import { Button, Dialog } from '@/shared/ui'
+import { Dialog } from '@/shared/ui'
 import type { ContestRecommendation, ProfileFile } from './conversation'
+import './detective-results.css'
 
-function Fact({
-  label,
-  field,
-  text,
-  note,
-  secondary = false,
-  verification = false,
-}: {
-  label: string
-  field?: FieldValue
-  text?: string
-  note?: string
-  secondary?: boolean
-  verification?: boolean
-}) {
-  const source = field?.sources?.find((item) => !item.stale && safeUrl(item.url))
-  const value = text ?? field?.value
-  return (
-    <div className="inline-flex min-w-0 flex-wrap items-baseline gap-1">
-      <dt className={secondary ? 'sr-only' : 'text-xs text-muted'}>{label}</dt>
-      <dd
-        className={
-          secondary
-            ? 'm-0 min-w-0 break-words text-xs text-muted'
-            : 'm-0 inline-flex min-w-0 items-center gap-1.5 break-words text-sm font-medium text-ink'
-        }
-      >
-        {source && value ? (
-          <a
-            href={source.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={note ? `${value}（${note}）` : undefined}
-            title={note ? `${label}：${value}（${note}）` : undefined}
-            className="decoration-rule-strong underline-offset-4 hover:underline"
-          >
-            {value}
-          </a>
-        ) : (
-          value || '未公布'
-        )}
-        {verification && field && <LevelBadge level={field.level} />}
-      </dd>
-    </div>
-  )
-}
-
+/* 推荐卡：照首页 mock 侦探回答里的 .picks，一组行共用一个描边容器，行间一条细线；
+   左边 4:3 小封面，中间名称、主办方·形式·奖金、简介和带勾的建议，右边是截止日期一列。
+   整行点开比赛详情，日期本身链到出处。 */
 export function RecommendationCards({ items }: { items: ContestRecommendation[] }) {
   if (!items.length) return null
   return (
-    <section aria-label="推荐比赛" className="grid min-w-0 grid-cols-1 gap-3 font-sans">
+    <section
+      aria-label="推荐比赛"
+      className="min-w-0 overflow-hidden rounded-2xl border border-rule bg-surface font-sans duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
+    >
       {items.map(({ contest, introduction, reason }) => {
         const deadline = displayDeadline(contest)
         const fields = contest.fields
         const mode = fields.mode?.value
-        const place = [modeNames[mode ?? ''], mode === 'online' ? null : fields.city?.value]
-          .filter(Boolean)
-          .join(' · ')
+        const meta = [
+          fields.organizer?.value,
+          modeNames[mode ?? ''],
+          mode === 'online' ? null : fields.city?.value,
+        ].filter(Boolean)
+        const prize = prizeText(contest)
+        const source = deadline?.info.sources?.find((item) => !item.stale && safeUrl(item.url))
+        const date = deadline
+          ? formatDate(deadline.info.value, deadline.info.precision).split('（')[0]
+          : null
+        const note = deadline?.info.precision === 'day' ? '时刻未核实' : undefined
+        const left = deadline ? deadlineDays(deadline) : null
+        const intro = introduction || contest.summary
         return (
           <article
             key={contest.id}
             aria-label={contest.name}
-            className="flex min-w-0 overflow-hidden rounded-2xl border border-rule bg-surface duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
+            className="relative grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-rule px-3 py-3 transition-colors duration-140 first:border-t-0 focus-within:bg-surface-muted hover:bg-surface-muted sm:grid-cols-[88px_minmax(0,1fr)_auto] sm:items-center sm:gap-x-4 sm:px-4"
           >
-            <div
-              aria-hidden="true"
-              className="detective-recommendation__cover pointer-events-none relative w-20 shrink-0 self-stretch overflow-hidden bg-surface-muted sm:w-48"
-            >
-              <ContestCover
-                contest={contest}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-2 px-3 py-3 sm:px-4">
-              <header className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h3 className="min-w-0 text-base leading-normal font-semibold text-ink">
-                  {contest.name}
-                </h3>
-                <dl className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                  <Fact label="主办方" field={fields.organizer} secondary />
-                  <Fact label="参赛形式" field={fields.mode} text={place || undefined} secondary />
-                </dl>
-              </header>
-              {(introduction || contest.summary) && (
-                <p
-                  className="line-clamp-1 text-sm text-ink-soft"
-                  title={introduction || contest.summary || undefined}
+            <ContestCover
+              contest={contest}
+              className="detective-recommendation-cover row-span-2 aspect-[4/3] w-16 self-start rounded-lg bg-surface-strong object-cover sm:row-span-1 sm:self-center"
+            />
+            <div className="min-w-0 space-y-0.5">
+              <h3 className="detective-recommendation-title truncate leading-normal font-semibold text-ink">
+                <Link
+                  to={`/contests/${encodeURIComponent(contest.id)}`}
+                  className="outline-none after:absolute after:inset-0 after:content-['']"
                 >
-                  {introduction || contest.summary}
+                  {contest.name}
+                </Link>
+              </h3>
+              <p className="detective-recommendation-text truncate text-muted">
+                {meta.join(' · ')}
+                {prize && (
+                  <>
+                    {meta.length ? ' · ' : ''}
+                    <span className="text-ink-soft">{prize}</span>
+                  </>
+                )}
+              </p>
+              {intro && (
+                <p
+                  className="detective-recommendation-text line-clamp-1 text-ink-soft"
+                  title={intro}
+                >
+                  {intro}
                 </p>
               )}
-              <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <dl className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
-                  <Fact
-                    label={
-                      deadline?.field === 'submission_deadline'
-                        ? '提交截止'
-                        : deadline
-                          ? fieldNames[deadline.field]
-                          : '截止时间'
-                    }
-                    field={deadline?.info}
-                    text={
-                      deadline
-                        ? formatDate(deadline.info.value, deadline.info.precision).split('（')[0]
-                        : undefined
-                    }
-                    note={deadline?.info.precision === 'day' ? '时刻未核实' : undefined}
-                    verification
-                  />
-                  <Fact label="奖励" field={fields.prize} />
-                </dl>
-                <Button asChild variant="ghost" size="sm" className="ml-auto text-accent">
-                  <Link to={`/contests/${encodeURIComponent(contest.id)}`}>
-                    了解比赛 <ArrowUpRight aria-hidden="true" strokeWidth={1.5} />
-                  </Link>
-                </Button>
-              </div>
               {reason && (
-                <p className="line-clamp-1 min-w-0 text-xs text-muted" title={reason}>
-                  <span className="text-ink-soft">建议：</span>
-                  {reason}
+                <p
+                  className="detective-recommendation-text flex min-w-0 items-start gap-1 text-ink-soft"
+                  title={reason}
+                >
+                  <Check
+                    aria-hidden="true"
+                    className="mt-[3px] size-3.5 shrink-0 text-accent"
+                    strokeWidth={2.25}
+                  />
+                  <span className="line-clamp-1">{reason}</span>
                 </p>
+              )}
+            </div>
+            <div className="col-start-2 flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5 sm:col-start-3 sm:row-start-1 sm:flex-col sm:items-end sm:text-right">
+              {date && source ? (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={note ? `${date}（${note}）` : undefined}
+                  title={note ? `${date}（${note}）` : undefined}
+                  className="detective-recommendation-title relative z-10 font-semibold whitespace-nowrap text-ink tabular-nums decoration-rule-strong underline-offset-4 hover:underline"
+                >
+                  {date}
+                </a>
+              ) : (
+                <span className="detective-recommendation-title font-semibold whitespace-nowrap text-ink tabular-nums">
+                  {date ?? '日期未公布'}
+                </span>
+              )}
+              {deadline && (
+                <span className="text-xs text-muted">
+                  {deadline.field === 'submission_deadline'
+                    ? '提交截止'
+                    : fieldNames[deadline.field]}
+                </span>
+              )}
+              {deadline && (
+                <span className="flex items-center gap-2 text-xs">
+                  <Level level={deadline.info.level} />
+                  {left !== null && (
+                    <span
+                      className={
+                        left >= 0 && left <= 2 ? 'font-medium text-danger' : 'text-ink-soft'
+                      }
+                    >
+                      {left < 0 ? '已截止' : left === 0 ? '今天截止' : `还有 ${left} 天`}
+                    </span>
+                  )}
+                </span>
               )}
             </div>
           </article>
