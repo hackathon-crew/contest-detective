@@ -88,6 +88,26 @@ def test_ten_contest_query_can_read_every_source_before_answering(session_factor
         assert record.status == 'completed' and record.answer == events[-1].payload['content']
 
 
+@pytest.mark.parametrize('corrected', [True, False])
+def test_tool_argument_corrections_allow_a_real_match_but_stop_after_three_retries(session_factory, corrected):
+    contest_id = seed(session_factory)
+    calls = 0
+    def respond(messages, info):
+        nonlocal calls
+        calls += 1
+        if calls <= 3 or not corrected:
+            return ModelResponse([ToolCallPart('match_contests', {'profile': {'identity_kind': '大学生'}},
+                                               tool_call_id=f'bad-{calls}')])
+        if calls == 4:
+            return ModelResponse([ToolCallPart('match_contests', {'profile': {'identity_kind': 'student'}})])
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        assert results[-1].content['items'][0]['contest']['id'] == contest_id
+        return ModelResponse([TextPart('已按在校生条件筛选赛事。')])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory), '适合大学生的黑客松')
+    assert events[-1].type == ('answer' if corrected else 'error'), events[-1].payload
+    assert calls == (5 if corrected else 4)
+
+
 def test_sixty_four_request_limit_cannot_be_bypassed_with_more_tools(session_factory):
     calls = 0
     def repeat(*_):
