@@ -29,6 +29,7 @@ class Availability(BaseModel):
 class GitHubEvidence(BaseModel):
     name: Annotated[str, StringConstraints(pattern=r'^[A-Za-z0-9_.-]{1,100}$')]
     url: str = Field(max_length=300)
+    description: str | None = Field(default=None, max_length=1000)
     language: ShortText | None = None
     topics: list[ShortText] = Field(default_factory=list, max_length=50)
     pushed_at: AwareDatetime | None = None
@@ -45,6 +46,10 @@ class GitHubEvidence(BaseModel):
 
 class Profile(BaseModel):
     skills: list[ShortText] = Field(default_factory=list, max_length=50)
+    skill_sources: dict[ShortText, list[Literal['github', 'resume', 'manual']]] = Field(default_factory=dict, max_length=50)
+    github_read_at: AwareDatetime | None = None
+    github_public_repos: int | None = Field(default=None, ge=0)
+    resume_name: str | None = Field(default=None, max_length=255)
     identity: str | None = Field(default=None, max_length=500)
     available_time: str | None = Field(default=None, max_length=500)
     city: ShortText | None = None
@@ -56,6 +61,11 @@ class Profile(BaseModel):
     github_evidence: list[GitHubEvidence] = Field(default_factory=list, max_length=100)
     language_repo_share: dict[ShortText, Annotated[float, Field(ge=0, le=1)]] = Field(default_factory=dict, max_length=100)
     github_last_active_at: AwareDatetime | None = None
+
+    @model_validator(mode='after')
+    def skill_provenance(self):
+        self.skill_sources = {skill: list(dict.fromkeys(self.skill_sources.get(skill) or ['manual'])) for skill in self.skills}
+        return self
 
     @field_validator('identity', 'available_time', mode='before')
     @classmethod
