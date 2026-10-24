@@ -551,6 +551,14 @@
                 "type": "null"
               }
             ]
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationMessage"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "History"
           }
         },
         "type": "object",
@@ -765,6 +773,30 @@
           "fields"
         ],
         "title": "ContestSummary"
+      },
+      "ConversationMessage": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "ConversationMessage"
       },
       "Credentials": {
         "properties": {
