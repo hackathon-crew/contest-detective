@@ -76,3 +76,19 @@ def test_partial_cached_web_evidence_does_not_claim_raw_http_or_full_body():
     assert partial.completeness == 'partial'
     assert partial.representation == 'extracted_text'
     assert partial.fetch_method != 'http'
+
+
+def test_contract_imports_do_not_initialize_default_database_or_providers():
+    import subprocess
+    import sys
+
+    code = """
+import sys
+from contest_detective.server.research_pipeline import detail_contracts
+from contest_detective.server.research_pipeline.refresh import contracts
+assert 'contest_detective.framework.db' not in sys.modules
+assert 'contest_detective.server.agent.config' not in sys.modules
+assert 'contest_detective.server.agent.normalization' not in sys.modules
+assert 'contest_detective.server.research_pipeline.scheduler' not in sys.modules
+"""
+    subprocess.run([sys.executable, '-c', code], check=True)
