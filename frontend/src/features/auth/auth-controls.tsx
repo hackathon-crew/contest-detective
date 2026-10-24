@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { apiClient } from '@/shared/api'
 import { Button } from '@/shared/ui'
+import { User } from 'lucide-react'
+import './auth-controls.css'
 
 export function AuthControls({ compact = false }: { compact?: boolean }) {
   const { data: user } = useCurrentUser()
@@ -31,7 +33,10 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
     <div className="flex items-center gap-2">
       {user ? (
         <>
-          <span className="max-w-40 truncate text-sm text-ink">{user.username}</span>
+          <Link to="/account" aria-label="个人中心" className="auth-account-link">
+            <span>{user.username}</span>
+            <User aria-hidden="true" size={20} strokeWidth={1.75} />
+          </Link>
           <Button variant="ghost" disabled={pending} onClick={() => void logout()}>
             退出
           </Button>

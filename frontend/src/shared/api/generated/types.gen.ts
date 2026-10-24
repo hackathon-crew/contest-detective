@@ -356,6 +356,10 @@ export type GitHubEvidence = {
      */
     url: string;
     /**
+     * Description
+     */
+    description?: string | null;
+    /**
      * Language
      */
     language?: string | null;
@@ -474,6 +478,24 @@ export type Profile = {
      * Skills
      */
     skills?: Array<string>;
+    /**
+     * Skill Sources
+     */
+    skill_sources?: {
+        [key: string]: Array<'github' | 'resume' | 'manual'>;
+    };
+    /**
+     * Github Read At
+     */
+    github_read_at?: string | null;
+    /**
+     * Github Public Repos
+     */
+    github_public_repos?: number | null;
+    /**
+     * Resume Name
+     */
+    resume_name?: string | null;
     /**
      * Identity
      */
@@ -791,6 +813,38 @@ export type ResponseUnionPublicUserNoneType = {
 };
 
 /**
+ * Response[dict[str, int]]
+ */
+export type ResponseDictStrInt = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: {
+        [key: string]: number;
+    } | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[list[ContestRecommendation]]
  */
 export type ResponseListContestRecommendation = {
@@ -1070,6 +1124,22 @@ export type ConfirmProfileUserProfilePutResponses = {
 };
 
 export type ConfirmProfileUserProfilePutResponse = ConfirmProfileUserProfilePutResponses[keyof ConfirmProfileUserProfilePutResponses];
+
+export type AccountSummaryAccountSummaryGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/summary';
+};
+
+export type AccountSummaryAccountSummaryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseDictStrInt;
+};
+
+export type AccountSummaryAccountSummaryGetResponse = AccountSummaryAccountSummaryGetResponses[keyof AccountSummaryAccountSummaryGetResponses];
 
 export type GithubProfileProfileGithubPostData = {
     body: GitHubInput;

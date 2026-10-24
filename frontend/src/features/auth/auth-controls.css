@@ -1,0 +1,38 @@
+.auth-account-link {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  max-width: 200px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  color: var(--color-ink);
+  font-size: 14px;
+  transition:
+    background-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
+}
+.auth-account-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.auth-account-link svg {
+  display: none;
+}
+.auth-account-link:hover {
+  color: var(--color-accent);
+  background: var(--color-surface-strong);
+}
+@media (max-width: 640px) {
+  .auth-account-link {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .auth-account-link span {
+    display: none;
+  }
+  .auth-account-link svg {
+    display: block;
+  }
+}

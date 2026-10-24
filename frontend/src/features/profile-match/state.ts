@@ -72,12 +72,27 @@ export function saveConfirmedProfile(profile: Profile) {
 export function mergeDraft(current: Profile, next: Profile, source: 'github' | 'resume'): Profile {
   const skills = [...new Set([...(current.skills ?? []), ...(next.skills ?? [])])].slice(0, 50)
   const topics = [...new Set([...(current.topics ?? []), ...(next.topics ?? [])])].slice(0, 50)
+  const skill_sources: NonNullable<Profile['skill_sources']> = Object.fromEntries(
+    skills.map((skill) => [
+      skill,
+      [
+        ...new Set([
+          ...(current.skill_sources?.[skill] ??
+            (current.skills?.includes(skill) ? ['manual' as const] : [])),
+          ...(next.skill_sources?.[skill] ?? (next.skills?.includes(skill) ? [source] : [])),
+        ]),
+      ],
+    ]),
+  )
   if (source === 'github')
     return {
       ...current,
       skills,
+      skill_sources,
       topics,
       github: next.github,
+      github_read_at: next.github_read_at,
+      github_public_repos: next.github_public_repos,
       github_evidence: next.github_evidence,
       language_repo_share: next.language_repo_share,
       github_last_active_at: next.github_last_active_at,
@@ -85,7 +100,9 @@ export function mergeDraft(current: Profile, next: Profile, source: 'github' | '
   return {
     ...current,
     skills,
+    skill_sources,
     topics,
+    resume_name: next.resume_name ?? current.resume_name,
     identity: next.identity ?? current.identity,
     identity_kind: next.identity_kind ?? current.identity_kind,
     city: next.city ?? current.city,
