@@ -1,0 +1,126 @@
+.detective-dock {
+  /* Everplain 对话输入口的尺寸与表面；仅作用于侦探入口。 */
+  --composer-width: 45rem;
+  --composer-control: 2.25rem;
+  --composer-inset: 0.625rem;
+  --composer-inset-start: 0.75rem;
+  --composer-gap: 0.5rem;
+  --composer-radius: 999px;
+  --composer-radius-expanded: 1.75rem;
+  --composer-text: 1rem;
+  --composer-line-height: 1.625rem;
+  --composer-text-inset: 0.3125rem;
+  --composer-input-max-height: 15rem;
+  --composer-icon: 1rem;
+  --composer-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-ink) 7%, transparent), 0 8px 32px rgb(17 17 17 / 7%);
+
+  max-width: var(--composer-width);
+  bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.detective-composer {
+  display: grid;
+  grid-template-columns: var(--composer-control) minmax(0, 1fr) var(--composer-control);
+  align-items: center;
+  gap: var(--composer-gap);
+  padding: var(--composer-inset);
+  padding-inline-start: var(--composer-inset-start);
+  border-radius: var(--composer-radius);
+  background: var(--color-surface);
+  box-shadow: var(--composer-shadow);
+}
+
+.detective-composer[data-multiline='true'] {
+  align-items: end;
+  border-radius: var(--composer-radius-expanded);
+}
+
+.detective-composer > textarea {
+  display: block;
+  field-sizing: content;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--composer-control);
+  max-height: var(--composer-input-max-height);
+  margin: 0;
+  padding: var(--composer-text-inset) 0;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+  overflow-y: auto;
+  color: var(--color-ink);
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--composer-text);
+  line-height: var(--composer-line-height);
+}
+
+.detective-composer > textarea::placeholder {
+  color: var(--color-faint);
+}
+
+.detective-composer > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--composer-control);
+  height: var(--composer-control);
+  padding: 0;
+  border: 0;
+  border-radius: var(--composer-radius);
+  cursor: pointer;
+  transition:
+    background-color 140ms var(--ease-out),
+    opacity 140ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+
+.detective-composer > button:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.detective-composer > button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.detective-composer > button > svg {
+  width: var(--composer-icon);
+  height: var(--composer-icon);
+}
+
+.detective-composer__add {
+  color: var(--color-ink-soft);
+  background: transparent;
+}
+
+.detective-composer__add:hover:not(:disabled) {
+  background: var(--color-surface-strong);
+}
+
+.detective-composer__add:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.detective-composer__send {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.detective-composer__send:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
+.detective-composer__send:disabled {
+  cursor: default;
+  opacity: 0.25;
+}
+
+@media (max-width: 480px) {
+  .detective-composer[data-filled='true'] {
+    border-radius: var(--composer-radius-expanded);
+  }
+}

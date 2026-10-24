@@ -95,7 +95,10 @@ export function HomePage() {
         </div>
       </main>
 
-      <DetectiveDock profile={user?.profile ?? guestProfile} />
+      <DetectiveDock
+        profile={user?.profile ?? guestProfile}
+        onAddProfile={() => setProfileOpen(true)}
+      />
       {profileOpen && (
         <ProfileMatchDialog
           user={user}

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { ArrowUp, Plus, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { safeUrl } from '@/entities/contest'
 import { apiClient, type Profile } from '@/shared/api'
-import { Button, Input } from '@/shared/ui'
+import { Button } from '@/shared/ui'
 import { parseTrace, type TraceEvent, type TraceSource } from './events'
+import './detective-composer.css'
 
 function Sources({ items }: { items: TraceSource[] }) {
   if (!items.length) return null
@@ -26,7 +28,13 @@ function Sources({ items }: { items: TraceSource[] }) {
   )
 }
 
-export function DetectiveDock({ profile }: { profile?: Profile | null }) {
+export function DetectiveDock({
+  profile,
+  onAddProfile,
+}: {
+  profile?: Profile | null
+  onAddProfile?: () => void
+}) {
   const client = useQueryClient()
   const [question, setQuestion] = useState('')
   const [open, setOpen] = useState(false)
@@ -36,6 +44,11 @@ export function DetectiveDock({ profile }: { profile?: Profile | null }) {
   const [error, setError] = useState<string | null>(null)
   const request = useRef<AbortController | null>(null)
   useEffect(() => () => request.current?.abort(), [])
+
+  function stop() {
+    request.current?.abort()
+    setError('查证已停止。')
+  }
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -84,7 +97,7 @@ export function DetectiveDock({ profile }: { profile?: Profile | null }) {
   return (
     <section
       aria-label="侦探"
-      className="fixed inset-x-6 bottom-4 z-10 mx-auto max-w-3xl space-y-2"
+      className="detective-dock fixed inset-x-6 bottom-4 z-10 mx-auto space-y-2"
     >
       {open && (
         <div className="max-h-96 space-y-5 overflow-y-auto rounded-2xl border border-rule bg-surface p-5 shadow-lg">
@@ -92,13 +105,7 @@ export function DetectiveDock({ profile }: { profile?: Profile | null }) {
             <h2 className="text-2xl font-bold text-ink">查证过程</h2>
             <div className="flex gap-2">
               {pending && (
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    request.current?.abort()
-                    setError('查证已停止。')
-                  }}
-                >
+                <Button variant="ghost" onClick={stop}>
                   停止
                 </Button>
               )}
@@ -159,21 +166,55 @@ export function DetectiveDock({ profile }: { profile?: Profile | null }) {
         </div>
       )}
       <form
-        className="flex items-center gap-2 rounded-2xl border border-rule bg-surface p-2"
+        className="detective-composer"
+        data-multiline={question.includes('\n') || question.length > 40}
+        data-filled={question.length > 0}
         onSubmit={(event) => void submit(event)}
       >
-        <Input
+        <button
+          type="button"
+          className="detective-composer__add"
+          aria-label="添加简历或参赛资料"
+          title="添加简历或参赛资料"
+          disabled={pending || !onAddProfile}
+          onClick={onAddProfile}
+        >
+          <Plus aria-hidden="true" strokeWidth={1.5} />
+        </button>
+        <textarea
           aria-label="问侦探"
-          placeholder="这周末有哪些线上黑客松？"
+          placeholder="问一个问题"
           value={question}
+          rows={1}
           maxLength={500}
           disabled={pending}
           onChange={(event) => setQuestion(event.target.value)}
-          className="min-w-0 flex-1 border-0 shadow-none"
+          onKeyDown={(event) => {
+            if (
+              event.key === 'Enter' &&
+              !event.shiftKey &&
+              !event.nativeEvent.isComposing &&
+              event.keyCode !== 229
+            ) {
+              event.preventDefault()
+              event.currentTarget.form?.requestSubmit()
+            }
+          }}
         />
-        <Button type="submit" disabled={pending || !question.trim()}>
-          {pending ? '查证中' : '查证'}
-        </Button>
+        <button
+          type={pending ? 'button' : 'submit'}
+          className="detective-composer__send"
+          aria-label={pending ? '停止查证' : '查证'}
+          title={pending ? '停止查证' : '查证'}
+          disabled={!pending && !question.trim()}
+          onClick={pending ? stop : undefined}
+        >
+          {pending ? (
+            <Square aria-hidden="true" fill="currentColor" />
+          ) : (
+            <ArrowUp aria-hidden="true" />
+          )}
+        </button>
       </form>
     </section>
   )
