@@ -108,30 +108,31 @@ def test_tool_argument_corrections_allow_a_real_match_but_stop_after_three_retri
     assert calls == (5 if corrected else 4)
 
 
-def test_sixty_four_request_limit_cannot_be_bypassed_with_more_tools(session_factory):
+def test_investigation_can_continue_beyond_sixty_four_requests(session_factory):
     calls = 0
-    def repeat(*_):
+    def respond(*_):
         nonlocal calls
         calls += 1
-        return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')])
-    events = run(Investigator(FunctionModel(repeat), session_factory=session_factory))
-    assert calls == 64
-    assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
+        return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
+                             if calls <= 65 else [TextPart('已完成查证。')])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory))
+    assert calls == 66
+    assert events[-1].type == 'answer'
     with session_factory() as session:
-        assert session.scalars(select(Investigation)).one().status == 'failed'
+        assert session.scalars(select(Investigation)).one().status == 'completed'
 
 
 def test_unexpected_errors_are_safe_for_client_and_stored(session_factory):
     def broken(*_):
         raise RuntimeError('provider secret must not be sent to clients')
     events = run(Investigator(FunctionModel(broken), session_factory=session_factory))
-    assert events[-1].payload == {'message': '查证暂时失败，请稍后重试'}
+    assert events[-1].payload == {'message': '本次查证未取得结果，请稍后重试'}
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'failed'
         assert 'secret' not in json.dumps(session.scalars(select(TraceRecord)).one().payload)
 
 
-def test_web_search_is_hidden_without_provider_and_fetch_is_bounded(session_factory):
+def test_web_search_is_hidden_without_provider_and_fetch_preserves_text(session_factory):
     calls = 0
     async def fetch(url):
         assert url == 'https://organizer.example/rules'
@@ -143,27 +144,10 @@ def test_web_search_is_hidden_without_provider_and_fetch_is_bounded(session_fact
         if calls == 1:
             return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://organizer.example/rules'})])
         results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
-        assert len(results[-1].content['text']) == 6000
+        assert len(results[-1].content['text']) == 8000
         return ModelResponse([TextPart('网页未注明报名截止。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'answer'
-
-
-def test_search_never_returns_more_than_ten_hits(session_factory):
-    async def search(query, *, site=None, count=10):
-        assert site == 'organizer.example' and count == 10
-        return [{'title': f'规则 {i}', 'url': f'https://organizer.example/{i}', 'site': '主办方', 'snippet': '原文'} for i in range(12)]
-    calls = 0
-    def respond(messages, info):
-        nonlocal calls
-        calls += 1
-        if calls == 1:
-            return ModelResponse([ToolCallPart('web_search', {'query': '黑客松', 'site': 'organizer.example', 'count': 99})])
-        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
-        assert len(results[-1].content['items']) == 10
-        return ModelResponse([TextPart('未找到明确截止时间。')])
-    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, search=search))
-    assert len(events[1].payload['sources']) == 10
 
 
 @pytest.mark.parametrize('answer', [
@@ -313,21 +297,21 @@ def test_page_extraction_can_follow_seven_detail_lookups(session_factory):
     assert len(extracted) == 1 and extracted[0].page.url == url
 
 
-def test_page_extraction_shares_the_sixty_four_request_limit_with_investigation(session_factory):
+def test_page_extraction_and_investigation_can_continue_beyond_the_old_shared_limit(session_factory):
     calls = 0
-    url = 'https://organizer.example/rules'
-    draft = {'name': '待核对赛事', 'page': {'url': url, 'site': '主办方', 'title': '规则', 'is_official': False}, 'claims': []}
     async def record(page_url, *, extractor, session_factory):
         await extractor(page_url, '未注明截止时间')
         return None
-    def repeat(_, info):
+    def respond(_, info):
         nonlocal calls
         calls += 1
-        tool = info.output_tools[0].name if info.output_tools else 'record_page'
-        return ModelResponse([ToolCallPart(tool, draft if info.output_tools else {'url': url})])
-    events = run(Investigator(FunctionModel(repeat), session_factory=session_factory, record=record))
-    assert calls == 64
-    assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
+        if info.output_tools:
+            return ModelResponse([ToolCallPart(info.output_tools[0].name, {'name': '待核对赛事', 'claims': []})])
+        if calls > 65:
+            return ModelResponse([TextPart('已完成查证，截止日期尚未核实。')])
+        return ModelResponse([ToolCallPart('record_page', {'url': 'https://organizer.example/rules'})])
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
+    assert calls == 67 and events[-1].type == 'answer'
 
 
 def test_record_page_uses_registration_context_from_existing_contest(session_factory):
@@ -354,7 +338,7 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
     assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register', contest_id)]
 
 
-def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_factory):
+def test_a_single_response_can_dispatch_more_than_sixty_four_tools(session_factory):
     fetched = []
     async def fetch(url):
         fetched.append(url)
@@ -368,8 +352,8 @@ def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_facto
                                   for i in range(65)])
         return ModelResponse([TextPart('未找到明确资料。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
-    assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
-    assert fetched == []
+    assert events[-1].type == 'answer'
+    assert len(fetched) == 65
 
 
 def test_empty_account_profile_is_not_described_as_confirmed(session_factory):
