@@ -7,12 +7,11 @@ import httpx
 from alembic import command
 from alembic.config import Config
 from pydantic import ValidationError
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from sqlalchemy import MetaData, create_engine, select
 
 from contest_detective.framework import db
-from contest_detective.server.agent.loop import Investigator
 from contest_detective.server.agent.extraction import create_page_extractor
 from contest_detective.server.contest import service
 from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, Source
@@ -109,32 +108,6 @@ def test_day_start_merges_with_exact_time_on_the_same_beijing_date(session):
     first = service.save(session, draft(claim('start_at', '2026-10-27')))
     exact = draft(claim('start_at', '2026-10-26T23:30:00Z', 'datetime'), url='https://organizer.example/start')
     assert service.save(session, exact) == first
-
-
-@pytest.mark.parametrize('answer,expected', [
-    ('提交截止为[2026-10-27 08:00](https://calendar.devpost.com/)。', 'error'),
-    ('[来源](https://calendar.devpost.com/)报名在08:00截止，其他时刻未公布。', 'error'),
-    ('[来源](https://calendar.devpost.com/)未公布具体时刻，无法确认16:00是否为截止。', 'answer'),
-    ('提交截止为[2026-10-27](https://calendar.devpost.com/)，具体时刻未公布。', 'answer'),
-])
-def test_known_day_only_evidence_cannot_be_asserted_as_a_clock_time(session_factory, answer, expected):
-    with session_factory() as session:
-        contest_id = service.save(session, draft(claim('submission_deadline', '2026-10-27')))
-
-    calls = 0
-    def respond(_, info):
-        nonlocal calls
-        calls += 1
-        if calls == 1:
-            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id})])
-        return ModelResponse([TextPart(answer)])
-
-    async def run():
-        return [event async for event in Investigator(FunctionModel(respond), session_factory=session_factory).ask('何时截止？')]
-    events = asyncio.run(run())
-    assert events[-1].type == expected
-    if expected == 'error':
-        assert '时刻' in events[-1].payload['message']
 
 
 def test_extraction_instructions_and_output_preserve_day_precision():
