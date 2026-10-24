@@ -32,6 +32,14 @@ def local_provider(session_factory, monkeypatch, *, failure=False, pause=None):
                 'id': 'extracted', 'type': 'function', 'function': {'name': 'final_result', 'arguments': json.dumps(draft)},
             }]}
             finish = 'tool_calls'
+        elif 'tools' in payload and any(tool['function']['name'] == 'respond_to_user' for tool in payload['tools']):
+            message = {'role': 'assistant', 'content': None, 'tool_calls': [{
+                'id': 'reply', 'type': 'function', 'function': {
+                    'name': 'respond_to_user',
+                    'arguments': json.dumps({'content': '已读取资料。', 'recommendations': []}),
+                },
+            }]}
+            finish = 'tool_calls'
         else:
             message, finish = {'role': 'assistant', 'content': '已读取资料。'}, 'stop'
         return httpx.Response(200, json={
