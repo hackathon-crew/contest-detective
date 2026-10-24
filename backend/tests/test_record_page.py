@@ -63,16 +63,16 @@ def test_record_page_with_no_supported_evidence_does_not_save(session_factory):
         assert query(session, ContestQuery())[1] == 0
 
 
-def test_record_page_refuses_excerpts_beyond_the_body_limit(session_factory):
+def test_record_page_keeps_supported_excerpts_after_six_thousand_chars(session_factory):
     from contest_detective.server.research_pipeline.record import run
 
     async def extractor(url, text):
         return extracted(claims=[{'field': 'city', 'value': '上海', 'excerpt': '地点：上海'}])
 
-    assert asyncio.run(run('https://events.example/rules', extractor=extractor,
-        session_factory=session_factory, page_text='x' * 6000 + '地点：上海')) is None
+    contest_id = asyncio.run(run('https://events.example/rules', extractor=extractor,
+        session_factory=session_factory, page_text='x' * 6000 + '地点：上海'))
     with session_factory() as session:
-        assert query(session, ContestQuery())[1] == 0
+        assert get(session, contest_id).fields['city'].value == '上海'
 
 
 def test_record_page_propagates_extraction_failure_without_saving(session_factory):
