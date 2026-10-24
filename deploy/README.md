@@ -11,6 +11,8 @@ cd /srv/contest-detective/backend
 sudo env UV_PYTHON_INSTALL_DIR=/opt/contest-python uv sync --locked --no-dev --python 3.12
 ```
 
+后端的默认 uv 包源在 `backend/pyproject.toml` 中配置为腾讯云 HTTPS PyPI 镜像，自动部署使用同一配置。锁文件同时记录镜像下载地址及文件哈希；更换包源时须一并更新锁文件，再发布新版本，保证 `--locked` 安装与已发布代码一致。
+
 Python 放在 `/opt/contest-python`，确保服务用户在 `ProtectHome=yes` 下仍能运行解释器。首次部署创建专用账户和环境文件：
 
 ```sh
