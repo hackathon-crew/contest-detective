@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 CoverageState = Literal[
     'not_fetched', 'fetch_failed', 'extract_failed', 'not_found_in_source',
@@ -53,6 +53,12 @@ class CoverageObservation(BaseModel):
     checked_at: AwareDatetime | None = None
     reason: str | None = None
     citations: list[ContentCitation] = Field(default_factory=list)
+
+    @model_validator(mode='after')
+    def unpublished_requires_evidence(self):
+        if self.state == 'source_unpublished' and not self.citations:
+            raise ValueError('source_unpublished requires an explicit source citation')
+        return self
 
 
 class ContentCoverage(BaseModel):

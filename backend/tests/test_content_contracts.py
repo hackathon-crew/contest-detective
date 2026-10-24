@@ -37,7 +37,7 @@ def test_content_contract_preserves_body_separately_from_intro():
 
 @pytest.mark.parametrize('state', [
     'not_fetched', 'fetch_failed', 'extract_failed', 'not_found_in_source',
-    'source_unpublished', 'found', 'conflict',
+    'found', 'conflict',
 ])
 def test_collection_state_is_distinct_from_verification_level(state):
     assert CoverageObservation(state=state).state == state
@@ -92,3 +92,11 @@ assert 'contest_detective.server.agent.normalization' not in sys.modules
 assert 'contest_detective.server.research_pipeline.scheduler' not in sys.modules
 """
     subprocess.run([sys.executable, '-c', code], check=True)
+
+
+def test_source_unpublished_requires_an_explicit_source_excerpt():
+    with pytest.raises(ValidationError, match='explicit source citation'):
+        CoverageObservation(state='source_unpublished')
+    source = document()
+    citation = ContentCitation(url=source.url, content_hash=source.content_hash, excerpt='not published')
+    assert CoverageObservation(state='source_unpublished', citations=[citation]).state == 'source_unpublished'
