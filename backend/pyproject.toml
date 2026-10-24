@@ -79,3 +79,9 @@ name = 'Investigation does not authenticate'
 type = "forbidden"
 source_modules = ["contest_detective.server.agent"]
 forbidden_modules = ['contest_detective.server.auth']
+
+[[tool.importlinter.contracts]]
+name = 'Ingestion does not deliver notifications'
+type = 'forbidden'
+source_modules = ['contest_detective.server.contest', 'contest_detective.server.research_pipeline', 'contest_detective.server.agent']
+forbidden_modules = ['contest_detective.server.notifications']
