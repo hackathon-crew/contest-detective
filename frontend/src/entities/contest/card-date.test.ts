@@ -10,6 +10,18 @@ const field = (value: string) => ({ value, level: 'official' as const, sources: 
 const day = (value: string) => ({ ...field(value), precision: 'day' as const })
 
 describe('卡片日期', () => {
+  it('所有截止已过时仍取最晚截止，不回退到开赛日', () => {
+    expect(
+      cardDate(
+        contest({
+          registration_deadline: field('2026-10-20T08:00:00Z'),
+          submission_deadline: field('2026-10-22T08:00:00Z'),
+          start_at: field('2026-10-25T08:00:00Z'),
+        }),
+        now,
+      )?.field,
+    ).toBe('submission_deadline')
+  })
   it('没有开赛日期时显示作品提交截止，并保留截止类型', () => {
     const result = cardDate(contest({ submission_deadline: field('2026-10-25T08:00:00Z') }), now)
     expect(result?.field).toBe('submission_deadline')
