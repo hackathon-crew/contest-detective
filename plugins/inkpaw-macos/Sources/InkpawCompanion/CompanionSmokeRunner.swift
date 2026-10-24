@@ -159,11 +159,36 @@ final class CompanionSmokeRunner {
         let serverWindows = try ownWindowDescriptions()
         try writeJSON(serverWindows, filename: "windows.json")
         addFile("windows.json")
+        guard let workspaceScreen = workspace.screen else {
+            throw SmokeUnsupported("The visible workspace has no associated screen.")
+        }
+        // AppKit may fit a newly opened titled window to the visible screen. Derive
+        // the content budget from that screen and the window's real decorations,
+        // never from its observed content bounds (which are the value under test).
+        let requestedWorkspaceSize = NSSize(width: 900, height: 680)
+        let availableWorkspaceSize = workspace.contentRect(forFrameRect: workspaceScreen.visibleFrame).size
+        let expectedWorkspaceSize = NSSize(width: min(requestedWorkspaceSize.width, availableWorkspaceSize.width),
+                                           height: min(requestedWorkspaceSize.height, availableWorkspaceSize.height))
+        let workspaceSizing: [String: Any] = [
+            "requestedContentSize": ["width": Double(requestedWorkspaceSize.width), "height": Double(requestedWorkspaceSize.height)],
+            "screenContentBudget": ["width": Double(availableWorkspaceSize.width), "height": Double(availableWorkspaceSize.height)],
+            "effectiveExpectedContentSize": ["width": Double(expectedWorkspaceSize.width), "height": Double(expectedWorkspaceSize.height)],
+            "minimumUsableContentSize": ["width": 780, "height": 560],
+            "rule": "min(requested content size, contentRect(forFrameRect: screen.visibleFrame).size)"
+        ]
+        report["workspaceSizing"] = workspaceSizing
         try checkpoint()
         try require(matches(petContent.bounds.size, width: 380, height: 260), "Expanded pet content is not 380 by 260 points.")
-        try require(matches(workspaceContent.bounds.size, width: 900, height: 680), "Workspace content is not 900 by 680 points.")
+        guard expectedWorkspaceSize.width >= 780, expectedWorkspaceSize.height >= 560 else {
+            throw SmokeUnsupported("The runner display cannot fit the minimum usable workspace content of 780 by 560 points.")
+        }
+        try require(matches(workspaceContent.bounds.size, width: expectedWorkspaceSize.width, height: expectedWorkspaceSize.height),
+                    "Workspace content does not match the requested size bounded by the screen's content budget.")
+        try require(workspaceContent.bounds.width >= 780, workspaceContent.bounds.height >= 560,
+                    "Workspace content is smaller than the minimum usable 780 by 560 points.")
         setCheck("expandedPetSize", true)
         setCheck("workspaceContentSize", true)
+        setCheck("workspaceMinimumUsableSize", true)
         var unsupportedContainment: [String] = []
         for window in [pet, workspace] {
             guard let screen = window.screen else { throw SmokeUnsupported("A visible window has no associated screen.") }
