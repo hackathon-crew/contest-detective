@@ -1,19 +1,26 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useState } from 'react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, expect, it, vi } from 'vitest'
-import { ContestCalendar } from './index'
+import { afterEach, expect, it } from 'vitest'
+import {
+  ContestCard,
+  groupSeries,
+  contestDayMap,
+  initialLibraryFilters,
+  type ContestSummary,
+  type LibraryRow,
+} from '@/entities/contest'
+import { ContestCalendar, ContestDatePicker } from './index'
 
-const items = [
+const now = new Date('2026-10-24T16:01:00Z')
+const items: ContestSummary[] = [
   {
     id: 'one',
     name: '跨天赛',
     cover_url: null,
     status: 'upcoming',
-    fields: {
-      start_at: { value: '2026-10-24T16:00:00Z', level: 'official' },
-    },
+    fields: { start_at: { value: '2026-10-24T16:00:00Z', level: 'official', sources: [] } },
   },
   {
     id: 'two',
@@ -21,7 +28,7 @@ const items = [
     cover_url: null,
     status: 'upcoming',
     fields: {
-      registration_deadline: { value: '2026-10-25T16:00:00Z', level: 'reposted' },
+      registration_deadline: { value: '2026-10-25T16:00:00Z', level: 'reposted', sources: [] },
     },
   },
   {
@@ -30,90 +37,79 @@ const items = [
     cover_url: null,
     status: 'upcoming',
     fields: {
-      start_at: { value: '2026-10-27T00:00:00Z', level: 'official', precision: 'day' },
+      start_at: { value: '2026-10-27T00:00:00Z', level: 'official', precision: 'day', sources: [] },
     },
   },
 ]
-const clients: QueryClient[] = []
-let calls: URL[] = []
-
-function start(followedIds?: string[]) {
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-10-24T16:01:00Z'))
-  calls = []
-  vi.stubGlobal('fetch', async (input: string) => {
-    const url = new URL(input, 'https://example.com')
-    calls.push(url)
-    const ids = url.searchParams.get('ids')?.split(',')
-    const from = Date.parse(url.searchParams.get('date_from')!)
-    const to = Date.parse(url.searchParams.get('date_to')!)
-    const data = items.filter(
-      (item) =>
-        (!ids || ids.includes(item.id)) &&
-        Object.values(item.fields).some(
-          (field) => Date.parse(field!.value) >= from && Date.parse(field!.value) <= to,
-        ),
-    )
-    return new Response(
-      JSON.stringify({
-        code: 200,
-        message: 'success',
-        data,
-        total: data.length,
-        page: 1,
-        page_size: 100,
-      }),
-    )
-  })
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  clients.push(client)
-  render(
-    <MemoryRouter>
-      <QueryClientProvider client={client}>
-        <ContestCalendar followedIds={followedIds} />
-      </QueryClientProvider>
-    </MemoryRouter>,
+function Harness() {
+  const [month, setMonth] = useState('2026-10')
+  const [selected, setSelected] = useState('2026-10-25')
+  return (
+    <ContestCalendar
+      rows={groupSeries(items, 'deadline', now)}
+      followedIds={['one']}
+      month={month}
+      selected={selected}
+      today="2026-10-25"
+      onMonth={setMonth}
+      onSelect={setSelected}
+      renderRows={(rows: LibraryRow[]) =>
+        rows.map((row) => <ContestCard key={row.id} contest={row.contests[0]!} />)
+      }
+    />
   )
 }
-
-afterEach(() => {
-  cleanup()
-  clients.splice(0).forEach((client) => client.clear())
-  vi.unstubAllGlobals()
-  vi.useRealTimers()
-})
-
-it('按北京时间标场次并在选日后查询当天节点', async () => {
-  start()
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: /2026年10月25日，1场赛事/ })).toBeDefined(),
+afterEach(cleanup)
+it('按北京时间显示整月节点，点选日期只展示当天比赛', () => {
+  render(
+    <MemoryRouter>
+      <Harness />
+    </MemoryRouter>,
   )
-  expect(await screen.findByRole('link', { name: '跨天赛' })).toBeDefined()
-  fireEvent.click(screen.getByRole('button', { name: /2026年10月26日，1场赛事/ }))
-  expect(await screen.findByRole('link', { name: '次日赛' })).toBeDefined()
-  expect(screen.queryByRole('link', { name: '跨天赛' })).toBeNull()
-  expect(
-    calls.some(
-      (url) =>
-        url.searchParams.get('date_from') === '2026-10-25T16:00:00.000Z' &&
-        url.searchParams.get('date_to') === '2026-10-26T15:59:59.999Z',
-    ),
-  ).toBe(true)
+  const calendar = screen.getByRole('region', { name: '赛事日历' })
+  expect(within(calendar).getByRole('button', { name: '10月25日，1 场' })).toBeTruthy()
+  expect(within(calendar).getByRole('link', { name: '跨天赛' })).toBeTruthy()
+  fireEvent.click(within(calendar).getByRole('button', { name: '10月26日，1 场' }))
+  expect(within(calendar).getByRole('link', { name: '次日赛' })).toBeTruthy()
+  expect(within(calendar).queryByRole('link', { name: '跨天赛' })).toBeNull()
+  fireEvent.click(within(calendar).getByRole('button', { name: '下个月' }))
+  expect(within(calendar).getByRole('heading', { name: '2026年11月' })).toBeTruthy()
 })
-
-it('只看关注时把关注集合传给查询', async () => {
-  start(['one'])
-  await screen.findByRole('link', { name: '跨天赛' })
-  fireEvent.click(screen.getByRole('button', { name: '只看关注' }))
-  await waitFor(() => expect(calls.some((url) => url.searchParams.get('ids') === 'one')).toBe(true))
-  expect(screen.getByRole('button', { name: '只看关注' }).getAttribute('aria-pressed')).toBe('true')
-})
-
-it('只有日期的节点保留日期并说明时刻未核实', async () => {
-  start()
-  await screen.findByRole('link', { name: '跨天赛' })
-  fireEvent.click(screen.getByRole('button', { name: /2026年10月27日，1场赛事/ }))
-  await screen.findByRole('link', { name: '仅日期赛' })
-  expect(screen.getByText('比赛开始 · 10月27日（时刻未核实）')).toBeTruthy()
+it('整月视图在手机有点阵，day节点不会显示虚构钟点', () => {
+  const { container } = render(
+    <MemoryRouter>
+      <Harness />
+    </MemoryRouter>,
+  )
+  expect(container.querySelectorAll('.cnt .dot')).toHaveLength(3)
+  expect(container.querySelector('.dot.mine')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: '10月27日，1 场' }))
+  expect(screen.getByRole('link', { name: '仅日期赛' })).toBeTruthy()
+  expect(screen.getByText('10月27日')).toBeTruthy()
   expect(screen.queryByText(/08:00/)).toBeNull()
+})
+it('小日历和两周条点选可取消，日期条件不抹掉其他日期的点', () => {
+  const map = contestDayMap(items, { ...initialLibraryFilters, date: '2026-10-25' }, [], now)
+  function Picker() {
+    const [date, setDate] = useState<string | null>(null)
+    return (
+      <ContestDatePicker
+        month="2026-10"
+        date={date}
+        map={map}
+        today="2026-10-25"
+        onMonth={() => {}}
+        onDate={(next) => setDate((current) => (current === next ? null : next))}
+        strip
+      />
+    )
+  }
+  render(<Picker />)
+  const day = screen.getByRole('button', { name: '10月26日，1 场' })
+  expect(screen.getAllByRole('button')).toHaveLength(14)
+  fireEvent.click(day)
+  expect(day.getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByRole('button', { name: '10月27日，1 场' })).toBeTruthy()
+  fireEvent.click(day)
+  expect(day.getAttribute('aria-pressed')).toBe('false')
 })
