@@ -23,6 +23,43 @@ def seed(session, number, *, deadline=None, start=None, url=None, date_claims=()
         claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in claims.items()] + list(date_claims)))
 
 
+def test_official_only_contests_are_still_checked_for_missing_facts(session):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    url = 'https://organizer.example/official-only'
+    contest_id = service.save(session, ContestDraft(name='官方赛事', page={
+        'url': url, 'site': '主办方', 'title': '官方赛事', 'is_official': True,
+    }, claims=[{'field': 'registration_url', 'value': url, 'excerpt': url}]))
+
+    assert [target.contest_id for target in _targets(session, NOW, 30)] == [contest_id]
+
+
+def test_passed_registration_does_not_hide_an_ongoing_contest(session):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    contest_id = seed(session, 1, deadline=NOW - timedelta(days=1), start=NOW - timedelta(days=2),
+                      date_claims=[{'field': 'end_at', 'value': (NOW + timedelta(days=1)).isoformat(),
+                                    'excerpt': '明天结束'}])
+
+    assert [target.contest_id for target in _targets(session, NOW, 30)] == [contest_id]
+
+
+def test_missing_dates_do_not_prevent_their_own_verification(session):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    contest_id = seed(session, 1)
+
+    assert [target.contest_id for target in _targets(session, NOW, 30)] == [contest_id]
+
+
+def test_a_future_contest_is_not_rejected_by_an_arbitrary_thirty_day_window(session):
+    from contest_detective.server.research_pipeline.verification import _targets
+
+    contest_id = seed(session, 1, start=NOW + timedelta(days=45))
+
+    assert [target.contest_id for target in _targets(session, NOW, 30)] == [contest_id]
+
+
 @pytest.mark.parametrize('field', ['start_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified'])
 def test_today_day_nodes_remain_verification_targets_after_their_anchor(session, field):
     from contest_detective.server.research_pipeline.verification import _targets
@@ -41,14 +78,14 @@ def test_today_day_nodes_remain_verification_targets_after_their_anchor(session,
     ('2026-10-27T01:59:59Z', 'datetime', '2026-10-27T02:00:00Z', False),
     ('2026-10-27T02:00:00Z', 'datetime', '2026-10-27T02:00:00Z', True),
     ('2026-11-26T02:00:00Z', 'datetime', '2026-10-27T02:00:00Z', True),
-    ('2026-11-26T02:00:01Z', 'datetime', '2026-10-27T02:00:00Z', False),
+    ('2026-11-26T02:00:01Z', 'datetime', '2026-10-27T02:00:00Z', True),
     ('2026-11-26', 'day', '2026-10-26T18:00:00Z', True),
 ])
-def test_verification_window_intersects_day_ranges_and_exact_instants(session, value, precision, clock, expected):
+def test_verification_skips_only_confirmed_end_dates(session, value, precision, clock, expected):
     from contest_detective.server.research_pipeline.verification import _targets
 
     seed(session, 1, date_claims=[{
-        'field': 'registration_deadline', 'value': value, 'precision': precision, 'excerpt': value,
+        'field': 'end_at', 'value': value, 'precision': precision, 'excerpt': value,
     }])
     assert bool(_targets(session, datetime.fromisoformat(clock), 30)) is expected
 
@@ -64,14 +101,14 @@ def test_day_deadline_order_uses_the_calendar_interval_start(session):
     assert [target.contest_id for target in _targets(session, now, 30)] == [day, exact]
 
 
-def test_recent_selection_uses_future_deadlines_or_start_and_sorts_deadlines_first(session_factory):
+def test_selection_prioritizes_future_deadlines_without_rejecting_other_dates(session_factory):
     from contest_detective.server.research_pipeline.verification import verify_recent
     with session_factory() as session:
         late = seed(session, 1, deadline=NOW + timedelta(days=9))
         early = seed(session, 2, deadline=NOW + timedelta(days=1))
         start = seed(session, 3, start=NOW + timedelta(days=2))
-        seed(session, 4, deadline=NOW - timedelta(days=1))
-        seed(session, 5, start=NOW + timedelta(days=31))
+        past_deadline = seed(session, 4, deadline=NOW - timedelta(days=1))
+        future_start = seed(session, 5, start=NOW + timedelta(days=31))
         seed(session, 6, start=NOW + timedelta(days=3), url='https://hackertrip.space/registration')
     visited = []
 
@@ -82,17 +119,19 @@ def test_recent_selection_uses_future_deadlines_or_start_and_sorts_deadlines_fir
     async def runner(url, **kwargs):
         assert kwargs['page_text'] == '正文'
         assert kwargs['registration_url'] == url
-        assert kwargs['contest_id'] in {early, late, start}
+        assert kwargs['contest_id'] in {early, late, start, past_deadline, future_start}
         return None
 
     result = asyncio.run(verify_recent(session_factory=session_factory, extractor=None,
         fetcher=fetch, runner=runner, now=NOW))
-    assert visited == ['https://organizer.example/2', 'https://organizer.example/1', 'https://organizer.example/3']
-    assert result.attempted == 3
-    assert result.failed == 3
+    assert visited == ['https://organizer.example/2', 'https://organizer.example/1',
+                       'https://organizer.example/4', 'https://organizer.example/3', 'https://organizer.example/5']
+    assert result.attempted == 5
+    assert result.failed == 5
 
 
-def test_verification_limits_unique_pages_and_isolates_fetch_errors(session_factory):
+@pytest.mark.parametrize(('limit', 'expected'), [(30, 30), (100, 35)])
+def test_verification_respects_the_requested_batch_and_isolates_fetch_errors(session_factory, limit, expected):
     from contest_detective.server.research_pipeline.verification import verify_recent
     with session_factory() as session:
         for number in range(35):
@@ -110,9 +149,9 @@ def test_verification_limits_unique_pages_and_isolates_fetch_errors(session_fact
         return None
 
     result = asyncio.run(verify_recent(session_factory=session_factory, extractor=None,
-        fetcher=fetch, runner=runner, now=NOW, limit=100))
-    assert len(visited) == len(set(visited)) == 30
-    assert result.attempted == result.failed == 30
+        fetcher=fetch, runner=runner, now=NOW, limit=limit))
+    assert len(visited) == len(set(visited)) == expected
+    assert result.attempted == result.failed == expected
 
 
 def test_unchanged_text_skips_extraction_and_changed_text_updates_official_claim(session_factory, monkeypatch):

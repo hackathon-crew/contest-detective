@@ -2,11 +2,14 @@
 
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
+import logging
 from typing import Any
 
 from pydantic_ai.usage import RequestUsage
 
 from .budget import Budget, read_balance
+
+logger = logging.getLogger(__name__)
 
 
 class LangChainBudgetGovernance:
@@ -42,12 +45,11 @@ class LangChainBudgetGovernance:
                 self.budget.cancel_before_request(call_id)
                 raise
 
+        raw = await invoke()
         try:
-            raw = await invoke()
-        except Exception:
-            # 请求已经发出，保留 reservation 作为未确认费用。
-            raise
-        self.budget.settle(call_id, settle_usage(raw))
+            self.budget.settle(call_id, settle_usage(raw))
+        except Exception as exc:
+            logger.warning('Normalization usage settlement pending call=%s error_type=%s', call_id, type(exc).__name__)
         return raw
 
 

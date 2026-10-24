@@ -32,7 +32,9 @@ sudoedit /etc/contest-detective.env
 
 同步在北京时间每天 03:00 起的 60 分钟内运行一次。进程在窗口内启动且当天还没跑过时补跑这一轮，窗口外启动则等到下一个钟点。配置了 `DETECTIVE_SYNC_DAILY_AT` 后忽略 `DETECTIVE_SYNC_INTERVAL_MINUTES`。每日时刻留空且间隔大于 0 时，仍按间隔运行，并在启动时立即执行。两者都关闭时不自动同步。必须只运行一个 worker。
 
-`DETECTIVE_SYNC_COLLECT=both` 时，这一轮先采集 HackerTrip、WaytoAGI、Devpost，再做页面发现、抽取，以及 30 天内仍未截止的报名页核对。页面发现和核对只在模型启用时进行。重复赛事按已有规则合并，不另建一条。
+`DETECTIVE_SYNC_COLLECT=both` 时，这一轮先采集 HackerTrip、WaytoAGI、Devpost，再做页面发现、抽取，以及未明确结束的主办方页面核对。官方来源和缺少日期的赛事也会核对；报名或提交截止用于安排核对顺序，不作为赛事已经结束的依据。默认每轮核对30个不同页面，调用方可显式指定批量大小。页面发现和核对只在模型启用时进行。重复赛事按已有规则合并，不另建一条。
+
+结构化来源只有日期、正文明确写出同日时刻时，归一化会细化日期精度。模型返回的单个无效字段会被隔离，保留其余有效事实；单条来源详情失败时继续处理其他赛事，原有失败记录保留，等待后续同步更新。
 
 `DETECTIVE_SYNC_EXTRACT_ENABLED` 默认 `true`，周期同步和 `contest-detective-sync` 只有在它与 `DETECTIVE_LLM_ENABLED` 都为 `true` 时才启用来源抽取。设为 `false` 后，HackerTrip、WaytoAGI、Devpost 的结构化入库照常运行，跳过主办方核对及依赖模型的来源发现；侦探和简历功能仍由 `DETECTIVE_LLM_ENABLED` 控制，不受这个来源开关影响。服务器修改 `/etc/contest-detective.env` 后重启服务即可生效；手动同步可在后端目录运行 `DETECTIVE_SYNC_EXTRACT_ENABLED=false uv run contest-detective-sync`，输出中的 `extraction_enabled` 应为 `false`。
 

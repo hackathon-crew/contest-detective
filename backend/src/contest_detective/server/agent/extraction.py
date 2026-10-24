@@ -7,7 +7,8 @@ from pydantic_ai.models import Model
 from pydantic_ai.usage import RunUsage, UsageLimits
 
 from contest_detective.framework.db import SessionLocal
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.server.contest.schemas import ContestDraft, PageIn
+from contest_detective.server.research_pipeline.claims import ExtractedClaims
 from contest_detective.server.research_pipeline.official import is_official_page
 
 RULES = ('只从提供的网页资料抽取赛事。每个字段保留原文片段，未找到的不生成。'
@@ -24,7 +25,7 @@ class ExtractedContest(BaseModel):
     name: str = Field(min_length=1, max_length=500)
     cover_url: str | None = None
     summary: str | None = None
-    claims: list[ClaimIn]
+    claims: ExtractedClaims
 
 
 def create_page_extractor(*, model: Model | None = None, session_factory=SessionLocal,
