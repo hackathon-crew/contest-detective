@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown'
 import { Badge } from '@/shared/ui'
 import type { FieldValue } from './api'
 import { formatDate, modeNames, safeUrl, statusNames } from './format'
+import { groundedIntroduction } from './content'
 import { ContestCover, VerificationLevel } from './preview'
 import {
   contestCity,
@@ -39,7 +40,7 @@ export function LibraryDateColumn({ date }: { date: LibraryDate | null }) {
   if (!date)
     return (
       <div className="item-date">
-        <b className="none">日期未公布</b>
+        <b className="none">日期未核实</b>
       </div>
     )
   const labels: Record<string, string> = {
@@ -104,6 +105,8 @@ export function ContestCard({
   const navigate = useNavigate()
   const date = libraryDate(contest)
   const themes = contestThemes(contest)
+  const themeSource = contest.theme_sources?.find((source) => safeUrl(source.url))
+  const introduction = groundedIntroduction(contest)
   const prize = normalizedPrize(contest.fields.prize?.value)
   const mode = contest.fields.mode?.value
   const meta = [
@@ -160,13 +163,36 @@ export function ContestCard({
                 奖金 <b>{prize}</b>
               </span>
             )}
-            {themes.length
-              ? themes.slice(0, 3).map((theme) => (
-                  <span className="tag" key={theme}>
-                    {theme}
-                  </span>
-                ))
-              : contestAbout(contest) && <span className="about">{contestAbout(contest)}</span>}
+            {themes.slice(0, 3).map((theme) =>
+              themeSource ? (
+                <a
+                  className="tag"
+                  key={theme}
+                  href={safeUrl(themeSource.url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={'主题来源：' + (themeSource.title || themeSource.site)}
+                >
+                  {theme}
+                </a>
+              ) : (
+                <span className="tag" key={theme}>
+                  {theme}
+                </span>
+              ),
+            )}
+            {introduction && (
+              <a
+                className="about"
+                href={safeUrl(introduction.citations[0]?.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="查看介绍来源"
+                title={introduction.text}
+              >
+                {contestAbout(contest)}
+              </a>
+            )}
           </div>
         )}
       </div>
@@ -196,7 +222,7 @@ export function ContestSeriesRow({ row, index = 0 }: { row: LibraryRow; index?: 
       (b && b !== a
         ? '–' + (b.slice(5, 7) === a.slice(5, 7) ? Number(b.slice(8, 10)) + '日' : monthDay(b))
         : '')
-    : '日期未公布'
+    : '日期未核实'
   const offline = new Set(
     kids.filter((c) => c.fields.mode?.value !== 'online').map((c) => seriesCity(c).city),
   ).size

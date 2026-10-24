@@ -279,7 +279,8 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         report = run_pipeline(session_factory, client=client,
                               settings=AppSettings(_env_file=None, sync_collect='structured'))
-    assert report.saved == 113
+    assert report.saved == 111
+    assert report.stage_counts['persist']['saved_pages'] == 113
     assert report.failed == 0
     with session_factory() as session:
         first, total = query(session, ContestQuery(page_size=100))

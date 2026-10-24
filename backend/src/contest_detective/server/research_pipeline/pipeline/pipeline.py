@@ -31,11 +31,13 @@ class SequentialContestSync:
                  extract: ContestSyncStage, verify: ContestSyncStage,
                  enrich: ContestSyncStage | None = None,
                  deduplicate: ContestSyncStage | None = None,
+                 detail: ContestSyncStage | None = None,
                  normalize: ContestSyncStage | None = None,
                  settings: AppSettings | None = None) -> None:
         self._structured = structured
         self._enrich = enrich
         self._deduplicate = deduplicate
+        self._detail = detail
         self._normalize = normalize
         self._retrieve = retrieve
         self._extract = extract
@@ -49,27 +51,34 @@ class SequentialContestSync:
                 await self._enrich.run(ctx)
             if self._deduplicate is not None:
                 await self._deduplicate.run(ctx)
+            if self._detail is not None:
+                await self._detail.run(ctx)
             if self._normalize is not None:
                 await self._normalize.run(ctx)
         if self._collect in {'unstructured', 'both'}:
             await self._retrieve.run(ctx)
             await self._extract.run(ctx)
         await self._verify.run(ctx)
-        return ContestSyncOutput(records=list(ctx.records), failed=ctx.failed, skipped=ctx.skipped)
+        return ContestSyncOutput(records=list(ctx.records), failed=ctx.failed, skipped=ctx.skipped,
+            stage_counts=ctx.stage_counts, source_inventory=ctx.source_inventory, failures=ctx.failures)
 
 
 def configured_pipeline(*, client, extractor, searcher=None, tavily=None, normalizer=None,
-                        settings: AppSettings | None = None, fetcher=None):
+                        settings: AppSettings | None = None, fetcher=None, detail_fetcher=None):
     """用具体环节装好一条管道。检索默认走元宝与 Tavily，采集范围读应用配置。"""
     from contest_detective.server.research_pipeline.pipeline.stages import (
-        DraftVerify, PageExtract, PageRetrieve, StructuredCollect, StructuredDeduplicate, StructuredEnrich, StructuredNormalize,
+        DraftVerify, PageExtract, PageRetrieve, StructuredCollect, StructuredDeduplicate, StructuredDetail, StructuredEnrich, StructuredNormalize,
     )
 
     resolved = settings if settings is not None else get_app_settings()
+    if fetcher is None and detail_fetcher is not None:
+        from contest_detective.server.research_pipeline.detail import safe_page_reader
+        fetcher = safe_page_reader(detail_fetcher)
     return SequentialContestSync(
         structured=StructuredCollect(client),
         enrich=StructuredEnrich(tavily),
         deduplicate=StructuredDeduplicate(),
+        detail=StructuredDetail(detail_fetcher) if detail_fetcher is not None else None,
         normalize=StructuredNormalize(normalizer) if normalizer is not None else None,
         retrieve=PageRetrieve(searcher),
         extract=PageExtract(extractor, fetcher),

@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import { useRef, type ReactNode } from 'react'
 import {
   ContestCover,
+  coverageLabel,
   dateFields,
   fieldNames,
   formatDate,
@@ -14,6 +15,7 @@ import {
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
 import { Icon } from '@/shared/ui/site-icon'
+import { ContestDocuments, ContestIntroductionSection, CoverageEvidence } from './content'
 import './contest-detail.css'
 export interface ContestDetailProps {
   contestId: string
@@ -76,10 +78,6 @@ export function ContestDetail({
         ),
       ]
     : Object.keys(fieldNames)
-  const about = contest?.summary
-    ?.replace(/^#+\s+.*\n+/, '')
-    .split(/\n\s*\n/)[0]
-    ?.slice(0, 300)
   return (
     <Dialog
       open={open}
@@ -112,12 +110,13 @@ export function ContestDetail({
           ) : (
             contest && (
               <>
-                {library && about && <p className="contest-detail-about">{about}</p>}
+                <ContestIntroductionSection contest={contest} />
                 <dl className="contest-detail-fields">
                   {order.map((field) => {
                     const label = names[field]
                     const item = contest.fields[field]
                     const value = item?.value
+                    const observation = contest.coverage?.fields?.[field]
                     return (
                       <div key={field}>
                         <dt>{label}</dt>
@@ -144,9 +143,13 @@ export function ContestDetail({
                                 value
                               )
                             ) : (
-                              <span className="text-faint">未找到</span>
+                              <span className="text-faint">{coverageLabel(observation)}</span>
                             )}
                           </p>
+                          {value && observation && observation.state !== 'found' && (
+                            <p className="contest-detail-coverage">{coverageLabel(observation)}</p>
+                          )}
+                          <CoverageEvidence observation={observation} />
                           {!library &&
                             item?.sources?.map((source, index) => (
                               <div
@@ -230,12 +233,15 @@ export function ContestDetail({
                   )}
                   {action}
                 </div>
+                <ContestDocuments contest={contest} />
                 {contest.summary && (
-                  <div className="contest-detail-summary">
+                  <section className="contest-detail-summary" aria-label="历史资料">
+                    <h2>历史资料</h2>
+                    <p className="contest-detail-empty">保留的历史摘要，不代表本次来源核实结果。</p>
                     <ReactMarkdown urlTransform={(url) => safeUrl(url) ?? ''}>
                       {contest.summary}
                     </ReactMarkdown>
-                  </div>
+                  </section>
                 )}
               </>
             )

@@ -57,15 +57,18 @@ def test_contract_rejects_unversioned_hashless_or_uncited_content():
             created_at=document().retrieved_at, scope='fixture')
 
 
-def test_legacy_api_contracts_are_unchanged_and_do_not_advertise_skeleton():
+def test_legacy_api_payloads_remain_readable_with_additive_content_defaults():
     summary = dict(id='one', name='Legacy', cover_url=None, status='upcoming', fields={})
-    assert ContestSummary(**summary).model_dump() == summary
+    parsed = ContestSummary(**summary)
+    assert {key: parsed.model_dump()[key] for key in summary} == summary
+    assert parsed.introduction is None
+    assert parsed.coverage.introduction.state == 'not_fetched'
     assert ContestDetail(**summary, summary='Unmodified full text').summary == 'Unmodified full text'
     draft = ContestDraft(name='Legacy', summary='Unmodified full text', claims=[], page={
         'url': 'https://example.com', 'site': 'Example', 'title': 'Legacy', 'is_official': False,
     })
     assert draft.summary == 'Unmodified full text'
-    assert 'introduction' not in ContestSummary.model_json_schema()['properties']
+    assert 'introduction' in ContestSummary.model_json_schema()['properties']
 
 
 def test_partial_cached_web_evidence_does_not_claim_raw_http_or_full_body():

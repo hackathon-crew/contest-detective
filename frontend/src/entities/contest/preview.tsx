@@ -66,7 +66,7 @@ export function ContestPreview({
   ]
     .filter(Boolean)
     .join(' · ')
-  const date = deadline ? formatDate(deadline.info.value, deadline.info.precision) : '日期未公布'
+  const date = deadline ? formatDate(deadline.info.value, deadline.info.precision) : '日期未核实'
   // 首页只展示原文公布的日期；未核实的钟点仍在提示和详情中标明。
   const visibleDate =
     deadline?.info.precision === 'day'
