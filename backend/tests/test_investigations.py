@@ -88,14 +88,14 @@ def test_ten_contest_query_can_read_every_source_before_answering(session_factor
         assert record.status == 'completed' and record.answer == events[-1].payload['content']
 
 
-def test_twenty_four_request_limit_cannot_be_bypassed_with_more_tools(session_factory):
+def test_sixty_four_request_limit_cannot_be_bypassed_with_more_tools(session_factory):
     calls = 0
     def repeat(*_):
         nonlocal calls
         calls += 1
         return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')])
     events = run(Investigator(FunctionModel(repeat), session_factory=session_factory))
-    assert calls == 24
+    assert calls == 64
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'failed'
@@ -286,7 +286,7 @@ def test_page_extraction_can_follow_seven_detail_lookups(session_factory):
     assert len(extracted) == 1 and extracted[0].page.url == url
 
 
-def test_page_extraction_shares_the_twenty_four_request_limit_with_investigation(session_factory):
+def test_page_extraction_shares_the_sixty_four_request_limit_with_investigation(session_factory):
     calls = 0
     url = 'https://organizer.example/rules'
     draft = {'name': '待核对赛事', 'page': {'url': url, 'site': '主办方', 'title': '规则', 'is_official': False}, 'claims': []}
@@ -299,7 +299,7 @@ def test_page_extraction_shares_the_twenty_four_request_limit_with_investigation
         tool = info.output_tools[0].name if info.output_tools else 'record_page'
         return ModelResponse([ToolCallPart(tool, draft if info.output_tools else {'url': url})])
     events = run(Investigator(FunctionModel(repeat), session_factory=session_factory, record=record))
-    assert calls == 24
+    assert calls == 64
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
 
 
@@ -338,7 +338,7 @@ def test_a_single_response_cannot_dispatch_an_unbounded_tool_batch(session_facto
         calls += 1
         if calls == 1:
             return ModelResponse([ToolCallPart('fetch_page', {'url': f'https://organizer.example/{i}'}, tool_call_id=str(i))
-                                  for i in range(25)])
+                                  for i in range(65)])
         return ModelResponse([TextPart('未找到明确资料。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']

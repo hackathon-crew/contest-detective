@@ -29,9 +29,8 @@ def seed(session_factory, *, day=False):
                     'precision': 'day' if day else 'datetime', 'excerpt': '10月27日提交截止'}]))
 
 
-def run(session_factory, respond, *, max_input_tokens=65536):
-    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='external',
-                           max_input_tokens=max_input_tokens)
+def run(session_factory, respond):
+    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='external')
     model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings))
     async def consume():
         return [event async for event in Investigator(model, session_factory=session_factory).ask('何时提交，16:00是否报名截止？')]
@@ -92,21 +91,21 @@ def test_a_second_invalid_output_stops_without_leaking_it_to_business_records(se
         assert len(session.scalars(select(LLMUsage)).all()) == 3
 
 
-def test_output_correction_cannot_bypass_the_twenty_four_request_limit(session_factory):
+def test_output_correction_cannot_bypass_the_sixty_four_request_limit(session_factory):
     calls = 0
     def respond(_, info):
         nonlocal calls
         calls += 1
         return response([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
-                        if calls <= 23 else [TextPart(UNCITED)])
-    events = run(session_factory, respond, max_input_tokens=131072)
-    assert calls == 24, events[-1].payload
+                        if calls <= 63 else [TextPart(UNCITED)])
+    events = run(session_factory, respond)
+    assert calls == 64, events[-1].payload
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
     with session_factory() as session:
-        assert len(session.scalars(select(LLMUsage)).all()) == 24
+        assert len(session.scalars(select(LLMUsage)).all()) == 64
 
 
-def test_output_correction_cannot_bypass_the_twenty_four_tool_limit(session_factory):
+def test_output_correction_cannot_bypass_the_sixty_four_tool_limit(session_factory):
     contest_id = seed(session_factory)
     calls = 0
     def respond(_, info):
@@ -116,7 +115,7 @@ def test_output_correction_cannot_bypass_the_twenty_four_tool_limit(session_fact
             return response([ToolCallPart('get_contest', {'contest_id': contest_id})])
         if calls == 2:
             return response([TextPart(UNCITED)])
-        return response([ToolCallPart('get_contest', {'contest_id': contest_id}, tool_call_id=f'excess-{i}') for i in range(24)])
+        return response([ToolCallPart('get_contest', {'contest_id': contest_id}, tool_call_id=f'excess-{i}') for i in range(64)])
     events = run(session_factory, respond)
     assert calls == 3
     assert events[-1].type == 'error' and '次数上限' in events[-1].payload['message']
