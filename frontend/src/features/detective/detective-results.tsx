@@ -53,10 +53,7 @@ function Fact({
 export function RecommendationCards({ items }: { items: ContestRecommendation[] }) {
   if (!items.length) return null
   return (
-    <section
-      aria-label="推荐比赛"
-      className="grid min-w-0 grid-cols-1 gap-4 font-sans sm:grid-cols-2"
-    >
+    <section aria-label="推荐比赛" className="grid min-w-0 grid-cols-1 gap-4 font-sans">
       {items.map(({ contest, introduction, reason }) => {
         const deadline = displayDeadline(contest)
         const fields = contest.fields
@@ -68,16 +65,19 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
           <article
             key={contest.id}
             aria-label={contest.name}
-            className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-rule bg-surface duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
+            className="relative isolate min-w-0 overflow-hidden rounded-2xl border border-rule bg-surface p-4 duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
           >
-            <div className="aspect-video w-full overflow-hidden border-b border-rule bg-surface-strong">
+            <div
+              aria-hidden="true"
+              className="detective-recommendation__cover pointer-events-none absolute inset-y-0 left-0 w-1/3 overflow-hidden"
+            >
               <ContestCover
                 contest={contest}
-                className="block h-full w-full object-cover object-bottom"
+                className="block h-full w-full object-cover object-left sm:object-center"
               />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-4 p-4">
-              <div className="space-y-2">
+            <div className="relative ml-20 flex min-w-0 flex-col gap-3 sm:ml-44">
+              <div className="min-w-0 space-y-2">
                 <h3 className="text-base leading-relaxed font-semibold text-ink text-balance">
                   {contest.name}
                 </h3>
@@ -87,7 +87,7 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
                   </p>
                 )}
               </div>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <dl className="grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
                 <Fact label="主办方" field={fields.organizer} />
                 <Fact label="参赛形式" field={fields.mode} text={place || undefined} />
                 <Fact
@@ -102,8 +102,8 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
                 />
                 <Fact label="奖励" field={fields.prize} />
               </dl>
-              {reason && <p className="text-sm text-ink-soft">{reason}</p>}
-              <footer className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-rule pt-3">
+              {reason && <p className="min-w-0 text-sm text-ink-soft">{reason}</p>}
+              <footer className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-rule pt-3">
                 {deadline ? (
                   <span className="inline-flex items-center gap-1 text-xs text-muted">
                     日期来源 <LevelBadge level={deadline.info.level} />

@@ -57,6 +57,17 @@
   align-content: start;
   gap: var(--chat-gap);
 }
+.detective-recommendation__cover {
+  mask-image: linear-gradient(to right, var(--color-ink) 45%, transparent 88%);
+}
+.detective-recommendation__cover::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  -webkit-backdrop-filter: blur(var(--blur-lg));
+  backdrop-filter: blur(var(--blur-lg));
+  mask-image: linear-gradient(to right, transparent 15%, var(--color-ink) 75%);
+}
 .detective-prose {
   min-width: 0;
   font-family: var(--chat-reading-font);
