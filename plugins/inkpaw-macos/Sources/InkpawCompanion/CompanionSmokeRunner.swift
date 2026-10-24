@@ -260,14 +260,19 @@ final class CompanionSmokeRunner {
         let laterDiagnostics = pixelRenderer.pixelRenderDiagnostics
         report["pixelRendererLater"] = laterDiagnostics
         try verifyPixelGrid(laterBitmap, diagnostics: laterDiagnostics)
+        try require(bitmap.pixelsWide == laterBitmap.pixelsWide && bitmap.pixelsHigh == laterBitmap.pixelsHigh,
+                    "The live renderer changed snapshot dimensions during motion verification.")
         let changedPixels = changedVisiblePixels(bitmap, laterBitmap)
         report["animatedPixelDifference"] = changedPixels
         if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
             report["motionVerification"] = "System Reduce Motion is enabled; animated-pixel comparison is intentionally unsupported."
-            throw SmokeUnsupported("The runner has Reduce Motion enabled; the real static pixel renderer was verified, animation was not.")
+            report["skippedChecks"] = ["livePixelAnimation": "System Reduce Motion is enabled; continuing animation was not runtime-validated."]
+            try require(changedPixels == 0, "The real companion animated despite the system Reduce Motion preference.")
+            setCheck("reducedMotionStaticPose", true)
+        } else {
+            try require(changedPixels >= 4, "Two actual pixel-rendered scene frames did not demonstrate continuing animation.")
+            setCheck("livePixelAnimation", true)
         }
-        try require(changedPixels >= 4, "Two actual pixel-rendered scene frames did not demonstrate continuing animation.")
-        setCheck("livePixelAnimation", true)
         if let gridEvidence = report["pixelGridEvidence"] as? [String: Any],
            let shadowBottom = gridEvidence["shadowBottomPixels"] as? Int {
             let viewFrame = arView.convert(arView.bounds, to: petContent)
@@ -341,7 +346,7 @@ final class CompanionSmokeRunner {
             report["unsupportedChecks"] = unsupportedContainment
             finish(status: "unsupported", reason: unsupportedContainment.joined(separator: " "), code: 77)
         }
-        finish(status: "passed", reason: "Real app windows, native geometry and separate native pixel exports passed the smoke checks.", code: 0)
+        finish(status: "passed", reason: "Applicable real-window, native geometry and pixel-export checks passed; inspect skippedChecks for explicitly unvalidated capabilities.", code: 0)
     }
 
     private func captureSnapshot(from view: ARView) async throws -> NSBitmapImageRep {
