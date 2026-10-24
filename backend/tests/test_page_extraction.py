@@ -13,11 +13,11 @@ from contest_detective.server.agent.llm import GuardedModel
 from contest_detective.server.agent.models import LLMUsage
 
 
-def test_page_extractor_uses_the_shared_guard_and_bounds_page_text(session_factory):
+def test_page_extractor_uses_the_shared_guard_and_preserves_full_page_text(session_factory):
     url = 'https://organizer.example/event'
     def respond(messages, info):
         content = next(part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart))
-        assert content.count('测') == 6000
+        assert content.count('测') == 8000
         assert url in content
         draft = {'name': '网页活动', 'page': {'url': url, 'site': '主办方', 'title': '赛事', 'is_official': False},
                  'claims': [{'field': 'city', 'value': '杭州', 'excerpt': '杭州'}]}

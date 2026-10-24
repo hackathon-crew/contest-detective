@@ -27,7 +27,6 @@ describe('侦探输入口', () => {
   it('提供多行编辑与参赛资料入口，空问题无法发送', () => {
     const { input, onAddProfile } = show()
     expect(input.tagName).toBe('TEXTAREA')
-    expect(input.getAttribute('maxlength')).toBe('500')
     expect((screen.getByRole('button', { name: '查证' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: '添加简历或参赛资料' }))
     expect(onAddProfile).toHaveBeenCalledOnce()
@@ -35,11 +34,12 @@ describe('侦探输入口', () => {
 
   it('Enter 发送完整的多行问题，并保留现有查证结果', async () => {
     const { fetch, input } = show()
-    fireEvent.change(input, { target: { value: '  帮我找适合大学生的黑客松\n优先线上  ' } })
+    const question = '帮我找适合大学生的黑客松\n' + '详细参赛条件。'.repeat(100) + '优先线上'
+    fireEvent.change(input, { target: { value: `  ${question}  ` } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
-    expect(JSON.parse(init.body as string).question).toBe('帮我找适合大学生的黑客松\n优先线上')
+    expect(JSON.parse(init.body as string).question).toBe(question)
     expect(await screen.findByText('已整理参赛条件。')).toBeTruthy()
   })
 

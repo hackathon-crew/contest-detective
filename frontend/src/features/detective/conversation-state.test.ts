@@ -34,28 +34,26 @@ it('破损记录和不安全来源链接不进入聊天界面', () => {
   expect(loadConversation('one')).toEqual([])
 })
 
-it('模型前文保持完整角色对并使用最近六轮，本地完整记录不变', () => {
+it('模型收到全部已完成前文，本地完整记录不变', () => {
   const turns = Array.from({ length: 9 }, (_, index) => ({
     ...turn,
     id: `${index}`,
     question: `问题${index}`,
   }))
-  expect(historyFor(turns)).toHaveLength(12)
-  expect(historyFor(turns)[0]).toEqual({ role: 'user', content: '问题3' })
+  expect(historyFor(turns)).toHaveLength(18)
+  expect(historyFor(turns)[0]).toEqual({ role: 'user', content: '问题0' })
   expect(historyFor(turns).at(-1)?.role).toBe('assistant')
   expect(turns).toHaveLength(9)
 })
 
-it('长中文和表情前文保持 UTF-8 预算，未完成回复不发给模型', () => {
+it('长中文和表情前文保持完整内容，未完成回复不发给模型', () => {
   const turns = Array.from({ length: 5 }, (_, index) => ({
     ...turn,
     id: `${index}`,
     content: '🙂'.repeat(4000),
   }))
   const history = historyFor([...turns, { ...turn, status: 'stopped' }])
-  expect(history.length).toBeGreaterThan(0)
+  expect(history).toHaveLength(10)
+  expect(history.at(-1)?.content).toBe('🙂'.repeat(4000))
   expect(history.every((message) => !message.content.includes('\uFFFD'))).toBe(true)
-  expect(
-    new TextEncoder().encode(history.map((message) => message.content).join('')).length,
-  ).toBeLessThanOrEqual(12000)
 })

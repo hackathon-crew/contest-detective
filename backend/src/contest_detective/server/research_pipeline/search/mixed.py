@@ -21,6 +21,8 @@ class MixedSearch:
                 batches.append(provider.search(query, site=site, count=count))
             except (httpx.HTTPError, ValueError):
                 logger.warning('Search provider failed: %s', type(provider).__name__)
+        if not batches:
+            raise ValueError('所有搜索服务暂时不可用')
         seen = set()
         hits = []
         for group in zip_longest(*batches):
