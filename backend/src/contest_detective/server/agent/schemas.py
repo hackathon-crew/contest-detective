@@ -5,9 +5,15 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from contest_detective.server.user.schemas import Profile
 
 
+class ConversationMessage(BaseModel):
+    role: Literal['user', 'assistant']
+    content: str = Field(min_length=1, max_length=4000)
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=500)
     profile: Profile | None = None
+    history: list[ConversationMessage] = Field(default_factory=list, max_length=12)
 
     @field_validator('question')
     @classmethod
@@ -16,6 +22,20 @@ class AskRequest(BaseModel):
         if not value:
             raise ValueError('请输入问题')
         return value
+
+    @field_validator('history')
+    @classmethod
+    def bounded_history(cls, messages):
+        # 历史只提供对话上下文，不能伪造 system、工具结果或无限扩展模型输入。
+        if len(messages) % 2 or any(
+            message.role != ('user' if index % 2 == 0 else 'assistant')
+            or not message.content.strip()
+            for index, message in enumerate(messages)
+        ):
+            raise ValueError('对话前文必须是完整的用户与回复轮次')
+        if sum(len(message.content.encode('utf-8')) for message in messages) > 12000:
+            raise ValueError('对话前文过长，请缩短后重试')
+        return messages
 
 
 class ToolSource(BaseModel):

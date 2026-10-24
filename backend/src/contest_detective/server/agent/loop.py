@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
-from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent
+from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits
 
@@ -20,7 +20,7 @@ from contest_detective.server.user.schemas import Profile
 from contest_detective.server.user.matching import has_preferences
 
 from .models import Investigation, TraceRecord
-from .schemas import AskRequest, TraceEvent
+from .schemas import AskRequest, ConversationMessage, TraceEvent
 from .tools import ToolDeps, invoke, register_tools
 
 RULES = '''你是比赛侦探。先查比赛库，再按需核实。
@@ -127,14 +127,15 @@ class Investigator:
         self.agent.output_validator(_validate_output)
 
     async def ask(self, question: str, user_id: str | None = None,
-                  profile: Profile | None = None) -> AsyncIterator[TraceEvent]:
-        body = AskRequest(question=question, profile=profile)
+                  profile: Profile | None = None,
+                  history: list[ConversationMessage] | None = None) -> AsyncIterator[TraceEvent]:
+        body = AskRequest(question=question, profile=profile, history=history or [])
         question, profile = body.question, body.profile
         queue: asyncio.Queue = asyncio.Queue(maxsize=1)
 
         async def produce():
             try:
-                await self._execute(question, user_id, profile, queue)
+                await self._execute(question, user_id, profile, body.history, queue)
             finally:
                 if not asyncio.current_task().cancelling():
                     await queue.put(None)
@@ -149,7 +150,8 @@ class Investigator:
             with suppress(asyncio.CancelledError):
                 await task
 
-    async def _execute(self, question: str, user_id: str | None, profile: Profile | None, queue: asyncio.Queue):
+    async def _execute(self, question: str, user_id: str | None, profile: Profile | None,
+                       history: list[ConversationMessage], queue: asyncio.Queue):
         investigation_id = str(uuid4())
         with self.session_factory() as session:
             session.add(Investigation(id=investigation_id, question=question, user_id=user_id, status='running'))
@@ -168,6 +170,13 @@ class Investigator:
         try:
             today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
             instructions = f'当前北京时间日期：{today}。'
+            if history:
+                instructions += '\n历史消息只用于延续参赛条件；历史回答不是新的证据，具体日期与来源仍须本轮工具复核。'
+            messages = [
+                ModelRequest(parts=[UserPromptPart(message.content)]) if message.role == 'user'
+                else ModelResponse(parts=[TextPart(message.content)])
+                for message in history
+            ]
             if user_id and self.profile_reader:
                 stored = await invoke(self.profile_reader, user_id)
                 confirmed = Profile.model_validate(stored) if stored is not None else None
@@ -177,7 +186,7 @@ class Investigator:
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
             async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=64, tool_calls_limit=64),
-                                       instructions=instructions, timeout=600) as run:
+                                       instructions=instructions, message_history=messages, timeout=600) as run:
                 async for node in run:
                     if Agent.is_call_tools_node(node):
                         async with node.stream(run.ctx) as events:
