@@ -1,6 +1,7 @@
 """运行同步管道并写入比赛库。"""
 
 import asyncio
+import logging
 from contextlib import nullcontext
 
 import httpx
@@ -11,6 +12,8 @@ from contest_detective.server.research_pipeline.pipeline.persist import persist
 from contest_detective.server.research_pipeline.pipeline.stages import (
     DraftVerify, PageExtract, PageRetrieve, StructuredCollect, StructuredDeduplicate, StructuredEnrich, StructuredNormalize,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def run_pipeline(session_factory, *, extractor=None, normalizer=None, tavily=None, client=None,
@@ -45,6 +48,9 @@ async def _run(ctx, session_factory, settings, extractor, normalizer, tavily, cl
                 await StructuredDeduplicate().run(ctx)
                 if normalizer is not None:
                     await StructuredNormalize(normalizer).run(ctx)
+                else:
+                    logger.info('Structured normalization skipped reason=not_configured candidates=%s',
+                                len(ctx.structured_candidates))
             if ctx.extracted_items:
                 await DraftVerify(session_factory).run(ctx)
             saved += persist(session_factory, ctx)

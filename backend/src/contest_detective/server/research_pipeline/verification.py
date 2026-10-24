@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from hashlib import sha256
@@ -12,6 +13,8 @@ from contest_detective.server.contest.models import Contest, ContestDetails, Con
 from contest_detective.server.contest.schemas import DEADLINE_FIELDS, date_bounds
 
 from .official import is_official_page
+
+logger = logging.getLogger(__name__)
 
 
 class VerificationReport(BaseModel):
@@ -93,6 +96,7 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
                 page = session.scalar(select(ContestPage).where(ContestPage.url == target.url))
                 if page is not None and page.is_official and page.content_hash == digest:
                     report.unchanged += 1
+                    logger.info('Page verification skipped contest_id=%s reason=unchanged_body', target.contest_id)
                     continue
             saved_id = await runner(target.url, extractor=extractor, session_factory=session_factory,
                 page_text=body, registration_url=target.url, contest_id=target.contest_id)
@@ -105,7 +109,10 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
                 page.content_hash = digest
                 session.commit()
             report.verified += 1
-        except Exception:
+            logger.info('Page verification completed contest_id=%s', target.contest_id)
+        except Exception as exc:
             # 单个官网超时或无可证字段，下轮仍重试，不缓存失败正文。
             report.failed += 1
+            logger.warning('Page verification failed contest_id=%s error_type=%s',
+                           target.contest_id, type(exc).__name__)
     return report

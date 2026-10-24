@@ -6,7 +6,7 @@ from urllib.parse import urlsplit
 
 from contest_detective.framework.db import SessionLocal
 from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.schemas import ContestDraft, PageIn
+from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
 from contest_detective.server.research_pipeline.official import is_official_page
 from contest_detective.server.research_pipeline.pages import fetch_page
 
@@ -42,6 +42,15 @@ async def run(url: str, *, extractor: Extractor, session_factory=SessionLocal,
         'claims': claims,
     })
     with session_factory() as session:
-        if contest_id is not None:
-            return contests.save(session, checked, contest_id=contest_id)
-        return contests.save(session, checked)
+        matched_id = contest_id or contests.match_id(session, checked)
+        if matched_id is not None:
+            # 漏抽不等于事实消失；只保留本页当前正文仍支持、且本轮未更新的字段。
+            fresh = {claim.field for claim in checked.claims}
+            carried = [
+                ClaimIn(field=field, value=source.value, excerpt=source.excerpt, precision=source.precision)
+                for field, source in contests.claim_sources(session, matched_id)
+                if source.url == url and field not in fresh
+                and (excerpt := _normalized(source.excerpt)) and excerpt in body
+            ]
+            checked = checked.model_copy(update={'claims': [*carried, *checked.claims]})
+        return contests.save(session, checked, contest_id=matched_id)

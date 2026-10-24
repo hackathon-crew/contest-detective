@@ -167,7 +167,7 @@ def test_extract_keeps_only_claims_supported_by_the_page_text():
             ],
         )
 
-    stage = PageExtract(extractor)
+    stage = PageExtract(extractor, fetcher=lambda _url: '')
     ctx = ContestSyncContext(request=ContestSyncInput(keywords=('黑客松',)))
     ctx.retrieved_pages.append(RetrievedPage(
         url='https://events.example/rules', title='规则', content='地点：上海。报名截止周五',
