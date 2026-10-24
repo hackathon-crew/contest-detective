@@ -11,6 +11,7 @@ import {
 
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 
+import { AccountPage } from '@/pages/account/account-page'
 import { HomePage } from '@/pages/home'
 import { McpDialog } from '@/pages/home/mcp-dialog'
 import { ContestsPage } from '@/pages/contests'
@@ -53,6 +54,8 @@ export function AppRoutes() {
     <DetectiveProvider key={user?.id ?? 'guest'} scope={user?.id ?? 'guest'}>
       <RouteMotionSurface>
         <Routes location={background ?? location}>
+          <Route path="/account" element={<Navigate to="/account/profile" replace />} />
+          <Route path="/account/:tab" element={<AccountPage />} />
           <Route path="/detective" element={<DetectivePage />} />
           <Route path="/detective/:conversationId" element={<DetectivePage />} />
           <Route path="/contests" element={<ContestsPage contestId={contestId} />} />
