@@ -105,7 +105,7 @@ def create_normalizer(
             temperature=0,
             max_retries=0,
             timeout=120,
-            max_tokens=settings.max_tokens,
+            max_tokens=settings.max_tokens if settings.limits_mode == 'local' else None,
         )
     return LangChainNormalizer(
         model=model,
