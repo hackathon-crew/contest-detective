@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { MemoryRouter } from 'react-router'
@@ -54,6 +54,37 @@ function renderAt(path: string) {
 }
 
 describe('路由', () => {
+  it.each([
+    ['/', /说出你的条件/],
+    ['/contests?q=AI', '赛事库'],
+    ['/detective', '侦探'],
+  ])('MCP 接入在当前页面打开并保留页面状态：%s', async (path, title) => {
+    renderAt(path)
+    const heading = screen.getByRole('heading', { name: title })
+    const trigger = screen.getByRole('link', { name: 'MCP' })
+    trigger.focus()
+    fireEvent.click(trigger)
+
+    const dialog = await screen.findByRole('dialog', { name: '接入 MCP' })
+    expect(screen.getByRole('heading', { name: title, hidden: true })).toBe(heading)
+    expect(within(dialog).getByRole('button', { name: 'Claude Code' })).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cursor' }))
+    expect(within(dialog).getByText(/~\/\.cursor\/mcp.json/)).toBeTruthy()
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('heading', { name: title })).toBe(heading)
+    expect(document.activeElement).toBe(trigger)
+  })
+
+  it('打开 MCP 深链接时直接显示接入说明', async () => {
+    renderAt('/#mcp')
+    expect(await screen.findByRole('dialog', { name: '接入 MCP' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
+  })
+
   it('首页可打开画像确认入口', async () => {
     renderAt('/')
     fireEvent.keyDown(screen.getAllByRole('button', { name: '添加简历或参赛资料' })[0], {
