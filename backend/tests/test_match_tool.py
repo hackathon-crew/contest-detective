@@ -61,6 +61,7 @@ def test_anonymous_confirmed_profile_uses_real_matching_and_repository_evidence(
     assert '1 个仓库' in events[-1].payload['content']
     assert events[-1].payload['sources'] == [{
         'title': 'weekend-agent', 'url': 'https://github.com/person/weekend-agent', 'site': 'GitHub',
+        'is_official': False, 'stale': False,
     }]
 
 
