@@ -17,7 +17,7 @@ def listing(count):
 def test_public_snapshot_selects_upcoming_hackathons_without_historical_or_signed_assets():
     from contest_detective.server.research_pipeline.sources.ethglobal import discover_urls
 
-    snapshot = FIXTURE.read_text()
+    snapshot = FIXTURE.read_text(encoding='utf-8')
     assert discover_urls(snapshot) == ['https://ethglobal.com/events/mumbai']
     assert '/events/tokyo2026' in snapshot
     assert 'Conference' in snapshot
@@ -48,9 +48,10 @@ def test_discovery_caps_the_unique_upcoming_batch_at_eight_pages():
 
 
 def test_sync_isolates_failed_pages_and_saves_supported_claims_with_original_precision(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline import record
+    from contest_detective.framework.config.app import AppSettings
     from contest_detective.server.research_pipeline.pages import fetch_page
-    from contest_detective.server.research_pipeline.sources.ethglobal import sync
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.server.research_pipeline.sources.ethglobal import EVENTS_URL, discover_urls
 
     visits, waits = [], []
 
@@ -73,11 +74,18 @@ def test_sync_isolates_failed_pages_and_saves_supported_claims_with_original_pre
         return httpx.Response(200, text='本活动于2026-11-05举行，具体时刻另行公布。',
                               headers={'content-type': 'text/plain'})
 
+    async def load_events(_ctx):
+        response = client.get(EVENTS_URL)
+        response.raise_for_status()
+        return discover_urls(response.text)
+
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        monkeypatch.setattr(record, 'fetch_page', lambda url: fetch_page(url, client=client,
-            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))]))
-        report = asyncio.run(sync(extractor=extractor, session_factory=session_factory, client=client, sleep=pause))
-    assert report.model_dump() == {'discovered': 8, 'saved': 6, 'failed': 1, 'skipped': 1}
+        fetcher = lambda url: fetch_page(url, client=client,
+            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))])
+        report = run_pipeline(session_factory, client=client, extractor=extractor, fetcher=fetcher, sleep=pause,
+                              settings=AppSettings(_env_file=None, sync_collect='unstructured'), sources=[],
+                              searcher=lambda *_args, **_kwargs: [], listings=[('ethglobal', load_events)])
+    assert (report.saved, report.failed, report.skipped) == (6, 1, 1)
     assert visits == [f'/events/e{index}' for index in range(8)]
     assert waits == [2] * 8
     with session_factory() as session:
@@ -90,24 +98,27 @@ def test_sync_isolates_failed_pages_and_saves_supported_claims_with_original_pre
 
 
 def test_disabled_sync_does_not_fetch_an_index_or_extract_a_page(session_factory):
-    from contest_detective.server.research_pipeline.sources.ethglobal import sync
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
     def forbidden(*_args, **_kwargs):
         raise AssertionError('Disabled extraction must not read any page')
 
     with httpx.Client(transport=httpx.MockTransport(forbidden)) as client:
-        report = asyncio.run(sync(extractor=None, session_factory=session_factory, client=client, runner=forbidden))
-    assert report.model_dump() == {'discovered': 0, 'saved': 0, 'failed': 0, 'skipped': 0}
+        report = run_pipeline(session_factory, client=client, sources=[], searcher=forbidden,
+                              listings=[('ethglobal', forbidden)],
+                              settings=AppSettings(_env_file=None, sync_collect='unstructured'))
+    assert (report.saved, report.failed, report.skipped, report.verified) == (0, 0, 0, 0)
 
 
-def test_default_enrichment_registers_ethglobal_and_disabled_rounds_skip_it(session_factory):
-    from contest_detective.server.research_pipeline.service import extraction_adapters, run_sync
-    from contest_detective.server.research_pipeline.sources.ethglobal import sync
+def test_structured_round_does_not_fetch_ethglobal(session_factory):
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
-    assert dict(extraction_adapters())['ethglobal'] is sync
     def forbidden(_request):
-        raise AssertionError('Disabled extraction must not read any page')
+        raise AssertionError('Structured collection must not read event pages')
+
     with httpx.Client(transport=httpx.MockTransport(forbidden)) as client:
-        report = run_sync(session_factory, sources=[], client=client)
-    assert report.extraction_enabled is False
+        report = run_pipeline(session_factory, sources=[], client=client,
+                              settings=AppSettings(_env_file=None, sync_collect='structured'))
     assert report.saved == report.failed == 0

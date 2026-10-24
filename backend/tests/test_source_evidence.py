@@ -17,7 +17,7 @@ CASES = [
 
 
 def load(name):
-    return json.loads((FIXTURES / name).read_text())
+    return json.loads((FIXTURES / name).read_text(encoding='utf-8'))
 
 
 def replay(source, *, empty=False, raw=None):

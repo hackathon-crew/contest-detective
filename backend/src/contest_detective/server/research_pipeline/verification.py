@@ -78,7 +78,7 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
         from .pages import fetch_page
         fetcher = fetch_page
     if runner is None:
-        from .service import run
+        from contest_detective.server.research_pipeline.record import run
         runner = run
     now = now or datetime.now(timezone.utc)
     with session_factory() as session:

@@ -40,7 +40,7 @@ def test_record_page_keeps_only_supported_excerpts_and_fixes_source_identity(ses
 
 
 def test_record_page_does_not_take_official_context_from_extracted_registration_claim(session_factory):
-    from contest_detective.server.research_pipeline.service import run
+    from contest_detective.server.research_pipeline.record import run
 
     async def extractor(url, text):
         return extracted(claims=[{'field': 'registration_url', 'value': url, 'excerpt': '报名链接'}])
@@ -52,7 +52,7 @@ def test_record_page_does_not_take_official_context_from_extracted_registration_
 
 
 def test_record_page_with_no_supported_evidence_does_not_save(session_factory):
-    from contest_detective.server.research_pipeline.service import run
+    from contest_detective.server.research_pipeline.record import run
 
     async def extractor(url, text):
         return extracted()
@@ -64,7 +64,7 @@ def test_record_page_with_no_supported_evidence_does_not_save(session_factory):
 
 
 def test_record_page_refuses_excerpts_beyond_the_body_limit(session_factory):
-    from contest_detective.server.research_pipeline.service import run
+    from contest_detective.server.research_pipeline.record import run
 
     async def extractor(url, text):
         return extracted(claims=[{'field': 'city', 'value': '上海', 'excerpt': '地点：上海'}])
@@ -76,7 +76,7 @@ def test_record_page_refuses_excerpts_beyond_the_body_limit(session_factory):
 
 
 def test_record_page_propagates_extraction_failure_without_saving(session_factory):
-    from contest_detective.server.research_pipeline.service import run
+    from contest_detective.server.research_pipeline.record import run
 
     async def extractor(url, text):
         raise ValueError('抽取失败')

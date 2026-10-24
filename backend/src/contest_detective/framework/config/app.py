@@ -4,6 +4,7 @@
 """
 
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,7 +20,7 @@ class AppSettings(BaseSettings):
 
     log_level: str = "INFO"
     sync_interval_minutes: int = Field(default=0, ge=0)
-    sync_extract_enabled: bool = True
+    sync_collect: Literal['structured', 'unstructured', 'both'] = 'both'
 
 
 @lru_cache

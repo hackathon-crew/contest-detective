@@ -10,7 +10,7 @@ from contest_detective.server.contest.schemas import ContestQuery
 
 
 def snapshots():
-    return json.loads((Path(__file__).parent / 'fixtures/devpost.json').read_text())
+    return json.loads((Path(__file__).parent / 'fixtures/devpost.json').read_text(encoding='utf-8'))
 
 
 def values(draft):

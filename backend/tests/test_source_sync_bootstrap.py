@@ -11,21 +11,21 @@ from contest_detective.server.contest.service import query
 from contest_detective.web.bootstrap import source_sync
 
 
-@pytest.mark.parametrize(('sync_enabled', 'llm_enabled', 'expected'), [
-    (False, False, False),
-    (False, True, False),
-    (True, False, False),
-    (True, True, True),
+@pytest.mark.parametrize(('collect', 'llm_enabled', 'expected'), [
+    ('structured', False, False),
+    ('structured', True, False),
+    ('both', False, False),
+    ('both', True, True),
     (None, True, True),
 ])
-def test_extractor_requires_both_switches_and_keeps_the_enabled_default(
-    session_factory, monkeypatch, sync_enabled, llm_enabled, expected,
+def test_extractor_requires_unstructured_collection_and_a_model(
+    session_factory, monkeypatch, collect, llm_enabled, expected,
 ):
     from contest_detective.server.agent import extraction
 
-    monkeypatch.delenv('DETECTIVE_SYNC_EXTRACT_ENABLED', raising=False)
+    monkeypatch.delenv('DETECTIVE_SYNC_COLLECT', raising=False)
     settings = AppSettings(_env_file=None, **(
-        {} if sync_enabled is None else {'sync_extract_enabled': sync_enabled}
+        {} if collect is None else {'sync_collect': collect}
     ))
     monkeypatch.setattr(source_sync, 'get_app_settings', lambda: settings)
     monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: SimpleNamespace(enabled=llm_enabled))
@@ -42,11 +42,11 @@ def test_extractor_requires_both_switches_and_keeps_the_enabled_default(
 
 
 def test_environment_switch_stops_before_reading_model_configuration(monkeypatch):
-    monkeypatch.setenv('DETECTIVE_SYNC_EXTRACT_ENABLED', 'false')
+    monkeypatch.setenv('DETECTIVE_SYNC_COLLECT', 'structured')
     monkeypatch.setattr(source_sync, 'get_app_settings', lambda: AppSettings(_env_file=None))
 
     def forbidden():
-        raise AssertionError('disabled source extraction must not configure a model')
+        raise AssertionError('structured collection must not configure a model')
 
     monkeypatch.setattr(source_sync, 'get_llm_settings', forbidden)
     assert source_sync.configured_extractor(object()) is None
@@ -58,10 +58,10 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
 ):
     from contest_detective.server.agent import extraction
     from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
-    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
     from contest_detective.web.bootstrap import app as bootstrap
 
-    settings = AppSettings(_env_file=None, sync_extract_enabled=False, sync_interval_minutes=360)
+    settings = AppSettings(_env_file=None, sync_collect='structured', sync_interval_minutes=360)
     monkeypatch.setattr(source_sync, 'get_app_settings', lambda: settings)
     monkeypatch.setattr(bootstrap, 'get_app_settings', lambda: settings)
     monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: SimpleNamespace(enabled=True))
@@ -80,19 +80,18 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
 
     def sync(factory, *, extractor=None):
         with httpx.Client(transport=httpx.MockTransport(forbidden)) as client:
-            report = run_sync(factory, client=client, extractor=extractor,
+            report = run_pipeline(factory, client=client, extractor=extractor, settings=settings,
                 sources=[(draft.page.site, lambda _, draft=draft: [draft]) for draft in drafts],
-                discoveries=[('forbidden', forbidden)], verifier=forbidden)
+                listings=[('forbidden', forbidden)], searcher=forbidden)
         reports.append(report)
         return report
 
     if entrypoint == 'cli':
         monkeypatch.setattr(source_sync, 'SessionLocal', session_factory)
         monkeypatch.setattr(source_sync, 'init_db', lambda: None)
-        monkeypatch.setattr(source_sync, 'run_sync', sync)
+        monkeypatch.setattr(source_sync, 'run_pipeline', sync)
         source_sync.main()
         output = json.loads(capsys.readouterr().out)
-        assert output['extraction_enabled'] is False
         assert output['saved'] == 3
     else:
         stopped = []
@@ -108,7 +107,6 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
             pass
         assert stopped == [True]
 
-    assert reports[0].extraction_enabled is False
     assert reports[0].saved == 3
     assert reports[0].verified == reports[0].failed == 0
     with session_factory() as session:
