@@ -59,13 +59,14 @@ class GuardedModel(WrapperModel):
             except Exception as exc:
                 self.budget.cancel_before_request(call_id)
                 raise BizException('模型余额不足或暂时无法确认余额', code=503) from exc
-        # No retry here: once dispatched, failures retain the maximum liability.
-        # Body overlays can replace messages or token caps; SDK retry overrides can
-        # dispatch another paid request against the same reservation. Accept only
-        # generation controls that cannot bypass the input/output spending bound.
+        # Once dispatched, failed requests keep their unconfirmed reservation.
+        # Body overlays and SDK retries can bypass local spending reservations.
+        # External quotas leave output capacity to the provider as well as input.
         allowed = {'parallel_tool_calls', 'temperature', 'top_p', 'seed', 'stop_sequences'}
         settings = {key: value for key, value in (model_settings or {}).items() if key in allowed}
-        settings.update(max_tokens=config.max_tokens, max_retries=0, timeout=120)
+        settings.update(max_retries=0, timeout=120)
+        if config.limits_mode == 'local':
+            settings['max_tokens'] = config.max_tokens
         if config.deepseek_options:
             settings['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self.wrapped.request(messages, settings, model_request_parameters)
