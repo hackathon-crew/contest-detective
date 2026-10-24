@@ -49,7 +49,7 @@ final class DocumentClientTests: XCTestCase {
             XCTAssertEqual(request.url?.path, "/api/auth/login")
             XCTAssertEqual(request.httpMethod, "POST")
             XCTAssertEqual(request.timeoutInterval, 30)
-            let data = try XCTUnwrap(request.httpBody)
+            let data = try Self.requestBody(request)
             let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
             XCTAssertEqual(json, ["email": "synthetic@example.invalid", "password": "synthetic-password"])
             return Self.response(request, #"{"code":200,"data":{"id":"user-1","username":"Synthetic","profile":{"ignored":"yes"}}}"#)
@@ -82,9 +82,10 @@ final class DocumentClientTests: XCTestCase {
             XCTAssertEqual(request.timeoutInterval, 150)
             XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
             XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
-            let decoded = try JSONDecoder().decode(DocumentQuestion.self, from: XCTUnwrap(request.httpBody))
+            let body = try Self.requestBody(request)
+            let decoded = try JSONDecoder().decode(DocumentQuestion.self, from: body)
             XCTAssertEqual(decoded, question)
-            XCTAssertFalse(String(data: request.httpBody!, encoding: .utf8)!.contains("sourceURL"))
+            XCTAssertFalse(String(data: body, encoding: .utf8)!.contains("sourceURL"))
             return try Self.answerResponse(request, answer)
         }
         let actual = try await client.answer(question)
@@ -239,7 +240,7 @@ final class DocumentClientTests: XCTestCase {
         }
     }
 
-    func testOversizedContentLengthCancelsAtHeadersWithoutReadingBody() async throws {
+    func testOversizedContentLengthPromptlyStopsAsynchronousProducer() async throws {
         let stopped = expectation(description: "header-only rejection")
         let metrics = DocumentStreamMetrics()
         StreamingDocumentProtocol.plan = { request in
@@ -255,7 +256,42 @@ final class DocumentClientTests: XCTestCase {
         )
         await assertClientError(.responseTooLarge) { try await client.answer(self.fixtureQuestion()) }
         await fulfillment(of: [stopped], timeout: 5)
-        XCTAssertEqual(metrics.bytes, 0)
+        // Darwin may queue the response callback until a body chunk is emitted. Producer bytes
+        // are not accepted collector bytes: verify bounded prompt cancellation here, and verify
+        // the header disposition before any body delivery in the direct-delegate test below.
+        XCTAssertLessThanOrEqual(metrics.bytes, 8192)
+    }
+
+    func testCollectorRejectsOversizedHeaderBeforeBodyAndIgnoresLateCallbacks() async throws {
+        let started = expectation(description: "registered request without response delivery")
+        DocumentProtocolStub.handler = { _ in started.fulfill(); return nil }
+        let collector = DocumentResponseCollector(maximumBytes: DocumentClient.maximumResponseBytes)
+        let session = URLSession(
+            configuration: DocumentClient.sessionConfiguration(timeout: 150, protocolClasses: [DocumentProtocolStub.self]),
+            delegate: collector, delegateQueue: nil
+        )
+        defer { session.invalidateAndCancel() }
+        let url = URL(string: "https://example.invalid/api/auth/me")!
+        let result = Task { try await collector.data(for: URLRequest(url: url), session: session) }
+        await fulfillment(of: [started], timeout: 5)
+        let tasks: [URLSessionTask] = await withCheckedContinuation { continuation in
+            session.getAllTasks { continuation.resume(returning: $0) }
+        }
+        let task = try XCTUnwrap(tasks.first as? URLSessionDataTask)
+        let response = HTTPURLResponse(
+            url: url, statusCode: 200, httpVersion: nil, headerFields: ["Content-Length": "4194304"]
+        )!
+        XCTAssertGreaterThan(response.expectedContentLength, Int64(DocumentClient.maximumResponseBytes))
+        var disposition: URLSession.ResponseDisposition?
+        collector.urlSession(session, dataTask: task, didReceive: response) { disposition = $0 }
+        XCTAssertEqual(disposition, .cancel)
+        // The request terminates with the size error before this test has supplied any body.
+        await assertClientError(.responseTooLarge) { try await result.value }
+        // Late queued callbacks must neither revive the request nor append rejected bytes to
+        // a live response. Replaying completion also guards against a double-resume race.
+        collector.urlSession(session, dataTask: task, didReceive: Data(repeating: 120, count: 8192))
+        collector.urlSession(session, task: task, didCompleteWithError: nil)
+        await assertClientError(.responseTooLarge) { try await result.value }
     }
 
     func testCollectorCancellationBeforeTaskInstallationNeverStartsTransport() async throws {
@@ -277,7 +313,7 @@ final class DocumentClientTests: XCTestCase {
     func testConcurrentRequestsKeepResponsesAndCancellationSeparate() async throws {
         let waitingStarted = expectation(description: "waiting request started")
         DocumentProtocolStub.handler = { request in
-            let question = try JSONDecoder().decode(DocumentQuestion.self, from: XCTUnwrap(request.httpBody))
+            let question = try JSONDecoder().decode(DocumentQuestion.self, from: Self.requestBody(request))
             if question.question == "Waiting?" { waitingStarted.fulfill(); return nil }
             let answer = DocumentAnswer(status: .answered, claims: [GroundedClaim(
                 text: question.question,
@@ -303,6 +339,65 @@ final class DocumentClientTests: XCTestCase {
         }
         XCTAssertEqual(results, Set((0..<32).map { "Question \($0)?" }))
         await assertClientError(.cancelled) { try await waiting.value }
+    }
+
+    func testRequestBodyHarnessHandlesBoundedDataAndInputStreams() throws {
+        let payload = Data(#"{"question":"Synthetic?","passages":[]}"#.utf8)
+        var request = URLRequest(url: URL(string: "https://example.invalid/api/companion/documents/ask")!)
+        request.httpBody = payload
+        XCTAssertEqual(try Self.requestBody(request), payload)
+
+        let stream = InputStream(data: payload)
+        request.httpBody = nil
+        request.httpBodyStream = stream
+        XCTAssertNil(request.httpBody)
+        XCTAssertEqual(try Self.requestBody(request), payload)
+        XCTAssertEqual(stream.streamStatus, .closed)
+
+        let boundary = Data(repeating: 120, count: DocumentClient.maximumRequestBytes)
+        request.httpBodyStream = InputStream(data: boundary)
+        XCTAssertEqual(try Self.requestBody(request), boundary)
+
+        let oversized = InputStream(data: boundary + Data([120]))
+        request.httpBodyStream = oversized
+        XCTAssertThrowsError(try Self.requestBody(request)) {
+            XCTAssertEqual($0 as? BodyReadError, .tooLarge)
+        }
+        XCTAssertEqual(oversized.streamStatus, .closed)
+        request.httpBodyStream = nil
+        request.httpBody = boundary + Data([120])
+        XCTAssertThrowsError(try Self.requestBody(request)) {
+            XCTAssertEqual($0 as? BodyReadError, .tooLarge)
+        }
+    }
+
+    private enum BodyReadError: Error, Equatable {
+        case missingBody
+        case tooLarge
+        case streamReadFailed
+    }
+
+    /// URLProtocol sees httpBody on FoundationNetworking, but Darwin can supply the same
+    /// request through httpBodyStream. Consume that stream exactly once, with a hard read cap.
+    private static func requestBody(_ request: URLRequest) throws -> Data {
+        let maximumBytes = DocumentClient.maximumRequestBytes
+        if let data = request.httpBody {
+            guard data.count <= maximumBytes else { throw BodyReadError.tooLarge }
+            return data
+        }
+        guard let stream = request.httpBodyStream else { throw BodyReadError.missingBody }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var chunk = [UInt8](repeating: 0, count: 4096)
+        while true {
+            let remaining = maximumBytes - data.count
+            let count = stream.read(&chunk, maxLength: min(chunk.count, remaining + 1))
+            guard count >= 0 else { throw BodyReadError.streamReadFailed }
+            if count == 0 { return data }
+            guard count <= remaining else { throw BodyReadError.tooLarge }
+            data.append(contentsOf: chunk.prefix(count))
+        }
     }
 
     private func makeClient() throws -> DocumentClient {
