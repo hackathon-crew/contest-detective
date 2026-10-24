@@ -23,7 +23,7 @@ async def run(url: str, *, extractor: Extractor, session_factory=SessionLocal,
     parsed = urlsplit(url)
     if parsed.scheme not in {'http', 'https'} or not parsed.hostname or parsed.username or parsed.password:
         raise ValueError('只支持 HTTP(S) 网页')
-    text = (page_text if page_text is not None else await asyncio.to_thread(fetch_page, url))[:6000]
+    text = (page_text if page_text is not None else await asyncio.to_thread(fetch_page, url))
     if not text.strip():
         return None
     draft = ContestDraft.model_validate(await extractor(url, text))

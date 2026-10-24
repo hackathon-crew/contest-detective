@@ -55,7 +55,7 @@ def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -
             host = original.netloc.decode('ascii')
             with active_client.stream(
                 'GET', pinned, headers={
-                    'Host': host, 'Accept-Encoding': 'identity',
+                    'Host': host,
                     'User-Agent': 'ContestDetective/0.1',
                 }, timeout=remaining, follow_redirects=False,
                 extensions={'sni_hostname': original.host},
@@ -70,8 +70,6 @@ def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -
                 media_type = response.headers.get('content-type', 'text/html').split(';', 1)[0].strip()
                 if media_type not in {'text/html', 'application/xhtml+xml', 'text/plain'}:
                     raise ValueError('只支持读取网页或纯文本')
-                if response.headers.get('content-encoding', 'identity').lower() not in {'', 'identity'}:
-                    raise ValueError('不支持压缩的网页响应')
                 try:
                     declared_size = int(response.headers.get('content-length', '0'))
                 except ValueError:
@@ -79,13 +77,13 @@ def fetch_page(url: str, *, client: httpx.Client | None = None, resolver=None) -
                 if declared_size > MAX_BYTES:
                     raise ValueError('网页过大')
                 body = bytearray()
-                for chunk in response.iter_bytes():
+                for chunk in response.iter_bytes(chunk_size=65536):
                     if len(body) + len(chunk) > MAX_BYTES:
                         raise ValueError('网页过大')
                     if time.monotonic() > deadline:
                         raise httpx.ReadTimeout('网页读取超时')
                     body.extend(chunk)
                 if media_type == 'text/plain':
-                    return bytes(body).decode(response.encoding or 'utf-8', errors='replace').strip()[:6000]
-                return (trafilatura.extract(bytes(body), url=str(original), include_comments=False) or '')[:6000]
+                    return bytes(body).decode(response.encoding or 'utf-8', errors='replace').strip()
+                return (trafilatura.extract(bytes(body), url=str(original), include_comments=False) or '')
     raise ValueError('网页重定向次数过多')
