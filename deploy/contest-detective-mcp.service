@@ -1,5 +1,5 @@
 [Unit]
-Description=Inkpaw read-only MCP
+Description=Inkpaw MCP
 After=network-online.target
 Wants=network-online.target
 
@@ -19,7 +19,7 @@ NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadOnlyPaths=/var/lib/contest-detective
+ReadWritePaths=/var/lib/contest-detective
 
 [Install]
 WantedBy=multi-user.target
