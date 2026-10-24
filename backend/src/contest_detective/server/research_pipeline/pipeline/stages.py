@@ -14,6 +14,7 @@ from contest_detective.server.contest.schemas import ContestDraft, PageIn, Sourc
 from contest_detective.server.contest.verification import resolve
 from contest_detective.server.research_pipeline.official import is_official_page
 from contest_detective.server.research_pipeline.pipeline.models import ContestRecord, ContestSyncContext, RetrievedPage
+from contest_detective.server.research_pipeline.structured import StructuredCandidate, StructuredDescriptionEnrich, deduplicate_structured
 
 logger = logging.getLogger(__name__)
 WECHAT_SITE = 'mp.weixin.qq.com'
@@ -47,9 +48,51 @@ class StructuredCollect:
                 continue
             for draft in drafts:
                 if _matches_mode(ctx.request.mode, draft):
+                    ctx.structured_candidates.append(StructuredCandidate(name, draft))
                     ctx.extracted_items.append(draft)
                 else:
                     ctx.skipped += 1
+
+
+class StructuredEnrich:
+    def __init__(self, searcher=None):
+        self._stage = StructuredDescriptionEnrich(searcher)
+
+    async def run(self, ctx: ContestSyncContext) -> None:
+        await self._stage.run(ctx.structured_candidates)
+
+
+class StructuredDeduplicate:
+    async def run(self, ctx: ContestSyncContext) -> None:
+        ctx.structured_candidates = deduplicate_structured(ctx.structured_candidates)
+        ctx.extracted_items = [candidate.draft for candidate in ctx.structured_candidates]
+
+
+class StructuredNormalize:
+    def __init__(self, normalizer):
+        self._normalizer = normalizer
+
+    async def run(self, ctx: ContestSyncContext) -> None:
+        from contest_detective.server.research_pipeline.normalization import NormalizationInput
+        normalized = []
+        for candidate in ctx.structured_candidates:
+            try:
+                item = NormalizationInput(
+                    draft=candidate.draft,
+                    context=candidate.context,
+                    context_url=candidate.context_url or candidate.draft.page.url,
+                )
+                candidate.draft = await self._normalizer(item)
+                if candidate.claim_pages:
+                    candidate.claim_pages = {
+                        id(claim): candidate.claim_pages.get(id(claim), candidate.draft.page)
+                        for claim in candidate.draft.claims
+                    }
+            except Exception as exc:
+                ctx.failed += 1
+                logger.warning('Structured normalization failed error_type=%s', type(exc).__name__)
+            normalized.append(candidate.draft)
+        ctx.extracted_items = normalized
 
 
 def web_search():
@@ -182,7 +225,15 @@ class DraftVerify:
             fields = {}
             claimed = {claim.field for draft in drafts for claim in draft.claims} | {field for field, _ in carried}
             for field in claimed:
-                sources = [_source(draft, claim) for draft in drafts for claim in draft.claims if claim.field == field]
+                sources = []
+                for candidate in ctx.structured_candidates:
+                    if candidate.draft not in drafts:
+                        continue
+                    for claim in candidate.draft.claims:
+                        if claim.field == field:
+                            sources.append(_source(candidate.draft, claim, candidate.claim_pages.get(id(claim))))
+                if not sources:
+                    sources = [_source(draft, claim) for draft in drafts for claim in draft.claims if claim.field == field]
                 sources.extend(source for name, source in carried if name == field)
                 fields[field] = resolve(field, sources)
             first = drafts[0]
@@ -235,15 +286,15 @@ def _supported_claims(text, draft: ContestDraft):
 
 
 def _group_key(draft: ContestDraft):
-    start = next((claim.value for claim in draft.claims if claim.field == 'start_at'), '')
-    compact = ''.join(char.casefold() for char in draft.name if char.isalnum())
-    return compact, start[:10]
+    from contest_detective.server.contest.identity import normalized_name, start_calendar_date
+    return normalized_name(draft.name), start_calendar_date(draft)
 
 
-def _source(draft: ContestDraft, claim) -> Source:
+def _source(draft: ContestDraft, claim, page: PageIn | None = None) -> Source:
+    page = page or draft.page
     return Source(
-        url=draft.page.url, site=draft.page.site, title=draft.page.title,
-        published_at=draft.page.published_at, is_official=draft.page.is_official,
+        url=page.url, site=page.site, title=page.title,
+        published_at=page.published_at, is_official=page.is_official,
         value=claim.value, excerpt=claim.excerpt, precision=claim.precision,
     )
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 
 from contest_detective.framework.db import SessionLocal
-from contest_detective.server.contest.models import Contest, ContestPage, ContestPageLink
+from contest_detective.server.contest.models import Contest, ContestDetails, ContestPage, ContestPageLink
 from contest_detective.server.contest.schemas import DEADLINE_FIELDS, date_bounds
 
 from .official import is_official_page
@@ -42,12 +42,12 @@ def _pending(bounds, now):
 
 def _targets(session, now, limit):
     horizon = now + timedelta(days=30)
-    statement = select(Contest).join(ContestPageLink).join(
+    statement = select(Contest, ContestDetails).join(ContestDetails, ContestDetails.contest_id == Contest.id).join(ContestPageLink).join(
         ContestPage, ContestPage.id == ContestPageLink.page_id).where(~ContestPage.is_official).distinct()
     candidates = []
-    for contest in session.scalars(statement):
-        values = {key: item.get('value') for key, item in contest.fields.items()}
-        dates = [_bounds(contest.fields.get(key, {})) for key in (*DEADLINE_FIELDS, 'start_at')]
+    for contest, details in session.execute(statement):
+        values = {key: item.get('value') for key, item in details.fields.items()}
+        dates = [_bounds(details.fields.get(key, {})) for key in (*DEADLINE_FIELDS, 'start_at')]
         if not any(_pending(bounds, now) and bounds[0] <= horizon for bounds in dates):
             continue
         url = values.get('registration_url')

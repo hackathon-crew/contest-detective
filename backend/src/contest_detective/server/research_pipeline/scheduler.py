@@ -65,16 +65,21 @@ def _already_ran(session_factory, ran_on: str) -> bool:
         return row is not None and row.ran_on == ran_on
 
 
-def start_scheduler(session_factory, interval_minutes: int, *, extractor=None,
+def start_scheduler(session_factory, interval_minutes: int, *, extractor=None, normalizer=None, tavily=None,
                     daily_at: str = "", window_minutes: int = 60) -> BackgroundScheduler | None:
     if daily_at:
-        return _start_daily(session_factory, daily_at, window_minutes, extractor)
+        return _start_daily(session_factory, daily_at, window_minutes, extractor, normalizer, tavily)
     if interval_minutes <= 0:
         return None
     scheduler = BackgroundScheduler(timezone=timezone.utc)
 
     def sync():
-        run_pipeline(session_factory, extractor=extractor)
+        kwargs = {'extractor': extractor}
+        if normalizer is not None:
+            kwargs['normalizer'] = normalizer
+        if tavily is not None:
+            kwargs['tavily'] = tavily
+        run_pipeline(session_factory, **kwargs)
 
     scheduler.add_job(
         sync, 'interval', minutes=interval_minutes, id=JOB_ID,
@@ -84,7 +89,7 @@ def start_scheduler(session_factory, interval_minutes: int, *, extractor=None,
     return scheduler
 
 
-def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor) -> BackgroundScheduler:
+def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor, normalizer, tavily) -> BackgroundScheduler:
     clock = _clock(daily_at)
     scheduler = BackgroundScheduler(timezone=SHANGHAI)
 
@@ -92,7 +97,12 @@ def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor)
         key = window_key(datetime.now(SHANGHAI), daily_at, window_minutes)
         if key is None or not _claim(session_factory, key):
             return
-        run_pipeline(session_factory, extractor=extractor)
+        kwargs = {'extractor': extractor}
+        if normalizer is not None:
+            kwargs['normalizer'] = normalizer
+        if tavily is not None:
+            kwargs['tavily'] = tavily
+        run_pipeline(session_factory, **kwargs)
 
     now = datetime.now(SHANGHAI)
     key = window_key(now, daily_at, window_minutes)

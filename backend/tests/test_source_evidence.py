@@ -39,7 +39,7 @@ def replay(source, *, empty=False, raw=None):
 
     def handle(request):
         if source == 'devpost':
-            return httpx.Response(200, json=payload[request.url.params['page']])
+            return httpx.Response(200, json=payload.get(request.url.params['page'], {'hackathons': []}))
         if source == 'waytoagi' and request.url.path != '/api/events':
             return httpx.Response(200, json=details[request.url.path.rsplit('/', 1)[-1]])
         return httpx.Response(200, json=payload)

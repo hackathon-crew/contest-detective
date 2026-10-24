@@ -11,9 +11,26 @@ class Contest(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     name: Mapped[str] = mapped_column(String(500))
     normalized_name: Mapped[str] = mapped_column(String(500))
+    start_date: Mapped[str | None] = mapped_column(String(10), index=True)
+    # Compatibility projections retained while readers migrate to contest_details.
     cover_url: Mapped[str | None] = mapped_column(Text)
     summary: Mapped[str | None] = mapped_column(Text)
-    start_date: Mapped[str | None] = mapped_column(String(10), index=True)
+    start_at: Mapped[str | None] = mapped_column(String(20))
+    end_at: Mapped[str | None] = mapped_column(String(20))
+    next_deadline: Mapped[str | None] = mapped_column(String(20))
+    mode: Mapped[str | None] = mapped_column(String(10), index=True)
+    city: Mapped[str | None] = mapped_column(Text)
+    fields: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+class ContestDetails(Base):
+    __tablename__ = 'contest_details'
+
+    contest_id: Mapped[str] = mapped_column(
+        ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True,
+    )
+    cover_url: Mapped[str | None] = mapped_column(Text)
+    summary: Mapped[str | None] = mapped_column(Text)
     start_at: Mapped[str | None] = mapped_column(String(20))
     end_at: Mapped[str | None] = mapped_column(String(20))
     next_deadline: Mapped[str | None] = mapped_column(String(20))

@@ -7,7 +7,8 @@ from rapidfuzz.fuzz import token_set_ratio
 from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
-from .models import Contest, ContestClaim, ContestPage, ContestPageLink
+from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
+from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink
 from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
@@ -19,12 +20,11 @@ def _now():
 
 
 def _name_tokens(name: str) -> str:
-    normalized = unicodedata.normalize('NFKC', name).lower()
-    return ' '.join(''.join(char if char.isalnum() else ' ' for char in normalized).split())
+    return _identity_name_tokens(name)
 
 
 def _normalized_name(name: str) -> str:
-    return _name_tokens(name).replace(' ', '')
+    return _identity_normalized_name(name)
 
 
 def _start_date(value: str, precision='datetime') -> str:
@@ -76,32 +76,51 @@ def _deadline_available(value, now):
     return datetime.fromisoformat(value['value']) >= now
 
 
+def _details(session, contest):
+    details = session.get(ContestDetails, contest.id)
+    if details is None:
+        details = ContestDetails(contest_id=contest.id, fields={})
+        session.add(details)
+        session.flush()
+    return details
+
+
 def _refresh(session, contest, now):
     fields = _fields(session, contest.id)
-    contest.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision}
+    details = _details(session, contest)
+    details.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision}
                       for field, result in fields.items()}
-    contest.start_at = fields['start_at'].value
-    contest.start_date = _start_date(contest.start_at, fields['start_at'].precision) if contest.start_at else None
-    contest.end_at = fields['end_at'].value
-    contest.next_deadline = _next_deadline(fields, now)
-    contest.mode = fields['mode'].value
-    contest.city = fields['city'].value
+    details.start_at = fields['start_at'].value
+    contest.start_date = _start_date(details.start_at, fields['start_at'].precision) if details.start_at else None
+    contest.cover_url = details.cover_url
+    contest.summary = details.summary
+    contest.start_at = details.start_at
+    details.end_at = fields['end_at'].value
+    details.next_deadline = _next_deadline(fields, now)
+    details.mode = fields['mode'].value
+    details.city = fields['city'].value
+    contest.end_at = details.end_at
+    contest.next_deadline = details.next_deadline
+    contest.mode = details.mode
+    contest.city = details.city
+    contest.fields = details.fields
 
 
-def _status(contest, now):
-    if contest.start_at is None:
-        return 'upcoming' if any(_deadline_available(contest.fields.get(field, {}), now)
+def _status(contest, details, now):
+    if details.start_at is None:
+        return 'upcoming' if any(_deadline_available(details.fields.get(field, {}), now)
                                  for field in DEADLINE_FIELDS) else 'ended'
-    start = date_bounds(contest.start_at, contest.fields.get('start_at', {}).get('precision', 'datetime'))[0]
-    end = date_bounds(contest.end_at, contest.fields.get('end_at', {}).get('precision', 'datetime'))[1] if contest.end_at else start + timedelta(days=1)
+    start = date_bounds(details.start_at, details.fields.get('start_at', {}).get('precision', 'datetime'))[0]
+    end = date_bounds(details.end_at, details.fields.get('end_at', {}).get('precision', 'datetime'))[1] if details.end_at else start + timedelta(days=1)
     if now < start:
         return 'upcoming'
     return 'ongoing' if now < end else 'ended'
 
 
-def _summary(contest, now):
-    return ContestSummary(id=contest.id, name=contest.name, cover_url=contest.cover_url,
-        status=_status(contest, now), fields={field: FieldValue(**value) for field, value in contest.fields.items()})
+def _summary(session, contest, now):
+    details = _details(session, contest)
+    return ContestSummary(id=contest.id, name=contest.name, cover_url=details.cover_url,
+        status=_status(contest, details, now), fields={field: FieldValue(**value) for field, value in details.fields.items()})
 
 
 def match_id(session: Session, draft: ContestDraft) -> str | None:
@@ -131,10 +150,11 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     if contest is None:
         contest = Contest(id=str(uuid4()), name=draft.name, normalized_name=_normalized_name(draft.name))
         session.add(contest)
+    details = _details(session, contest)
     if draft.cover_url is not None:
-        contest.cover_url = draft.cover_url
+        details.cover_url = draft.cover_url
     if draft.summary is not None:
-        contest.summary = draft.summary
+        details.summary = draft.summary
     if page is None:
         page = ContestPage(id=str(uuid4()), url=draft.page.url)
         session.add(page)
@@ -158,16 +178,24 @@ def query(session: Session, q: ContestQuery) -> tuple[list[ContestSummary], int]
     statement = select(Contest)
     if q.ids is not None:
         statement = statement.where(Contest.id.in_(q.ids))
-    if q.mode:
-        statement = statement.where(Contest.mode == q.mode)
+    details_joined = False
     if q.keyword:
         keyword = q.keyword.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-        statement = statement.where(or_(*(column.ilike(f'%{keyword}%', escape='\\')
-            for column in (Contest.name, Contest.summary, Contest.city))))
+        details = ContestDetails
+        statement = statement.join(details, details.contest_id == Contest.id).where(or_(
+            Contest.name.ilike(f'%{keyword}%', escape='\\'),
+            details.summary.ilike(f'%{keyword}%', escape='\\'),
+            details.city.ilike(f'%{keyword}%', escape='\\'),
+        ))
+        details_joined = True
+    if q.mode:
+        if not details_joined:
+            statement = statement.join(ContestDetails, ContestDetails.contest_id == Contest.id)
+        statement = statement.where(ContestDetails.mode == q.mode)
     now = _now()
     results = []
     for contest in session.scalars(statement):
-        summary = _summary(contest, now)
+        summary = _summary(session, contest, now)
         if q.status and summary.status != q.status:
             continue
         if q.date_from or q.date_to:
@@ -178,8 +206,9 @@ def query(session: Session, q: ContestQuery) -> tuple[list[ContestSummary], int]
             if not any(inside(summary.fields[field]) for field in DATE_FIELDS
                        if summary.fields[field].value is not None):
                 continue
-        value = contest.start_at if q.sort == 'start' else _next_deadline(summary.fields, now)
-        results.append(((value is None, value or '', contest.start_at or '', contest.name, contest.id), summary))
+        details = _details(session, contest)
+        value = details.start_at if q.sort == 'start' else _next_deadline(summary.fields, now)
+        results.append(((value is None, value or '', details.start_at or '', contest.name, contest.id), summary))
     results.sort(key=lambda item: item[0])
     offset = (q.page - 1) * q.page_size
     return [summary for _, summary in results[offset:offset + q.page_size]], len(results)
@@ -189,5 +218,6 @@ def get(session: Session, contest_id: str) -> ContestDetail | None:
     contest = session.get(Contest, contest_id)
     if contest is None:
         return None
-    return ContestDetail(**(_summary(contest, _now()).model_dump() | {
-        'summary': contest.summary, 'fields': _fields(session, contest.id)}))
+    details = _details(session, contest)
+    return ContestDetail(**(_summary(session, contest, _now()).model_dump() | {
+        'summary': details.summary, 'fields': _fields(session, contest.id)}))

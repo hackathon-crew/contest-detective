@@ -29,8 +29,14 @@ class SequentialContestSync:
 
     def __init__(self, *, structured: ContestSyncStage, retrieve: ContestSyncStage,
                  extract: ContestSyncStage, verify: ContestSyncStage,
+                 enrich: ContestSyncStage | None = None,
+                 deduplicate: ContestSyncStage | None = None,
+                 normalize: ContestSyncStage | None = None,
                  settings: AppSettings | None = None) -> None:
         self._structured = structured
+        self._enrich = enrich
+        self._deduplicate = deduplicate
+        self._normalize = normalize
         self._retrieve = retrieve
         self._extract = extract
         self._verify = verify
@@ -39,6 +45,12 @@ class SequentialContestSync:
     async def run(self, ctx: ContestSyncContext) -> ContestSyncOutput:
         if self._collect in {'structured', 'both'}:
             await self._structured.run(ctx)
+            if self._enrich is not None:
+                await self._enrich.run(ctx)
+            if self._deduplicate is not None:
+                await self._deduplicate.run(ctx)
+            if self._normalize is not None:
+                await self._normalize.run(ctx)
         if self._collect in {'unstructured', 'both'}:
             await self._retrieve.run(ctx)
             await self._extract.run(ctx)
@@ -46,15 +58,19 @@ class SequentialContestSync:
         return ContestSyncOutput(records=list(ctx.records), failed=ctx.failed, skipped=ctx.skipped)
 
 
-def configured_pipeline(*, client, extractor, searcher=None, settings: AppSettings | None = None, fetcher=None):
+def configured_pipeline(*, client, extractor, searcher=None, tavily=None, normalizer=None,
+                        settings: AppSettings | None = None, fetcher=None):
     """用具体环节装好一条管道。检索默认走元宝与 Tavily，采集范围读应用配置。"""
     from contest_detective.server.research_pipeline.pipeline.stages import (
-        DraftVerify, PageExtract, PageRetrieve, StructuredCollect,
+        DraftVerify, PageExtract, PageRetrieve, StructuredCollect, StructuredDeduplicate, StructuredEnrich, StructuredNormalize,
     )
 
     resolved = settings if settings is not None else get_app_settings()
     return SequentialContestSync(
         structured=StructuredCollect(client),
+        enrich=StructuredEnrich(tavily),
+        deduplicate=StructuredDeduplicate(),
+        normalize=StructuredNormalize(normalizer) if normalizer is not None else None,
         retrieve=PageRetrieve(searcher),
         extract=PageExtract(extractor, fetcher),
         verify=DraftVerify(),

@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from contest_detective.server.contest.schemas import ContestDraft, ContestField, FieldValue
+from contest_detective.server.research_pipeline.structured import StructuredCandidate
 
 
 class ContestSyncInput(BaseModel):
@@ -50,6 +51,7 @@ class ContestSyncContext(BaseModel):
     request: ContestSyncInput
     retrieved_pages: list[RetrievedPage] = Field(default_factory=list)
     extracted_items: list[ContestDraft] = Field(default_factory=list)
+    structured_candidates: list[StructuredCandidate] = Field(default_factory=list)
     records: list['ContestRecord'] = Field(default_factory=list)
     contest_by_url: dict[str, str] = Field(default_factory=dict)
     failed: int = Field(default=0, ge=0)

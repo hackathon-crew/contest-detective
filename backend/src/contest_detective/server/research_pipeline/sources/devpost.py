@@ -14,7 +14,7 @@ API_URL = 'https://devpost.com/api/hackathons'
 
 def fetch(client: httpx.Client) -> list[ContestDraft]:
     drafts = []
-    for page in range(1, 6):
+    for page in range(1, 21):
         response = client.get(API_URL, params=[
             ('status[]', 'upcoming'), ('status[]', 'open'), ('page', page),
         ])
