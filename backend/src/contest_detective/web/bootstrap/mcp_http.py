@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
+from starlette.responses import JSONResponse
+from contest_detective.server.account.tokens import mcp_owner,resolve_token
 
 from contest_detective.framework.config import get_database_settings
 from contest_detective.web.bootstrap.mcp import create_server, readonly_engine
@@ -21,18 +24,40 @@ class MCPSettings(BaseSettings):
                                  'http://127.0.0.1:*', 'http://localhost:*']
 
 
+
+class PersonalTokenMiddleware:
+    def __init__(self,app,session_factory):self.app,self.session_factory=app,session_factory
+
+    async def __call__(self,scope,receive,send):
+        if scope['type']!='http':return await self.app(scope,receive,send)
+        raw=dict(scope.get('headers',[])).get(b'authorization',b'').decode(errors='replace')
+        identity=None
+        if raw:
+            if not raw.startswith('Bearer ') or len(raw)>120:
+                return await JSONResponse({'error':'个人令牌无效'},status_code=401)(scope,receive,send)
+            with self.session_factory() as session:
+                user=resolve_token(session,raw[7:],touch=True)
+                if user:identity=str(user.id)
+            if identity is None:return await JSONResponse({'error':'个人令牌无效'},status_code=401)(scope,receive,send)
+        token=mcp_owner.set(identity)
+        try:await self.app(scope,receive,send)
+        finally:mcp_owner.reset(token)
+
 def create_app(*, database_url: str | None = None):
     settings = MCPSettings()
-    bind = readonly_engine(database_url or get_database_settings().url)
+    url=database_url or get_database_settings().url
+    bind = readonly_engine(url)
+    auth_bind=create_engine(url,connect_args={'check_same_thread':False})
     server = create_server(
         session_factory=sessionmaker(bind=bind, expire_on_commit=False),
-        stateless_http=True, json_response=True, max_request_body_size=64 * 1024,
+        private_tools=True, stateless_http=True, json_response=True, max_request_body_size=64 * 1024,
         transport_security=TransportSecuritySettings(
             enable_dns_rebinding_protection=True,
             allowed_hosts=settings.allowed_hosts, allowed_origins=settings.allowed_origins,
         ),
     )
     app = server.streamable_http_app()
+    app.add_middleware(PersonalTokenMiddleware,session_factory=sessionmaker(bind=auth_bind,expire_on_commit=False))
     transport_lifespan = app.router.lifespan_context
 
     @asynccontextmanager
@@ -45,6 +70,7 @@ def create_app(*, database_url: str | None = None):
                 yield
         finally:
             bind.dispose()
+            auth_bind.dispose()
 
     app.router.lifespan_context = lifespan
     app.state.db_engine = bind

@@ -17,12 +17,26 @@ from contest_detective.server.contest import service as contests
 from contest_detective.server.contest.schemas import ContestQuery, ContestStatus
 from contest_detective.server.user import matching
 from contest_detective.server.user.schemas import Profile
+from contest_detective.server.account.tokens import mcp_owner
+from contest_detective.server.account.models import Follow, Track
+from contest_detective.server.user.models import User
+from sqlalchemy import select
+import uuid
 
 READ_ONLY = ToolAnnotations(readOnlyHint=True, destructiveHint=False, openWorldHint=False)
 
 
-def create_server(*, session_factory=SessionLocal, **transport_options) -> FastMCP:
-    server = FastMCP('比赛侦探', **transport_options)
+PRIVATE_TOOLS = {'get_my_profile','get_my_follows','get_my_tracking'}
+
+
+class AccountMCP(FastMCP):
+    async def list_tools(self):
+        tools = await super().list_tools()
+        return tools if mcp_owner.get() else [tool for tool in tools if tool.name not in PRIVATE_TOOLS]
+
+
+def create_server(*, session_factory=SessionLocal, private_tools=False, **transport_options) -> FastMCP:
+    server = AccountMCP('比赛侦探', **transport_options)
 
     @server.tool(annotations=READ_ONLY)
     def search_contests(keyword: str | None = None, status: ContestStatus | None = None,
@@ -53,6 +67,39 @@ def create_server(*, session_factory=SessionLocal, **transport_options) -> FastM
         with session_factory() as session:
             items = matching.match(session, profile)
         return {'items': [item.model_dump(mode='json') for item in items]}
+
+    if private_tools:
+        def account_id():
+            key=mcp_owner.get()
+            if key is None: raise ValueError('请在 MCP 配置中带上个人令牌')
+            return uuid.UUID(key)
+
+        @server.tool(annotations=READ_ONLY)
+        def get_my_profile() -> dict[str, Any]:
+            """读取个人令牌所属账号已确认的画像。"""
+            key=account_id()
+            with session_factory() as session:
+                user=session.get(User,key)
+                return Profile.model_validate(user.profile or {}).model_dump(mode='json')
+
+        @server.tool(annotations=READ_ONLY)
+        def get_my_follows() -> dict[str, Any]:
+            """读取个人令牌所属账号关注的比赛与提醒开关。"""
+            key=account_id()
+            with session_factory() as session:
+                items=[]
+                for row in session.scalars(select(Follow).where(Follow.user_id==key)):
+                    item=contests.get(session,row.contest_id)
+                    if item:items.append({'contest':item.model_dump(mode='json'),'reminders':row.reminders})
+                return {'items':items}
+
+        @server.tool(annotations=READ_ONLY)
+        def get_my_tracking() -> dict[str, Any]:
+            """读取个人令牌所属账号的追踪条件。"""
+            key=account_id()
+            with session_factory() as session:
+                return {'items':[{'id':row.id,'text':row.text,'conditions':row.conditions,'enabled':row.enabled}
+                    for row in session.scalars(select(Track).where(Track.user_id==key))]}
 
     return server
 
