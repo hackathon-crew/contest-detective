@@ -173,3 +173,86 @@ it('离开聊天页不取消流，返回原会话后继续显示完成的回复'
   fireEvent.click(within(history()).getByRole('link', { name: '保留正在输出的计划' }))
   expect(screen.getByText('离开页面后仍然完成。')).toBeTruthy()
 })
+
+const recommendation = {
+  contest: {
+    id: 'selected-contest',
+    name: '周末应用赛',
+    cover_url: 'https://events.example/poster.jpg',
+    summary: '两天完成一个应用。',
+    status: 'upcoming',
+    fields: { prize: { value: '¥20,000', level: 'official' } },
+  },
+  introduction: '面向应用开发的周末比赛。',
+  reason: '适合从现有项目开始。',
+}
+
+it('正式回复同时显示原文与 Agent 选中的卡片，刷新后保留', async () => {
+  vi.stubGlobal('fetch', async (url: RequestInfo | URL) =>
+    String(url).includes('/agent/ask')
+      ? new Response(
+          event('answer', {
+            content: '建议参加周末应用赛。',
+            sources: [],
+            recommendations: [recommendation],
+          }),
+          {
+            headers: { 'content-type': 'text/event-stream' },
+          },
+        )
+      : json(String(url).includes('/auth/me') ? null : []),
+  )
+  const first = show('/detective')
+  send('推荐一场应用开发比赛')
+  expect(await screen.findByText('建议参加周末应用赛。')).toBeTruthy()
+  const card = await screen.findByRole('article', { name: '周末应用赛' })
+  expect(within(card).getByText('适合从现有项目开始。')).toBeTruthy()
+  expect(within(card).getByText('面向应用开发的周末比赛。')).toBeTruthy()
+  first.unmount()
+  show('/detective')
+  fireEvent.click(within(history()).getByRole('link', { name: '推荐一场应用开发比赛' }))
+  expect(await screen.findByRole('article', { name: '周末应用赛' })).toBeTruthy()
+})
+
+it('旧对话补回正文引用的比赛卡片，保留原文且不重新提问', async () => {
+  localStorage.setItem(
+    'contest-detective.sessions.guest',
+    JSON.stringify([
+      {
+        id: 'old-session',
+        title: '旧推荐',
+        createdAt: 1,
+        updatedAt: 1,
+        turns: [
+          {
+            id: 'old-turn',
+            question: '旧推荐',
+            content: '[周末应用赛](https://events.example/weekend)',
+            trace: [],
+            sources: [],
+            status: 'completed',
+          },
+        ],
+      },
+    ]),
+  )
+  const paths: string[] = []
+  vi.stubGlobal('fetch', async (url: RequestInfo | URL) => {
+    paths.push(String(url))
+    return json(
+      String(url).includes('/auth/me')
+        ? null
+        : String(url).includes('/agent/recommendations/resolve')
+          ? [recommendation]
+          : [],
+    )
+  })
+  show('/detective/old-session')
+  expect(await screen.findByRole('article', { name: '周末应用赛' })).toBeTruthy()
+  expect(
+    screen
+      .getAllByRole('link', { name: '周末应用赛' })
+      .some((link) => link.getAttribute('href') === 'https://events.example/weekend'),
+  ).toBe(true)
+  expect(paths.some((path) => path.includes('/agent/ask'))).toBe(false)
+})
