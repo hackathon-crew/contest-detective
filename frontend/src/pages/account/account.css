@@ -184,6 +184,9 @@
       opacity 140ms var(--ease),
       transform 140ms var(--ease);
   }
+  .btn:where(button) {
+    padding-block: 1px;
+  }
   .btn:active:not(:disabled) {
     transform: scale(0.98);
   }
