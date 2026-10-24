@@ -1,9 +1,10 @@
 import { ArrowUp, Plus, Square } from 'lucide-react'
 import type { FormEvent, Ref } from 'react'
 import { DropdownMenu } from 'radix-ui'
-import type { ProfileMatchSection } from '@/features/profile-match'
 import githubMark from '@/shared/assets/github-mark.svg'
 import { ContestFilterIcon, ProfileIcon } from '@/shared/ui/context-icons'
+
+export type DetectiveContextAction = 'github' | 'profile' | 'filters'
 
 export function DetectiveComposer({
   value,
@@ -19,7 +20,7 @@ export function DetectiveComposer({
   onChange: (value: string) => void
   onSubmit: (event: FormEvent) => void
   onStop: () => void
-  onAddProfile?: (section: ProfileMatchSection) => void
+  onAddProfile?: (section: DetectiveContextAction) => void
   inputRef?: Ref<HTMLTextAreaElement>
 }) {
   return (
