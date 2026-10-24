@@ -184,7 +184,7 @@ final class CompanionSmokeRunner {
         }
         try require(matches(workspaceContent.bounds.size, width: expectedWorkspaceSize.width, height: expectedWorkspaceSize.height),
                     "Workspace content does not match the requested size bounded by the screen's content budget.")
-        try require(workspaceContent.bounds.width >= 780, workspaceContent.bounds.height >= 560,
+        try require(workspaceContent.bounds.width >= 780 && workspaceContent.bounds.height >= 560,
                     "Workspace content is smaller than the minimum usable 780 by 560 points.")
         setCheck("expandedPetSize", true)
         setCheck("workspaceContentSize", true)
