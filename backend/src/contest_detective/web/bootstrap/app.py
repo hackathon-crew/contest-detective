@@ -10,6 +10,8 @@ from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.server.research_pipeline.scheduler import start_scheduler
 
+from contest_detective.server.notifications.service import start_account_scheduler
+
 from contest_detective.common.result import Response
 from contest_detective.web.api import router
 from contest_detective.web.handler import register_exception_handlers
@@ -51,9 +53,12 @@ def create_app(*, db_engine=None, async_session_factory=None,
                 factory, interval, extractor=extractor,
                 daily_at=daily_at, window_minutes=window_minutes,
             )
+        account_scheduler = start_account_scheduler(factory)
         try:
             yield
         finally:
+            if account_scheduler is not None:
+                account_scheduler.shutdown(wait=True)
             if scheduler is not None:
                 scheduler.shutdown(wait=True)
             await _app.state.async_session_factory.kw["bind"].dispose()

@@ -12,17 +12,18 @@ def persist(session_factory, ctx) -> int:
         for field, value in record.fields.items():
             for source in value.sources:
                 pages.setdefault(source.url, []).append((field, source))
-        for _url, items in pages.items():
-            source = items[0][1]
-            draft = ContestDraft(
-                name=record.name, cover_url=record.cover_url, summary=record.summary,
-                page=PageIn(url=source.url, site=source.site, title=source.title or record.name,
-                            published_at=source.published_at, is_official=source.is_official),
-                claims=[ClaimIn(field=field, value=item.value, excerpt=item.excerpt, precision=item.precision)
-                        for field, item in items],
-            )
-            with session_factory() as session:
-                contest_id = save(session, draft, contest_id=contest_id)
-            saved += 1
+        with session_factory() as session:
+            for _url, items in pages.items():
+                source = items[0][1]
+                draft = ContestDraft(
+                    name=record.name, cover_url=record.cover_url, summary=record.summary,
+                    page=PageIn(url=source.url, site=source.site, title=source.title or record.name,
+                                published_at=source.published_at, is_official=source.is_official),
+                    claims=[ClaimIn(field=field, value=item.value, excerpt=item.excerpt, precision=item.precision)
+                            for field, item in items],
+                )
+                contest_id = save(session, draft, contest_id=contest_id, commit=False)
+                saved += 1
+            session.commit()
         record.contest_id = contest_id
     return saved

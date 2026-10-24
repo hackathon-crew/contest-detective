@@ -12,7 +12,10 @@ from .auth import router as auth_router
 from .profile import router as profile_router
 from .companion import router as companion_router
 
+from .account_push import router as account_push_router
+
 router = APIRouter()
+router.include_router(account_push_router)
 router.include_router(auth_router)
 router.include_router(profile_router)
 router.include_router(contests_router)

@@ -65,7 +65,11 @@ export function activeFilters(filters: LibraryFilters) {
     values.push({ key: 'range', label: '日期范围', patch: { date_from: null, date_to: null } })
   return values
 }
-export function useContestBrowser(followedIds: string[], matches: MatchItem[] | null) {
+export function useContestBrowser(
+  followedIds: string[],
+  matches: MatchItem[] | null,
+  restrictedIds: string[] | null = null,
+) {
   const [params, setParams] = useQueryStates(
     {
       keyword: parseAsString.withDefault(''),
@@ -104,10 +108,12 @@ export function useContestBrowser(followedIds: string[], matches: MatchItem[] | 
   const all = query.data ?? emptyLibrary
   const base: LibraryContest[] = useMemo(
     () =>
-      matches
-        ? all.filter((contest) => matches.some((item) => item.contest.id === contest.id))
-        : all,
-    [all, matches],
+      all.filter(
+        (contest) =>
+          (restrictedIds === null || restrictedIds.includes(contest.id)) &&
+          (matches === null || matches.some((item) => item.contest.id === contest.id)),
+      ),
+    [all, matches, restrictedIds],
   )
   const calendarFilters = { ...filters, date: null }
   const calendarItems = filterLibrary(base, calendarFilters, followedIds)

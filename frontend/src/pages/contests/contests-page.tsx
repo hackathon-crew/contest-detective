@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router'
 import { Search, UserRound, X } from 'lucide-react'
 import {
@@ -21,7 +21,8 @@ import {
 } from '@/features/profile-match'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { createContestCalendar, libraryDate, type LibraryRow } from '@/entities/contest'
-import type { MatchItem, Profile } from '@/shared/api'
+import { apiClient, type MatchItem, type Profile } from '@/shared/api'
+import type { TrackMatches } from '@/shared/api/generated'
 import { ContestCalendar, ContestDatePicker } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveDock, useDetective } from '@/features/detective'
@@ -53,7 +54,22 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   const closeSheet = useCallback(() => setSheet(false), [])
   const [downloadError, setDownloadError] = useState<unknown>(null)
   const follows = useFollows()
-  const browser = useContestBrowser(follows.ids, matches)
+  const location = useLocation(),
+    { search } = location
+  const trackingId = new URLSearchParams(search).get('tracking')
+  const tracking = useQuery({
+    queryKey: ['track-matches', user?.id, trackingId],
+    enabled: !!user && !!trackingId,
+    queryFn: ({ signal }) =>
+      apiClient.request<TrackMatches>(
+        '/account/tracks/' + encodeURIComponent(trackingId!) + '/matches',
+        { signal },
+      ),
+  })
+  const restrictedIds = trackingId ? (tracking.data?.ids ?? []) : null
+  const browser = useContestBrowser(follows.ids, matches, restrictedIds)
+  const [trackingBusy, setTrackingBusy] = useState(false)
+  const [trackingError, setTrackingError] = useState<unknown>(null)
   const listArea = useRef<HTMLElement>(null)
   const searchInput = useRef<HTMLInputElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -74,7 +90,6 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   const detailId = contestId ?? lastContestId ?? ''
   const navigate = useNavigate()
   const { send } = useDetective()
-  const { search } = useLocation()
   const closeDetail = useCallback(
     () => navigate({ pathname: '/contests', search }),
     [navigate, search],
@@ -114,6 +129,60 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
       day: date,
       page: 1,
     })
+  }
+  async function trackFilters() {
+    if (!user) {
+      navigate('/login', { state: { returnTo: location } })
+      return
+    }
+    setTrackingBusy(true)
+    setTrackingError(null)
+    try {
+      const labels = activeFilters(browser.filters)
+        .map((item) => item.label)
+        .join('、')
+      const {
+        keyword,
+        status,
+        due,
+        modes,
+        cities,
+        prize,
+        official,
+        mine,
+        date,
+        date_from,
+        date_to,
+      } = browser.filters
+      await apiClient.request('/account/tracks/filters', {
+        method: 'POST',
+        json: {
+          text: labels.slice(0, 80),
+          filters: {
+            keyword,
+            status,
+            due,
+            modes,
+            cities,
+            prize,
+            official,
+            mine,
+            date,
+            date_from,
+            date_to,
+          },
+        },
+      })
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['account-tracks', user.id] }),
+        client.invalidateQueries({ queryKey: ['account-summary', user.id] }),
+      ])
+      navigate('/account/push')
+    } catch (error) {
+      setTrackingError(error)
+    } finally {
+      setTrackingBusy(false)
+    }
   }
   function download() {
     try {
@@ -263,42 +332,74 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             <ContestDatePicker {...pickerProps} strip />
             {follows.error && <ErrorState error={new Error(follows.error)} />}
             {downloadError != null && <ErrorState error={downloadError} />}
+            {trackingError != null && <ErrorState error={trackingError} />}
+            {trackingId && !user && <ErrorState error={new Error('登录后查看这组追踪条件')} />}
+            {tracking.error && <ErrorState error={tracking.error} />}
             <ContestBrowser
               browser={{ ...browser, change, clear }}
               onOpenFilters={() => setSheet(true)}
               renderAction={renderAction}
               reasons={reasons}
               exportAction={
-                browser.filters.mine && (
-                  <button
-                    className="linkbtn"
-                    type="button"
-                    disabled={
-                      !follows.ids.length || browser.query.isPending || browser.query.isError
-                    }
-                    onClick={download}
-                  >
-                    导出日历
-                  </button>
-                )
+                <>
+                  {!trackingId && matches === null && activeFilters(browser.filters).length > 0 && (
+                    <button
+                      className="linkbtn"
+                      type="button"
+                      disabled={trackingBusy}
+                      onClick={() => void trackFilters()}
+                    >
+                      {trackingBusy ? '正在追踪…' : '追踪这组条件'}
+                    </button>
+                  )}
+                  {browser.filters.mine && (
+                    <button
+                      className="linkbtn"
+                      type="button"
+                      disabled={
+                        !follows.ids.length || browser.query.isPending || browser.query.isError
+                      }
+                      onClick={download}
+                    >
+                      导出日历
+                    </button>
+                  )}
+                </>
               }
               profile={
-                matches !== null && (
+                trackingId ? (
                   <div className="profile-bar">
-                    按你的画像挑：
-                    {tags.map((tag, i) => (
-                      <span key={tag + i} className="tag">
-                        {tag}
-                      </span>
-                    ))}
+                    追踪条件：<span className="tag">{tracking.data?.text ?? '正在读取…'}</span>
                     <button
                       className="site-button site-button--ghost"
                       type="button"
-                      onClick={() => setMatches(null)}
+                      onClick={() => {
+                        const next = new URLSearchParams(search)
+                        next.delete('tracking')
+                        navigate({ pathname: '/contests', search: next.toString() })
+                      }}
                     >
                       看全部
                     </button>
                   </div>
+                ) : (
+                  matches !== null && (
+                    <div className="profile-bar">
+                      按你的画像挑：
+                      {tags.map((tag, i) => (
+                        <span key={tag + i} className="tag">
+                          {tag}
+                        </span>
+                      ))}
+                      <button
+                        className="site-button site-button--ghost"
+                        type="button"
+                        onClick={() => setMatches(null)}
+                      >
+                        看全部
+                      </button>
+                    </div>
+                  )
                 )
               }
               calendar={
