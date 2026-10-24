@@ -33,7 +33,7 @@ async def get_request_user_id(request: Request) -> str | None:
 @limiter.limit('5/minute;30/day')
 async def limited_question(request: Request, body: AskRequest, investigator: Investigator, user_id: str | None):
     async def stream():
-        async for event in investigator.ask(body.question, user_id, profile=body.profile):
+        async for event in investigator.ask(body.question, user_id, profile=body.profile, history=body.history):
             yield {'event': event.type, 'data': json.dumps(event.payload, ensure_ascii=False)}
     return EventSourceResponse(stream(), headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 

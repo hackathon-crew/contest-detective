@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DetectiveDock } from './detective-dock'
+import { renderDetective } from './detective.test.utils'
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.unstubAllGlobals()
 })
 
@@ -19,11 +19,7 @@ function show() {
       ),
   )
   vi.stubGlobal('fetch', fetch)
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <DetectiveDock onAddProfile={onAddProfile} />
-    </QueryClientProvider>,
-  )
+  renderDetective({ onAddProfile })
   return { fetch, onAddProfile, input: screen.getByRole('textbox', { name: '问侦探' }) }
 }
 

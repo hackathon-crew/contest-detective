@@ -13,6 +13,10 @@ export type AskRequest = {
      */
     question: string;
     profile?: Profile | null;
+    /**
+     * History
+     */
+    history?: Array<ConversationMessage>;
 };
 
 /**
@@ -105,6 +109,20 @@ export type ContestSummary = {
     fields: {
         [key: string]: FieldValue;
     };
+};
+
+/**
+ * ConversationMessage
+ */
+export type ConversationMessage = {
+    /**
+     * Role
+     */
+    role: 'user' | 'assistant';
+    /**
+     * Content
+     */
+    content: string;
 };
 
 /**

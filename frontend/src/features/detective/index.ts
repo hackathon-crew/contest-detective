@@ -1,1 +1,5 @@
 export { DetectiveDock } from './detective-dock'
+export { DetectiveProvider } from './detective-provider'
+export { DetectiveComposer } from './detective-composer'
+export { DetectiveMessage } from './detective-messages'
+export { useDetective } from './detective-context'
