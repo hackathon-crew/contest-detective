@@ -1,13 +1,9 @@
 import { safeUrl } from '@/entities/contest'
-import type { ContestDetail, ConversationMessage, MatchItem, Profile } from '@/shared/api'
+import type { ConversationMessage, MatchItem, Profile, ContestRecommendation } from '@/shared/api'
 import { parseTrace, type TraceEvent, type TraceSource } from './events'
 
 export type ToolEvent = Extract<TraceEvent, { type: 'step' | 'observation' }>
-export interface ContestRecommendation {
-  contest: ContestDetail
-  introduction?: string
-  reason: string
-}
+export type { ContestRecommendation } from '@/shared/api'
 export interface ProfileFile {
   name: string
   profile: Profile
@@ -21,7 +17,7 @@ export interface DetectiveTurn {
   sources: TraceSource[]
   status: 'running' | 'completed' | 'stopped' | 'error'
   error?: string
-  // 预览中的结构化内容与原文并存；正式 SSE 接线另行实现。
+  // 与正文一起保存 Agent 最终选中的比赛；旧记录缺少此字段时按正文引用补读。
   recommendations?: ContestRecommendation[]
   profileFile?: ProfileFile
 }

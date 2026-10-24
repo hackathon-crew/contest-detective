@@ -4,8 +4,10 @@
 """
 from datetime import datetime, timedelta, timezone
 
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart, UserPromptPart
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 
 from contest_detective.framework.db import SessionLocal
 from contest_detective.server.agent.loop import Investigator
@@ -38,12 +40,12 @@ def respond(messages, info):
         matched = result.tool_name == 'match_contests'
         items = result.content['items']
         if not items:
-            return ModelResponse([TextPart(result.content['summary'] if matched else '比赛库中暂未找到符合条件的赛事。')])
+            return ModelResponse([answer_part(result.content['summary'] if matched else '比赛库中暂未找到符合条件的赛事。')])
         first = items[0]['contest'] if matched else items[0]
         return ModelResponse([ToolCallPart('get_contest', {'contest_id': first['id']}, tool_call_id='detail')])
     detail = result.content.get('contest')
     if not detail:
-        return ModelResponse([TextPart('比赛资料未找到。')])
+        return ModelResponse([answer_part('比赛资料未找到。')])
     lines = [detail['name']]
     matching = next((part for part in results if part.tool_name == 'match_contests'), None)
     if matching and matching.content['items']:
@@ -56,7 +58,7 @@ def respond(messages, info):
             lines.append(f"{label}：[{moment.strftime('%Y-%m-%d %H:%M')}（北京时间）]({source['url']})")
     if not detail['fields'].get('registration_deadline', {}).get('value'):
         lines.append('报名截止未找到，作品提交截止不能当作报名截止。')
-    return ModelResponse([TextPart('\n\n'.join(lines))])
+    return ModelResponse([answer_part('\n\n'.join(lines))])
 
 
 def create_fake_app(*, db_engine=None, session_factory=SessionLocal):

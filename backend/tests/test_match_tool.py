@@ -1,8 +1,10 @@
 import asyncio
 
 import pytest
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 
 from contest_detective.server.agent.loop import Investigator
 from contest_detective.server.contest.schemas import ContestDraft
@@ -40,7 +42,7 @@ def local_match_model(seen, *, arguments=None, instructions=None):
         result = results[-1].content
         seen.append(result)
         text = result['items'][0]['reason'] if result['items'] else result['summary']
-        return ModelResponse([TextPart(text)])
+        return ModelResponse([answer_part(text)])
     return FunctionModel(respond)
 
 
@@ -99,7 +101,7 @@ def test_no_effective_profile_requests_confirmation_without_personalization(sess
 
 def test_anonymous_http_profile_reaches_the_investigation(client, session_factory):
     def respond(_, info):
-        return ModelResponse([TextPart('收到 Rust 画像。' if 'Rust' in info.instructions else '未收到画像。')])
+        return ModelResponse([answer_part('收到 Rust 画像。' if 'Rust' in info.instructions else '未收到画像。')])
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
         FunctionModel(respond), session_factory=session_factory)
     response = client.post('/agent/ask', json={'question': '我适合哪场', 'profile': {'skills': ['Rust']}})
@@ -109,7 +111,7 @@ def test_anonymous_http_profile_reaches_the_investigation(client, session_factor
 
 def test_profile_validation_happens_before_opening_the_stream(client, session_factory):
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
-        FunctionModel(lambda *_: ModelResponse([TextPart('未找到资料。')])), session_factory=session_factory)
+        FunctionModel(lambda *_: ModelResponse([answer_part('未找到资料。')])), session_factory=session_factory)
     response = client.post('/agent/ask', json={'question': '我适合哪场', 'profile': {'skills': ['x'] * 51}})
     assert response.headers['content-type'].startswith('application/json')
     assert response.json()['code'] == 400

@@ -497,6 +497,44 @@
         }
       }
     },
+    "/agent/recommendations/resolve": {
+      "post": {
+        "summary": "Resolve Recommendations",
+        "operationId": "resolve_recommendations_agent_recommendations_resolve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveRecommendations"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_list_ContestRecommendation__"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent/ask": {
       "post": {
         "summary": "Ask Question",
@@ -702,6 +740,34 @@
           "summary"
         ],
         "title": "ContestDetail"
+      },
+      "ContestRecommendation": {
+        "properties": {
+          "contest": {
+            "$ref": "#/components/schemas/ContestDetail"
+          },
+          "introduction": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introduction"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contest",
+          "reason"
+        ],
+        "title": "ContestRecommendation"
       },
       "ContestSummary": {
         "properties": {
@@ -1188,6 +1254,26 @@
         ],
         "title": "PublicUser"
       },
+      "ResolveRecommendations": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Content"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ToolSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "ResolveRecommendations"
+      },
       "Response_ContestDetail_": {
         "properties": {
           "code": {
@@ -1392,6 +1478,52 @@
         "type": "object",
         "title": "Response[Union[PublicUser, NoneType]]"
       },
+      "Response_list_ContestRecommendation__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ContestRecommendation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[list[ContestRecommendation]]"
+      },
       "Response_list_MatchItem__": {
         "properties": {
           "code": {
@@ -1501,6 +1633,39 @@
           "excerpt"
         ],
         "title": "Source"
+      },
+      "ToolSource": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "site": {
+            "type": "string",
+            "title": "Site",
+            "default": ""
+          },
+          "is_official": {
+            "type": "boolean",
+            "title": "Is Official",
+            "default": false
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "url"
+        ],
+        "title": "ToolSource"
       },
       "ValidationError": {
         "properties": {

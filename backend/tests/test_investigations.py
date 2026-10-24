@@ -2,8 +2,10 @@ import asyncio
 import json
 
 import pytest
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart, ToolReturnPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 from sqlalchemy import select
 
 from contest_detective.server.agent.loop import Investigator
@@ -42,7 +44,7 @@ def test_two_tools_stream_real_database_results_in_order(session_factory):
             parts = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
             assert parts[-1].content['items'][0]['id'] == contest_id
             return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id}, tool_call_id='detail')])
-        return ModelResponse([TextPart('这是作品提交截止：[10月25日16:00](https://organizer.example/rules)，报名截止未找到。')])
+        return ModelResponse([answer_part('这是作品提交截止：[10月25日16:00](https://organizer.example/rules)，报名截止未找到。')])
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory)
     events = run(investigator)
     assert [event.type for event in events] == ['step', 'observation', 'step', 'observation', 'answer']
@@ -75,7 +77,7 @@ def test_ten_contest_query_can_read_every_source_before_answering(session_factor
         if len(details) < len(items):
             return ModelResponse([ToolCallPart('get_contest', {'contest_id': items[len(details)]['id']},
                                                tool_call_id=f'detail-{len(details)}')])
-        return ModelResponse([TextPart('\n'.join(
+        return ModelResponse([answer_part('\n'.join(
             f"{detail['contest']['name']}：[参赛规则]({detail['sources'][0]['url']})" for detail in details
         ))])
 
@@ -102,7 +104,7 @@ def test_tool_argument_corrections_allow_a_real_match_but_stop_after_three_retri
             return ModelResponse([ToolCallPart('match_contests', {'profile': {'identity_kind': 'student'}})])
         results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
         assert results[-1].content['items'][0]['contest']['id'] == contest_id
-        return ModelResponse([TextPart('已按在校生条件筛选赛事。')])
+        return ModelResponse([answer_part('已按在校生条件筛选赛事。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory), '适合大学生的黑客松')
     assert events[-1].type == ('answer' if corrected else 'error'), events[-1].payload
     assert calls == (5 if corrected else 4)
@@ -114,7 +116,7 @@ def test_investigation_can_continue_beyond_sixty_four_requests(session_factory):
         nonlocal calls
         calls += 1
         return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
-                             if calls <= 65 else [TextPart('已完成查证。')])
+                             if calls <= 65 else [answer_part('已完成查证。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory))
     assert calls == 66
     assert events[-1].type == 'answer'
@@ -145,7 +147,7 @@ def test_web_search_is_hidden_without_provider_and_fetch_preserves_text(session_
             return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://organizer.example/rules'})])
         results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
         assert len(results[-1].content['text']) == 8000
-        return ModelResponse([TextPart('网页未注明报名截止。')])
+        return ModelResponse([answer_part('网页未注明报名截止。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'answer'
 
@@ -155,7 +157,7 @@ def test_web_search_is_hidden_without_provider_and_fetch_preserves_text(session_
     '[报名页](https://organizer.example/registration)尚未读取，截止日期未核实。',
 ])
 def test_no_verified_matches_can_still_return_an_uncertain_answer(session_factory, answer):
-    events = run(Investigator(FunctionModel(lambda *_: ModelResponse([TextPart(answer)])), session_factory=session_factory))
+    events = run(Investigator(FunctionModel(lambda *_: ModelResponse([answer_part(answer)])), session_factory=session_factory))
     assert events[-1].type == 'answer' and events[-1].payload['content'] == answer
     assert events[-1].payload['sources'] == []
     with session_factory() as session:
@@ -183,7 +185,7 @@ def test_confirmed_profile_is_supplied_only_for_identified_user(session_factory)
     seen = []
     def respond(_, info):
         seen.append(info.instructions)
-        return ModelResponse([TextPart('未找到合适比赛。')])
+        return ModelResponse([answer_part('未找到合适比赛。')])
     reader = lambda user_id: {'skills': ['Python'], 'city': '杭州'}
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory, profile_reader=reader)
     run(investigator, user_id='known-user')
@@ -239,12 +241,12 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
     def respond(_, info):
         nonlocal calls
         calls += 1
-        if info.output_tools:
+        if info.output_tools and info.output_tools[0].name != 'respond_to_user':
             parts = [ToolCallPart(info.output_tools[0].name, draft)]
         elif calls == 1:
             parts = [ToolCallPart('record_page', {'url': url})]
         else:
-            parts = [TextPart('新赛事已入库。')]
+            parts = [answer_part('新赛事已入库。')]
         return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
     async def enough():
         return Decimal('100')
@@ -262,7 +264,7 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
 
 def test_unconfigured_optional_tools_do_not_open_network_connections(session_factory):
     from pydantic_ai.models.test import TestModel
-    model = TestModel(call_tools=['fetch_page', 'record_page', 'get_contest'], custom_output_text='暂无可核对资料。')
+    model = TestModel(call_tools=['fetch_page', 'record_page', 'get_contest'], custom_output_args={'content': '暂无可核对资料。', 'recommendations': []})
     events = run(Investigator(model, session_factory=session_factory))
     assert events[-1].type == 'answer'
     summaries = [event.payload['summary'] for event in events if event.type == 'observation']
@@ -283,13 +285,13 @@ def test_page_extraction_can_follow_seven_detail_lookups(session_factory):
     def respond(_, info):
         nonlocal calls
         calls += 1
-        if info.output_tools:
+        if info.output_tools and info.output_tools[0].name != 'respond_to_user':
             return ModelResponse([ToolCallPart(info.output_tools[0].name, {'name': '网页赛事', 'claims': []})])
         if calls <= 7:
             return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id}, tool_call_id=f'detail-{calls}')])
         if calls == 8:
             return ModelResponse([ToolCallPart('record_page', {'url': url})])
-        return ModelResponse([TextPart('已核对公开规则，未找到新的截止日期。')])
+        return ModelResponse([answer_part('已核对公开规则，未找到新的截止日期。')])
 
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
     assert events[-1].type == 'answer', events[-1].payload
@@ -305,10 +307,10 @@ def test_page_extraction_and_investigation_can_continue_beyond_the_old_shared_li
     def respond(_, info):
         nonlocal calls
         calls += 1
-        if info.output_tools:
+        if info.output_tools and info.output_tools[0].name != 'respond_to_user':
             return ModelResponse([ToolCallPart(info.output_tools[0].name, {'name': '待核对赛事', 'claims': []})])
         if calls > 65:
-            return ModelResponse([TextPart('已完成查证，截止日期尚未核实。')])
+            return ModelResponse([answer_part('已完成查证，截止日期尚未核实。')])
         return ModelResponse([ToolCallPart('record_page', {'url': 'https://organizer.example/rules'})])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
     assert calls == 67 and events[-1].type == 'answer'
@@ -332,7 +334,7 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
             return ModelResponse([ToolCallPart('record_page', {
                 'url': 'https://organizer.example/rules', 'contest_id': contest_id,
             })])
-        return ModelResponse([TextPart('未找到可写回的字段。')])
+        return ModelResponse([answer_part('未找到可写回的字段。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
     assert recorded == [('https://organizer.example/rules', 'https://organizer.example/register', contest_id)]
@@ -350,7 +352,7 @@ def test_a_single_response_can_dispatch_more_than_sixty_four_tools(session_facto
         if calls == 1:
             return ModelResponse([ToolCallPart('fetch_page', {'url': f'https://organizer.example/{i}'}, tool_call_id=str(i))
                                   for i in range(65)])
-        return ModelResponse([TextPart('未找到明确资料。')])
+        return ModelResponse([answer_part('未找到明确资料。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
     assert events[-1].type == 'answer'
     assert len(fetched) == 65
@@ -360,7 +362,7 @@ def test_empty_account_profile_is_not_described_as_confirmed(session_factory):
     instructions = []
     def respond(_, info):
         instructions.append(info.instructions)
-        return ModelResponse([TextPart('请先确认你的画像。')])
+        return ModelResponse([answer_part('请先确认你的画像。')])
     empty = {'skills': [], 'identity': None, 'available_time': None, 'city': None, 'github': None}
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory,
                                 profile_reader=lambda _: empty)
@@ -391,12 +393,12 @@ def test_research_tool_uses_real_page_validation_and_storage(session_factory, mo
     def respond(_, info):
         nonlocal calls
         calls += 1
-        if info.output_tools:
+        if info.output_tools and info.output_tools[0].name != 'respond_to_user':
             parts = [ToolCallPart(info.output_tools[0].name, draft)]
         elif calls == 1:
             parts = [ToolCallPart('record_page', {'url': url})]
         else:
-            parts = [TextPart(f'作品提交截止：[11月1日16:00]({url})，报名截止未找到。')]
+            parts = [answer_part(f'作品提交截止：[11月1日16:00]({url})，报名截止未找到。')]
         return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
     async def enough():
         return Decimal('100')
@@ -437,11 +439,11 @@ def test_existing_contest_is_verified_in_place_through_real_recording(session_fa
     def respond(_, info):
         nonlocal calls
         calls += 1
-        if info.output_tools:
+        if info.output_tools and info.output_tools[0].name != 'respond_to_user':
             return ModelResponse([ToolCallPart(info.output_tools[0].name, draft)])
         if calls == 1:
             return ModelResponse([ToolCallPart('record_page', {'url': url, 'contest_id': contest_id})])
-        return ModelResponse([TextPart('已核实赛事。')])
+        return ModelResponse([answer_part('已核实赛事。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record_page))
     assert events[-1].type == 'answer'
     with session_factory() as session:

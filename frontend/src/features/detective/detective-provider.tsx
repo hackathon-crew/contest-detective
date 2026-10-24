@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { apiClient, type Profile } from '@/shared/api'
+import { useMatch } from 'react-router'
+import { apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
 import { historyFor, type DetectiveTurn } from './conversation'
 import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
 import { parseTrace } from './events'
@@ -11,8 +12,19 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   const client = useQueryClient()
   const [sessions, setSessions] = useState(() => loadSessions(scope))
   const snapshot = useRef(sessions)
+  const legacyTurns = useRef(
+    new Set(
+      sessions.flatMap((session) =>
+        session.turns
+          .filter((turn) => turn.status === 'completed' && turn.recommendations === undefined)
+          .map((turn) => turn.id),
+      ),
+    ),
+  )
   const requests = useRef(new Map<string, AbortController>())
+  const recovering = useRef(new Set<string>())
   const [storageError, setStorageError] = useState(false)
+  const activeId = useMatch('/detective/:conversationId')?.params.conversationId
 
   useEffect(
     () => () => {
@@ -28,6 +40,33 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       queueMicrotask(() => setStorageError(true))
     }
   }, [scope, sessions])
+
+  useEffect(() => {
+    const active = sessions.find((session) => session.id === activeId)
+    if (!active) return
+    for (const turn of active.turns) {
+      if (
+        !legacyTurns.current.has(turn.id) ||
+        turn.status !== 'completed' ||
+        turn.recommendations !== undefined ||
+        recovering.current.has(turn.id)
+      )
+        continue
+      recovering.current.add(turn.id)
+      void apiClient
+        .request<ContestRecommendation[]>('/agent/recommendations/resolve', {
+          method: 'POST',
+          json: { content: turn.content, sources: turn.sources },
+        })
+        .then((recommendations) => {
+          update(active.id, turn.id, (current) => ({ ...current, recommendations }))
+        })
+        .catch(() => {
+          // 补读失败时保留原回复；下次打开会话可重新读取，不把旧对话标成查证失败。
+        })
+        .finally(() => recovering.current.delete(turn.id))
+    }
+  }, [activeId, sessions])
 
   function change(transform: (sessions: DetectiveSession[]) => DetectiveSession[]) {
     snapshot.current = transform(snapshot.current)
@@ -117,6 +156,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
             ...turn,
             content: event.content,
             sources: event.sources,
+            recommendations: event.recommendations,
             status: 'completed',
           }))
           terminal = true

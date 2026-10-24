@@ -59,6 +59,7 @@ class ToolDeps:
     record: Callable | None = None
     profile: Profile | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
+    contest_ids: set[str] = field(default_factory=set)
 
     def remember(self, sources):
         for source in sources:
@@ -92,6 +93,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
             items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
                 date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size))
         sources = [source for item in items for source in contest_sources(item)]
+        ctx.deps.contest_ids.update(item.id for item in items)
         ctx.deps.remember(sources)
         return {'items': [plain(item) for item in items], 'total': total,
                 'page': page, 'page_size': page_size, 'has_more': page * page_size < total,
@@ -105,6 +107,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
         if item is None:
             return {'contest': None, 'summary': '比赛未找到', 'sources': []}
         sources = contest_sources(item)
+        ctx.deps.contest_ids.add(item.id)
         ctx.deps.remember(sources)
         return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
@@ -116,6 +119,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
             return {'items': [], 'summary': '请先确认画像，再按你的情况挑比赛', 'sources': []}
         with ctx.deps.session_factory() as session:
             items = matching.match(session, selected)
+        ctx.deps.contest_ids.update(item.contest.id for item in items)
         sources = [{'title': repo.name, 'url': repo.url, 'site': 'GitHub'}
                    for repo in selected.github_evidence if any(repo.url in item.reason for item in items)]
         ctx.deps.remember(sources)
@@ -173,6 +177,7 @@ def register_tools(agent: Agent, *, web_enabled: bool):
             with ctx.deps.session_factory() as session:
                 item = contests.get(session, contest_id)
             if item:
+                ctx.deps.contest_ids.add(item.id)
                 sources = contest_sources(item)
                 ctx.deps.remember(sources)
         return {'contest_id': contest_id, 'summary': '赛事已写回比赛库' if contest_id else '未找到可写入的赛事字段', 'sources': sources}
