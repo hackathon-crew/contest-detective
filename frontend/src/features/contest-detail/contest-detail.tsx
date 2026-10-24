@@ -117,8 +117,17 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
   const venue = mode !== 'online' ? supportedValue(contest, 'venue') : null
   const place = [city && !venue?.includes(city) ? city : null, venue].filter(Boolean).join(' · ')
   const modeText = mode ? displayField('mode', contest.fields.mode) : null
-  const locationRefs = ['mode', ...(city ? ['city'] : []), ...(venue ? ['venue'] : [])].flatMap(
-    (field) => index.refsByField[field] ?? [],
+  const locationFields = [
+    ...(mode ? ['mode'] : []),
+    ...(city ? ['city'] : []),
+    ...(venue ? ['venue'] : []),
+  ]
+  const locationRefs = locationFields.flatMap((field) => index.refsByField[field] ?? [])
+  const locationReposted = locationFields.some(
+    (field) => contest.fields[field]?.level === 'reposted',
+  )
+  const locationOnlyReposted = locationFields.every(
+    (field) => contest.fields[field]?.level === 'reposted',
   )
   const otherFields = ['organizer', 'mode', 'city', 'venue', 'registration_url'].filter((field) =>
     hasConflict(contest, field),
@@ -168,6 +177,11 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
             <div className="contest-detail-location">
               <MapPin aria-hidden="true" />
               <span>{[modeText, place].filter(Boolean).join(' · ')}</span>
+              {locationReposted && (
+                <span className="contest-detail-inline-level">
+                  {locationOnlyReposted ? '仅见转载' : '部分信息仅见转载'}
+                </span>
+              )}
               <SourceReferences index={index} refs={locationRefs} label="参赛方式与地点" />
             </div>
           )}
