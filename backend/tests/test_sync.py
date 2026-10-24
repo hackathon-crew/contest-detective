@@ -13,13 +13,15 @@ def draft():
 
 
 def test_sync_keeps_other_sources_running_and_does_not_log_credentials(session_factory, caplog):
-    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
     def broken(_client):
         raise ValueError('Bearer do-not-log-this')
 
+    settings = AppSettings(_env_file=None, sync_collect='structured')
     with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
-        report = run_sync(session_factory, client=client, sources=[
+        report = run_pipeline(session_factory, client=client, settings=settings, sources=[
             ('broken', broken), ('healthy', lambda _: [draft()]),
         ])
 
@@ -33,11 +35,13 @@ def test_sync_keeps_other_sources_running_and_does_not_log_credentials(session_f
 
 
 def test_sync_updates_existing_source_claims_without_duplicate_events(session_factory):
-    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
+    settings = AppSettings(_env_file=None, sync_collect='structured')
     with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
-        first = run_sync(session_factory, client=client, sources=[('healthy', lambda _: [draft()])])
-        second = run_sync(session_factory, client=client, sources=[('healthy', lambda _: [draft()])])
+        first = run_pipeline(session_factory, client=client, settings=settings, sources=[('healthy', lambda _: [draft()])])
+        second = run_pipeline(session_factory, client=client, settings=settings, sources=[('healthy', lambda _: [draft()])])
 
     assert first.saved == second.saved == 1
     with session_factory() as session:
@@ -53,18 +57,21 @@ def test_disabled_interval_does_not_start_a_scheduler(session_factory):
 
 
 def test_interval_scheduler_runs_a_sync_immediately_and_can_stop(session_factory, monkeypatch):
+    from contest_detective.framework.config.app import AppSettings
     from contest_detective.server.research_pipeline import scheduler as scheduling
-    from contest_detective.server.research_pipeline.service import run_sync
 
     completed = threading.Event()
 
-    def one_round(factory):
+    def one_round(factory, *, extractor=None):
+        from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
         with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
-            report = run_sync(factory, client=client, sources=[('healthy', lambda _: [draft()])])
+            report = run_pipeline(factory, client=client, extractor=extractor,
+                                  settings=AppSettings(_env_file=None, sync_collect='structured'),
+                                  sources=[('healthy', lambda _: [draft()])])
         completed.set()
         return report
 
-    monkeypatch.setattr(scheduling, 'run_sync', one_round)
+    monkeypatch.setattr(scheduling, 'run_pipeline', one_round)
     scheduler = scheduling.start_scheduler(session_factory, 360)
     try:
         assert completed.wait(timeout=3)
@@ -86,7 +93,7 @@ def test_application_stops_its_scheduler_when_lifespan_ends(session_factory, mon
             assert wait is True
             stopped.set()
 
-    monkeypatch.setattr(bootstrap, 'start_scheduler', lambda *_: Scheduler())
+    monkeypatch.setattr(bootstrap, 'start_scheduler', lambda *_args, **_kwargs: Scheduler())
     application = bootstrap.create_app(db_engine=session_factory.kw['bind'], sync_interval_minutes=360)
     with TestClient(application) as client:
         assert client.get('/health').json()['data']['status'] == 'ok'
@@ -100,10 +107,11 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
     from sqlalchemy import func, select
     from contest_detective.server.contest.models import ContestPage
     from contest_detective.server.contest.service import get
-    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
     fixtures = Path(__file__).parent / 'fixtures'
-    snapshots = {name: json.loads((fixtures / f'{name}.json').read_text())
+    snapshots = {name: json.loads((fixtures / f'{name}.json').read_text(encoding='utf-8'))
                  for name in ('hackertrip', 'waytoagi', 'waytoagi_details', 'devpost')}
 
     def handle(request):
@@ -116,7 +124,8 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
         return httpx.Response(200, json=snapshots['waytoagi_details'][request.url.path.rsplit('/', 1)[-1]])
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        report = run_sync(session_factory, client=client)
+        report = run_pipeline(session_factory, client=client,
+                              settings=AppSettings(_env_file=None, sync_collect='structured'))
     assert report.saved == 113
     assert report.failed == 0
     with session_factory() as session:
@@ -137,8 +146,8 @@ def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes
     from datetime import datetime, timezone
     from functools import partial
     from contest_detective.server.contest.service import get
-    from contest_detective.server.research_pipeline.service import run_sync
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
     initial = draft()
     initial.claims.append(ClaimIn(field='registration_url', value='https://organizer.example/register',
@@ -151,13 +160,16 @@ def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes
         return ContestDraft(name=initial.name, page=PageIn(url=url, site='来源', title='赛事', is_official=False),
             claims=[ClaimIn(field='city', value='上海', excerpt='城市：上海')])
 
-    verifier = partial(verify_recent, fetcher=body, now=datetime(2026, 12, 25, tzinfo=timezone.utc))
+    settings = AppSettings(_env_file=None, sync_collect='both')
     with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
-        first = run_sync(session_factory, client=client, sources=[('fixture', lambda _: [initial])],
-                         extractor=extractor, discoveries=[], verifier=verifier)
-        second = run_sync(session_factory, client=client, sources=[('fixture', lambda _: [initial])],
-                          extractor=extractor, discoveries=[], verifier=verifier)
-    assert first.extraction_enabled is True
+        first = run_pipeline(session_factory, client=client, settings=settings,
+                             sources=[('fixture', lambda _: [initial])], extractor=extractor,
+                             fetcher=body, listings=[], searcher=lambda *_args, **_kwargs: [],
+                             now=datetime(2026, 12, 25, tzinfo=timezone.utc))
+        second = run_pipeline(session_factory, client=client, settings=settings,
+                              sources=[('fixture', lambda _: [initial])], extractor=extractor,
+                              fetcher=body, listings=[], searcher=lambda *_args, **_kwargs: [],
+                              now=datetime(2026, 12, 25, tzinfo=timezone.utc))
     assert first.verified == 1
     assert second.verified == 0
     assert second.skipped == 1
@@ -168,15 +180,15 @@ def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes
 
 
 def test_sync_with_no_extractor_does_not_start_discovery(session_factory):
-    from contest_detective.server.research_pipeline.service import run_sync
+    from contest_detective.framework.config.app import AppSettings
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
-    async def forbidden(**kwargs):
+    def forbidden(*_args, **_kwargs):
         raise AssertionError('未配置抽取器时不得读取详情或调用模型')
 
-    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
-        report = run_sync(session_factory, client=client, sources=[], discoveries=[('forbidden', forbidden)],
-                          verifier=forbidden)
-    assert report.extraction_enabled is False
+    with httpx.Client(transport=httpx.MockTransport(forbidden)) as client:
+        report = run_pipeline(session_factory, client=client, sources=[], listings=[('forbidden', forbidden)],
+                              searcher=forbidden, settings=AppSettings(_env_file=None, sync_collect='both'))
     assert report.saved == report.verified == report.failed == 0
 
 

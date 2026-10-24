@@ -139,7 +139,6 @@ def create_investigator(*, session_factory=SessionLocal) -> Investigator:
     from .llm import create_model
     model = create_model(session_factory=session_factory)
     from contest_detective.server import research_pipeline
-    from contest_detective.server.research_pipeline.service import run
     from contest_detective.server.user.service import get
 
     def read_profile(user_id):
@@ -149,7 +148,7 @@ def create_investigator(*, session_factory=SessionLocal) -> Investigator:
 
     return Investigator(model, session_factory=session_factory, fetch=research_pipeline.fetch_page,
         search=research_pipeline.search_web if research_pipeline.web_search_available() else None,
-        record=run, profile_reader=read_profile)
+        record=research_pipeline.run, profile_reader=read_profile)
 
 
 async def ask(question: str, user_id: str | None = None, profile: Profile | None = None) -> AsyncIterator[TraceEvent]:

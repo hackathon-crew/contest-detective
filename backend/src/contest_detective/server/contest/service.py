@@ -104,6 +104,25 @@ def _summary(contest, now):
         status=_status(contest, now), fields={field: FieldValue(**value) for field, value in contest.fields.items()})
 
 
+def match_id(session: Session, draft: ContestDraft) -> str | None:
+    page = session.scalar(select(ContestPage).where(ContestPage.url == draft.page.url))
+    contest = _match(session, draft, page)
+    return None if contest is None else contest.id
+
+
+def claim_sources(session: Session, contest_id: str) -> list[tuple[str, Source]]:
+    rows = session.execute(select(ContestClaim, ContestPage).join(
+        ContestPage, ContestClaim.page_id == ContestPage.id).where(ContestClaim.contest_id == contest_id))
+    sources = []
+    for claim, page in rows:
+        published = datetime.fromisoformat(page.published_at) if page.published_at else None
+        sources.append((claim.field, Source(
+            url=page.url, site=page.site, title=page.title, published_at=published, is_official=page.is_official,
+            value=claim.value, excerpt=claim.excerpt, precision=claim.precision,
+        )))
+    return sources
+
+
 def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None) -> str:
     page = session.scalar(select(ContestPage).where(ContestPage.url == draft.page.url))
     contest = session.get(Contest, contest_id) if contest_id else _match(session, draft, page)

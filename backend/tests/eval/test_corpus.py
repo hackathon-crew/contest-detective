@@ -12,7 +12,7 @@ ROOT = Path(__file__).parent
 
 def corpus():
     for path in ('public_snapshots.json', 'synthetic_regressions.json'):
-        yield from json.loads((ROOT / path).read_text())['cases']
+        yield from json.loads((ROOT / path).read_text(encoding='utf-8'))['cases']
 
 
 def test_corpus_covers_ten_public_events_with_review_boundaries():
@@ -30,7 +30,7 @@ def test_corpus_covers_ten_public_events_with_review_boundaries():
 
 @pytest.mark.parametrize('filename', ['public_snapshots.json', 'synthetic_regressions.json'])
 def test_source_claims_resolve_to_the_recorded_values(session, filename):
-    cases = json.loads((ROOT / filename).read_text())['cases']
+    cases = json.loads((ROOT / filename).read_text(encoding='utf-8'))['cases']
     for case in cases:
         drafts = [ContestDraft.model_validate(item) for item in case['drafts']]
         ids = [service.save(session, draft) for draft in drafts]

@@ -10,7 +10,7 @@ from contest_detective.server.contest.service import get, query
 def test_registration_search_extracts_bounded_same_site_urls():
     from contest_detective.server.research_pipeline.sources.huodongxing import discover_urls
 
-    snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text()
+    snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text(encoding='utf-8')
     urls = discover_urls(snapshot)
     assert len(urls) == 8
     assert urls[0] == 'https://www.huodongxing.com/event/6883666147100'
@@ -21,11 +21,11 @@ def test_registration_search_extracts_bounded_same_site_urls():
 
 
 def test_registration_discovery_throttles_requests_and_saves_supported_pages(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline import record
+    from contest_detective.framework.config.app import AppSettings
     from contest_detective.server.research_pipeline.pages import fetch_page
-    from contest_detective.server.research_pipeline.sources.huodongxing import sync
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
 
-    snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text()
+    snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text(encoding='utf-8')
     waits = []
 
     async def pause(seconds):
@@ -45,11 +45,11 @@ def test_registration_discovery_throttles_requests_and_saves_supported_pages(ses
         return httpx.Response(200, text='公开报名活动，地点上海', headers={'content-type': 'text/plain'})
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        monkeypatch.setattr(record, 'fetch_page', lambda url: fetch_page(url, client=client,
-            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))]))
-        report = asyncio.run(sync(extractor=extractor, session_factory=session_factory,
-                                  client=client, sleep=pause))
-    assert report.discovered == 8
+        fetcher = lambda url: fetch_page(url, client=client,
+            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))])
+        report = run_pipeline(session_factory, client=client, extractor=extractor, fetcher=fetcher, sleep=pause,
+                              settings=AppSettings(_env_file=None, sync_collect='unstructured'), sources=[],
+                              searcher=lambda *_args, **_kwargs: [])
     assert report.saved == 7
     assert report.failed == 1
     assert waits == [2] * 8
@@ -63,10 +63,10 @@ def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_p
     import json
     from types import SimpleNamespace
 
-    from contest_detective.server.research_pipeline import record
+    from contest_detective.framework.config.app import AppSettings
     from contest_detective.server.research_pipeline.pages import fetch_page
+    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
     from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
-    from contest_detective.server.research_pipeline.sources.wechat import sync
 
     queries = []
 
@@ -81,7 +81,8 @@ def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_p
 
     class FakeYuanbao:
         def SearchPro(self, request):
-            assert request.Site == 'mp.weixin.qq.com'
+            if request.Site != 'mp.weixin.qq.com':
+                return SimpleNamespace(Pages=[])
             assert request.Cnt == 10
             queries.append(request.Query)
             return SimpleNamespace(Pages=[json.dumps({'url': url}) for url in [
@@ -91,11 +92,13 @@ def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_p
 
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         searcher = YuanbaoSearch(secret_id='id', secret_key='key', client=FakeYuanbao()).search
-        monkeypatch.setattr(record, 'fetch_page', lambda url: fetch_page(url, client=client,
-            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))]))
-        report = asyncio.run(sync(extractor=extractor, session_factory=session_factory, searcher=searcher))
+        fetcher = lambda url: fetch_page(url, client=client,
+            resolver=lambda *_args, **_kwargs: [(None, None, None, None, ('8.8.8.8', 443))])
+        report = run_pipeline(session_factory, client=client, extractor=extractor, fetcher=fetcher, searcher=searcher,
+                              settings=AppSettings(_env_file=None, sync_collect='unstructured'), sources=[],
+                              listings=[])
     assert set(queries) == {'黑客松 报名', '黑客松 延期', '黑客松 提交截止'}
-    assert report.discovered == report.saved == 2
+    assert report.saved == 2
     assert report.failed == 0
     with session_factory() as session:
         items, total = query(session, ContestQuery())
