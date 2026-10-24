@@ -10,7 +10,8 @@ class SearchSettings(BaseSettings):
         env_file_encoding='utf-8', extra='ignore',
     )
 
-    yuanbao_api_key: SecretStr | None = None
+    yuanbao_secret_id: SecretStr | None = None
+    yuanbao_secret_key: SecretStr | None = None
     tavily_api_key: SecretStr | None = None
 
 

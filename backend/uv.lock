@@ -500,6 +500,8 @@ dependencies = [
     { name = "sqlalchemy" },
     { name = "sse-starlette" },
     { name = "tavily-python" },
+    { name = "tencentcloud-sdk-python-common" },
+    { name = "tencentcloud-sdk-python-wsa" },
     { name = "trafilatura" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -530,6 +532,8 @@ requires-dist = [
     { name = "sqlalchemy", specifier = ">=2" },
     { name = "sse-starlette", specifier = ">=3.5.0" },
     { name = "tavily-python", specifier = ">=0.8.5" },
+    { name = "tencentcloud-sdk-python-common", specifier = ">=3.1.193" },
+    { name = "tencentcloud-sdk-python-wsa", specifier = ">=3.1.190" },
     { name = "trafilatura", specifier = ">=2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
@@ -2770,6 +2774,30 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2f/39/3aff85cb3b45cab3ef9578560364b893baa34e79744e99567a825dbadf57/tavily_python-0.8.5.tar.gz", hash = "sha256:1795965c3ffe5654856244d637daa816a4ee947aca57d0588b731c69e75e71fe", size = 35634, upload-time = "2026-10-06T15:11:34.827Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/c5/fc13567e2a1d3671f51252d44f580bf3ab3c0a6ec90a6553f5c67ba87208/tavily_python-0.8.5-py3-none-any.whl", hash = "sha256:f8d2880f5aa67cf3ee2eb1f7c9336ea50dc331eb1e406688391badb0140599a7", size = 24629, upload-time = "2026-10-06T15:11:33.854Z" },
+]
+
+[[package]]
+name = "tencentcloud-sdk-python-common"
+version = "3.1.193"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e2/d7/7eb159ae79c7c633b33678f531c0166252f88a0c3988f1a84d18c0b05205/tencentcloud_sdk_python_common-3.1.193.tar.gz", hash = "sha256:bbef455105a6323c1f661f159c74c31aaf234fba8a033461436f0a374b74fdb2", size = 22662, upload-time = "2026-10-23T03:53:52.845Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/3e/1aa52287746bc2a341cd0438e99b77b7ce7423bfa8654875ed86a7980f32/tencentcloud_sdk_python_common-3.1.193-py2.py3-none-any.whl", hash = "sha256:1a434e2442d5b68aa40681e10e5a678fa88119c696d23a2fcb536d33c96e00bc", size = 34274, upload-time = "2026-10-23T03:53:51.168Z" },
+]
+
+[[package]]
+name = "tencentcloud-sdk-python-wsa"
+version = "3.1.190"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "tencentcloud-sdk-python-common" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/63/c2/d60de9e1c813a63269103c71dcea62b9da6cc2deb609fc9fccf95e33e5b3/tencentcloud_sdk_python_wsa-3.1.190.tar.gz", hash = "sha256:2aaf9abe2b323d9d0fa6498d3ea162365279904ba1c7416070ae9758ee3fdbbd", size = 7029, upload-time = "2026-10-19T18:54:28.281Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c7/0b/331d324b84f44bd4dccfb33299e4047b2e9c78d5ae024e6969a57801f2ad/tencentcloud_sdk_python_wsa-3.1.190-py2.py3-none-any.whl", hash = "sha256:56ca2b74f0fca2c7c92e6be7d3b29ccc0a0b9cc43c110265af918f65a59c08e6", size = 9767, upload-time = "2026-10-19T18:54:26.985Z" },
 ]
 
 [[package]]

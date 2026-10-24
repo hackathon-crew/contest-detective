@@ -75,7 +75,7 @@ def test_tavily_sanitizes_error_payloads():
 
 @pytest.mark.parametrize('with_yuanbao', [False, True])
 def test_configured_search_uses_tavily_and_preserves_yuanbao_priority(monkeypatch, with_yuanbao):
-    import httpx
+    from types import SimpleNamespace
 
     from contest_detective.framework.config.search import SearchSettings
     from contest_detective.server import research_pipeline
@@ -87,24 +87,31 @@ def test_configured_search_uses_tavily_and_preserves_yuanbao_priority(monkeypatc
         {'url': 'https://tavily-only.example/one', 'content': '补充来源'},
     ]})
 
-    def handle(request):
-        assert request.url.host == 'api.wsa.cloud.tencent.com'
-        return httpx.Response(200, json={'Response': {'Pages': [
-            '{"url": "https://common.example/one"}',
-            '{"url": "https://yuanbao-only.example/one"}',
-        ]}})
+    class FakeYuanbao:
+        def SearchPro(self, _request):
+            return SimpleNamespace(Pages=[
+                '{"url": "https://common.example/one"}',
+                '{"url": "https://yuanbao-only.example/one"}',
+            ])
 
-    config = SearchSettings(yuanbao_api_key='test-key' if with_yuanbao else None, tavily_api_key='test-key')
+    config = SearchSettings(
+        yuanbao_secret_id='id' if with_yuanbao else None,
+        yuanbao_secret_key='key' if with_yuanbao else None,
+        tavily_api_key='test-key',
+    )
     monkeypatch.setattr(research_pipeline, 'get_search_settings', lambda: config)
-    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
-        monkeypatch.setattr(
-            research_pipeline,
-            'TavilySearch',
-            lambda **kwargs: TavilySearch(client=tavily, **kwargs),
-        )
-        monkeypatch.setattr(research_pipeline, 'YuanbaoSearch', lambda **kwargs: YuanbaoSearch(client=client, **kwargs))
-        assert research_pipeline.web_search_available() is True
-        hits = research_pipeline.search_web('黑客松', count=3)
+    monkeypatch.setattr(
+        research_pipeline,
+        'TavilySearch',
+        lambda **kwargs: TavilySearch(client=tavily, **kwargs),
+    )
+    monkeypatch.setattr(
+        research_pipeline,
+        'YuanbaoSearch',
+        lambda **kwargs: YuanbaoSearch(client=FakeYuanbao(), **kwargs),
+    )
+    assert research_pipeline.web_search_available() is True
+    hits = research_pipeline.search_web('黑客松', count=3)
     if with_yuanbao:
         assert [hit.provider for hit in hits] == ['yuanbao', 'yuanbao', 'tavily']
         assert [hit.url for hit in hits] == [
