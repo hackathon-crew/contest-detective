@@ -166,10 +166,17 @@ def test_search_never_returns_more_than_ten_hits(session_factory):
     assert len(events[1].payload['sources']) == 10
 
 
-def test_uncited_dates_and_unknown_urls_are_rejected(session_factory):
-    for answer in ['截止是2026-10-25 16:00。', '[10月25日](https://invented.example)']:
-        events = run(Investigator(FunctionModel(lambda *_: ModelResponse([TextPart(answer)])), session_factory=session_factory))
-        assert events[-1].type == 'error' and '出处' in events[-1].payload['message']
+@pytest.mark.parametrize('answer', [
+    '截至2026-10-24，明天截止报名的赛事尚未核实。',
+    '[报名页](https://organizer.example/registration)尚未读取，截止日期未核实。',
+])
+def test_no_verified_matches_can_still_return_an_uncertain_answer(session_factory, answer):
+    events = run(Investigator(FunctionModel(lambda *_: ModelResponse([TextPart(answer)])), session_factory=session_factory))
+    assert events[-1].type == 'answer' and events[-1].payload['content'] == answer
+    assert events[-1].payload['sources'] == []
+    with session_factory() as session:
+        record = session.scalars(select(Investigation)).one()
+        assert record.status == 'completed' and record.answer == answer
 
 
 def test_early_client_close_marks_investigation_cancelled(session_factory):
