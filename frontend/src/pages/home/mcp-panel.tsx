@@ -17,7 +17,7 @@ const config = {
     endpoint +
     '"\n    }\n  }\n}',
 }
-export function McpPanel({ contests }: { contests: ContestSummary[] }) {
+export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
   const [tab, setTab] = useState<keyof typeof config>('cc')
   const [copied, setCopied] = useState(false)
   const pre = useRef<HTMLPreElement>(null)
@@ -44,7 +44,7 @@ export function McpPanel({ contests }: { contests: ContestSummary[] }) {
       }
     }
   }
-  const week = contests.filter((contest) => {
+  const week = (contests ?? []).filter((contest) => {
     const deadline = nextDeadline(contest)
     return contest.fields.mode?.value === 'online' && deadline && deadlineDays(deadline) <= 7
   })
@@ -119,7 +119,7 @@ export function McpPanel({ contests }: { contests: ContestSummary[] }) {
           <div className="call">
             <Icon name="check" />
             <span>
-              返回 {week.length} 场
+              {contests ? `返回 ${week.length} 场` : '接入后，AI 会返回赛事、截止时间和出处'}
               {week[0] && first
                 ? `，最近的是 ${week[0].name}（${formatDate(first.info.value, first.info.precision)}）`
                 : ''}
