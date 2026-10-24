@@ -1,0 +1,538 @@
+{
+  "url": "http://43.142.60.212/api/contests/5894865a-08b9-45ea-9f67-b21ab7de2661",
+  "captured_after_utc": "2026-10-24T21:35:51Z",
+  "server_date": "Sat, 24 Oct 2026 21:36:10 GMT",
+  "sha256": "8ce9517611aa99a1aabf643ddb555ed38efaf7c9ab64e3fb89a5a56d505ad739",
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "id": "5894865a-08b9-45ea-9f67-b21ab7de2661",
+      "name": "麦当劳程序员创意开发大赛",
+      "cover_url": "https://cdn-waic.waytoagi.com/covers/9609b26d33aa2fa9.webp",
+      "status": "ongoing",
+      "fields": {
+        "start_at": {
+          "value": "2026-10-09T00:00:00Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-10-09T00:00:00Z",
+              "excerpt": "date: 2026-10-09",
+              "stale": false,
+              "precision": "day"
+            }
+          ],
+          "precision": "day"
+        },
+        "end_at": {
+          "value": "2026-10-25T00:00:00Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-10-25T00:00:00Z",
+              "excerpt": "endDate: 2026-10-25",
+              "stale": false,
+              "precision": "day"
+            }
+          ],
+          "precision": "day"
+        },
+        "registration_deadline": {
+          "value": "2026-10-25T15:59:00Z",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "site": "McDonald’s official GitHub",
+              "title": "麦当劳程序员创意开发大赛活动规则",
+              "published_at": null,
+              "is_official": true,
+              "value": "2026-10-25T15:59:00Z",
+              "excerpt": "参赛者应当于北京时间2026年10月25日23:59前，通过活动页面使用指定Issue模板提交参赛申请，并包含项目名称、项目地址、项目简介等信息。",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "submission_deadline": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "deadline_unspecified": {
+          "value": "2026-10-25T15:59:00Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-10-25T15:59:00Z",
+              "excerpt": "deadline: 2026-10-25T23:59",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "city": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "mode": {
+          "value": "online",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "online",
+              "excerpt": "eventMode: online",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "prize": {
+          "value": "最高奖：巨无霸汉堡 50 次免费兑换券一张及 10240 WorkBuddy 积分；兑换限制和其他奖项见官方规则。",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "site": "McDonald’s official GitHub",
+              "title": "麦当劳程序员创意开发大赛活动规则",
+              "published_at": null,
+              "is_official": true,
+              "value": "最高奖：巨无霸汉堡 50 次免费兑换券一张及 10240 WorkBuddy 积分；兑换限制和其他奖项见官方规则。",
+              "excerpt": "第1名可获得【巨无霸汉堡*50次免费兑换券】一张（本券可免费兑换巨无霸汉堡50份，每天限兑1份，限部分麦当劳餐厅柜台或自助点餐机任意消费可用，具体有效期和使用规则详见券面）；以及腾讯WorkBudddy的 10240 积分;",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "registration_url": {
+          "value": "https://github.com/M-China-Official/mcd-developer-innovation-challenge",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "https://github.com/M-China-Official/mcd-developer-innovation-challenge",
+              "excerpt": "externalRegUrl: https://github.com/M-China-Official/mcd-developer-innovation-challenge",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "organizer": {
+          "value": "麦当劳 × WorkBuddy",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+              "site": "WaytoAGI",
+              "title": "麦当劳程序员创意开发大赛",
+              "published_at": null,
+              "is_official": false,
+              "value": "麦当劳 × WorkBuddy",
+              "excerpt": "organizerName: 麦当劳 × WorkBuddy",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "venue": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "eligibility": {
+          "value": "中国大陆合法居民；年满 18 周岁，或未满 18 周岁但已获得父母/法定监护人同意。",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "site": "McDonald’s official GitHub",
+              "title": "麦当劳程序员创意开发大赛活动规则",
+              "published_at": null,
+              "is_official": true,
+              "value": "中国大陆合法居民；年满 18 周岁，或未满 18 周岁但已获得父母/法定监护人同意。",
+              "excerpt": "您是中国大陆地区合法居民，且年龄不小于18周岁（或者虽小于18周岁但已经征得您父母或法定监护人的同意）",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "team_size": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "entry_fee": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "entry_requirements": {
+          "value": "项目须真实使用麦当劳 MCP 并保持 GitHub 仓库公开可访问；使用 WorkBuddy 是专项奖励条件。必须文件及其命名详见官方规则。",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "site": "McDonald’s official GitHub",
+              "title": "麦当劳程序员创意开发大赛活动规则",
+              "published_at": null,
+              "is_official": true,
+              "value": "项目须真实使用麦当劳 MCP 并保持 GitHub 仓库公开可访问；使用 WorkBuddy 是专项奖励条件。必须文件及其命名详见官方规则。",
+              "excerpt": "参赛项目须真实使用麦当劳 MCP 能力；\n如参与WorkBuddy专项奖励的，参赛项目须真实使用腾讯WorkBuddy智能体；\n发布参赛项目的GitHub仓库须保持公开可访问状态；",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "judging_criteria": {
+          "value": "符合资格的项目按 GitHub 公开 Star 数量排名。",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "site": "McDonald’s official GitHub",
+              "title": "麦当劳程序员创意开发大赛活动规则",
+              "published_at": null,
+              "is_official": true,
+              "value": "符合资格的项目按 GitHub 公开 Star 数量排名。",
+              "excerpt": "对符合要求的参赛项目，麦当劳按照其在GitHub平台获得的公开 Star 数量（即平台其他用户对项目的收藏和认可数量）进行排名",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "past_statistics": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        }
+      },
+      "introduction": {
+        "text": "我们面向中国大陆地区的开发者发起邀请：基于麦当劳 MCP 能力，开发属于自己的 Skill，让创意真正解决现实问题，还有机会赢取程序员节专属好礼。",
+        "method": "extractive",
+        "citations": [
+          {
+            "url": "https://github.com/M-China/mcd-developer-innovation-challenge",
+            "content_hash": "609c05feec0139048552c08deaab089d69e01443ac6b11da90ba3bebe2de116b",
+            "excerpt": "我们面向中国大陆地区的开发者发起邀请：基于麦当劳 MCP 能力，开发属于自己的 Skill，让创意真正解决现实问题，还有机会赢取程序员节专属好礼。"
+          }
+        ]
+      },
+      "coverage": {
+        "introduction": {
+          "state": "found",
+          "urls": ["https://github.com/M-China/mcd-developer-innovation-challenge"],
+          "checked_at": "2026-10-24T19:59:59.211603Z",
+          "reason": "Reviewed evidence-bearing introduction; historical summary remains untouched.",
+          "citations": [
+            {
+              "url": "https://github.com/M-China/mcd-developer-innovation-challenge",
+              "content_hash": "609c05feec0139048552c08deaab089d69e01443ac6b11da90ba3bebe2de116b",
+              "excerpt": "我们面向中国大陆地区的开发者发起邀请：基于麦当劳 MCP 能力，开发属于自己的 Skill，让创意真正解决现实问题，还有机会赢取程序员节专属好礼。"
+            }
+          ]
+        },
+        "fields": {
+          "eligibility": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+                "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+                "excerpt": "您是中国大陆地区合法居民，且年龄不小于18周岁（或者虽小于18周岁但已经征得您父母或法定监护人的同意）"
+              }
+            ]
+          },
+          "entry_requirements": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+                "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+                "excerpt": "参赛项目须真实使用麦当劳 MCP 能力；\n如参与WorkBuddy专项奖励的，参赛项目须真实使用腾讯WorkBuddy智能体；\n发布参赛项目的GitHub仓库须保持公开可访问状态；"
+              }
+            ]
+          },
+          "registration_deadline": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+                "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+                "excerpt": "参赛者应当于北京时间2026年10月25日23:59前，通过活动页面使用指定Issue模板提交参赛申请，并包含项目名称、项目地址、项目简介等信息。"
+              }
+            ]
+          },
+          "judging_criteria": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+                "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+                "excerpt": "对符合要求的参赛项目，麦当劳按照其在GitHub平台获得的公开 Star 数量（即平台其他用户对项目的收藏和认可数量）进行排名"
+              }
+            ]
+          },
+          "prize": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+                "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+                "excerpt": "第1名可获得【巨无霸汉堡*50次免费兑换券】一张（本券可免费兑换巨无霸汉堡50份，每天限兑1份，限部分麦当劳餐厅柜台或自助点餐机任意消费可用，具体有效期和使用规则详见券面）；以及腾讯WorkBudddy的 10240 积分;"
+              }
+            ]
+          },
+          "entry_fee": {
+            "state": "not_fetched",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "https://events.waytoagi.com/events/e_89ab88a7df"
+            ],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Only limited official evidence is retained; no fee or team-size value is inferred.",
+            "citations": []
+          },
+          "team_size": {
+            "state": "not_fetched",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+              "https://events.waytoagi.com/events/e_89ab88a7df"
+            ],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Only limited official evidence is retained; no fee or team-size value is inferred.",
+            "citations": []
+          },
+          "start_at": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "end_at": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "submission_deadline": {
+            "state": "not_fetched",
+            "urls": [],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "deadline_unspecified": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "city": {
+            "state": "not_fetched",
+            "urls": [],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "mode": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "registration_url": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "organizer": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "venue": {
+            "state": "not_fetched",
+            "urls": [],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          },
+          "past_statistics": {
+            "state": "not_fetched",
+            "urls": [],
+            "checked_at": null,
+            "reason": null,
+            "citations": []
+          }
+        },
+        "sources": {
+          "https://events.waytoagi.com/events/e_89ab88a7df": {
+            "state": "found",
+            "urls": ["https://events.waytoagi.com/events/e_89ab88a7df"],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Captured event content; navigation and unrelated roster content excluded.",
+            "citations": []
+          },
+          "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md": {
+            "state": "found",
+            "urls": [
+              "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md"
+            ],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Captured partial evidence only; omitted fields were not checked.",
+            "citations": []
+          },
+          "https://github.com/M-China/mcd-developer-innovation-challenge": {
+            "state": "found",
+            "urls": ["https://github.com/M-China/mcd-developer-innovation-challenge"],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Captured partial evidence only; omitted fields were not checked.",
+            "citations": []
+          }
+        }
+      },
+      "themes": [],
+      "theme_sources": [],
+      "content_version": "content-v1",
+      "summary": "WorkBuddy 联合麦当劳发起“麦当劳程序员创意开发大赛”。参赛者需基于麦当劳 MCP 能力，利用 WorkBuddy 开发创意 Skill，将好点子转化为现实。\n\n### 活动奖励\n- **前三名**：巨无霸免费多次兑换券 ＋ 10240 WorkBuddy 积分。\n- **前 100 名**：程序员节实体徽章、汉堡回车键。\n- **专项奖励**：使用 WorkBuddy 开发参赛，可额外获得 3000 积分奖励。\n\n### 参与方式\n登录 GitHub，搜索 **McDonald's China (M-China)**，进入 `mcd-developer-innovation-challenge` 仓库查看规则并参与。这个 1024，和 WorkBuddy 一起脑洞全开，用技术赢取巨无霸！\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/85b39e5adfc9963d.png)\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/f02c30f91efef0ec.png)\n\n![活动图片](https://cdn-waic.waytoagi.com/covers/a13451aa13669815.png)\n\n![图片](https://cdn-waic.waytoagi.com/covers/27f1475a93d96e3e.webp)",
+      "documents": [
+        {
+          "url": "https://events.waytoagi.com/events/e_89ab88a7df",
+          "site": "WaytoAGI",
+          "title": "麦当劳程序员创意开发大赛",
+          "is_official": false,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "http",
+          "completeness": "full",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "af735385803ed5aa146d59f49619d754c12bdbce018caf5910512dfdf8d86451",
+          "retrieved_at": "2026-10-24T18:19:06.127512Z",
+          "extractor_version": "content-v1",
+          "excerpts": []
+        },
+        {
+          "url": "https://github.com/M-China/mcd-developer-innovation-challenge/blob/main/activityGuidelines.md",
+          "site": "McDonald’s official GitHub",
+          "title": "麦当劳程序员创意开发大赛活动规则",
+          "is_official": true,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "http",
+          "completeness": "partial",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "5ea5ed511bb3adcf8400653e1f720c0c6b4ed34c7e9b789375d30397d8c5a82b",
+          "retrieved_at": "2026-10-24T18:33:54.625025Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "参赛者应当于北京时间2026年10月25日23:59前，通过活动页面使用指定Issue模板提交参赛申请，并包含项目名称、项目地址、项目简介等信息。",
+            "第1名可获得【巨无霸汉堡*50次免费兑换券】一张（本券可免费兑换巨无霸汉堡50份，每天限兑1份，限部分麦当劳餐厅柜台或自助点餐机任意消费可用，具体有效期和使用规则详见券面）；以及腾讯WorkBudddy的 10240 积分;",
+            "您是中国大陆地区合法居民，且年龄不小于18周岁（或者虽小于18周岁但已经征得您父母或法定监护人的同意）",
+            "参赛项目须真实使用麦当劳 MCP 能力；\n如参与WorkBuddy专项奖励的，参赛项目须真实使用腾讯WorkBuddy智能体；\n发布参赛项目的GitHub仓库须保持公开可访问状态；",
+            "对符合要求的参赛项目，麦当劳按照其在GitHub平台获得的公开 Star 数量（即平台其他用户对项目的收藏和认可数量）进行排名"
+          ]
+        },
+        {
+          "url": "https://github.com/M-China/mcd-developer-innovation-challenge",
+          "site": "McDonald’s official GitHub",
+          "title": "麦当劳程序员创意开发大赛 README",
+          "is_official": true,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "http",
+          "completeness": "partial",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "609c05feec0139048552c08deaab089d69e01443ac6b11da90ba3bebe2de116b",
+          "retrieved_at": "2026-10-24T18:33:00.077143Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "我们面向中国大陆地区的开发者发起邀请：基于麦当劳 MCP 能力，开发属于自己的 Skill，让创意真正解决现实问题，还有机会赢取程序员节专属好礼。"
+          ]
+        }
+      ]
+    }
+  }
+}

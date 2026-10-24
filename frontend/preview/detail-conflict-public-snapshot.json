@@ -1,0 +1,727 @@
+{
+  "url": "http://43.142.60.212/api/contests/7e7ddb63-c1d4-40e8-a840-b1bd3c8b6f6d",
+  "captured_after_utc": "2026-10-24T21:35:51Z",
+  "server_date": "Sat, 24 Oct 2026 21:36:06 GMT",
+  "sha256": "53863f6bddcfd94fd180e75c23e7c690e939d288fb1a740dfaef89085bd555e4",
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "id": "7e7ddb63-c1d4-40e8-a840-b1bd3c8b6f6d",
+      "name": "Cal Hacks 13.0",
+      "cover_url": "https://d112y698adiu2z.cloudfront.net/photos/production/challenge_thumbnails/005/519/078/datas/medium_square.png",
+      "status": "ongoing",
+      "fields": {
+        "start_at": {
+          "value": "2026-10-23T00:00:00Z",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://www.mlh.com/seasons/2027/events",
+              "site": "Major League Hacking",
+              "title": "MLH 2027 Hackathon Season official event directory",
+              "published_at": null,
+              "is_official": true,
+              "value": "2026-10-23T00:00:00Z",
+              "excerpt": "\"startsAt\": \"2026-10-23T17:00:00Z\"",
+              "stale": false,
+              "precision": "day"
+            }
+          ],
+          "precision": "day"
+        },
+        "end_at": {
+          "value": "2026-10-25T00:00:00Z",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://www.mlh.com/seasons/2027/events",
+              "site": "Major League Hacking",
+              "title": "MLH 2027 Hackathon Season official event directory",
+              "published_at": null,
+              "is_official": true,
+              "value": "2026-10-25T00:00:00Z",
+              "excerpt": "\"endsAt\": \"2026-10-25T19:00:00Z\"",
+              "stale": false,
+              "precision": "day"
+            }
+          ],
+          "precision": "day"
+        },
+        "registration_deadline": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "submission_deadline": {
+          "value": "2026-10-25T00:00:00Z",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "2026-10-25T00:00:00Z",
+              "excerpt": "submission_period_dates: Oct 23 - 25, 2026",
+              "stale": false,
+              "precision": "day"
+            }
+          ],
+          "precision": "day"
+        },
+        "deadline_unspecified": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "city": {
+          "value": "San Francisco",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://calhacks.io/",
+              "site": "Cal Hacks organizer",
+              "title": "Cal Hacks 13.0 organizer FAQ",
+              "published_at": null,
+              "is_official": true,
+              "value": "San Francisco",
+              "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123",
+              "stale": false,
+              "precision": "datetime"
+            },
+            {
+              "url": "https://www.mlh.com/seasons/2027/events",
+              "site": "Major League Hacking",
+              "title": "MLH 2027 Hackathon Season official event directory",
+              "published_at": null,
+              "is_official": true,
+              "value": "San Francisco",
+              "excerpt": "\"city\": \"San Francisco\"",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "mode": {
+          "value": "offline",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "offline",
+              "excerpt": "location: Palace of Fine Arts",
+              "stale": false,
+              "precision": "datetime"
+            },
+            {
+              "url": "https://www.mlh.com/seasons/2027/events",
+              "site": "Major League Hacking",
+              "title": "MLH 2027 Hackathon Season official event directory",
+              "published_at": null,
+              "is_official": true,
+              "value": "offline",
+              "excerpt": "\"formatType\": \"physical\"",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "prize": {
+          "value": "$83,328",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "$83,328",
+              "excerpt": "prize_amount: $<span data-currency-value>83,328</span>",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "registration_url": {
+          "value": "https://cal-hacks-13-0.devpost.com/",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "https://cal-hacks-13-0.devpost.com/",
+              "excerpt": "url: https://cal-hacks-13-0.devpost.com/",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "organizer": {
+          "value": "Cal Hacks",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "Cal Hacks",
+              "excerpt": "organization_name: Cal Hacks",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "venue": {
+          "value": "The Palace of Fine Arts, 3601 Lyon St, San Francisco, CA 94123",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://calhacks.io/",
+              "site": "Cal Hacks organizer",
+              "title": "Cal Hacks 13.0 organizer FAQ",
+              "published_at": null,
+              "is_official": true,
+              "value": "The Palace of Fine Arts, 3601 Lyon St, San Francisco, CA 94123",
+              "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "eligibility": {
+          "value": "Undergraduate and graduate students, plus new graduates of under 1 year; graduates prior to Fall 2025 do not qualify.",
+          "level": "conflict",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "Ages 18+ only; college students only",
+              "excerpt": "Ages 18+ only\nCollege students only",
+              "stale": false,
+              "precision": "datetime"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "site": "Cal Hacks organizer",
+              "title": "Cal Hacks 13.0 organizer FAQ",
+              "published_at": null,
+              "is_official": true,
+              "value": "Undergraduate and graduate students, plus new graduates of under 1 year; graduates prior to Fall 2025 do not qualify.",
+              "excerpt": "Cal Hacks is open to undergraduate and graduate students as well as new grads of under 1 year from all colleges and universities. Those who graduated prior to Fall 2025 will not qualify.",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "team_size": {
+          "value": "Up to 4 people; solo participation allowed",
+          "level": "conflict",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "Team required: 2 to 4 members",
+              "excerpt": "Team required: 2 to 4 members",
+              "stale": false,
+              "precision": "datetime"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "site": "Cal Hacks organizer",
+              "title": "Cal Hacks 13.0 organizer FAQ",
+              "published_at": null,
+              "is_official": true,
+              "value": "Up to 4 people; solo participation allowed",
+              "excerpt": "How many people can be on a single team?\nUp to 4 people can be part of a single team.\n+\n−\nWhat qualifies as a beginner team?\nEvery team member must be a first-time hacker. Note that attending a prior hackathon and not submitting a project or demoing still counts as having prior experience. We will be verifying with outside sources upon choosing winners.\n+\n−\nDo I have to have a team to participate?\nNot at all! You can come with a team or solo. Whatever works for you!",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "entry_fee": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "entry_requirements": {
+          "value": "Ideation may precede the event, but all implementation must occur during the hackathon; pre-existing projects are not allowed.",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://calhacks.io/",
+              "site": "Cal Hacks organizer",
+              "title": "Cal Hacks 13.0 organizer FAQ",
+              "published_at": null,
+              "is_official": true,
+              "value": "Ideation may precede the event, but all implementation must occur during the hackathon; pre-existing projects are not allowed.",
+              "excerpt": "You cannot work on a project you started before the hackathon. Ideation before the hackathon is allowed, but all implementation must occur during the hackathon.",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "judging_criteria": {
+          "value": "Application; Intentionality; Functionality; Creativity; Technical Complexity",
+          "level": "official",
+          "sources": [
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "site": "Devpost",
+              "title": "Cal Hacks 13.0",
+              "published_at": null,
+              "is_official": true,
+              "value": "Application; Intentionality; Functionality; Creativity; Technical Complexity",
+              "excerpt": "Application\nIntentionality\nFunctionality\nCreativity\nTechnical Complexity",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "past_statistics": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        }
+      },
+      "introduction": {
+        "text": "Cal Hacks 13.0 是三天的线下黑客松，参与者协作开发创新技术作品，并参加工作坊和分享。场地为旧金山 Palace of Fine Arts；项目构思可提前进行，但实现必须在活动期间完成。主站与 Devpost 对参赛资格和组队人数的规定存在差异，需结合官方规则核对。",
+        "method": "reviewed",
+        "citations": [
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "Cal Hacks is a 3-day hackathon, where hackers creatively collaborate on innovative technology for a chance to win prizes including cash, and attend workshops and panels to learn more about emerging tech!"
+          },
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123"
+          },
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "You cannot work on a project you started before the hackathon. Ideation before the hackathon is allowed, but all implementation must occur during the hackathon."
+          },
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "We will be launching a whole month of tech talks, workshops, and hack nights leading up to Cal Hacks 13.0! Stay tuned for more information!"
+          },
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "How many people can be on a single team?\nUp to 4 people can be part of a single team.\n+\n−\nWhat qualifies as a beginner team?\nEvery team member must be a first-time hacker. Note that attending a prior hackathon and not submitting a project or demoing still counts as having prior experience. We will be verifying with outside sources upon choosing winners.\n+\n−\nDo I have to have a team to participate?\nNot at all! You can come with a team or solo. Whatever works for you!"
+          },
+          {
+            "url": "https://cal-hacks-13-0.devpost.com/",
+            "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+            "excerpt": "Team required: 2 to 4 members"
+          },
+          {
+            "url": "https://calhacks.io/",
+            "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+            "excerpt": "Cal Hacks is open to undergraduate and graduate students as well as new grads of under 1 year from all colleges and universities. Those who graduated prior to Fall 2025 will not qualify."
+          },
+          {
+            "url": "https://cal-hacks-13-0.devpost.com/",
+            "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+            "excerpt": "Ages 18+ only\nCollege students only"
+          }
+        ]
+      },
+      "coverage": {
+        "introduction": {
+          "state": "found",
+          "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+          "checked_at": "2026-10-24T19:59:59.211603Z",
+          "reason": "Reviewed evidence-bearing introduction; historical summary remains untouched.",
+          "citations": [
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "Cal Hacks is a 3-day hackathon, where hackers creatively collaborate on innovative technology for a chance to win prizes including cash, and attend workshops and panels to learn more about emerging tech!"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "You cannot work on a project you started before the hackathon. Ideation before the hackathon is allowed, but all implementation must occur during the hackathon."
+            },
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "We will be launching a whole month of tech talks, workshops, and hack nights leading up to Cal Hacks 13.0! Stay tuned for more information!"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "How many people can be on a single team?\nUp to 4 people can be part of a single team.\n+\n−\nWhat qualifies as a beginner team?\nEvery team member must be a first-time hacker. Note that attending a prior hackathon and not submitting a project or demoing still counts as having prior experience. We will be verifying with outside sources upon choosing winners.\n+\n−\nDo I have to have a team to participate?\nNot at all! You can come with a team or solo. Whatever works for you!"
+            },
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+              "excerpt": "Team required: 2 to 4 members"
+            },
+            {
+              "url": "https://calhacks.io/",
+              "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+              "excerpt": "Cal Hacks is open to undergraduate and graduate students as well as new grads of under 1 year from all colleges and universities. Those who graduated prior to Fall 2025 will not qualify."
+            },
+            {
+              "url": "https://cal-hacks-13-0.devpost.com/",
+              "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+              "excerpt": "Ages 18+ only\nCollege students only"
+            }
+          ]
+        },
+        "fields": {
+          "team_size": {
+            "state": "conflict",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Multiple supported assertions remain unresolved; historical claims are retained.",
+            "citations": [
+              {
+                "url": "https://calhacks.io/",
+                "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+                "excerpt": "How many people can be on a single team?\nUp to 4 people can be part of a single team.\n+\n−\nWhat qualifies as a beginner team?\nEvery team member must be a first-time hacker. Note that attending a prior hackathon and not submitting a project or demoing still counts as having prior experience. We will be verifying with outside sources upon choosing winners.\n+\n−\nDo I have to have a team to participate?\nNot at all! You can come with a team or solo. Whatever works for you!"
+              },
+              {
+                "url": "https://cal-hacks-13-0.devpost.com/",
+                "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+                "excerpt": "Team required: 2 to 4 members"
+              }
+            ]
+          },
+          "eligibility": {
+            "state": "conflict",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Multiple supported assertions remain unresolved; historical claims are retained.",
+            "citations": [
+              {
+                "url": "https://calhacks.io/",
+                "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+                "excerpt": "Cal Hacks is open to undergraduate and graduate students as well as new grads of under 1 year from all colleges and universities. Those who graduated prior to Fall 2025 will not qualify."
+              },
+              {
+                "url": "https://cal-hacks-13-0.devpost.com/",
+                "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+                "excerpt": "Ages 18+ only\nCollege students only"
+              }
+            ]
+          },
+          "entry_requirements": {
+            "state": "found",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://calhacks.io/",
+                "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+                "excerpt": "You cannot work on a project you started before the hackathon. Ideation before the hackathon is allowed, but all implementation must occur during the hackathon."
+              }
+            ]
+          },
+          "judging_criteria": {
+            "state": "found",
+            "urls": ["https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://cal-hacks-13-0.devpost.com/",
+                "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+                "excerpt": "Application\nIntentionality\nFunctionality\nCreativity\nTechnical Complexity"
+              }
+            ]
+          },
+          "city": {
+            "state": "found",
+            "urls": ["https://calhacks.io/", "https://www.mlh.com/seasons/2027/events"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://calhacks.io/",
+                "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+                "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123"
+              },
+              {
+                "url": "https://www.mlh.com/seasons/2027/events",
+                "content_hash": "350b7659d4ea393cf5b27b587401fa1491dafd0ef52e56d175b223e590696182",
+                "excerpt": "\"city\": \"San Francisco\""
+              }
+            ]
+          },
+          "venue": {
+            "state": "found",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://calhacks.io/",
+                "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+                "excerpt": "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123"
+              }
+            ]
+          },
+          "entry_fee": {
+            "state": "not_fetched",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "No fee value inferred; Devpost full-page route returned 403 and was not retried.",
+            "citations": []
+          },
+          "start_at": {
+            "state": "found",
+            "urls": ["https://www.mlh.com/seasons/2027/events"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://www.mlh.com/seasons/2027/events",
+                "content_hash": "350b7659d4ea393cf5b27b587401fa1491dafd0ef52e56d175b223e590696182",
+                "excerpt": "\"startsAt\": \"2026-10-23T17:00:00Z\""
+              }
+            ]
+          },
+          "end_at": {
+            "state": "found",
+            "urls": ["https://www.mlh.com/seasons/2027/events"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://www.mlh.com/seasons/2027/events",
+                "content_hash": "350b7659d4ea393cf5b27b587401fa1491dafd0ef52e56d175b223e590696182",
+                "excerpt": "\"endsAt\": \"2026-10-25T19:00:00Z\""
+              }
+            ]
+          },
+          "registration_deadline": {
+            "state": "not_fetched",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "submission_deadline": {
+            "state": "found",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "deadline_unspecified": {
+            "state": "not_fetched",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "mode": {
+            "state": "found",
+            "urls": [
+              "https://www.mlh.com/seasons/2027/events",
+              "https://cal-hacks-13-0.devpost.com/"
+            ],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://www.mlh.com/seasons/2027/events",
+                "content_hash": "350b7659d4ea393cf5b27b587401fa1491dafd0ef52e56d175b223e590696182",
+                "excerpt": "\"formatType\": \"physical\""
+              }
+            ]
+          },
+          "prize": {
+            "state": "found",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "registration_url": {
+            "state": "found",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "organizer": {
+            "state": "found",
+            "urls": ["https://calhacks.io/", "https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          },
+          "past_statistics": {
+            "state": "not_fetched",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Not established by this partial review; no assertion of source absence or non-publication.",
+            "citations": []
+          }
+        },
+        "sources": {
+          "https://calhacks.io/": {
+            "state": "found",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Captured event content; navigation and unrelated roster content excluded.",
+            "citations": []
+          },
+          "https://cal-hacks-13-0.devpost.com/": {
+            "state": "fetch_failed",
+            "urls": ["https://cal-hacks-13-0.devpost.com/"],
+            "checked_at": "2026-10-24T18:39:43.506966Z",
+            "reason": "Direct full-page HTTP returned 403 in earlier audit and was not retried. Only previously successful web-extracted literal excerpts are retained; the hash is not a raw HTML hash.",
+            "citations": []
+          },
+          "mlh_directory": {
+            "state": "found",
+            "urls": ["https://www.mlh.com/seasons/2027/events"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "70 saved active/upcoming member records were available from a public official directory; this document is only the selected event record.",
+            "citations": []
+          },
+          "organizer": {
+            "state": "not_fetched",
+            "urls": ["https://calhacks.io/"],
+            "checked_at": "2026-10-24T19:37:36.689812Z",
+            "reason": "Cal Hacks 13.0 already captured in the separate canary package; intentionally not fetched again in this batch.",
+            "citations": []
+          }
+        }
+      },
+      "themes": ["Beginner Friendly", "Social Good", "Open Ended"],
+      "theme_sources": [
+        {
+          "url": "https://cal-hacks-13-0.devpost.com/",
+          "site": "Devpost",
+          "title": "Cal Hacks 13.0",
+          "published_at": null,
+          "is_official": true,
+          "value": "Beginner Friendly、Social Good、Open Ended",
+          "excerpt": "Beginner Friendly、Social Good、Open Ended",
+          "stale": false,
+          "precision": "datetime"
+        }
+      ],
+      "content_version": "content-v1",
+      "summary": "Beginner Friendly、Social Good、Open Ended\n\n提交区间：Oct 23 - 25, 2026",
+      "documents": [
+        {
+          "url": "https://calhacks.io/",
+          "site": "Cal Hacks organizer",
+          "title": "Cal Hacks 13.0 organizer FAQ",
+          "is_official": true,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "http",
+          "completeness": "full",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "b9db8aa1c4efb5056f8e7bc7b6dca13d9e5ce8287db73e20cbac4d38a55f28f2",
+          "retrieved_at": "2026-10-24T18:32:31.914256Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "Cal Hacks is a 3-day hackathon, where hackers creatively collaborate on innovative technology for a chance to win prizes including cash, and attend workshops and panels to learn more about emerging tech!",
+            "The Palace of Fine Arts\n3601 Lyon St, San Francisco, CA 94123",
+            "You cannot work on a project you started before the hackathon. Ideation before the hackathon is allowed, but all implementation must occur during the hackathon.",
+            "We will be launching a whole month of tech talks, workshops, and hack nights leading up to Cal Hacks 13.0! Stay tuned for more information!",
+            "How many people can be on a single team?\nUp to 4 people can be part of a single team.\n+\n−\nWhat qualifies as a beginner team?\nEvery team member must be a first-time hacker. Note that attending a prior hackathon and not submitting a project or demoing still counts as having prior experience. We will be verifying with outside sources upon choosing winners.\n+\n−\nDo I have to have a team to participate?\nNot at all! You can come with a team or solo. Whatever works for you!",
+            "Cal Hacks is open to undergraduate and graduate students as well as new grads of under 1 year from all colleges and universities. Those who graduated prior to Fall 2025 will not qualify."
+          ]
+        },
+        {
+          "url": "https://cal-hacks-13-0.devpost.com/",
+          "site": "Devpost",
+          "title": "Cal Hacks 13.0",
+          "is_official": true,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "cached_web_excerpt",
+          "completeness": "partial",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "d10b8e53f205d14c968ce6587a16761e9dd92d45c4c7ec47249bf50e99c0b17f",
+          "retrieved_at": "2026-10-24T18:18:00Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "Team required: 2 to 4 members",
+            "Ages 18+ only\nCollege students only",
+            "Application\nIntentionality\nFunctionality\nCreativity\nTechnical Complexity"
+          ]
+        },
+        {
+          "url": "https://www.mlh.com/seasons/2027/events",
+          "site": "Major League Hacking",
+          "title": "MLH 2027 Hackathon Season official event directory",
+          "is_official": true,
+          "published_at": null,
+          "kind": "structured",
+          "representation": "structured_json",
+          "fetch_method": "structured_adapter",
+          "completeness": "partial",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "350b7659d4ea393cf5b27b587401fa1491dafd0ef52e56d175b223e590696182",
+          "retrieved_at": "2026-10-24T18:27:53.241573Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "\"startsAt\": \"2026-10-23T17:00:00Z\"",
+            "\"endsAt\": \"2026-10-25T19:00:00Z\"",
+            "\"city\": \"San Francisco\"",
+            "\"formatType\": \"physical\""
+          ]
+        }
+      ]
+    }
+  }
+}

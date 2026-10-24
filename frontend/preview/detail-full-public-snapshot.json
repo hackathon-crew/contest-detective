@@ -1,0 +1,486 @@
+{
+  "url": "http://43.142.60.212/api/contests/e5e421d3-01cf-4c53-add5-00d24160371f",
+  "captured_after_utc": "2026-10-24T21:35:51Z",
+  "server_date": "Sat, 24 Oct 2026 21:36:02 GMT",
+  "sha256": "8647f9daec3deb1fac10766b0957fd819a5ef4004393c804be19043405eda7cb",
+  "response": {
+    "code": 200,
+    "message": "success",
+    "data": {
+      "id": "e5e421d3-01cf-4c53-add5-00d24160371f",
+      "name": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+      "cover_url": "https://7465-test-1-d8gn28apcbf409627-1445960691.tcb.qcloud.la/image-optimized/event-cover/529074b31ab108caeb809c57.webp",
+      "status": "upcoming",
+      "fields": {
+        "start_at": {
+          "value": "2026-11-15T00:00:00Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-11-15T00:00:00Z",
+              "excerpt": "startDate: 2026-11-15T00:00:00.000Z",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "end_at": {
+          "value": "2026-11-16T00:00:00Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-11-16T00:00:00Z",
+              "excerpt": "endDate: 2026-11-16T00:00:00.000Z",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "registration_deadline": {
+          "value": "2026-11-10T15:59:59Z",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "2026-11-10T15:59:59Z",
+              "excerpt": "registrationDeadline: 2026-11-10T15:59:59.000Z",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "submission_deadline": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "deadline_unspecified": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "city": {
+          "value": "北京",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "北京",
+              "excerpt": "city: 北京",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "mode": {
+          "value": "offline",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "offline",
+              "excerpt": "mode: offline",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "prize": {
+          "value": "总奖金 ¥100,000",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "总奖金 ¥100,000",
+              "excerpt": "prizePool: 总奖金 ¥100,000",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "registration_url": {
+          "value": "https://opc.book2048.com",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "https://opc.book2048.com",
+              "excerpt": "registration.url: https://opc.book2048.com",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "organizer": {
+          "value": "北京怀柔科学城发展集团有限公司 / 北京嵌入式系统技术行业协会 / 北京交叉科学学会",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "北京怀柔科学城发展集团有限公司 / 北京嵌入式系统技术行业协会 / 北京交叉科学学会",
+              "excerpt": "hostOrganizer: 北京怀柔科学城发展集团有限公司 / 北京嵌入式系统技术行业协会 / 北京交叉科学学会",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "venue": {
+          "value": "怀柔科学城",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "怀柔科学城",
+              "excerpt": "venue: 怀柔科学城",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "eligibility": {
+          "value": "年满18岁的AI开发者、极客团队和高校学生",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "年满18岁的AI开发者、极客团队和高校学生",
+              "excerpt": "年满18岁的AI开发者、极客团队和高校学生",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "team_size": {
+          "value": "可个人参赛，也可组队（每队不超过5人）。",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "可个人参赛，也可组队（每队不超过5人）。",
+              "excerpt": "可个人参赛，也可组队（每队不超过5人）。",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "entry_fee": {
+          "value": "活动全程免费",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "活动全程免费",
+              "excerpt": "活动全程免费",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "entry_requirements": {
+          "value": "参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。",
+          "level": "reposted",
+          "sources": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "site": "HackerTrip",
+              "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+              "published_at": null,
+              "is_official": false,
+              "value": "参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。",
+              "excerpt": "参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。",
+              "stale": false,
+              "precision": "datetime"
+            }
+          ],
+          "precision": "datetime"
+        },
+        "judging_criteria": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        },
+        "past_statistics": {
+          "value": null,
+          "level": "not_found",
+          "sources": [],
+          "precision": "datetime"
+        }
+      },
+      "introduction": {
+        "text": "怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。",
+        "method": "extractive",
+        "citations": [
+          {
+            "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+            "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+            "excerpt": "怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。"
+          }
+        ]
+      },
+      "coverage": {
+        "introduction": {
+          "state": "found",
+          "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+          "checked_at": "2026-10-24T19:59:59.211603Z",
+          "reason": "Reviewed evidence-bearing introduction; historical summary remains untouched.",
+          "citations": [
+            {
+              "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+              "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+              "excerpt": "怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。"
+            }
+          ]
+        },
+        "fields": {
+          "start_at": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "end_at": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "registration_deadline": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "submission_deadline": {
+            "state": "not_fetched",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "deadline_unspecified": {
+            "state": "not_fetched",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "city": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "mode": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "prize": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "registration_url": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "organizer": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "venue": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "eligibility": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+                "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+                "excerpt": "年满18岁的AI开发者、极客团队和高校学生"
+              }
+            ]
+          },
+          "team_size": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+                "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+                "excerpt": "可个人参赛，也可组队（每队不超过5人）。"
+              }
+            ]
+          },
+          "entry_fee": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+                "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+                "excerpt": "活动全程免费"
+              }
+            ]
+          },
+          "entry_requirements": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:59:59.211603Z",
+            "reason": "Supported selected evidence; not a claim that these are complete rules.",
+            "citations": [
+              {
+                "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+                "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+                "excerpt": "参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。"
+              }
+            ]
+          },
+          "judging_criteria": {
+            "state": "not_fetched",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          },
+          "past_statistics": {
+            "state": "not_fetched",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "This partial, minimized refresh does not establish completeness or absence. Existing values/claims are retained unchanged unless a supported new claim is listed.",
+            "citations": []
+          }
+        },
+        "sources": {
+          "https://hackertrip.space/hackathon/ht-a04d899420": {
+            "state": "found",
+            "urls": ["https://hackertrip.space/hackathon/ht-a04d899420"],
+            "checked_at": "2026-10-24T19:33:00.592197Z",
+            "reason": "Public event HTML inspected; only minimized event article retained as partial/excerpt_only. No organizer rules beyond this page, participant data, login or API acquisition.",
+            "citations": []
+          }
+        }
+      },
+      "themes": [],
+      "theme_sources": [],
+      "content_version": "content-v1",
+      "summary": "## 活动简介\n怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。参赛者在现场公布的命题下完成开发、现场演示作品并参与现场评奖。活动全程免费，黑客松总奖金池为10万元（税前）。允许个人报名，也接受不超过5人的团队，适合希望集中两天做出一个AI原型的开发者。\n\n## 挑战内容\n本场黑客松设有五个方向：\n- 具身机器人控制\n- AI for Science智能体开发\n- OPC商业模式快闪\n- AIP互联挑战\n- AIGC内容生成\n\n具体命题将在现场公布，参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。此外，本次挑战赛还设有「揭榜挂帅」赛道，报名截至2026年10月10日，有意参加者需另行查看该赛道的参赛要求和赛程安排。\n\n## 活动日程\n- 2026年11月10日：本场黑客松报名截止\n- 2026年11月15日（周日）：比赛首日，现场公布命题，开始48小时开发\n- 2026年11月16日（周一）：比赛次日，完成开发、现场演示并评奖\n\n## 适合人群\n年满18岁的AI开发者、极客团队和高校学生；可个人参赛，也可组队（每队不超过5人）。\n\n## 主办方\n本次挑战赛由北京怀柔科学城管委会指导，北京怀柔科学城发展集团有限公司、北京嵌入式系统技术行业协会、北京交叉科学学会联合主办。报名链接见详情页文末「阅读原文」。",
+      "documents": [
+        {
+          "url": "https://hackertrip.space/hackathon/ht-a04d899420",
+          "site": "HackerTrip",
+          "title": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛） | HackerTrip",
+          "is_official": false,
+          "published_at": null,
+          "kind": "page",
+          "representation": "extracted_text",
+          "fetch_method": "http",
+          "completeness": "partial",
+          "publication": "excerpt_only",
+          "publication_license_url": null,
+          "body": null,
+          "content_hash": "bd58be97ad49f066f6a1ad014fd1c4d93ae955b0106f19857c301fbc84e59f10",
+          "retrieved_at": "2026-10-24T19:29:24.813638Z",
+          "extractor_version": "content-v1",
+          "excerpts": [
+            "怀柔科学城48小时黑客松是「2026怀柔科学城 AI for Science·OPC创新挑战赛」的赛道之一，将于2026年11月15日至16日在北京怀柔科学城线下举行，赛程48小时。",
+            "年满18岁的AI开发者、极客团队和高校学生",
+            "可个人参赛，也可组队（每队不超过5人）。",
+            "活动全程免费",
+            "参赛者需在48小时内完成开发并现场演示作品，比赛现场评奖。"
+          ]
+        }
+      ]
+    }
+  }
+}
