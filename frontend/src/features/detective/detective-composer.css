@@ -99,7 +99,8 @@
   background: transparent;
 }
 
-.detective-composer__add:hover:not(:disabled) {
+.detective-composer__add:hover:not(:disabled),
+.detective-composer__add[data-state='open'] {
   background: var(--color-surface-strong);
 }
 
