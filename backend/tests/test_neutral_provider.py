@@ -10,14 +10,14 @@ from contest_detective.server.agent.config import LLMSettings
 from contest_detective.server.agent.models import LLMUsage
 
 
-def test_neutral_provider_sends_no_vendor_options_and_keeps_wire_limits(session_factory, monkeypatch):
+def test_neutral_provider_sends_no_vendor_options_or_local_output_caps(session_factory, monkeypatch):
     real_client = llm.AsyncOpenAI
     requests = []
     def respond(request):
         payload = json.loads(request.content)
         requests.append(payload)
         assert 'thinking' not in payload
-        assert payload['max_tokens'] == 8192
+        assert 'max_tokens' not in payload
         assert 'max_completion_tokens' not in payload
         assert payload['messages'][0]['content'] == '查询'
         return httpx.Response(200, json={

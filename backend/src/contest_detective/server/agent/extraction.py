@@ -38,7 +38,7 @@ def create_page_extractor(*, model: Model | None = None, session_factory=Session
                               retries={'tools': 0, 'output': 2})
             result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text}',
                 usage=usage, usage_limits=usage_limits or UsageLimits(request_limit=6),
-                model_settings={'max_tokens': 8192}, timeout=300)
+                timeout=300)
             page = PageIn(url=url, site=urlsplit(url).hostname or url, title=result.output.name,
                           is_official=is_official_page(url))
             return ContestDraft(**result.output.model_dump(), page=page)

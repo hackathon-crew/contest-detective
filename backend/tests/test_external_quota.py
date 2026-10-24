@@ -63,6 +63,31 @@ def test_external_context_uses_provider_capacity_and_still_records_usage(session
         assert row.status == 'settled' and row.cache_miss_tokens == 24000 and row.output_tokens == 500
 
 
+def test_external_wire_request_leaves_output_capacity_to_the_provider(session_factory, monkeypatch):
+    import json
+    import httpx
+    from contest_detective.server.agent import llm
+    real_client, sent = llm.AsyncOpenAI, []
+    def handle(request):
+        sent.append(json.loads(request.content))
+        return httpx.Response(200, json={
+            'id': 'chatcmpl-external', 'object': 'chat.completion', 'created': 1, 'model': 'deepseek-flash',
+            'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': '资料已完整整理。'}, 'finish_reason': 'stop'}],
+            'usage': {'prompt_tokens': 100, 'completion_tokens': 6000, 'total_tokens': 6100},
+        })
+    async def exercise():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+            monkeypatch.setattr(llm, 'AsyncOpenAI', lambda **kwargs: real_client(**kwargs, http_client=client))
+            model = llm.create_model(config(max_tokens=4096), session_factory=session_factory)
+            model.balance_reader = no_balance_endpoint
+            return await Agent(model, model_settings={'max_tokens': 8192}).run('整理完整的参赛信息')
+    assert asyncio.run(exercise()).output == '资料已完整整理。'
+    assert 'max_tokens' not in sent[0] and 'max_completion_tokens' not in sent[0]
+    with session_factory() as session:
+        row = session.scalars(select(LLMUsage)).one()
+        assert row.status == 'settled' and row.output_tokens == 6000
+
+
 def test_external_quotas_do_not_apply_a_local_reservation_ceiling(session_factory):
     budget = Budget(session_factory, config())
     first = budget.reserve()

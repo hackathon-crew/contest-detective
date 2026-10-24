@@ -43,7 +43,7 @@ class Investigator:
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
         self.agent = Agent(model, deps_type=ToolDeps, instructions=RULES, retries={'tools': 3},
-                           model_settings={'parallel_tool_calls': False, 'max_tokens': 8192})
+                           model_settings={'parallel_tool_calls': False})
         register_tools(self.agent, web_enabled=search is not None)
 
     async def ask(self, question: str, user_id: str | None = None,
