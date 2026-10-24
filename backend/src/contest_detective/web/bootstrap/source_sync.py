@@ -22,7 +22,7 @@ def configured_normalizer():
     if not settings.enabled or not key or not key.get_secret_value():
         return None
     from contest_detective.server.agent.normalization import create_normalizer
-    return create_normalizer(settings)
+    return create_normalizer(settings, session_factory=SessionLocal)
 
 
 def configured_tavily():
