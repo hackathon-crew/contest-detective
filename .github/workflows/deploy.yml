@@ -110,6 +110,8 @@ jobs:
             "$PRODUCTION_URL/version.json?commit=$RELEASE_COMMIT" \
             | jq -e --arg commit "$RELEASE_COMMIT" --arg tag "$RELEASE_TAG" \
               '.commit == $commit and .tag == $tag'
-          echo "### Deployed $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
-          echo "Commit: $RELEASE_COMMIT" >> "$GITHUB_STEP_SUMMARY"
-          echo "Production: $PRODUCTION_URL" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Deployed $RELEASE_TAG"
+            echo "Commit: $RELEASE_COMMIT"
+            echo "Production: $PRODUCTION_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
