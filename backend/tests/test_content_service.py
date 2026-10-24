@@ -58,3 +58,22 @@ def test_full_text_publication_needs_an_explicit_license_and_snippets_are_partia
     doc.kind = 'search_snippet'
     with pytest.raises(ValueError, match='complete'):
         validate_document(doc)
+
+
+def test_partial_or_new_version_capture_does_not_replace_complete_evidence(session_factory):
+    from contest_detective.server.contest import service
+    from contest_detective.server.contest.schemas import ContestDraft, PageIn
+    doc = document('Student developers collaborate to build useful projects for the community.')
+    draft = ContestDraft(name='Builder event', page=PageIn(url=doc.url, site=doc.site,
+        title=doc.title, is_official=True), documents=[doc], claims=[])
+    with session_factory() as session:
+        cid = service.save(session, draft)
+        partial = doc.model_copy(update={'kind': 'search_snippet', 'completeness': 'partial'})
+        service.save(session, draft.model_copy(update={'documents':[partial]}), contest_id=cid)
+        revised = doc.model_copy(update={'extractor_version':'content-v2'})
+        service.save(session, draft.model_copy(update={'documents':[revised]}), contest_id=cid)
+        result = service.get(session, cid)
+        assert len(result.documents) == 3
+        assert {(item.kind, item.completeness, item.extractor_version) for item in result.documents} == {
+            ('page', 'full', 'content-v1'), ('search_snippet', 'partial', 'content-v1'), ('page', 'full', 'content-v2')}
+        assert result.introduction.text == doc.body

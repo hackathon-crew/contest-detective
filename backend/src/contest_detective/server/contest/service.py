@@ -17,7 +17,7 @@ from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
                       calendar_date, date_bounds, utc_iso)
 from .verification import resolve
 from .content import ContentCoverage, ContestDocument, ContestIntroduction, CoverageObservation
-from .content_service import build_introduction, normalized_text, public_document, validate_document, validate_introduction
+from .content_service import build_introduction, document_key, normalized_text, public_document, validate_document, validate_introduction
 
 
 def _now():
@@ -216,10 +216,12 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         contest = Contest(id=str(uuid4()), name=draft.name, normalized_name=_normalized_name(draft.name))
         session.add(contest)
     details = _details(session, contest)
-    documents = { (item['url'], item['content_hash'], item['extractor_version']): item
-                  for item in (details.documents or []) }
-    documents.update({(item.url, item.content_hash, item.extractor_version): item.model_dump(mode='json')
-                      for item in draft.documents})
+    documents = {document_key(item): item for item in (details.documents or [])}
+    for item in draft.documents:
+        previous = documents.get(document_key(item))
+        if previous and datetime.fromisoformat(previous['retrieved_at']) > item.retrieved_at:
+            continue
+        documents[document_key(item)] = item.model_dump(mode='json')
     details.documents = list(documents.values())
     introduction = draft.introduction or next((intro for doc in draft.documents
                                                if (intro := build_introduction(doc)) is not None), None)

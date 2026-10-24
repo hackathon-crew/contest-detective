@@ -85,7 +85,17 @@ export function ContestDocuments({ contest }: { contest: ContestDetail }) {
       <h2>来源资料</h2>
       <p className="contest-detail-empty">以下为来源摘录，完整内容请查看原文。</p>
       {documents.map((document) => (
-        <div className="contest-detail-document" key={document.url + document.content_hash}>
+        <div
+          className="contest-detail-document"
+          key={JSON.stringify([
+            document.url,
+            document.content_hash,
+            document.extractor_version,
+            document.kind,
+            document.representation,
+            document.completeness,
+          ])}
+        >
           <div className="contest-detail-document-heading">
             {safeUrl(document.url) ? (
               <a href={safeUrl(document.url)} target="_blank" rel="noopener noreferrer">

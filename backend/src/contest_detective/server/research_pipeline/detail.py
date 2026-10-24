@@ -13,7 +13,7 @@ from urllib.robotparser import RobotFileParser
 import httpx
 
 from contest_detective.server.contest.content import ContestDocument, CoverageObservation
-from contest_detective.server.contest.content_service import EXTRACTOR_VERSION
+from contest_detective.server.contest.content_service import EXTRACTOR_VERSION, document_key
 from contest_detective.server.contest.schemas import PageIn
 from contest_detective.server.research_pipeline.detail_contracts import DetailFetchResult, DetailTarget
 from contest_detective.server.research_pipeline.normalization import supported_claims
@@ -38,7 +38,7 @@ def document_page(document: ContestDocument) -> PageIn:
 
 
 def distinct_documents(documents):
-    return list({(doc.url, doc.kind, doc.content_hash): doc for doc in documents}.values())
+    return list({document_key(doc): doc for doc in documents}.values())
 
 
 def supporting_documents(documents, claim):

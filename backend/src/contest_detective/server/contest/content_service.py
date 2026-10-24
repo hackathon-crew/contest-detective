@@ -34,6 +34,12 @@ def validate_public_url(url: str) -> str:
     return url
 
 
+def document_key(document) -> tuple:
+    values = document.model_dump() if hasattr(document, 'model_dump') else document
+    return tuple(values.get(name) for name in ('url', 'content_hash', 'extractor_version',
+        'kind', 'representation', 'completeness'))
+
+
 def validate_document(document: ContestDocument) -> None:
     validate_public_url(document.url)
     raw = document.body.encode('utf-8')
