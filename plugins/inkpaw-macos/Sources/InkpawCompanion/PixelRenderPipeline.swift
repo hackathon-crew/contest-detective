@@ -341,7 +341,7 @@ final class InkpawPixelRenderer: @unchecked Sendable {
         texture2d<float, access::write> output [[texture(2)]],
         constant uint &reverseDepth [[buffer(0)]], uint2 gid [[thread_position_in_grid]]) {
         if (gid.x >= output.get_width() || gid.y >= output.get_height()) return;
-        int2 p(gid);
+        int2 p = int2(int(gid.x), int(gid.y));
         constexpr int2 offsets[4] = {int2(1, 0), int2(-1, 0), int2(0, 1), int2(0, -1)};
         float4 center = color.read(gid);
         float3 ink = inkpaw_rgb(0x101735);
