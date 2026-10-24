@@ -1,0 +1,310 @@
+.detective-thread {
+  display: grid;
+  width: 100%;
+  max-width: var(--chat-measure);
+  min-width: 0;
+  align-content: start;
+  gap: var(--chat-turn-gap);
+  margin: 0 auto;
+  padding: var(--chat-padding) var(--chat-padding) var(--chat-turn-gap);
+}
+.detective-turn {
+  display: grid;
+  min-width: 0;
+  gap: var(--chat-turn-gap);
+}
+.detective-turn__question {
+  display: flex;
+  min-width: 0;
+  justify-content: flex-end;
+}
+.detective-turn__question > p {
+  max-width: min(80%, 36rem);
+  margin: 0;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--chat-bubble-radius);
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+  font-size: 1rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  animation: detective-message-in 240ms var(--ease-out) both;
+}
+.detective-turn__answer {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: var(--chat-avatar) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--chat-gap);
+}
+.detective-turn__avatar {
+  display: grid;
+  width: var(--chat-avatar);
+  height: var(--chat-avatar);
+  place-items: center;
+}
+.detective-turn__avatar > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.detective-turn__body {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--chat-gap);
+}
+.detective-prose {
+  min-width: 0;
+  font-family: var(--chat-reading-font);
+  font-size: var(--chat-reading-size);
+  line-height: var(--chat-reading-leading);
+  overflow-wrap: anywhere;
+}
+.detective-prose > p {
+  margin: 0;
+}
+.detective-prose > :not(:first-child) {
+  margin-top: 0.9em;
+}
+.detective-prose > :first-child {
+  margin-top: 0;
+}
+.detective-prose > :last-child {
+  margin-bottom: 0;
+}
+.detective-prose :is(h1, h2, h3, h4) {
+  margin-bottom: 0.5em;
+  font-family: var(--chat-reading-font);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.detective-prose :is(ul, ol) {
+  padding-left: 1.5em;
+}
+.detective-prose ul {
+  list-style-type: disc;
+}
+.detective-prose ol {
+  list-style-type: decimal;
+}
+.detective-prose li + li {
+  margin-top: 0.35em;
+}
+.detective-prose a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.detective-prose blockquote {
+  padding-left: var(--chat-gap);
+  border-left: 2px solid var(--color-rule);
+  color: var(--color-ink-soft);
+}
+.detective-prose :is(code, pre) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+}
+.detective-prose pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: var(--chat-gap);
+  border-radius: var(--chat-bubble-radius);
+  background: var(--color-surface);
+}
+.detective-tools {
+  min-width: 0;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: var(--chat-meta);
+}
+.detective-tools > summary {
+  display: flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
+  cursor: pointer;
+  list-style: none;
+}
+.detective-tools > summary::-webkit-details-marker {
+  display: none;
+}
+.detective-tools svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+.detective-tools__chevron {
+  transition: transform 240ms var(--ease-out);
+}
+.detective-tools[open] .detective-tools__chevron {
+  transform: rotate(90deg);
+}
+.detective-tools > ol {
+  display: grid;
+  gap: var(--chat-gap);
+  margin: 0.5rem 0 0;
+  padding: 0 0 0 var(--chat-gap);
+  border-left: 1px solid var(--color-rule);
+  list-style: none;
+}
+.detective-tools__heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--chat-gap);
+}
+.detective-tools__heading > strong {
+  min-width: 0;
+  color: var(--color-ink);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.detective-tools li > p {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.detective-sources {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.detective-sources a {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  max-width: 100%;
+  gap: 0.25rem;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  color: var(--color-ink-soft);
+  background: var(--color-surface-strong);
+  font-family: var(--font-sans);
+  font-size: var(--chat-meta);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 140ms var(--ease-out);
+}
+.detective-sources a:hover {
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+.detective-sources li {
+  min-width: 0;
+  max-width: 100%;
+}
+.detective-source-number {
+  display: inline-grid;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  font-size: var(--chat-meta);
+  line-height: 1;
+}
+.detective-source-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detective-sources a:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.detective-turn__error {
+  margin: 0;
+  color: var(--color-muted);
+  font-family: var(--font-sans);
+  font-size: var(--chat-meta);
+  line-height: 1.6;
+}
+.detective-turn__error[role='alert'] {
+  color: var(--color-danger);
+}
+/* Everplain 的新文字显现按每个字的到达时间延续，后续增量不会重播整段。 */
+.stream-fresh {
+  animation: stream-fresh 1100ms cubic-bezier(0.25, 0.6, 0.25, 1) var(--age, 0ms) both;
+}
+@keyframes stream-fresh {
+  0% {
+    opacity: 0;
+    color: var(--stream-light);
+  }
+  8% {
+    opacity: 1;
+    color: var(--stream-light);
+  }
+  45% {
+    color: color-mix(in oklab, var(--stream-light) 45%, var(--color-ink));
+  }
+  100% {
+    opacity: 1;
+    color: var(--color-ink);
+  }
+}
+.detective-thinking {
+  margin: 0;
+  width: fit-content;
+  font-size: 1rem;
+  line-height: 1.75;
+  color: transparent;
+  background: var(--color-muted)
+    linear-gradient(
+      to right,
+      var(--color-muted) 0%,
+      var(--color-ink) 40%,
+      var(--color-ink) 60%,
+      var(--color-muted) 100%
+    )
+    -100% 0 / 50% 200% no-repeat;
+  background-clip: text;
+  animation: detective-think 1333ms linear infinite;
+}
+.detective-spin {
+  animation: detective-spin 1100ms linear infinite;
+}
+@keyframes detective-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes detective-think {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 250% 0;
+  }
+}
+@keyframes detective-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stream-fresh,
+  .detective-turn__question > p,
+  .detective-thinking,
+  .detective-spin {
+    animation: none;
+  }
+  .detective-thinking {
+    color: var(--color-muted);
+    background: none;
+  }
+}
