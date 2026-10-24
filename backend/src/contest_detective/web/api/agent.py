@@ -13,10 +13,17 @@ from contest_detective.common.result import Response
 from contest_detective.framework.db import get_session
 from contest_detective.server.agent.loop import Investigator, create_investigator
 from contest_detective.server.agent.schemas import AskRequest
+from contest_detective.server.agent.schemas import ContestRecommendation, ResolveRecommendations
+from contest_detective.server.agent.recommendations import resolve_previous
 from contest_detective.server.auth.service import get_current_user_id
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
+
+
+@router.post('/agent/recommendations/resolve', response_model=Response[list[ContestRecommendation]])
+def resolve_recommendations(body: ResolveRecommendations, session: Session = Depends(get_session)):
+    return Response.success(resolve_previous(session, body))
 
 
 async def get_investigator(body: AskRequest, session: Session = Depends(get_session)) -> AsyncIterator[Investigator]:

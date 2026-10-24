@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderDetective } from './detective.test.utils'
 import { parseTrace } from './events'
@@ -55,9 +55,10 @@ describe('侦探过程', () => {
       ].join(''),
     )
     expect(await screen.findByText('可以线上参加。', { selector: 'strong' })).toBeTruthy()
-    expect(screen.getByText('查询比赛库')).toBeTruthy()
-    expect(screen.getByText('找到两场线上活动')).toBeTruthy()
-    expect(screen.getByText('读取主办方公告')).toBeTruthy()
+    const conversation = within(screen.getByRole('log', { name: '对话内容' }))
+    expect(conversation.getByText('查询比赛库')).toBeTruthy()
+    expect(conversation.getByText('找到两场线上活动')).toBeTruthy()
+    expect(conversation.getByText('读取主办方公告')).toBeTruthy()
     expect(
       screen
         .getAllByRole('link', { name: '主办方公告' })

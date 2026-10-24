@@ -5,6 +5,8 @@ from pydantic import ValidationError
 from pydantic_ai.messages import ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models.function import FunctionModel
 
+from agent_responses import answer_part
+
 from contest_detective.server.agent.loop import Investigator
 from contest_detective.server.agent.schemas import AskRequest
 
@@ -23,7 +25,7 @@ def test_conversation_history_reaches_the_model(session_factory):
                               if isinstance(part, TextPart)]
         assert user_messages == [HISTORY[0]['content'], '只看周末可以参加的。']
         assert HISTORY[1]['content'] in assistant_messages
-        return ModelResponse([TextPart('我会继续保留大学生和线上这两个条件。')])
+        return ModelResponse([answer_part('我会继续保留大学生和线上这两个条件。')])
 
     async def consume():
         investigator = Investigator(FunctionModel(respond), session_factory=session_factory)
@@ -47,7 +49,7 @@ def test_http_question_forwards_conversation_history(client, session_factory):
     def respond(messages, _info):
         assert any(isinstance(part, UserPromptPart) and part.content == HISTORY[0]['content']
                    for message in messages for part in message.parts)
-        return ModelResponse([TextPart('继续保留前面的参赛条件。')])
+        return ModelResponse([answer_part('继续保留前面的参赛条件。')])
 
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
         FunctionModel(respond), session_factory=session_factory)
@@ -76,7 +78,7 @@ def test_long_question_and_full_history_reach_the_model(session_factory):
         assert sum(isinstance(part, UserPromptPart) for message in messages for part in message.parts) == 9
         text = [part.content for message in messages for part in message.parts if isinstance(part, TextPart)]
         assert len(text) == 8 and text[-1] == history[-1]['content']
-        return ModelResponse([TextPart('完整条件已收到。')])
+        return ModelResponse([answer_part('完整条件已收到。')])
     async def consume():
         investigator = Investigator(FunctionModel(respond), session_factory=session_factory)
         return [event async for event in investigator.ask(question, history=history)]
@@ -89,7 +91,7 @@ def test_http_delivers_a_long_question_without_cutting_it(client, session_factor
     seen = []
     def respond(messages, info):
         seen.extend(part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart))
-        return ModelResponse([TextPart('完整问题已收到。')])
+        return ModelResponse([answer_part('完整问题已收到。')])
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(FunctionModel(respond), session_factory=session_factory)
     limiter.reset()
     try:

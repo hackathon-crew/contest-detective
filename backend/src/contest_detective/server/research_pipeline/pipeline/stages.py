@@ -7,11 +7,13 @@
 
 import asyncio
 import logging
+from hashlib import sha256
 from inspect import iscoroutinefunction
 from urllib.parse import urlsplit
 
 from contest_detective.server.contest.schemas import ContestDraft, PageIn, Source
 from contest_detective.server.contest.verification import resolve
+from contest_detective.server.research_pipeline.normalization import supported_claims
 from contest_detective.server.research_pipeline.official import is_official_page
 from contest_detective.server.research_pipeline.pipeline.models import ContestRecord, ContestSyncContext, RetrievedPage
 from contest_detective.server.research_pipeline.structured import StructuredCandidate, StructuredDescriptionEnrich, deduplicate_structured
@@ -76,21 +78,26 @@ class StructuredNormalize:
         from contest_detective.server.research_pipeline.normalization import NormalizationInput
         normalized = []
         for candidate in ctx.structured_candidates:
+            source_key = sha256(candidate.draft.page.url.encode('utf-8')).hexdigest()[:16]
             try:
+                context_page = candidate.evidence_page
                 item = NormalizationInput(
                     draft=candidate.draft,
                     context=candidate.context,
-                    context_url=candidate.context_url or candidate.draft.page.url,
+                    context_url=context_page.url,
                 )
+                original_claims = set(candidate.claim_pages)
                 candidate.draft = await self._normalizer(item)
-                if candidate.claim_pages:
-                    candidate.claim_pages = {
-                        id(claim): candidate.claim_pages.get(id(claim), candidate.draft.page)
-                        for claim in candidate.draft.claims
-                    }
+                candidate.claim_pages = {
+                    id(claim): candidate.claim_pages.get(id(claim), context_page)
+                    for claim in candidate.draft.claims
+                }
+                logger.info('Structured normalization completed source=%s added_claims=%s source_key=%s',
+                            candidate.source, len(set(candidate.claim_pages) - original_claims), source_key)
             except Exception as exc:
                 ctx.failed += 1
-                logger.warning('Structured normalization failed error_type=%s', type(exc).__name__)
+                logger.warning('Structured normalization failed error_type=%s source=%s source_key=%s',
+                               type(exc).__name__, candidate.source, source_key)
             normalized.append(candidate.draft)
         ctx.extracted_items = normalized
 
@@ -204,6 +211,7 @@ class DraftVerify:
         self._session_factory = session_factory
 
     async def run(self, ctx: ContestSyncContext) -> None:
+        claim_pages = {id(candidate.draft): candidate.claim_pages for candidate in ctx.structured_candidates}
         grouped: dict[tuple, list[ContestDraft]] = {}
         for draft in ctx.extracted_items:
             if not draft.claims:
@@ -220,20 +228,16 @@ class DraftVerify:
                 existing = existing[1]
             elif existing:
                 existing = existing[1]
-            fresh = {(draft.page.url, claim.field) for draft in drafts for claim in draft.claims}
+            incoming = [
+                (claim.field, _source(draft, claim, claim_pages.get(id(draft), {}).get(id(claim))))
+                for draft in drafts for claim in draft.claims
+            ]
+            fresh = {(source.url, field) for field, source in incoming}
             carried = [item for item in existing if (item[1].url, item[0]) not in fresh] if existing else []
             fields = {}
-            claimed = {claim.field for draft in drafts for claim in draft.claims} | {field for field, _ in carried}
+            claimed = {field for field, _ in incoming} | {field for field, _ in carried}
             for field in claimed:
-                sources = []
-                for candidate in ctx.structured_candidates:
-                    if candidate.draft not in drafts:
-                        continue
-                    for claim in candidate.draft.claims:
-                        if claim.field == field:
-                            sources.append(_source(candidate.draft, claim, candidate.claim_pages.get(id(claim))))
-                if not sources:
-                    sources = [_source(draft, claim) for draft in drafts for claim in draft.claims if claim.field == field]
+                sources = [source for name, source in incoming if name == field]
                 sources.extend(source for name, source in carried if name == field)
                 fields[field] = resolve(field, sources)
             first = drafts[0]
@@ -281,8 +285,7 @@ def _matches_mode(mode, draft: ContestDraft) -> bool:
 
 
 def _supported_claims(text, draft: ContestDraft):
-    body = ' '.join(text.split())
-    return [claim for claim in draft.claims if claim.excerpt and ' '.join(claim.excerpt.split()) in body]
+    return supported_claims(text, draft.claims)
 
 
 def _group_key(draft: ContestDraft):
@@ -303,7 +306,8 @@ async def _page_text(page: RetrievedPage, fetcher) -> str:
     if page.raw_content:
         return page.raw_content
     if fetcher is None:
-        return page.content
+        from contest_detective.server.research_pipeline.pages import fetch_page
+        fetcher = fetch_page
     text = await fetcher(page.url) if iscoroutinefunction(fetcher) else await asyncio.to_thread(fetcher, page.url)
     if text and text.strip():
         page.raw_content = text

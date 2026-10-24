@@ -1,8 +1,14 @@
 import { safeUrl } from '@/entities/contest'
-import type { ConversationMessage } from '@/shared/api/generated'
+import type { ConversationMessage, MatchItem, Profile, ContestRecommendation } from '@/shared/api'
 import { parseTrace, type TraceEvent, type TraceSource } from './events'
 
 export type ToolEvent = Extract<TraceEvent, { type: 'step' | 'observation' }>
+export type { ContestRecommendation } from '@/shared/api'
+export interface ProfileFile {
+  name: string
+  profile: Profile
+  candidates: MatchItem[]
+}
 export interface DetectiveTurn {
   id: string
   question: string
@@ -11,6 +17,9 @@ export interface DetectiveTurn {
   sources: TraceSource[]
   status: 'running' | 'completed' | 'stopped' | 'error'
   error?: string
+  // 与正文一起保存 Agent 最终选中的比赛；旧记录缺少此字段时按正文引用补读。
+  recommendations?: ContestRecommendation[]
+  profileFile?: ProfileFile
 }
 
 export const conversationKey = (scope: string) => `contest-detective.conversation.${scope}`

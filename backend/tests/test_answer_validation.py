@@ -3,8 +3,10 @@ import json
 from decimal import Decimal
 
 import pytest
-from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 from pydantic_ai.usage import RequestUsage
 from sqlalchemy import select
 
@@ -54,7 +56,7 @@ def test_partial_answers_complete_without_format_corrections(session_factory, an
         nonlocal calls
         calls += 1
         return response([ToolCallPart('get_contest', {'contest_id': contest_id})]
-                        if calls == 1 else [TextPart(answer)])
+                        if calls == 1 else [answer_part(answer)])
 
     events = run(session_factory, respond)
 
@@ -79,7 +81,7 @@ def test_final_answer_on_last_request_completes_without_a_format_retry(session_f
         nonlocal calls
         calls += 1
         return response([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
-                        if calls <= 63 else [TextPart(answer)])
+                        if calls <= 63 else [answer_part(answer)])
 
     events = run(session_factory, respond)
 
@@ -103,7 +105,7 @@ def test_partial_answer_reaches_the_http_event_stream(client, session_factory):
             return response([ToolCallPart('search_contests', {'keyword': '出处回归'})])
         if calls == 2:
             return response([ToolCallPart('get_contest', {'contest_id': contest_id})])
-        return response([TextPart(answer)])
+        return response([answer_part(answer)])
 
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
         FunctionModel(respond), session_factory=session_factory)

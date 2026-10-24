@@ -84,6 +84,21 @@ export type ContestDetail = {
 };
 
 /**
+ * ContestRecommendation
+ */
+export type ContestRecommendation = {
+    contest: ContestDetail;
+    /**
+     * Introduction
+     */
+    introduction?: string | null;
+    /**
+     * Reason
+     */
+    reason: string;
+};
+
+/**
  * ContestSummary
  */
 export type ContestSummary = {
@@ -407,6 +422,20 @@ export type PublicUser = {
 };
 
 /**
+ * ResolveRecommendations
+ */
+export type ResolveRecommendations = {
+    /**
+     * Content
+     */
+    content: string;
+    /**
+     * Sources
+     */
+    sources?: Array<ToolSource>;
+};
+
+/**
  * Response[ContestDetail]
  */
 export type ResponseContestDetail = {
@@ -577,6 +606,36 @@ export type ResponseUnionPublicUserNoneType = {
 };
 
 /**
+ * Response[list[ContestRecommendation]]
+ */
+export type ResponseListContestRecommendation = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<ContestRecommendation> | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[list[MatchItem]]
  */
 export type ResponseListMatchItem = {
@@ -664,6 +723,32 @@ export type SourceCitation = {
      * Quote
      */
     quote: string;
+};
+
+/**
+ * ToolSource
+ */
+export type ToolSource = {
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Site
+     */
+    site?: string;
+    /**
+     * Is Official
+     */
+    is_official?: boolean;
+    /**
+     * Stale
+     */
+    stale?: boolean;
 };
 
 /**
@@ -972,6 +1057,31 @@ export type ContestDetailContestsContestIdGetResponses = {
 };
 
 export type ContestDetailContestsContestIdGetResponse = ContestDetailContestsContestIdGetResponses[keyof ContestDetailContestsContestIdGetResponses];
+
+export type ResolveRecommendationsAgentRecommendationsResolvePostData = {
+    body: ResolveRecommendations;
+    path?: never;
+    query?: never;
+    url: '/agent/recommendations/resolve';
+};
+
+export type ResolveRecommendationsAgentRecommendationsResolvePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ResolveRecommendationsAgentRecommendationsResolvePostError = ResolveRecommendationsAgentRecommendationsResolvePostErrors[keyof ResolveRecommendationsAgentRecommendationsResolvePostErrors];
+
+export type ResolveRecommendationsAgentRecommendationsResolvePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListContestRecommendation;
+};
+
+export type ResolveRecommendationsAgentRecommendationsResolvePostResponse = ResolveRecommendationsAgentRecommendationsResolvePostResponses[keyof ResolveRecommendationsAgentRecommendationsResolvePostResponses];
 
 export type AskQuestionAgentAskPostData = {
     body: AskRequest;

@@ -1,4 +1,5 @@
 from urllib.parse import quote
+import logging
 import re
 
 import httpx
@@ -8,6 +9,7 @@ from contest_detective.server.research_pipeline.sources.dates import parse_datet
 from contest_detective.server.research_pipeline.official import is_official_page
 
 API_URL = 'https://events.waytoagi.com/api/events'
+logger = logging.getLogger(__name__)
 
 
 def fetch(client: httpx.Client) -> list[ContestDraft]:
@@ -20,10 +22,14 @@ def fetch(client: httpx.Client) -> list[ContestDraft]:
     for item in payload['items']:
         if item.get('eventKind') != 'hackathon' or item.get('timeStatus') == 'ended':
             continue
-        event_id = quote(str(item['id']), safe='')
-        detail = client.get(f'{API_URL}/{event_id}')
-        detail.raise_for_status()
-        event = {**item, **detail.json()['event']}
+        try:
+            event_id = quote(str(item['id']), safe='')
+            detail = client.get(f'{API_URL}/{event_id}')
+            detail.raise_for_status()
+            event = {**item, **detail.json()['event']}
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            logger.warning('WaytoAGI detail skipped event=%s error_type=%s', item.get('id'), type(exc).__name__)
+            continue
         page_url = f'https://events.waytoagi.com/events/{event_id}'
         official = is_official_page(page_url, origin=event.get('origin'),
                                     external_registration=bool(event.get('externalRegUrl')))

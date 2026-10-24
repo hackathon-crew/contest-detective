@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Link, NavLink } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
 import inkpawMark from '@/shared/assets/inkpaw-mark-56.webp'
 import { Icon, SiteSymbols } from './site-icon'
 import './site.css'
@@ -12,6 +12,7 @@ export function SiteBrand() {
   )
 }
 export function SiteHeader({ actions, utilities }: { actions?: ReactNode; utilities?: ReactNode }) {
+  const location = useLocation()
   return (
     <header className="site-header">
       <SiteSymbols />
@@ -25,7 +26,12 @@ export function SiteHeader({ actions, utilities }: { actions?: ReactNode; utilit
             <NavLink to="/detective" className="site-button site-button--ghost">
               侦探
             </NavLink>
-            <Link to="/#mcp" className="site-button site-button--ghost">
+            <Link
+              to={{ pathname: location.pathname, search: location.search, hash: '#mcp' }}
+              state={location.state}
+              className="site-button site-button--ghost"
+              aria-haspopup="dialog"
+            >
               MCP
             </Link>
           </div>

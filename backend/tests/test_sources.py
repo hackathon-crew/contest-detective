@@ -16,6 +16,41 @@ def values(draft):
     return {claim.field: claim.value for claim in draft.claims}
 
 
+def test_one_waytoagi_detail_failure_does_not_discard_other_events():
+    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+
+    listing = load('waytoagi.json')
+    healthy = next(item for item in listing['items']
+                   if item.get('eventKind') == 'hackathon' and item.get('timeStatus') != 'ended')
+    listing['items'] = [{**healthy, 'id': 'unavailable'}, healthy]
+    details = load('waytoagi_details.json')
+
+    def handle(request):
+        if request.url.path == '/api/events':
+            return httpx.Response(200, json=listing)
+        event_id = request.url.path.rsplit('/', 1)[-1]
+        if event_id == 'unavailable':
+            return httpx.Response(500)
+        return httpx.Response(200, json=details[event_id])
+
+    with httpx.Client(transport=httpx.MockTransport(handle)) as client:
+        drafts = fetch(client)
+
+    assert [draft.name for draft in drafts] == [healthy['title']]
+
+
+def test_one_invalid_hackertrip_event_does_not_discard_other_events():
+    from contest_detective.server.research_pipeline.sources.hackertrip import fetch
+
+    healthy = load('hackertrip.json')[0]
+    broken = {key: value for key, value in healthy.items() if key != 'name'}
+    with httpx.Client(transport=httpx.MockTransport(
+            lambda _: httpx.Response(200, json=[broken, healthy]))) as client:
+        drafts = fetch(client)
+
+    assert [draft.name for draft in drafts] == [healthy['name']]
+
+
 def test_hackertrip_replays_public_snapshot_and_skips_past_events():
     from contest_detective.server.research_pipeline.sources.hackertrip import fetch
 

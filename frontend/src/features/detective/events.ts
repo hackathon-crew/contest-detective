@@ -1,4 +1,4 @@
-import type { ServerSentEvent } from '@/shared/api'
+import type { ContestRecommendation, ServerSentEvent } from '@/shared/api'
 import { safeUrl } from '@/entities/contest'
 
 export interface TraceSource {
@@ -12,7 +12,12 @@ export type TraceEvent =
   | { type: 'step'; tool: string; label: string }
   | { type: 'observation'; tool: string; summary: string; sources: TraceSource[] }
   | { type: 'delta'; content: string }
-  | { type: 'answer'; content: string; sources: TraceSource[] }
+  | {
+      type: 'answer'
+      content: string
+      sources: TraceSource[]
+      recommendations?: ContestRecommendation[]
+    }
   | { type: 'error'; message: string }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -45,6 +50,44 @@ function sources(value: unknown): TraceSource[] {
   })
 }
 
+function recommendations(value: unknown): ContestRecommendation[] | undefined {
+  if (value === undefined) return undefined
+  if (!Array.isArray(value)) return invalid()
+  for (const item of value) {
+    if (
+      !record(item) ||
+      !record(item.contest) ||
+      typeof item.reason !== 'string' ||
+      (item.introduction !== undefined &&
+        item.introduction !== null &&
+        typeof item.introduction !== 'string')
+    )
+      return invalid()
+    const contest = item.contest
+    if (
+      typeof contest.id !== 'string' ||
+      typeof contest.name !== 'string' ||
+      !['upcoming', 'ongoing', 'ended'].includes(String(contest.status)) ||
+      (contest.cover_url !== null && typeof contest.cover_url !== 'string') ||
+      (contest.summary !== null && typeof contest.summary !== 'string') ||
+      !record(contest.fields)
+    )
+      return invalid()
+    for (const field of Object.values(contest.fields)) {
+      if (
+        !record(field) ||
+        (field.value !== null && typeof field.value !== 'string') ||
+        !['official', 'reposted', 'conflict', 'not_found'].includes(String(field.level)) ||
+        (field.sources !== undefined &&
+          (!Array.isArray(field.sources) ||
+            field.sources.some((source) => !record(source) || typeof source.url !== 'string')))
+      )
+        return invalid()
+    }
+  }
+  return value as ContestRecommendation[]
+}
+
 /** SSE 只负责分帧，这里检查业务载荷，避免半条结论或错误被当成回答。 */
 export function parseTrace(event: ServerSentEvent): TraceEvent {
   let value: unknown
@@ -70,7 +113,12 @@ export function parseTrace(event: ServerSentEvent): TraceEvent {
       sources: sources(value.sources),
     }
   if (event.event === 'answer' && typeof value.content === 'string' && value.content.trim())
-    return { type: 'answer', content: value.content, sources: sources(value.sources) }
+    return {
+      type: 'answer',
+      content: value.content,
+      sources: sources(value.sources),
+      recommendations: recommendations(value.recommendations),
+    }
   if (event.event === 'error' && typeof value.message === 'string')
     return { type: 'error', message: value.message }
   return invalid()

@@ -74,7 +74,7 @@ jobs:
           printf '%s\n' "$RELEASE_TAG" > RELEASE_TAG
           jq -n --arg tag "$RELEASE_TAG" --arg commit "$RELEASE_COMMIT" \
             '{tag: $tag, commit: $commit}' > frontend/dist/version.json
-          git archive --format=tar "$RELEASE_COMMIT" backend > "$RUNNER_TEMP/release.tar"
+          git archive --format=tar "$RELEASE_COMMIT" backend deploy/server.env.example > "$RUNNER_TEMP/release.tar"
           tar -rf "$RUNNER_TEMP/release.tar" frontend/dist RELEASE_COMMIT RELEASE_TAG
           gzip "$RUNNER_TEMP/release.tar"
       - name: Deploy through restricted SSH key

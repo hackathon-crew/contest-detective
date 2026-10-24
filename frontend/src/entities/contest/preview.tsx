@@ -39,7 +39,7 @@ export function ContestCover({
     <span className={'cover-empty ' + (className ?? '')} aria-hidden="true" />
   )
 }
-function prizeText(contest: ContestSummary) {
+export function prizeText(contest: ContestSummary) {
   const value = contest.fields.prize?.value
   if (!value || /^[^\d]*0$/.test(value.trim())) return null
   const short = value.split(/[（(：；，]/)[0].trim()

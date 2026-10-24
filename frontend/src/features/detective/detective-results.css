@@ -1,0 +1,14 @@
+.detective-recommendation-title {
+  font-size: 15px;
+  line-height: 1.5;
+}
+.detective-recommendation-text {
+  font-size: 13px;
+  line-height: 1.5;
+}
+@media (min-width: 640px) {
+  .detective-recommendation-cover {
+    width: 88px;
+    border-radius: 10px;
+  }
+}

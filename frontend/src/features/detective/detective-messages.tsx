@@ -6,6 +6,8 @@ import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
 import { rehypeStreamReveal } from './rehype-stream-reveal'
 import { useStreamPacer } from './use-stream-pacer'
+import { SourceIcon } from './source-icon'
+import { ProfileFileAttachment, RecommendationCards } from './detective-results'
 
 function Sources({ items }: { items: TraceSource[] }) {
   const trusted = [
@@ -22,6 +24,7 @@ function Sources({ items }: { items: TraceSource[] }) {
         {trusted.map((source, index) => (
           <li key={`${source.url}-${index}`}>
             <a href={source.url} target="_blank" rel="noreferrer">
+              <SourceIcon url={source.url} />
               <span className="detective-source-number" aria-hidden="true">
                 {index + 1}
               </span>
@@ -104,6 +107,7 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
   return (
     <article className="detective-turn" aria-label={`关于${turn.question}的对话`}>
       <div className="detective-turn__question">
+        {turn.profileFile && <ProfileFileAttachment file={turn.profileFile} />}
         <p>{turn.question}</p>
       </div>
       <div className="detective-turn__answer">
@@ -138,6 +142,7 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
               </ReactMarkdown>
             </div>
           )}
+          {!!turn.recommendations?.length && <RecommendationCards items={turn.recommendations} />}
           <Sources items={turn.sources} />
           {turn.error && (
             <p
