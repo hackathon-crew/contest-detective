@@ -28,17 +28,19 @@ export function ErrorState({ error, retry }: { error: unknown; retry?: () => voi
 }
 
 export function Dialog({
+  open = true,
   title,
   onClose,
   children,
 }: {
+  open?: boolean
   title: string
   onClose: () => void
   children: ReactNode
 }) {
   return (
     <DialogRoot
-      open
+      open={open}
       onOpenChange={(open) => {
         if (!open) onClose()
       }}
