@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from contest_detective.common.exceptions import BizException
 from contest_detective.common.result import Response
 from contest_detective.framework.db import get_session
+from contest_detective.server.account.providers import runtime_for
+from contest_detective.server.auth.service import current as query_user
 from contest_detective.server.agent.llm import create_model
 from contest_detective.server.user.github import build_github_profile
 from contest_detective.server.user.matching import match
@@ -24,9 +26,10 @@ def get_github_builder():
     return build_github_profile
 
 
-def get_resume_extractor(session: Session = Depends(get_session)):
+def get_resume_extractor(session: Session = Depends(get_session), user_id: Annotated[str | None, Depends(query_user)] = None):
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    return create_profile_extractor(model_factory=lambda: create_model(session_factory=factory), manage_model=True)
+    runtime = runtime_for(session, user_id)
+    return create_profile_extractor(model_factory=lambda: create_model(settings=runtime.llm, session_factory=factory), manage_model=True)
 
 
 @router.post('/profile/github', response_model=Response[Profile])

@@ -625,6 +625,288 @@
         }
       }
     },
+    "/account/providers": {
+      "get": {
+        "summary": "Read Providers",
+        "operationId": "read_providers_account_providers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ProvidersRead_"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save Providers",
+        "operationId": "save_providers_account_providers_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ProvidersRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/providers/{provider}": {
+      "delete": {
+        "summary": "Remove Provider",
+        "operationId": "remove_provider_account_providers__provider__delete",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "llm",
+                "yuanbao",
+                "tavily"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ProviderUndo_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/providers/restore": {
+      "post": {
+        "summary": "Restore Provider",
+        "operationId": "restore_provider_account_providers_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderUndo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ProvidersRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/providers/test": {
+      "post": {
+        "summary": "Test Provider",
+        "operationId": "test_provider_account_providers_test_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProviderInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ConnectionRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/token": {
+      "get": {
+        "summary": "Read Token",
+        "operationId": "read_token_account_token_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_Union_TokenMetadata__NoneType__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/token/regenerate": {
+      "post": {
+        "summary": "Regenerate Token",
+        "operationId": "regenerate_token_account_token_regenerate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TokenCreated_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/search": {
+      "get": {
+        "summary": "Read Search",
+        "operationId": "read_search_account_search_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_SearchPreferences_"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save Search",
+        "operationId": "save_search_account_search_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchPreferences"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_SearchPreferences_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/quota": {
+      "get": {
+        "summary": "Read Quota",
+        "operationId": "read_quota_account_quota_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_QuotaRead_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "summary": "Register",
@@ -1348,6 +1630,19 @@
           "url"
         ],
         "title": "CalendarRead"
+      },
+      "ConnectionRead": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "ConnectionRead"
       },
       "ContentCitation": {
         "properties": {
@@ -2620,6 +2915,129 @@
         "type": "object",
         "title": "Profile"
       },
+      "ProviderInput": {
+        "properties": {
+          "llm_vendor": {
+            "type": "string",
+            "enum": [
+              "deepseek",
+              "openai"
+            ],
+            "title": "Llm Vendor",
+            "default": "deepseek"
+          },
+          "llm_base_url": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Llm Base Url",
+            "default": "https://api.deepseek.com"
+          },
+          "llm_model": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Llm Model",
+            "default": "deepseek-flash"
+          },
+          "llm_api_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Api Key"
+          },
+          "yuanbao_secret_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yuanbao Secret Id"
+          },
+          "yuanbao_secret_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yuanbao Secret Key"
+          },
+          "tavily_api_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tavily Api Key"
+          }
+        },
+        "type": "object",
+        "title": "ProviderInput"
+      },
+      "ProviderUndo": {
+        "properties": {
+          "undo_token": {
+            "type": "string",
+            "title": "Undo Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "undo_token"
+        ],
+        "title": "ProviderUndo"
+      },
+      "ProvidersRead": {
+        "properties": {
+          "llm_vendor": {
+            "type": "string",
+            "title": "Llm Vendor"
+          },
+          "llm_base_url": {
+            "type": "string",
+            "title": "Llm Base Url"
+          },
+          "llm_model": {
+            "type": "string",
+            "title": "Llm Model"
+          },
+          "secrets": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SecretMetadata"
+            },
+            "type": "object",
+            "title": "Secrets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "llm_vendor",
+          "llm_base_url",
+          "llm_model",
+          "secrets"
+        ],
+        "title": "ProvidersRead"
+      },
       "PublicContestDocument": {
         "properties": {
           "url": {
@@ -2888,6 +3306,19 @@
         "type": "object",
         "title": "PushSettings"
       },
+      "QuotaRead": {
+        "properties": {
+          "unlimited": {
+            "type": "boolean",
+            "title": "Unlimited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unlimited"
+        ],
+        "title": "QuotaRead"
+      },
       "ResolveRecommendations": {
         "properties": {
           "content": {
@@ -2949,6 +3380,48 @@
         },
         "type": "object",
         "title": "Response[CalendarRead]"
+      },
+      "Response_ConnectionRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectionRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[ConnectionRead]"
       },
       "Response_ContestDetail_": {
         "properties": {
@@ -3196,6 +3669,90 @@
         "type": "object",
         "title": "Response[Profile]"
       },
+      "Response_ProviderUndo_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderUndo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[ProviderUndo]"
+      },
+      "Response_ProvidersRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProvidersRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[ProvidersRead]"
+      },
       "Response_PublicUser_": {
         "properties": {
           "code": {
@@ -3279,6 +3836,132 @@
         },
         "type": "object",
         "title": "Response[PushRead]"
+      },
+      "Response_QuotaRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuotaRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[QuotaRead]"
+      },
+      "Response_SearchPreferences_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchPreferences"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[SearchPreferences]"
+      },
+      "Response_TokenCreated_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenCreated"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[TokenCreated]"
       },
       "Response_TrackMatches_": {
         "properties": {
@@ -3447,6 +4130,48 @@
         },
         "type": "object",
         "title": "Response[Union[PublicUser, NoneType]]"
+      },
+      "Response_Union_TokenMetadata__NoneType__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[Union[TokenMetadata, NoneType]]"
       },
       "Response_dict_str__int__": {
         "properties": {
@@ -3724,6 +4449,50 @@
         "type": "object",
         "title": "Response[list[TrackRead]]"
       },
+      "SearchPreferences": {
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "all",
+              "cn",
+              "intl"
+            ],
+            "title": "Scope",
+            "default": "all"
+          },
+          "exclude_ended": {
+            "type": "boolean",
+            "title": "Exclude Ended",
+            "default": true
+          },
+          "blocked_domains": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Blocked Domains"
+          }
+        },
+        "type": "object",
+        "title": "SearchPreferences"
+      },
+      "SecretMetadata": {
+        "properties": {
+          "last_four": {
+            "type": "string",
+            "title": "Last Four"
+          }
+        },
+        "type": "object",
+        "required": [
+          "last_four"
+        ],
+        "title": "SecretMetadata"
+      },
       "Source": {
         "properties": {
           "url": {
@@ -3817,6 +4586,59 @@
           "quote"
         ],
         "title": "SourceCitation"
+      },
+      "TokenCreated": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/TokenMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "metadata"
+        ],
+        "title": "TokenCreated"
+      },
+      "TokenMetadata": {
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "title": "Prefix"
+          },
+          "last_four": {
+            "type": "string",
+            "title": "Last Four"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prefix",
+          "last_four",
+          "created_at"
+        ],
+        "title": "TokenMetadata"
       },
       "ToolSource": {
         "properties": {

@@ -1,5 +1,7 @@
 """Authenticated, bounded document-answer endpoint for the native companion."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
@@ -11,6 +13,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from contest_detective.common.exceptions import BizException
 from contest_detective.common.result import Response
 from contest_detective.framework.db import get_session
+from contest_detective.server.account.providers import runtime_for
+from contest_detective.server.auth.service import current as query_user
 from contest_detective.server.agent.llm import create_model
 from contest_detective.server.auth import service as auth
 from contest_detective.server.documents.schemas import MAX_QUESTION_BYTES, DocumentAnswer, DocumentQuestion
@@ -44,9 +48,10 @@ router = APIRouter(route_class=BoundedDocumentRoute)
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
 
 
-def get_document_answerer(session: Session = Depends(get_session)) -> DocumentAnswering:
+def get_document_answerer(session: Session = Depends(get_session), user_id: Annotated[str | None, Depends(query_user)] = None) -> DocumentAnswering:
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    return BoundedDocumentAnswerer(model_factory=lambda: create_model(session_factory=factory))
+    runtime = runtime_for(session, user_id)
+    return BoundedDocumentAnswerer(model_factory=lambda: create_model(settings=runtime.llm, session_factory=factory))
 
 
 @limiter.limit('5/minute;30/day')

@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 from contextlib import suppress
+from functools import partial
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
@@ -42,11 +43,12 @@ LABELS = {'search_contests': '查询比赛库', 'get_contest': '读取赛事出�
 
 
 class Investigator:
-    def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None, profile_reader=None):
+    def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None, profile_reader=None, preferences=None):
         self.model = model
         self.session_factory = session_factory
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
+        self.preferences = preferences
         self.agent = Agent(model, deps_type=ToolDeps,
                            output_type=ToolOutput(DetectiveReply, name='respond_to_user'),
                            instructions=RULES, retries={'tools': 3},
@@ -90,7 +92,7 @@ class Investigator:
         with self.session_factory() as session:
             session.add(Investigation(id=investigation_id, question=question, user_id=user_id, status='running'))
             session.commit()
-        deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record)
+        deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record, preferences=self.preferences)
         seq, status, answer = 0, 'cancelled', None
         findings = []
 
@@ -171,9 +173,9 @@ class Investigator:
                 session.commit()
 
 
-def create_investigator(*, session_factory=SessionLocal) -> Investigator:
+def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None) -> Investigator:
     from .llm import create_model
-    model = create_model(session_factory=session_factory)
+    model = create_model(settings=model_settings, session_factory=session_factory) if model_settings is not None else create_model(session_factory=session_factory)
     from contest_detective.server import research_pipeline
     from contest_detective.server.user.service import get
 
@@ -183,8 +185,8 @@ def create_investigator(*, session_factory=SessionLocal) -> Investigator:
             return user.profile.model_dump(mode='json') if user else None
 
     return Investigator(model, session_factory=session_factory, fetch=research_pipeline.fetch_page,
-        search=research_pipeline.search_web if research_pipeline.web_search_available() else None,
-        record=research_pipeline.run, profile_reader=read_profile)
+        search=partial(research_pipeline.search_web, config=search_settings) if research_pipeline.web_search_available(search_settings) else None,
+        record=research_pipeline.run, profile_reader=read_profile, preferences=preferences)
 
 
 async def ask(question: str, user_id: str | None = None, profile: Profile | None = None) -> AsyncIterator[TraceEvent]:

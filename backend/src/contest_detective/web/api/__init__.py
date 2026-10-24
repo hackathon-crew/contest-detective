@@ -14,10 +14,12 @@ from .companion import router as companion_router
 
 from .account_push import router as account_push_router
 from .account_follows import router as account_follows_router
+from .account_keys import router as account_keys_router
 
 router = APIRouter()
 router.include_router(account_push_router)
 router.include_router(account_follows_router)
+router.include_router(account_keys_router)
 router.include_router(auth_router)
 router.include_router(profile_router)
 router.include_router(contests_router)

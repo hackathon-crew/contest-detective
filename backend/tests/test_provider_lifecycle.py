@@ -104,6 +104,8 @@ def test_owned_model_closes_when_its_agent_context_exits(session_factory, monkey
 
 
 def test_http_responses_release_clients_even_when_rate_limited(client, session_factory, monkeypatch):
+    from contest_detective.framework.config.app import get_app_settings
+    monkeypatch.setattr(get_app_settings(), "query_limits_enabled", True)
     clients, requests = local_provider(session_factory, monkeypatch)
     monkeypatch.setattr(web_agent, 'create_investigator', lambda **_: Investigator(
         llm.create_model(session_factory=session_factory), session_factory=session_factory))
