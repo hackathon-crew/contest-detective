@@ -47,30 +47,30 @@ def test_provider_extracts_facts_without_controlling_trusted_page_metadata(sessi
     assert result.page.title == result.name and result.page.is_official
 
 
-def test_invalid_claim_objects_get_one_library_correction_and_each_request_is_accounted(session_factory):
+def test_invalid_claim_objects_get_two_library_corrections_and_each_request_is_accounted(session_factory):
     calls, feedback = 0, []
     def respond(messages, info):
         nonlocal calls
         calls += 1
         assert info.model_settings['max_retries'] == 0 and info.model_settings['max_tokens'] == 8192
-        if calls == 1:
+        if calls in (1, 2):
             return response(info, {**FACTS, 'claims': ['city: 上海']})
         feedback.extend(part for message in messages for part in message.parts
                         if isinstance(part, ToolReturnPart) and part.outcome == 'retried')
         return response(info, FACTS)
     usage = RunUsage()
     extracted = asyncio.run(create_page_extractor(model=guarded(session_factory, respond), usage=usage)(URL, '在上海参赛'))
-    assert calls == usage.requests == 2 and feedback
+    assert calls == usage.requests == 3 and feedback
     assert extracted.claims[0].field == 'city' and extracted.claims[0].value == '上海'
     with session_factory() as session:
         rows = session.scalars(select(LLMUsage)).all()
-        assert len(rows) == 2 and all(row.status == 'settled' for row in rows)
-        assert sum(row.cache_miss_tokens for row in rows) == 200
-        assert sum(row.output_tokens for row in rows) == 40
+        assert len(rows) == 3 and all(row.status == 'settled' for row in rows)
+        assert sum(row.cache_miss_tokens for row in rows) == 300
+        assert sum(row.output_tokens for row in rows) == 60
 
 
 @pytest.mark.parametrize('claims', [['city: 上海'], [{'field': 'city', 'value': '上海'}]])
-def test_persistently_invalid_claims_fail_after_two_requests_without_coercion(session_factory, claims):
+def test_persistently_invalid_claims_fail_after_three_requests_without_coercion(session_factory, claims):
     calls = 0
     def respond(_, info):
         nonlocal calls
@@ -78,13 +78,13 @@ def test_persistently_invalid_claims_fail_after_two_requests_without_coercion(se
         return response(info, {**FACTS, 'claims': claims})
     with pytest.raises(UnexpectedModelBehavior) as error:
         asyncio.run(create_page_extractor(model=guarded(session_factory, respond))(URL, '在上海参赛'))
-    assert calls == 2
+    assert calls == 3
     cause = error.value
     while cause is not None and not isinstance(cause, ValidationError):
         cause = cause.__cause__
     assert isinstance(cause, ValidationError)
     with session_factory() as session:
-        assert len(session.scalars(select(LLMUsage)).all()) == 2
+        assert len(session.scalars(select(LLMUsage)).all()) == 3
 
 
 def test_correction_uses_the_shared_six_request_budget(session_factory):
@@ -124,4 +124,4 @@ def test_owned_sdk_client_closes_after_success_or_exhausted_output_correction(se
         finally:
             await client.close()
     asyncio.run(run())
-    assert calls == (1 if valid else 2)
+    assert calls == (1 if valid else 3)

@@ -41,7 +41,7 @@ def response(parts):
     return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
 
 
-def test_uncited_output_is_corrected_once_and_every_request_is_accounted(session_factory):
+def test_uncited_output_is_corrected_twice_and_every_request_is_accounted(session_factory):
     contest_id = seed(session_factory)
     calls, feedback = [], []
     def respond(messages, info):
@@ -49,19 +49,19 @@ def test_uncited_output_is_corrected_once_and_every_request_is_accounted(session
         calls.append(messages)
         if len(calls) == 1:
             return response([ToolCallPart('get_contest', {'contest_id': contest_id})])
-        if len(calls) == 2:
+        if len(calls) in (2, 3):
             return response([TextPart(UNCITED)])
         feedback.extend(part.content for message in messages for part in message.parts
                         if isinstance(part, UserPromptPart) and isinstance(part.content, str) and '请纠正回答' in part.content)
         return response([TextPart(CITED)])
     events = run(session_factory, respond)
-    assert len(calls) == 3
-    assert len(feedback) == 1 and 'Markdown' in feedback[0] and '每个' in feedback[0] and '已返回' in feedback[0]
+    assert len(calls) == 4
+    assert len(feedback) == 2 and 'Markdown' in feedback[0] and '每个' in feedback[0] and '已返回' in feedback[0]
     assert events[-1].type == 'answer' and events[-1].payload['content'] == CITED
     with session_factory() as session:
         usage = session.scalars(select(LLMUsage)).all()
-        assert len(usage) == 3 and all(row.status == 'settled' for row in usage)
-        assert sum(row.cost_cny for row in usage) == Decimal('0.00108')
+        assert len(usage) == 4 and all(row.status == 'settled' for row in usage)
+        assert sum(row.cost_cny for row in usage) == Decimal('0.00144')
         record = session.scalars(select(Investigation)).one()
         assert record.status == 'completed' and record.answer == CITED
         assert UNCITED not in json.dumps([row.payload for row in session.scalars(select(TraceRecord))], ensure_ascii=False)
@@ -72,7 +72,7 @@ def test_uncited_output_is_corrected_once_and_every_request_is_accounted(session
     ('[作品提交截止为2026-10-27 16:00](https://invented.example/rules)。', False),
     (f'作品提交截止为[2026-10-27 08:00]({URL})。', True),
 ])
-def test_a_second_invalid_output_stops_without_leaking_it_to_business_records(session_factory, bad_answer, day):
+def test_a_third_invalid_output_stops_without_leaking_it_to_business_records(session_factory, bad_answer, day):
     contest_id = seed(session_factory, day=day)
     calls = 0
     def respond(_, info):
@@ -81,14 +81,14 @@ def test_a_second_invalid_output_stops_without_leaking_it_to_business_records(se
         assert info.model_settings['max_retries'] == 0
         return response([ToolCallPart('get_contest', {'contest_id': contest_id})] if calls == 1 else [TextPart(bad_answer)])
     events = run(session_factory, respond)
-    assert calls == 3
+    assert calls == 4
     assert events[-1].type == 'error' and not any(event.type == 'answer' for event in events)
     assert ('时刻' if day else '出处') in events[-1].payload['message']
     with session_factory() as session:
         record = session.scalars(select(Investigation)).one()
         assert record.status == 'failed' and record.answer is None
         assert bad_answer not in json.dumps([row.payload for row in session.scalars(select(TraceRecord))], ensure_ascii=False)
-        assert len(session.scalars(select(LLMUsage)).all()) == 3
+        assert len(session.scalars(select(LLMUsage)).all()) == 4
 
 
 def test_output_correction_cannot_bypass_the_sixty_four_request_limit(session_factory):
