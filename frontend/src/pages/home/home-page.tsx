@@ -6,7 +6,11 @@ import { ContestBrowser } from '@/features/contest-browser'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
-import { ProfileMatchDialog, loadConfirmedProfile } from '@/features/profile-match'
+import {
+  ProfileMatchDialog,
+  loadConfirmedProfile,
+  type ProfileMatchSection,
+} from '@/features/profile-match'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import type { Profile } from '@/shared/api'
 import { Button } from '@/shared/ui'
@@ -21,7 +25,7 @@ import { ErrorState } from '@/shared/ui'
 export function HomePage() {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [profileOpen, setProfileOpen] = useState(false)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
   const follows = useFollows()
   const [showFollows, setShowFollows] = useState(false)
@@ -73,7 +77,7 @@ export function HomePage() {
               >
                 浏览赛事
               </a>
-              <Button variant="outline" onClick={() => setProfileOpen(true)}>
+              <Button variant="outline" onClick={() => setProfileSection('all')}>
                 按我的情况挑比赛
               </Button>
             </div>
@@ -100,12 +104,13 @@ export function HomePage() {
       <DetectiveDock
         key={user?.id ?? 'guest'}
         profile={user?.profile ?? guestProfile}
-        onAddProfile={() => setProfileOpen(true)}
+        onAddProfile={setProfileSection}
       />
-      {profileOpen && (
+      {profileSection && (
         <ProfileMatchDialog
           user={user}
-          onClose={() => setProfileOpen(false)}
+          initialSection={profileSection}
+          onClose={() => setProfileSection(null)}
           onConfirmed={confirmed}
         />
       )}
