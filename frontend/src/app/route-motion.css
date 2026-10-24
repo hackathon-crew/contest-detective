@@ -6,19 +6,28 @@
   --page-motion-reduced-duration: var(--motion-fast);
 }
 
-.route-motion-surface:not([data-route-motion='detective']) > * > main > *,
+.route-motion-surface:not([data-route-motion='detective']):not([data-route-motion='account'])
+  > *
+  > main
+  > *,
 .route-motion-surface[data-route-motion='detective'] .detective-workspace__header,
 .route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
   animation: route-content-enter var(--page-motion-duration) var(--ease-out) both;
   animation-delay: var(--page-motion-delay, 0ms);
 }
 
-.route-motion-surface:not([data-route-motion='detective']) > * > main > :nth-child(2),
+.route-motion-surface:not([data-route-motion='detective']):not([data-route-motion='account'])
+  > *
+  > main
+  > :nth-child(2),
 .route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
   --page-motion-delay: var(--page-motion-step);
 }
 
-.route-motion-surface:not([data-route-motion='detective']) > * > main > :nth-child(n + 3) {
+.route-motion-surface:not([data-route-motion='detective']):not([data-route-motion='account'])
+  > *
+  > main
+  > :nth-child(n + 3) {
   --page-motion-delay: calc(var(--page-motion-step) * 2);
 }
 
@@ -50,7 +59,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .route-motion-surface:not([data-route-motion='detective']) > * > main > *,
+  .route-motion-surface:not([data-route-motion='detective']):not([data-route-motion='account'])
+    > *
+    > main
+    > *,
   .route-motion-surface[data-route-motion='detective'] .detective-workspace__header,
   .route-motion-surface[data-route-motion='detective'] .detective-conversation__scroll {
     animation-name: route-content-fade;

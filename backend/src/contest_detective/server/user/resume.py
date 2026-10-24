@@ -66,7 +66,9 @@ async def parse_resume(content: bytes, *, filename: str, extractor) -> Profile:
     if not text:
         raise BizException('简历没有可读取的文字，请上传文字版文件', code=400)
     try:
-        return await extractor(text)
+        profile = await extractor(text)
+        return profile.model_copy(update={'skill_sources': {skill: ['resume'] for skill in profile.skills},
+                                          'resume_name': filename})
     except BizException:
         raise
     except Exception:

@@ -155,6 +155,24 @@
         }
       }
     },
+    "/account/summary": {
+      "get": {
+        "summary": "Account Summary",
+        "operationId": "account_summary_account_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_dict_str__int__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/profile/github": {
       "post": {
         "summary": "Github Profile",
@@ -1075,6 +1093,18 @@
             "maxLength": 300,
             "title": "Url"
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "language": {
             "anyOf": [
               {
@@ -1263,6 +1293,62 @@
             "type": "array",
             "maxItems": 50,
             "title": "Skills"
+          },
+          "skill_sources": {
+            "additionalProperties": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "github",
+                  "resume",
+                  "manual"
+                ]
+              },
+              "type": "array"
+            },
+            "propertyNames": {
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Skill Sources"
+          },
+          "github_read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Read At"
+          },
+          "github_public_repos": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Github Public Repos"
+          },
+          "resume_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resume Name"
           },
           "identity": {
             "anyOf": [
@@ -1679,6 +1765,52 @@
         },
         "type": "object",
         "title": "Response[Union[PublicUser, NoneType]]"
+      },
+      "Response_dict_str__int__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[dict[str, int]]"
       },
       "Response_list_ContestRecommendation__": {
         "properties": {

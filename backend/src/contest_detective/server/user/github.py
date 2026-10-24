@@ -1,5 +1,6 @@
 import asyncio
 from collections import Counter
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 import httpx
@@ -39,11 +40,13 @@ async def build_github_profile(username: str, *, client=None, token=None) -> Pro
         records = repos.json()
         if not isinstance(records, list):
             raise ValueError('invalid repository response')
-        evidence = [GitHubEvidence(name=item['name'], url=item['html_url'], language=item.get('language'),
+        evidence = [GitHubEvidence(name=item['name'], url=item['html_url'], language=item.get('language'), description=item.get('description'),
                     topics=item.get('topics') or [], pushed_at=item.get('pushed_at')) for item in records[:100]]
         languages = Counter(item.language for item in evidence if item.language)
         total = sum(languages.values())
         return Profile(github=user.json()['login'], skills=list(languages)[:50],
+            skill_sources={skill: ['github'] for skill in list(languages)[:50]},
+            github_read_at=datetime.now(timezone.utc), github_public_repos=user.json().get('public_repos'),
             topics=list(dict.fromkeys(topic for item in evidence for topic in item.topics))[:50],
             github_evidence=evidence, language_repo_share={language: count / total for language, count in languages.items()},
             github_last_active_at=max((item.pushed_at for item in evidence if item.pushed_at), default=None))
