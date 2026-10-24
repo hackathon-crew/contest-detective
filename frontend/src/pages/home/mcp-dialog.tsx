@@ -1,7 +1,6 @@
 import { useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router'
-import { loadContestCollection } from '@/entities/contest'
+import { useContestCollection } from '@/entities/contest'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
 import { McpIntro } from './home-content'
 import { McpPanel } from './mcp-panel'
@@ -14,11 +13,7 @@ export function McpDialog() {
   const open = location.hash === '#mcp'
   const title = useRef<HTMLHeadingElement>(null)
   const trigger = useRef<HTMLElement | null>(null)
-  const collection = useQuery({
-    queryKey: ['contests', 'collection'],
-    queryFn: () => loadContestCollection(),
-    enabled: open,
-  })
+  const collection = useContestCollection(open)
 
   return (
     <Dialog

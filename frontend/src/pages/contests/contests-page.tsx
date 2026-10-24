@@ -174,8 +174,13 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             <p className="head-lead">
               {browser.query.isPending ? (
                 '正在读取赛事库。'
-              ) : browser.query.isError ? (
+              ) : browser.query.isError && !browser.query.data ? (
                 '赛事库读取失败，请重试。'
+              ) : !browser.query.complete ? (
+                <>
+                  已加载 <b>{browser.all.length}</b> 场比赛，
+                  {browser.query.isFetching ? '正在读取其余赛事。' : '其余赛事尚未读取完成。'}
+                </>
               ) : (
                 <>
                   收录 <b>{browser.all.length}</b> 场黑客松，按截止时间排好。<b>{official}</b>{' '}

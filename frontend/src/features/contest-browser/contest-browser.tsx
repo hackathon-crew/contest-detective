@@ -56,7 +56,7 @@ export function ContestBrowser({
       <div className="res-bar">
         <div className="res-left">
           <span className="res-count" aria-live="polite">
-            共 <b>{total}</b> 场
+            {query.complete ? '共' : '已找到'} <b>{total}</b> 场
           </span>
           <div className="actives">
             {active.map((item) => (
@@ -126,10 +126,16 @@ export function ContestBrowser({
         </div>
       </div>
       {profile}
-      {query.isPending || (query.isFetching && !!filters.keyword) ? (
+      {query.data && !query.complete && (
+        <p className="note" role="status">
+          已加载 {query.data.length} 场{query.isFetching ? '，继续读取中。' : '。'}
+        </p>
+      )}
+      {query.isError && <ErrorState error={query.error} retry={() => void query.refetch()} />}
+      {query.isPending ? (
         <Skeleton className="mt-4 h-32 w-full" />
-      ) : query.isError ? (
-        <ErrorState error={query.error} retry={() => void query.refetch()} />
+      ) : query.isError && !query.data ? null : !total && !query.complete ? (
+        <div className="empty">其余赛事尚未读取完成。</div>
       ) : !total ? (
         <div className="empty">
           <b>{empty ? '还没有关注的比赛' : '没有符合条件的比赛'}</b>
