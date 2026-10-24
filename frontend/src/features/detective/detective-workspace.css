@@ -10,6 +10,7 @@
   --chat-item-radius: 0.625rem;
   --chat-control: 2.25rem;
   --chat-header: 4.5rem;
+  --chat-site-header: calc(4rem + 1px + env(safe-area-inset-top, 0px));
   --chat-reading-font:
     'Iowan Old Style', Charter, 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
   --chat-reading-size: 1.0625rem;
@@ -49,6 +50,21 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
+}
+.detective-workspace__body:has(.detective-conversation[data-empty='false']) {
+  overflow: visible;
+}
+.detective-workspace__main:has(.detective-conversation[data-empty='false']) {
+  position: relative;
+  margin-top: calc(-1 * var(--chat-site-header));
+}
+.detective-workspace__main:has(.detective-conversation[data-empty='false'])
+  .detective-workspace__header {
+  position: absolute;
+  z-index: 20;
+  inset: var(--chat-site-header) 0 auto;
+  background: color-mix(in srgb, var(--color-page) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(1.4);
 }
 .detective-workspace__header {
   display: flex;
@@ -214,23 +230,36 @@
   flex-direction: column;
 }
 .detective-conversation__scroll {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-block: var(--chat-padding);
+}
+.detective-conversation[data-empty='false'] .detective-conversation__scroll {
+  padding-top: calc(var(--chat-site-header) + var(--chat-header));
+  scroll-padding-top: calc(var(--chat-site-header) + var(--chat-header) + var(--chat-padding));
+}
+.detective-conversation__scroll > .detective-thread {
+  flex: none;
 }
 .detective-conversation__scroll:focus-visible {
   outline: 1px solid var(--color-rule-strong);
   outline-offset: -1px;
 }
 .detective-conversation__compose {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
   flex: none;
   min-height: 0;
   width: min(100%, var(--chat-measure));
   max-height: 45%;
   overflow-y: auto;
   margin-inline: auto;
+  margin-top: auto;
   padding: 0.75rem var(--chat-padding) max(1rem, env(safe-area-inset-bottom));
 }
 .detective-conversation__compose > [role='alert'] {
@@ -311,6 +340,7 @@
 }
 @media (max-width: 760px) {
   .detective-workspace {
+    --chat-header: 3.75rem;
     grid-template-columns: minmax(0, 1fr);
   }
   .detective-workspace__header {

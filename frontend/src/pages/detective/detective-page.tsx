@@ -279,22 +279,22 @@ function Conversation({
             {missing && <p>从左侧选择已有记录，或发起一段新对话。</p>}
           </div>
         )}
-      </div>
-      <div className="detective-conversation__compose">
-        {storageError && (
-          <p role="alert" className="detective-turn__error">
-            浏览器未能保存记录，刷新前请复制需要保留的内容。
-          </p>
-        )}
-        <DetectiveComposer
-          value={question}
-          pending={pending}
-          onChange={setQuestion}
-          onSubmit={submit}
-          onStop={onStop}
-          inputRef={input}
-          onAddProfile={onAddProfile}
-        />
+        <div className="detective-conversation__compose">
+          {storageError && (
+            <p role="alert" className="detective-turn__error">
+              浏览器未能保存记录，刷新前请复制需要保留的内容。
+            </p>
+          )}
+          <DetectiveComposer
+            value={question}
+            pending={pending}
+            onChange={setQuestion}
+            onSubmit={submit}
+            onStop={onStop}
+            inputRef={input}
+            onAddProfile={onAddProfile}
+          />
+        </div>
       </div>
     </main>
   )
