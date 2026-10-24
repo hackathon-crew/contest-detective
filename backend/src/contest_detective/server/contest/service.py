@@ -1,4 +1,8 @@
 from datetime import datetime, timedelta, timezone
+from contextlib import contextmanager
+from contextvars import ContextVar
+from hashlib import sha256
+import json
 from typing import get_args
 from types import SimpleNamespace
 import re
@@ -11,7 +15,7 @@ from sqlalchemy import delete, or_, select
 from sqlalchemy.orm import Session
 
 from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
-from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink
+from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink, ContestEvent
 from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
@@ -203,6 +207,28 @@ def claim_sources(session: Session, contest_id: str) -> list[tuple[str, Source]]
     return sources
 
 
+_publish_events = ContextVar('publish_contest_events', default=True)
+
+
+@contextmanager
+def event_publication(enabled):
+    token = _publish_events.set(enabled)
+    try:
+        yield
+    finally:
+        _publish_events.reset(token)
+
+
+def _version(session, contest):
+    details = _details(session, contest)
+    evidence = _fields(session, contest.id)
+    facts = {key: {part: value.get(part) for part in ('value', 'precision', 'level')}
+             for key, value in details.fields.items()}
+    for key, value in evidence.items():
+        facts.setdefault(key, {})['alternatives'] = sorted({(source.value, source.precision) for source in value.sources})
+    return sha256(json.dumps([contest.name, details.summary, details.cover_url, facts], sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
 def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None, commit: bool = True) -> str:
     for document in draft.documents:
         validate_document(document)
@@ -212,9 +238,12 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     contest = session.get(Contest, contest_id) if contest_id else _match(session, draft, page)
     if contest_id and contest is None:
         raise ValueError('赛事不存在')
+    created = contest is None
     if contest is None:
         contest = Contest(id=str(uuid4()), name=draft.name, normalized_name=_normalized_name(draft.name))
         session.add(contest)
+    affected = set(session.scalars(select(ContestPageLink.contest_id).where(ContestPageLink.page_id == page.id))) if page else set()
+    before = {key: _version(session, session.get(Contest, key)) for key in affected | {contest.id} if not (created and key == contest.id)}
     details = _details(session, contest)
     documents = {document_key(item): item for item in (details.documents or [])}
     for item in draft.documents:
@@ -272,9 +301,15 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         session.add(ContestClaim(contest_id=contest.id, page_id=page.id, **claim.model_dump()))
     session.flush()
     for contest_id in affected | {contest.id}:
-        _refresh(session, session.get(Contest, contest_id), _now())
+        current = session.get(Contest, contest_id)
+        _refresh(session, current, _now())
+        version = _version(session, current)
+        if _publish_events.get() and version != before.get(contest_id):
+            session.add(ContestEvent(contest_id=contest_id, kind='created' if created and contest_id == contest.id else 'updated', version=version, occurred_at=_now()))
     if commit:
         session.commit()
+    else:
+        session.flush()
     return contest.id
 
 

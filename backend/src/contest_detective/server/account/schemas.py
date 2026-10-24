@@ -1,9 +1,17 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+from datetime import date as CalendarDate
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+
+
+def utc_timestamp(value):
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+
+
+Timestamp = Annotated[datetime, AfterValidator(utc_timestamp)]
 
 
 class PushSettings(BaseModel):
@@ -19,6 +27,31 @@ class PushSettings(BaseModel):
     reminder_days: list[Annotated[int, Field(ge=1, le=30)]] = Field(default_factory=lambda: [3, 1], max_length=30)
 
 
+class LibraryConditions(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    keyword: str = Field(default='', max_length=80)
+    status: Literal['all', 'upcoming', 'ongoing', 'ended'] = 'all'
+    due: Literal['all', '0', '7', '30', 'later', 'none'] = 'all'
+    modes: list[Literal['online', 'offline', 'hybrid']] = Field(default_factory=list, max_length=3)
+    cities: list[Text] = Field(default_factory=list, max_length=20)
+    prize: bool = False
+    official: bool = False
+    mine: bool = False
+    date: CalendarDate | None = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+
+    @model_validator(mode='after')
+    def date_range(self):
+        for name in ('date_from', 'date_to'):
+            value = getattr(self, name)
+            if value and value.tzinfo is None:
+                setattr(self, name, value.replace(tzinfo=timezone.utc))
+        if self.date_from and self.date_to and self.date_to < self.date_from:
+            raise ValueError('日期范围结束早于开始')
+        return self
+
+
 class TrackingConditions(BaseModel):
     model_config = ConfigDict(extra='forbid')
     keywords: list[Text] = Field(default_factory=list, max_length=20)
@@ -28,6 +61,7 @@ class TrackingConditions(BaseModel):
     has_prize: bool = False
     deadline_from: date | None = None
     deadline_to: date | None = None
+    library: LibraryConditions | None = None
 
     @model_validator(mode='after')
     def date_order(self):
@@ -46,7 +80,7 @@ class TrackRead(BaseModel):
     conditions: TrackingConditions
     enabled: bool
     matched_count: int
-    last_sent_at: datetime | None = None
+    last_sent_at: Timestamp | None = None
 
 
 class SearchPreferences(BaseModel):
@@ -58,8 +92,8 @@ class SearchPreferences(BaseModel):
 class TokenMetadata(BaseModel):
     prefix: str
     last_four: str
-    created_at: datetime
-    last_used_at: datetime | None = None
+    created_at: Timestamp
+    last_used_at: Timestamp | None = None
 
 
 class TokenCreated(BaseModel):
@@ -89,6 +123,6 @@ class MailPreview(BaseModel):
 class MailRead(MailPreview):
     id: str
     kind: str
-    status: Literal['sending', 'sent', 'failed']
-    created_at: datetime
-    sent_at: datetime | None = None
+    status: Literal['sending', 'sent', 'delivered', 'failed', 'bounced']
+    created_at: Timestamp
+    sent_at: Timestamp | None = None

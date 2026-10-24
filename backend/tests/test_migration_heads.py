@@ -12,6 +12,8 @@ PARENT = '0010_account_center'
 CONTENT = '0011_contest_content'
 NOTIFICATIONS = '0011_notification_events'
 MERGE = '0012_merge_content_notifications'
+MAIL = '0012_mail_delivery'
+HEAD = '0013_merge_account_mail'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -140,7 +142,8 @@ def assert_integrity(engine):
 
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [MERGE]
+    assert scripts.get_heads() == [HEAD]
+    assert scripts.get_revision(HEAD).down_revision == (MERGE, MAIL)
     assert scripts.get_revision(MERGE).down_revision == (CONTENT, NOTIFICATIONS)
     assert scripts.get_revision(CONTENT).down_revision == PARENT
     assert scripts.get_revision(NOTIFICATIONS).down_revision == PARENT
@@ -148,8 +151,8 @@ def test_migration_graph_has_one_head_without_rewriting_published_parents():
 
 @pytest.mark.parametrize('starting_revisions', [
     (), (PARENT,), (CONTENT,), (NOTIFICATIONS,),
-    (CONTENT, NOTIFICATIONS), (NOTIFICATIONS, CONTENT),
-], ids=['empty', 'legacy', 'content', 'notifications', 'both-content-first', 'both-notifications-first'])
+    (CONTENT, NOTIFICATIONS), (NOTIFICATIONS, CONTENT), (MAIL,), (MAIL, MERGE), (MERGE, MAIL),
+])
 def test_upgrade_head_preserves_each_preexisting_branch(migration_engine, starting_revisions):
     engine = migration_engine
     if starting_revisions:
@@ -160,7 +163,7 @@ def test_upgrade_head_preserves_each_preexisting_branch(migration_engine, starti
         seed_branches(engine)
     before = rows(engine)
     migrate(engine, 'head')
-    assert versions(engine) == {MERGE}
+    assert versions(engine) == {HEAD}
     assert rows(engine, before) == before
     tables = set(inspect(engine).get_table_names())
     assert {'content_refresh_runs', 'content_refresh_entries', 'contest_events',
@@ -186,7 +189,7 @@ def test_merge_only_downgrade_retains_both_branches_and_all_data(migration_engin
     seed_branches(engine)
     assert versions(engine) == {CONTENT, NOTIFICATIONS}
     before, before_schema = rows(engine), schema(engine)
-    migrate(engine, 'head')
+    migrate(engine, MERGE)
     assert versions(engine) == {MERGE}
     assert rows(engine) == before and schema(engine) == before_schema
     # A relative '-1' is ambiguous at a merge. An explicit parent removes only
@@ -194,7 +197,7 @@ def test_merge_only_downgrade_retains_both_branches_and_all_data(migration_engin
     migrate(engine, parent, downgrade=True)
     assert versions(engine) == {CONTENT, NOTIFICATIONS}
     assert rows(engine) == before and schema(engine) == before_schema
-    migrate(engine, 'head')
+    migrate(engine, MERGE)
     assert versions(engine) == {MERGE}
     assert rows(engine) == before and schema(engine) == before_schema
     assert_integrity(engine)

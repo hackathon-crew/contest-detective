@@ -5,6 +5,387 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/account/push": {
+      "get": {
+        "summary": "Read Push",
+        "operationId": "read_push_account_push_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_PushRead_"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Save Push",
+        "operationId": "save_push_account_push_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSettings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_PushRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/tracks": {
+      "get": {
+        "summary": "Read Tracks",
+        "operationId": "read_tracks_account_tracks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_list_TrackRead__"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create Track",
+        "operationId": "create_track_account_tracks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TrackRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/tracks/filters": {
+      "post": {
+        "summary": "Track Filters",
+        "operationId": "track_filters_account_tracks_filters_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryTrackInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TrackRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/tracks/{track_id}": {
+      "patch": {
+        "summary": "Update Track",
+        "operationId": "update_track_account_tracks__track_id__patch",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TrackRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Track",
+        "operationId": "delete_track_account_tracks__track_id__delete",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_UndoReceipt_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/tracks/restore": {
+      "post": {
+        "summary": "Restore Track",
+        "operationId": "restore_track_account_tracks_restore_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoReceipt"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TrackRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/tracks/{track_id}/matches": {
+      "get": {
+        "summary": "Track Matches",
+        "operationId": "track_matches_account_tracks__track_id__matches_get",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_TrackMatches_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/push/preview": {
+      "get": {
+        "summary": "Preview Mail",
+        "operationId": "preview_mail_account_push_preview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_MailPreview_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/push/test": {
+      "post": {
+        "summary": "Test Mail",
+        "operationId": "test_mail_account_push_test_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/push/history": {
+      "get": {
+        "summary": "Read History",
+        "operationId": "read_history_account_push_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_list_MailRead__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/resend": {
+      "post": {
+        "summary": "Mail Receipt",
+        "operationId": "mail_receipt_notifications_resend_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "summary": "Register",
@@ -1417,6 +1798,136 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "LibraryConditions": {
+        "properties": {
+          "keyword": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Keyword",
+            "default": ""
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "upcoming",
+              "ongoing",
+              "ended"
+            ],
+            "title": "Status",
+            "default": "all"
+          },
+          "due": {
+            "type": "string",
+            "enum": [
+              "all",
+              "0",
+              "7",
+              "30",
+              "later",
+              "none"
+            ],
+            "title": "Due",
+            "default": "all"
+          },
+          "modes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "online",
+                "offline",
+                "hybrid"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Modes"
+          },
+          "cities": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Cities"
+          },
+          "prize": {
+            "type": "boolean",
+            "title": "Prize",
+            "default": false
+          },
+          "official": {
+            "type": "boolean",
+            "title": "Official",
+            "default": false
+          },
+          "mine": {
+            "type": "boolean",
+            "title": "Mine",
+            "default": false
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "LibraryConditions"
+      },
+      "LibraryTrackInput": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/LibraryConditions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "filters"
+        ],
+        "title": "LibraryTrackInput"
+      },
       "ListResponse_ContestSummary_": {
         "properties": {
           "code": {
@@ -1475,6 +1986,112 @@
         },
         "type": "object",
         "title": "ListResponse[ContestSummary]"
+      },
+      "MailPreview": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "html": {
+            "type": "string",
+            "title": "Html"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "sender": {
+            "type": "string",
+            "title": "Sender"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "html",
+          "text",
+          "sender",
+          "recipient"
+        ],
+        "title": "MailPreview"
+      },
+      "MailRead": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "html": {
+            "type": "string",
+            "title": "Html"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "sender": {
+            "type": "string",
+            "title": "Sender"
+          },
+          "recipient": {
+            "type": "string",
+            "title": "Recipient"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sending",
+              "sent",
+              "delivered",
+              "failed",
+              "bounced"
+            ],
+            "title": "Status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sent At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "html",
+          "text",
+          "sender",
+          "recipient",
+          "id",
+          "kind",
+          "status",
+          "created_at"
+        ],
+        "title": "MailRead"
       },
       "MatchItem": {
         "properties": {
@@ -1858,6 +2475,110 @@
         ],
         "title": "PublicUser"
       },
+      "PushRead": {
+        "properties": {
+          "settings": {
+            "$ref": "#/components/schemas/PushSettings"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "email_verified": {
+            "type": "boolean",
+            "title": "Email Verified"
+          },
+          "next_send_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Send At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "settings",
+          "email",
+          "email_verified"
+        ],
+        "title": "PushRead"
+      },
+      "PushSettings": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "new_matches": {
+            "type": "boolean",
+            "title": "New Matches",
+            "default": true
+          },
+          "deadline_reminders": {
+            "type": "boolean",
+            "title": "Deadline Reminders",
+            "default": true
+          },
+          "changes": {
+            "type": "boolean",
+            "title": "Changes",
+            "default": true
+          },
+          "tracking": {
+            "type": "boolean",
+            "title": "Tracking",
+            "default": true
+          },
+          "frequency": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "instant"
+            ],
+            "title": "Frequency",
+            "default": "weekly"
+          },
+          "weekday": {
+            "type": "integer",
+            "maximum": 6.0,
+            "minimum": 0.0,
+            "title": "Weekday",
+            "default": 0
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "title": "Time",
+            "default": "08:00"
+          },
+          "timezone": {
+            "type": "string",
+            "const": "Asia/Shanghai",
+            "title": "Timezone",
+            "default": "Asia/Shanghai"
+          },
+          "reminder_days": {
+            "items": {
+              "type": "integer",
+              "maximum": 30.0,
+              "minimum": 1.0
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Reminder Days"
+          }
+        },
+        "type": "object",
+        "title": "PushSettings"
+      },
       "ResolveRecommendations": {
         "properties": {
           "content": {
@@ -1961,6 +2682,48 @@
         },
         "type": "object",
         "title": "Response[DocumentAnswer]"
+      },
+      "Response_MailPreview_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MailPreview"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[MailPreview]"
       },
       "Response_NoneType_": {
         "properties": {
@@ -2081,6 +2844,174 @@
         },
         "type": "object",
         "title": "Response[PublicUser]"
+      },
+      "Response_PushRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PushRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[PushRead]"
+      },
+      "Response_TrackMatches_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrackMatches"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[TrackMatches]"
+      },
+      "Response_TrackRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrackRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[TrackRead]"
+      },
+      "Response_UndoReceipt_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UndoReceipt"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[UndoReceipt]"
       },
       "Response_Union_PublicUser__NoneType__": {
         "properties": {
@@ -2216,6 +3147,52 @@
         "type": "object",
         "title": "Response[list[ContestRecommendation]]"
       },
+      "Response_list_MailRead__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MailRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[list[MailRead]]"
+      },
       "Response_list_MatchItem__": {
         "properties": {
           "code": {
@@ -2261,6 +3238,52 @@
         },
         "type": "object",
         "title": "Response[list[MatchItem]]"
+      },
+      "Response_list_TrackRead__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TrackRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[list[TrackRead]]"
       },
       "Source": {
         "properties": {
@@ -2388,6 +3411,225 @@
           "url"
         ],
         "title": "ToolSource"
+      },
+      "TrackInput": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "TrackInput"
+      },
+      "TrackMatches": {
+        "properties": {
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Ids"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/TrackingConditions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ids",
+          "text",
+          "conditions"
+        ],
+        "title": "TrackMatches"
+      },
+      "TrackRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "conditions": {
+            "$ref": "#/components/schemas/TrackingConditions"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "matched_count": {
+            "type": "integer",
+            "title": "Matched Count"
+          },
+          "last_sent_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Sent At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "conditions",
+          "enabled",
+          "matched_count"
+        ],
+        "title": "TrackRead"
+      },
+      "TrackUpdate": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "title": "TrackUpdate"
+      },
+      "TrackingConditions": {
+        "properties": {
+          "keywords": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Keywords"
+          },
+          "topics": {
+            "items": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Topics"
+          },
+          "modes": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "online",
+                "offline",
+                "hybrid"
+              ]
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Modes"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "has_prize": {
+            "type": "boolean",
+            "title": "Has Prize",
+            "default": false
+          },
+          "deadline_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline From"
+          },
+          "deadline_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deadline To"
+          },
+          "library": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LibraryConditions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TrackingConditions"
+      },
+      "UndoReceipt": {
+        "properties": {
+          "undo_token": {
+            "type": "string",
+            "title": "Undo Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "undo_token"
+        ],
+        "title": "UndoReceipt"
       },
       "ValidationError": {
         "properties": {

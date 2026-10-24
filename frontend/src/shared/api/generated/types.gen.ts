@@ -408,6 +408,67 @@ export type HttpValidationError = {
 };
 
 /**
+ * LibraryConditions
+ */
+export type LibraryConditions = {
+    /**
+     * Keyword
+     */
+    keyword?: string;
+    /**
+     * Status
+     */
+    status?: 'all' | 'upcoming' | 'ongoing' | 'ended';
+    /**
+     * Due
+     */
+    due?: 'all' | '0' | '7' | '30' | 'later' | 'none';
+    /**
+     * Modes
+     */
+    modes?: Array<'online' | 'offline' | 'hybrid'>;
+    /**
+     * Cities
+     */
+    cities?: Array<string>;
+    /**
+     * Prize
+     */
+    prize?: boolean;
+    /**
+     * Official
+     */
+    official?: boolean;
+    /**
+     * Mine
+     */
+    mine?: boolean;
+    /**
+     * Date
+     */
+    date?: string | null;
+    /**
+     * Date From
+     */
+    date_from?: string | null;
+    /**
+     * Date To
+     */
+    date_to?: string | null;
+};
+
+/**
+ * LibraryTrackInput
+ */
+export type LibraryTrackInput = {
+    /**
+     * Text
+     */
+    text: string;
+    filters: LibraryConditions;
+};
+
+/**
  * ListResponse[ContestSummary]
  */
 export type ListResponseContestSummary = {
@@ -453,6 +514,78 @@ export type ListResponseContestSummary = {
      * 响应时间；默认不携带，不携带时省略
      */
     timestamp?: string | null;
+};
+
+/**
+ * MailPreview
+ */
+export type MailPreview = {
+    /**
+     * Subject
+     */
+    subject: string;
+    /**
+     * Html
+     */
+    html: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Sender
+     */
+    sender: string;
+    /**
+     * Recipient
+     */
+    recipient: string;
+};
+
+/**
+ * MailRead
+ */
+export type MailRead = {
+    /**
+     * Subject
+     */
+    subject: string;
+    /**
+     * Html
+     */
+    html: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Sender
+     */
+    sender: string;
+    /**
+     * Recipient
+     */
+    recipient: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Kind
+     */
+    kind: string;
+    /**
+     * Status
+     */
+    status: 'sending' | 'sent' | 'delivered' | 'failed' | 'bounced';
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Sent At
+     */
+    sent_at?: string | null;
 };
 
 /**
@@ -629,6 +762,71 @@ export type PublicUser = {
 };
 
 /**
+ * PushRead
+ */
+export type PushRead = {
+    settings: PushSettings;
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Email Verified
+     */
+    email_verified: boolean;
+    /**
+     * Next Send At
+     */
+    next_send_at?: string | null;
+};
+
+/**
+ * PushSettings
+ */
+export type PushSettings = {
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
+    /**
+     * New Matches
+     */
+    new_matches?: boolean;
+    /**
+     * Deadline Reminders
+     */
+    deadline_reminders?: boolean;
+    /**
+     * Changes
+     */
+    changes?: boolean;
+    /**
+     * Tracking
+     */
+    tracking?: boolean;
+    /**
+     * Frequency
+     */
+    frequency?: 'daily' | 'weekly' | 'instant';
+    /**
+     * Weekday
+     */
+    weekday?: number;
+    /**
+     * Time
+     */
+    time?: string;
+    /**
+     * Timezone
+     */
+    timezone?: 'Asia/Shanghai';
+    /**
+     * Reminder Days
+     */
+    reminder_days?: Array<number>;
+};
+
+/**
  * ResolveRecommendations
  */
 export type ResolveRecommendations = {
@@ -690,6 +888,34 @@ export type ResponseDocumentAnswer = {
      * 业务数据
      */
     data?: DocumentAnswer | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[MailPreview]
+ */
+export type ResponseMailPreview = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: MailPreview | null;
     /**
      * Timestamp
      *
@@ -776,6 +1002,118 @@ export type ResponsePublicUser = {
      * 业务数据
      */
     data?: PublicUser | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[PushRead]
+ */
+export type ResponsePushRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: PushRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[TrackMatches]
+ */
+export type ResponseTrackMatches = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: TrackMatches | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[TrackRead]
+ */
+export type ResponseTrackRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: TrackRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[UndoReceipt]
+ */
+export type ResponseUndoReceipt = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: UndoReceipt | null;
     /**
      * Timestamp
      *
@@ -875,6 +1213,36 @@ export type ResponseListContestRecommendation = {
 };
 
 /**
+ * Response[list[MailRead]]
+ */
+export type ResponseListMailRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<MailRead> | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[list[MatchItem]]
  */
 export type ResponseListMatchItem = {
@@ -896,6 +1264,36 @@ export type ResponseListMatchItem = {
      * 业务数据
      */
     data?: Array<MatchItem> | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[list[TrackRead]]
+ */
+export type ResponseListTrackRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<TrackRead> | null;
     /**
      * Timestamp
      *
@@ -991,6 +1389,117 @@ export type ToolSource = {
 };
 
 /**
+ * TrackInput
+ */
+export type TrackInput = {
+    /**
+     * Text
+     */
+    text: string;
+};
+
+/**
+ * TrackMatches
+ */
+export type TrackMatches = {
+    /**
+     * Ids
+     */
+    ids: Array<string>;
+    /**
+     * Text
+     */
+    text: string;
+    conditions: TrackingConditions;
+};
+
+/**
+ * TrackRead
+ */
+export type TrackRead = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+    conditions: TrackingConditions;
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+    /**
+     * Matched Count
+     */
+    matched_count: number;
+    /**
+     * Last Sent At
+     */
+    last_sent_at?: string | null;
+};
+
+/**
+ * TrackUpdate
+ */
+export type TrackUpdate = {
+    /**
+     * Enabled
+     */
+    enabled?: boolean | null;
+    /**
+     * Text
+     */
+    text?: string | null;
+};
+
+/**
+ * TrackingConditions
+ */
+export type TrackingConditions = {
+    /**
+     * Keywords
+     */
+    keywords?: Array<string>;
+    /**
+     * Topics
+     */
+    topics?: Array<string>;
+    /**
+     * Modes
+     */
+    modes?: Array<'online' | 'offline' | 'hybrid'>;
+    /**
+     * City
+     */
+    city?: string | null;
+    /**
+     * Has Prize
+     */
+    has_prize?: boolean;
+    /**
+     * Deadline From
+     */
+    deadline_from?: string | null;
+    /**
+     * Deadline To
+     */
+    deadline_to?: string | null;
+    library?: LibraryConditions | null;
+};
+
+/**
+ * UndoReceipt
+ */
+export type UndoReceipt = {
+    /**
+     * Undo Token
+     */
+    undo_token: string;
+};
+
+/**
  * ValidationError
  */
 export type ValidationError = {
@@ -1017,6 +1526,292 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+export type ReadPushAccountPushGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/push';
+};
+
+export type ReadPushAccountPushGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponsePushRead;
+};
+
+export type ReadPushAccountPushGetResponse = ReadPushAccountPushGetResponses[keyof ReadPushAccountPushGetResponses];
+
+export type SavePushAccountPushPutData = {
+    body: PushSettings;
+    path?: never;
+    query?: never;
+    url: '/account/push';
+};
+
+export type SavePushAccountPushPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SavePushAccountPushPutError = SavePushAccountPushPutErrors[keyof SavePushAccountPushPutErrors];
+
+export type SavePushAccountPushPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponsePushRead;
+};
+
+export type SavePushAccountPushPutResponse = SavePushAccountPushPutResponses[keyof SavePushAccountPushPutResponses];
+
+export type ReadTracksAccountTracksGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/tracks';
+};
+
+export type ReadTracksAccountTracksGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListTrackRead;
+};
+
+export type ReadTracksAccountTracksGetResponse = ReadTracksAccountTracksGetResponses[keyof ReadTracksAccountTracksGetResponses];
+
+export type CreateTrackAccountTracksPostData = {
+    body: TrackInput;
+    path?: never;
+    query?: never;
+    url: '/account/tracks';
+};
+
+export type CreateTrackAccountTracksPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CreateTrackAccountTracksPostError = CreateTrackAccountTracksPostErrors[keyof CreateTrackAccountTracksPostErrors];
+
+export type CreateTrackAccountTracksPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTrackRead;
+};
+
+export type CreateTrackAccountTracksPostResponse = CreateTrackAccountTracksPostResponses[keyof CreateTrackAccountTracksPostResponses];
+
+export type TrackFiltersAccountTracksFiltersPostData = {
+    body: LibraryTrackInput;
+    path?: never;
+    query?: never;
+    url: '/account/tracks/filters';
+};
+
+export type TrackFiltersAccountTracksFiltersPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TrackFiltersAccountTracksFiltersPostError = TrackFiltersAccountTracksFiltersPostErrors[keyof TrackFiltersAccountTracksFiltersPostErrors];
+
+export type TrackFiltersAccountTracksFiltersPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTrackRead;
+};
+
+export type TrackFiltersAccountTracksFiltersPostResponse = TrackFiltersAccountTracksFiltersPostResponses[keyof TrackFiltersAccountTracksFiltersPostResponses];
+
+export type DeleteTrackAccountTracksTrackIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/account/tracks/{track_id}';
+};
+
+export type DeleteTrackAccountTracksTrackIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type DeleteTrackAccountTracksTrackIdDeleteError = DeleteTrackAccountTracksTrackIdDeleteErrors[keyof DeleteTrackAccountTracksTrackIdDeleteErrors];
+
+export type DeleteTrackAccountTracksTrackIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseUndoReceipt;
+};
+
+export type DeleteTrackAccountTracksTrackIdDeleteResponse = DeleteTrackAccountTracksTrackIdDeleteResponses[keyof DeleteTrackAccountTracksTrackIdDeleteResponses];
+
+export type UpdateTrackAccountTracksTrackIdPatchData = {
+    body: TrackUpdate;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/account/tracks/{track_id}';
+};
+
+export type UpdateTrackAccountTracksTrackIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateTrackAccountTracksTrackIdPatchError = UpdateTrackAccountTracksTrackIdPatchErrors[keyof UpdateTrackAccountTracksTrackIdPatchErrors];
+
+export type UpdateTrackAccountTracksTrackIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTrackRead;
+};
+
+export type UpdateTrackAccountTracksTrackIdPatchResponse = UpdateTrackAccountTracksTrackIdPatchResponses[keyof UpdateTrackAccountTracksTrackIdPatchResponses];
+
+export type RestoreTrackAccountTracksRestorePostData = {
+    body: UndoReceipt;
+    path?: never;
+    query?: never;
+    url: '/account/tracks/restore';
+};
+
+export type RestoreTrackAccountTracksRestorePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RestoreTrackAccountTracksRestorePostError = RestoreTrackAccountTracksRestorePostErrors[keyof RestoreTrackAccountTracksRestorePostErrors];
+
+export type RestoreTrackAccountTracksRestorePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTrackRead;
+};
+
+export type RestoreTrackAccountTracksRestorePostResponse = RestoreTrackAccountTracksRestorePostResponses[keyof RestoreTrackAccountTracksRestorePostResponses];
+
+export type TrackMatchesAccountTracksTrackIdMatchesGetData = {
+    body?: never;
+    path: {
+        /**
+         * Track Id
+         */
+        track_id: string;
+    };
+    query?: never;
+    url: '/account/tracks/{track_id}/matches';
+};
+
+export type TrackMatchesAccountTracksTrackIdMatchesGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type TrackMatchesAccountTracksTrackIdMatchesGetError = TrackMatchesAccountTracksTrackIdMatchesGetErrors[keyof TrackMatchesAccountTracksTrackIdMatchesGetErrors];
+
+export type TrackMatchesAccountTracksTrackIdMatchesGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseTrackMatches;
+};
+
+export type TrackMatchesAccountTracksTrackIdMatchesGetResponse = TrackMatchesAccountTracksTrackIdMatchesGetResponses[keyof TrackMatchesAccountTracksTrackIdMatchesGetResponses];
+
+export type PreviewMailAccountPushPreviewGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/push/preview';
+};
+
+export type PreviewMailAccountPushPreviewGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseMailPreview;
+};
+
+export type PreviewMailAccountPushPreviewGetResponse = PreviewMailAccountPushPreviewGetResponses[keyof PreviewMailAccountPushPreviewGetResponses];
+
+export type TestMailAccountPushTestPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/push/test';
+};
+
+export type TestMailAccountPushTestPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type TestMailAccountPushTestPostResponse = TestMailAccountPushTestPostResponses[keyof TestMailAccountPushTestPostResponses];
+
+export type ReadHistoryAccountPushHistoryGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/push/history';
+};
+
+export type ReadHistoryAccountPushHistoryGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListMailRead;
+};
+
+export type ReadHistoryAccountPushHistoryGetResponse = ReadHistoryAccountPushHistoryGetResponses[keyof ReadHistoryAccountPushHistoryGetResponses];
+
+export type MailReceiptNotificationsResendPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/notifications/resend';
+};
+
+export type MailReceiptNotificationsResendPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type MailReceiptNotificationsResendPostResponse = MailReceiptNotificationsResendPostResponses[keyof MailReceiptNotificationsResendPostResponses];
 
 export type RegisterAuthRegisterPostData = {
     body: Credentials;
