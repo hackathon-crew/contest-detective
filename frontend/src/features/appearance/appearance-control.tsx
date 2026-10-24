@@ -34,15 +34,23 @@ function select(theme: Theme) {
   }
   window.dispatchEvent(new Event(changed))
 }
+function readSystemDark() {
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
+}
+function subscribeSystem(notify: () => void) {
+  const media = window.matchMedia?.('(prefers-color-scheme: dark)')
+  media?.addEventListener('change', notify)
+  return () => media?.removeEventListener('change', notify)
+}
 export function AppearanceControl({ segmented = false }: { segmented?: boolean }) {
   const theme = useSyncExternalStore(subscribe, read)
+  const systemDark = useSyncExternalStore(subscribeSystem, readSystemDark)
+  const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
   useEffect(() => {
-    if (theme === 'system') delete document.documentElement.dataset.theme
-    else document.documentElement.dataset.theme = theme
-  }, [theme])
-  const dark =
-    theme === 'dark' ||
-    (theme === 'system' && !!window.matchMedia?.('(prefers-color-scheme: dark)').matches)
+    // 统一解析为实际主题，让语义颜色和 dark: 组件样式一起跟随系统。
+    document.documentElement.dataset.theme = resolved
+  }, [resolved])
+  const dark = resolved === 'dark'
   if (segmented)
     return (
       <div className="site-seg" role="group" aria-label="外观">
