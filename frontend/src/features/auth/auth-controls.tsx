@@ -1,45 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
+import { Link, useLocation } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { currentUserKey, useCurrentUser, type PublicUser } from '@/entities/user'
+import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { apiClient } from '@/shared/api'
-import { Button, Dialog, Input } from '@/shared/ui'
+import { Button } from '@/shared/ui'
 
 export function AuthControls({ compact = false }: { compact?: boolean }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [open, setOpen] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const location = useLocation()
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  function close() {
-    if (pending) return
-    setOpen(false)
-    setPassword('')
-    setError(null)
-  }
-
-  async function submit(event: FormEvent) {
-    event.preventDefault()
-    if (pending || !open) return
-    setPending(true)
-    setError(null)
-    try {
-      const json = { email: email.trim(), password }
-      if (mode === 'register') await apiClient.request('/auth/register', { method: 'POST', json })
-      const current = await apiClient.request<PublicUser>('/auth/login', { method: 'POST', json })
-      await client.cancelQueries({ queryKey: currentUserKey })
-      client.setQueryData(currentUserKey, current)
-      setPassword('')
-      setOpen(false)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '账户请求失败，请重试。')
-    } finally {
-      setPending(false)
-    }
-  }
 
   async function logout() {
     if (pending) return
@@ -70,82 +41,26 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
           <Button
             variant={compact ? 'default' : 'ghost'}
             className={compact ? 'px-4 hover:bg-accent-hover' : undefined}
-            onClick={() => {
-              setError(null)
-              setMode('login')
-              setOpen(true)
-            }}
+            asChild
           >
-            登录
+            <Link to="/login" state={{ returnTo: location }}>
+              登录
+            </Link>
           </Button>
           {!compact && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setError(null)
-                setMode('register')
-                setOpen(true)
-              }}
-            >
-              注册
+            <Button variant="outline" asChild>
+              <Link to="/register" state={{ returnTo: location }}>
+                注册
+              </Link>
             </Button>
           )}
         </>
       )}
-      {!open && error && (
+      {error && (
         <p role="alert" className="text-sm text-muted">
           {error}
         </p>
       )}
-      <Dialog open={open} title={mode === 'login' ? '登录' : '注册'} onClose={close}>
-        <form className="space-y-5" onSubmit={(event) => void submit(event)}>
-          <label className="block space-y-2 text-sm">
-            <span>邮箱</span>
-            <Input
-              type="email"
-              autoComplete="email"
-              required
-              maxLength={320}
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
-          <label className="block space-y-2 text-sm">
-            <span>密码</span>
-            <Input
-              type="password"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              required
-              minLength={mode === 'register' ? 8 : 1}
-              maxLength={128}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
-          {error && (
-            <p role="alert" className="text-sm text-muted">
-              {error}
-            </p>
-          )}
-          {compact && (
-            <Button
-              type="button"
-              variant="link"
-              disabled={pending}
-              onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login')
-                setPassword('')
-                setError(null)
-              }}
-            >
-              {mode === 'login' ? '还没有账号？注册' : '已有账号？登录'}
-            </Button>
-          )}
-          <Button type="submit" disabled={pending}>
-            {pending ? '提交中' : mode === 'login' ? '登录' : '注册'}
-          </Button>
-        </form>
-      </Dialog>
     </div>
   )
 }

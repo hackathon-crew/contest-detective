@@ -17,6 +17,8 @@ import { ContestsPage } from '@/pages/contests'
 import { DetectivePage } from '@/pages/detective'
 import { DetectiveProvider } from '@/features/detective'
 import { useCurrentUser } from '@/entities/user'
+import { AuthPage } from '@/features/auth'
+import { AppearanceControl } from '@/features/appearance'
 import { queryClient } from './query-client'
 import { RouteMotionSurface } from './route-motion'
 
@@ -38,6 +40,15 @@ export function AppRoutes() {
   const background = location.state?.backgroundLocation as Location | undefined
   const contestId = matchPath('/contests/:contestId', location.pathname)?.params.contestId
   const { data: user } = useCurrentUser()
+  if (location.pathname === '/login' || location.pathname === '/register') {
+    return (
+      <AuthPage
+        key={location.pathname}
+        mode={location.pathname === '/register' ? 'register' : 'login'}
+        utilities={<AppearanceControl />}
+      />
+    )
+  }
   return (
     <DetectiveProvider key={user?.id ?? 'guest'} scope={user?.id ?? 'guest'}>
       <RouteMotionSurface>

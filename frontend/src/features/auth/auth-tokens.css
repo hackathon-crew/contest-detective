@@ -1,0 +1,50 @@
+/* Everplain 的账户令牌限定在认证页，站点其他页面继续使用 Inkpaw 原有令牌。 */
+.auth-stage {
+  --qx-color-canvas: var(--color-canvas);
+  --qx-color-surface: var(--color-surface);
+  --qx-color-surface-muted: var(--color-surface-muted);
+  --qx-color-surface-strong: var(--color-surface-strong);
+  --qx-color-ink: var(--color-ink);
+  --qx-color-muted: var(--color-muted);
+  --qx-color-faint: var(--color-faint);
+  --qx-color-rule-strong: var(--color-rule-strong);
+  --qx-color-accent: light-dark(#111111, #e0e4db);
+  --qx-color-accent-hover: light-dark(#303030, #c9d0c4);
+  --qx-color-on-accent: light-dark(#ffffff, #20241f);
+  --qx-color-danger: var(--color-danger);
+  --qx-color-danger-soft: var(--color-danger-soft);
+  --qx-font-ui: var(--font-sans);
+  --qx-font-reading:
+    'Iowan Old Style', Charter, 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
+  --qx-text-display: 2.25rem;
+  --qx-text-display--line-height: 1.25;
+  --qx-text-display--font-weight: 500;
+  --qx-text-body: 1rem;
+  --qx-text-body--line-height: 1.6;
+  --qx-text-meta: 0.8125rem;
+  --qx-text-meta--line-height: 1.5;
+  --qx-space-1: 4px;
+  --qx-space-2: 8px;
+  --qx-space-3: 12px;
+  --qx-space-4: 16px;
+  --qx-space-5: 20px;
+  --qx-space-6: 24px;
+  --qx-space-12: 48px;
+  --qx-space-16: 64px;
+  --qx-radius-pill: 999px;
+  --qx-radius-card: 20px;
+  --qx-action-height: 48px;
+  --qx-control-height: 40px;
+  --qx-icon-control-size: 36px;
+  --qx-motion-fast: var(--motion-fast);
+  --qx-motion-base: var(--motion-surface);
+  --qx-motion-slow: var(--motion-page);
+  --qx-ease: var(--ease-out);
+  /* 账户表单、步骤条与入场位移的专用几何。 */
+  --auth-form-width: 400px;
+  --auth-step-width: 28px;
+  --auth-step-height: 6px;
+  --auth-icon-size: 20px;
+  --auth-mascot-size: 120px;
+  --auth-entry-offset: 8px;
+}
