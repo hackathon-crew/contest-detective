@@ -52,6 +52,16 @@ export type AvailabilityWindow = {
 };
 
 /**
+ * CalendarRead
+ */
+export type CalendarRead = {
+    /**
+     * Url
+     */
+    url: string;
+};
+
+/**
  * ContestDetail
  */
 export type ContestDetail = {
@@ -228,6 +238,41 @@ export type FieldValue = {
      * Precision
      */
     precision?: 'day' | 'datetime';
+};
+
+/**
+ * FollowMerge
+ */
+export type FollowMerge = {
+    /**
+     * Ids
+     */
+    ids: Array<string>;
+};
+
+/**
+ * FollowRead
+ */
+export type FollowRead = {
+    contest: ContestDetail;
+    /**
+     * Reminders
+     */
+    reminders: boolean;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * FollowUpdate
+ */
+export type FollowUpdate = {
+    /**
+     * Reminders
+     */
+    reminders?: boolean | null;
 };
 
 /**
@@ -656,6 +701,34 @@ export type ResolveRecommendations = {
 };
 
 /**
+ * Response[CalendarRead]
+ */
+export type ResponseCalendarRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: CalendarRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[ContestDetail]
  */
 export type ResponseContestDetail = {
@@ -703,6 +776,34 @@ export type ResponseDocumentAnswer = {
      * 业务数据
      */
     data?: DocumentAnswer | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[FollowRead]
+ */
+export type ResponseFollowRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: FollowRead | null;
     /**
      * Timestamp
      *
@@ -1019,6 +1120,36 @@ export type ResponseListContestRecommendation = {
      * 业务数据
      */
     data?: Array<ContestRecommendation> | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[list[FollowRead]]
+ */
+export type ResponseListFollowRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<FollowRead> | null;
     /**
      * Timestamp
      *
@@ -1627,6 +1758,181 @@ export type MailReceiptNotificationsResendPostResponses = {
 };
 
 export type MailReceiptNotificationsResendPostResponse = MailReceiptNotificationsResendPostResponses[keyof MailReceiptNotificationsResendPostResponses];
+
+export type ListFollowsAccountFollowsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/follows';
+};
+
+export type ListFollowsAccountFollowsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListFollowRead;
+};
+
+export type ListFollowsAccountFollowsGetResponse = ListFollowsAccountFollowsGetResponses[keyof ListFollowsAccountFollowsGetResponses];
+
+export type MergeFollowsAccountFollowsMergePostData = {
+    body: FollowMerge;
+    path?: never;
+    query?: never;
+    url: '/account/follows/merge';
+};
+
+export type MergeFollowsAccountFollowsMergePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MergeFollowsAccountFollowsMergePostError = MergeFollowsAccountFollowsMergePostErrors[keyof MergeFollowsAccountFollowsMergePostErrors];
+
+export type MergeFollowsAccountFollowsMergePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListFollowRead;
+};
+
+export type MergeFollowsAccountFollowsMergePostResponse = MergeFollowsAccountFollowsMergePostResponses[keyof MergeFollowsAccountFollowsMergePostResponses];
+
+export type UnfollowAccountFollowsContestIdDeleteData = {
+    body?: never;
+    path: {
+        /**
+         * Contest Id
+         */
+        contest_id: string;
+    };
+    query?: never;
+    url: '/account/follows/{contest_id}';
+};
+
+export type UnfollowAccountFollowsContestIdDeleteErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UnfollowAccountFollowsContestIdDeleteError = UnfollowAccountFollowsContestIdDeleteErrors[keyof UnfollowAccountFollowsContestIdDeleteErrors];
+
+export type UnfollowAccountFollowsContestIdDeleteResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type UnfollowAccountFollowsContestIdDeleteResponse = UnfollowAccountFollowsContestIdDeleteResponses[keyof UnfollowAccountFollowsContestIdDeleteResponses];
+
+export type UpdateFollowAccountFollowsContestIdPatchData = {
+    body: FollowUpdate;
+    path: {
+        /**
+         * Contest Id
+         */
+        contest_id: string;
+    };
+    query?: never;
+    url: '/account/follows/{contest_id}';
+};
+
+export type UpdateFollowAccountFollowsContestIdPatchErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type UpdateFollowAccountFollowsContestIdPatchError = UpdateFollowAccountFollowsContestIdPatchErrors[keyof UpdateFollowAccountFollowsContestIdPatchErrors];
+
+export type UpdateFollowAccountFollowsContestIdPatchResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseFollowRead;
+};
+
+export type UpdateFollowAccountFollowsContestIdPatchResponse = UpdateFollowAccountFollowsContestIdPatchResponses[keyof UpdateFollowAccountFollowsContestIdPatchResponses];
+
+export type FollowAccountFollowsContestIdPutData = {
+    body: FollowUpdate;
+    path: {
+        /**
+         * Contest Id
+         */
+        contest_id: string;
+    };
+    query?: never;
+    url: '/account/follows/{contest_id}';
+};
+
+export type FollowAccountFollowsContestIdPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type FollowAccountFollowsContestIdPutError = FollowAccountFollowsContestIdPutErrors[keyof FollowAccountFollowsContestIdPutErrors];
+
+export type FollowAccountFollowsContestIdPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseFollowRead;
+};
+
+export type FollowAccountFollowsContestIdPutResponse = FollowAccountFollowsContestIdPutResponses[keyof FollowAccountFollowsContestIdPutResponses];
+
+export type ReadCalendarAccountCalendarGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/calendar';
+};
+
+export type ReadCalendarAccountCalendarGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseCalendarRead;
+};
+
+export type ReadCalendarAccountCalendarGetResponse = ReadCalendarAccountCalendarGetResponses[keyof ReadCalendarAccountCalendarGetResponses];
+
+export type CalendarCalendarSecretIcsGetData = {
+    body?: never;
+    path: {
+        /**
+         * Secret
+         */
+        secret: string;
+    };
+    query?: never;
+    url: '/calendar/{secret}.ics';
+};
+
+export type CalendarCalendarSecretIcsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CalendarCalendarSecretIcsGetError = CalendarCalendarSecretIcsGetErrors[keyof CalendarCalendarSecretIcsGetErrors];
+
+export type CalendarCalendarSecretIcsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type RegisterAuthRegisterPostData = {
     body: Credentials;

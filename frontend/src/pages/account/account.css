@@ -2116,3 +2116,11 @@
     }
   }
 }
+
+.account-root #fols {
+  margin-top: 20px;
+}
+.account-root .f-unknown {
+  color: var(--faint);
+  font-weight: 500;
+}
