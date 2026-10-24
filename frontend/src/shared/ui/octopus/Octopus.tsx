@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import fallbackImage from '@/shared/assets/mascot/octo-search.png'
+import readingImage from '@/shared/assets/mascot/octo-read.png'
 import { mountOctopus, type Mood, type OctopusHandle } from './inkpaw-octopus'
 
 interface Props {
@@ -68,7 +69,7 @@ export function Octopus({
     >
       {fallback && (
         <img
-          src={fallbackImage}
+          src={mood === 'read' ? readingImage : fallbackImage}
           width={106 * scale}
           height={85 * scale}
           alt=""
