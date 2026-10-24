@@ -41,6 +41,18 @@ final class CompanionStoreTests: XCTestCase {
         XCTAssertEqual(store.timeline?.phase, .unknown)
         XCTAssertNil(store.timeline?.countdown)
         XCTAssertNil(store.timeline?.progressFraction)
+        XCTAssertEqual(store.countdownText, "补充准确时间与时区")
+    }
+
+    @MainActor
+    func testEmptyAndCompletedCountdownCopyRemainsActionable() async throws {
+        let (store, directory) = try await loadedStore()
+        defer { store.stop(); try? FileManager.default.removeItem(at: directory) }
+        XCTAssertEqual(store.countdownText, "先录入比赛时间")
+        try store.saveSchedule(id: nil, title: "Completed", start: Date().addingTimeInterval(-7200),
+                               end: Date().addingTimeInterval(-3600), zone: "UTC", precision: .exact)
+        XCTAssertEqual(store.timeline?.phase, .completed)
+        XCTAssertEqual(store.countdownText, "收好作品与提交凭证")
     }
 
     @MainActor

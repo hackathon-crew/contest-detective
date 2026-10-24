@@ -9,7 +9,7 @@ struct GitWorkspaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 HStack(alignment: .top) {
-                    WorkspaceTitle(title: "Git 活动", subtitle: "只读取你选定的本地项目。不会提交、推送、拉取或修改文件。")
+                    WorkspaceTitle(title: "Git 活动", subtitle: "只读取你选定的本地项目。不会提交、推送、拉取或修改文件。", identifier: "workspace.heading.git")
                     Button { chooseRepository() } label: { Label("选择项目", systemImage: "folder.badge.plus") }
                         .buttonStyle(InkpawButtonStyle(store.selectedRepository == nil ? .secondary : .primary))
                 }
@@ -126,7 +126,7 @@ struct SettingsWorkspaceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
-                WorkspaceTitle(title: "服务与提醒", subtitle: "默认本地运行。登录与通知都由你主动开启。")
+                WorkspaceTitle(title: "服务与提醒", subtitle: "默认本地运行。登录与通知都由你主动开启。", identifier: "workspace.heading.settings")
                 InkpawCard {
                     Text("节点提醒").font(.system(size: 16, weight: .semibold))
                     HStack {
@@ -136,6 +136,7 @@ struct SettingsWorkspaceView: View {
                             Button("关闭并清理待发提醒") { store.disableReminders() }
                         } else {
                             Button("启用系统通知") { store.enableReminders() }.buttonStyle(InkpawButtonStyle(.primary))
+                                .accessibilityIdentifier("settings.reminders.enable")
                         }
                     }
                     Text("对准确时间的赛程节点，在提前 1 小时、15 分钟及到点时提醒。旧截止时间会被替换，同一提醒不会因重复刷新或重启反复出现。系统限制下只安排最近的 64 条。")
@@ -194,6 +195,7 @@ struct SettingsWorkspaceView: View {
                                 password = ""
                             }.buttonStyle(InkpawButtonStyle(.primary))
                                 .disabled(store.isSigningIn || store.isSigningOut || email.isEmpty || password.isEmpty || store.serviceAddress.isEmpty || address.trimmingCharacters(in: .whitespacesAndNewlines) != store.serviceAddress)
+                                .accessibilityIdentifier("settings.signin")
                         }
                     }
                     Text("文档问答需要服务端包含专用 /companion/documents/ask 接口并已配置模型预算。本插件不会部署或修改你的服务，不会绕过预算，也不会改用可写赛事库的侦探接口。")

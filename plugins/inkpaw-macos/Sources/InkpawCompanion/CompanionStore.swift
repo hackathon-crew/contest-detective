@@ -88,8 +88,9 @@ final class CompanionStore: ObservableObject {
     }
 
     var countdownText: String {
-        guard let seconds = timeline?.countdown?.remainingSeconds else {
-            return timeline?.phase == .completed ? "收好作品与提交凭证" : "不推测精确倒计时"
+        guard let timeline else { return "先录入比赛时间" }
+        guard let seconds = timeline.countdown?.remainingSeconds else {
+            return timeline.phase == .completed ? "收好作品与提交凭证" : "补充准确时间与时区"
         }
         let value = max(0, Int(seconds.rounded(.down)))
         return String(format: "%d天 %02d:%02d:%02d", value / 86400, value / 3600 % 24, value / 60 % 60, value % 60)

@@ -89,6 +89,15 @@ struct PetWidgetView: View {
 private enum WorkspaceTab: String, CaseIterable, Identifiable {
     case schedule = "赛程", documents = "规则问答", checklist = "提交清单", git = "Git 活动", settings = "服务与提醒"
     var id: String { rawValue }
+    var accessibilityID: String {
+        switch self {
+        case .schedule: return "workspace.tab.schedule"
+        case .documents: return "workspace.tab.documents"
+        case .checklist: return "workspace.tab.checklist"
+        case .git: return "workspace.tab.git"
+        case .settings: return "workspace.tab.settings"
+        }
+    }
     var icon: String {
         switch self {
         case .schedule: return "clock"
@@ -120,6 +129,8 @@ struct CompanionWorkspaceView: View {
                         }
                     }
                     .buttonStyle(InkpawNavigationStyle(isSelected: tab == item))
+                    .accessibilityLabel(item.rawValue)
+                    .accessibilityIdentifier(item.accessibilityID)
                     .accessibilityAddTraits(tab == item ? .isSelected : [])
                 }
                 Spacer(minLength: 24)
@@ -139,6 +150,7 @@ struct CompanionWorkspaceView: View {
                         Spacer(minLength: 8)
                         Button { store.errorMessage = nil } label: { Image(systemName: "xmark") }
                             .buttonStyle(InkpawButtonStyle(.danger, size: .small, iconOnly: true)).help("关闭提示")
+                            .accessibilityLabel("关闭提示").accessibilityIdentifier("workspace.error.dismiss")
                     }
                     .foregroundStyle(InkpawColors.danger).padding(.horizontal, 24).padding(.vertical, 8)
                     .background(InkpawColors.dangerSoft)
@@ -184,9 +196,14 @@ struct InkpawCard<Content: View>: View {
 struct WorkspaceTitle: View {
     let title: String
     let subtitle: String
+    var identifier: String? = nil
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(InkpawType.pageTitle)
+            if let identifier {
+                Text(title).font(InkpawType.pageTitle).accessibilityIdentifier(identifier)
+            } else {
+                Text(title).font(InkpawType.pageTitle)
+            }
             Text(subtitle).font(InkpawType.body).foregroundStyle(InkpawColors.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -234,9 +251,10 @@ struct ScheduleWorkspaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 HStack(alignment: .top) {
-                    WorkspaceTitle(title: "比赛赛程", subtitle: "查看比赛倒计时、赛程节点和提交准备情况。")
+                    WorkspaceTitle(title: "比赛赛程", subtitle: "查看比赛倒计时、赛程节点和提交准备情况。", identifier: "workspace.heading.schedule")
                     Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
                         .buttonStyle(InkpawButtonStyle(store.selectedSchedule == nil ? .secondary : .primary))
+                        .accessibilityIdentifier("schedule.create.header")
                 }
                 if let schedule = store.selectedSchedule {
                     if store.state.schedules.count > 1 {
@@ -253,6 +271,7 @@ struct ScheduleWorkspaceView: View {
                             Spacer(minLength: 8)
                             Button("编辑时间") { createNew = false; editing = true }
                                 .buttonStyle(InkpawButtonStyle(.secondary, size: .small))
+                                .accessibilityIdentifier("schedule.edit")
                         }
                         Text(store.countdownTitle).font(.system(size: 13)).foregroundStyle(InkpawColors.muted)
                         Text(store.countdownText).font(.system(size: 32, weight: .semibold)).monospacedDigit().minimumScaleFactor(0.75)
@@ -319,6 +338,7 @@ struct ScheduleWorkspaceView: View {
                             note: "还不确定准确时刻？可以先保存日期，核实后再开启精确倒计时。") {
                             Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
                                 .buttonStyle(InkpawButtonStyle(.primary))
+                                .accessibilityIdentifier("schedule.create.empty")
                         }.frame(minHeight: 272)
                     }
                     HStack(alignment: .top, spacing: 24) {
@@ -374,6 +394,7 @@ struct ScheduleEditor: View {
             VStack(alignment: .leading, spacing: 8) {
                 InkpawFieldLabel("比赛名称")
                 TextField("输入这场比赛的名称", text: $title).accessibilityLabel("比赛名称")
+                    .accessibilityIdentifier("schedule.editor.title")
             }
             VStack(alignment: .leading, spacing: 8) {
                 InkpawFieldLabel("IANA 时区")
@@ -390,6 +411,7 @@ struct ScheduleEditor: View {
             HStack {
                 Spacer()
                 Button("取消") { dismiss() }.keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier("schedule.editor.cancel")
                 Button("保存") {
                     do {
                         try store.saveSchedule(id: existing?.id, title: title, start: start, end: end, zone: zone,
@@ -397,6 +419,7 @@ struct ScheduleEditor: View {
                         dismiss()
                     } catch { self.error = error.localizedDescription }
                 }.buttonStyle(InkpawButtonStyle(.primary)).keyboardShortcut(.defaultAction)
+                    .accessibilityIdentifier("schedule.editor.save")
             }
         }
         .modifier(InkpawDialogChrome()).frame(width: 500)
@@ -417,7 +440,7 @@ struct ChecklistWorkspaceView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
-                WorkspaceTitle(title: "提交清单", subtitle: "逐项准备真正需要交付的材料。勾选不会改变章鱼的赛程位置。")
+                WorkspaceTitle(title: "提交清单", subtitle: "整理提交材料，逐项检查交付准备情况。", identifier: "workspace.heading.checklist")
                 if let checklist = store.selectedChecklist {
                     InkpawCard {
                         HStack {
@@ -432,6 +455,7 @@ struct ChecklistWorkspaceView: View {
                                     Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 19)).foregroundStyle(item.isCompleted ? InkpawColors.accent : InkpawColors.faint)
                                 }.buttonStyle(InkpawButtonStyle(.ghost, size: .small, iconOnly: true)).accessibilityLabel(item.isCompleted ? "标记未完成：\(item.title)" : "标记完成：\(item.title)")
+                                    .accessibilityIdentifier("checklist.toggle.\(item.id)")
                                 Text(item.title).strikethrough(item.isCompleted).foregroundStyle(item.isCompleted ? InkpawColors.muted : InkpawColors.body)
                                 Spacer()
                                 Button { store.removeChecklistItem(item.id) } label: { Image(systemName: "trash") }
@@ -442,7 +466,9 @@ struct ChecklistWorkspaceView: View {
                         InkpawFieldLabel("新增检查项")
                         HStack(spacing: 12) {
                             TextField("需要准备的材料或交付检查项", text: $itemTitle).onSubmit(addItem).accessibilityLabel("新增检查项")
+                                .accessibilityIdentifier("checklist.field")
                             Button("添加", action: addItem).buttonStyle(InkpawButtonStyle(.primary)).disabled(itemTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .accessibilityIdentifier("checklist.add")
                         }
                     }
                     Text("清单由你确认。规则问答提供来源参考，不会自动把推断加入清单。")

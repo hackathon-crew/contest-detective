@@ -35,7 +35,7 @@ struct DocumentWorkspaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 HStack(alignment: .top) {
-                    WorkspaceTitle(title: "规则文档问答", subtitle: "只根据你选中的原文回答，每条结论都能打开对应出处。")
+                    WorkspaceTitle(title: "规则文档问答", subtitle: "只根据你选中的原文回答，每条结论都能打开对应出处。", identifier: "workspace.heading.documents")
                     Button { chooseDocuments() } label: { Label("导入文档", systemImage: "plus") }
                         .buttonStyle(InkpawButtonStyle(store.state.documents.isEmpty ? .secondary : .primary))
                 }
@@ -95,6 +95,8 @@ struct DocumentWorkspaceView: View {
                                     sourceInspection = SourceInspection(passage: passage, quote: "",
                                         localURL: store.state.documents.first { $0.id == passage.documentID }?.sourceURL)
                                 }.buttonStyle(InkpawButtonStyle(.ghost, size: .small))
+                                    .accessibilityLabel("查看全文：\(passage.title)，\(passage.locator)")
+                                    .accessibilityIdentifier("documents.source.\(passage.id)")
                             }
                             .padding(12).background(InkpawColors.surfaceMuted, in: RoundedRectangle(cornerRadius: InkpawLayout.controlRadius))
                         }
@@ -105,6 +107,7 @@ struct DocumentWorkspaceView: View {
                     TextField("例如：必须提交哪些材料？视频最长多久？", text: $question, axis: .vertical)
                         .lineLimit(3...5).textFieldStyle(InkpawTextFieldStyle(minimumHeight: 96))
                         .accessibilityLabel("向所选规则片段提问")
+                        .accessibilityIdentifier("documents.question")
                     HStack {
                         if store.isAnswering {
                             ProgressView().controlSize(.small)
@@ -121,10 +124,11 @@ struct DocumentWorkspaceView: View {
                             }
                             .buttonStyle(InkpawButtonStyle(.primary))
                             .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || question.count > 1000 || store.selectedPassages.isEmpty || store.signedInName == nil)
+                            .accessibilityIdentifier("documents.preview")
                         }
                     }
                     if store.signedInName == nil {
-                        Text("请先在“服务与提醒”中配置并登录自己的 Inkpaw 服务。未上线专用问答接口的旧服务会明确报错，不会偷偷改用侦探工具。")
+                        Text("请先在“服务与提醒”中登录支持文档问答的 Inkpaw 服务。")
                             .font(.system(size: 12)).foregroundStyle(InkpawColors.muted)
                     }
                 }
@@ -242,6 +246,7 @@ private struct SourceInspector: View {
                 }
                 Spacer()
                 Button("完成") { dismiss() }.keyboardShortcut(.defaultAction)
+                    .accessibilityIdentifier("documents.source.close")
             }
         }.modifier(InkpawDialogChrome()).frame(width: 600, height: 580)
     }
