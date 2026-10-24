@@ -40,8 +40,61 @@ set +e
 wait "$PID"
 STATUS=$?
 set -e
+RUN_PID="$PID"
 PID=''
 printf '{"app_exit_code":%d,"architecture":"%s"}\n' "$STATUS" "$(uname -m)" > "$OUTPUT/driver.json"
+
+# Preserve only crash reports for this exact disposable app process. Reading the
+# system-generated report changes no debugger, signing, or privacy permission.
+python3 - "$OUTPUT" "$RUN_PID" "$START" "$STATUS" "$BIN" <<'PY'
+import json
+import re
+import sys
+import time
+from pathlib import Path
+
+output, pid, started, status, binary = sys.argv[1:]
+output = Path(output)
+if int(status) >= 128:
+    deadline = time.monotonic() + 10
+    directory = Path.home() / 'Library/Logs/DiagnosticReports'
+    saved = []
+    while not saved and time.monotonic() < deadline:
+        for path in directory.glob('InkpawCompanion*'):
+            try:
+                if path.is_symlink() or not path.is_file():
+                    continue
+                info = path.stat()
+                if info.st_mtime < int(started) or info.st_size > 8 * 1024 * 1024:
+                    continue
+                text = path.read_text(errors='replace')
+            except OSError:
+                # CrashReporter may still be moving/writing its report.
+                continue
+            matches = False
+            if path.suffix == '.ips':
+                try:
+                    report = json.loads(text.split('\n', 1)[1])
+                    matches = (report.get('pid') == int(pid) and
+                               report.get('procName') == 'InkpawCompanion' and
+                               report.get('bundleInfo', {}).get('CFBundleIdentifier') ==
+                               'org.hackathon-crew.inkpaw.companion' and
+                               (report.get('procPath') == binary or
+                                report.get('procPath', '').startswith('/<private>/')))
+                except (ValueError, IndexError):
+                    pass
+            elif path.suffix == '.crash':
+                matches = bool(re.search(r'^Process:\s+InkpawCompanion\s+\[' + re.escape(pid) + r'\]', text, re.MULTILINE))
+                matches = matches and bool(re.search(r'^Path:\s+' + re.escape(binary) + r'\s*$', text, re.MULTILINE))
+            if matches:
+                target = output / ('own-process-crash-' + str(len(saved)) + path.suffix)
+                target.write_text(text)
+                saved.append(target.name)
+        if not saved:
+            time.sleep(0.5)
+    (output / 'crash-diagnostics.json').write_text(json.dumps({'pid': int(pid), 'files': saved,
+        'scope': 'exact app PID and binary path; no other process reports collected'}) + '\n')
+PY
 
 [[ -f "$OUTPUT/evidence/smoke.json" ]] || { echo 'Native app produced no smoke report.' >&2; exit 1; }
 python3 - "$OUTPUT/evidence/smoke.json" "$STATUS" <<'PY'

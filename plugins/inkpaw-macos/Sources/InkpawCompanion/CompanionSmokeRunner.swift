@@ -67,6 +67,7 @@ final class CompanionSmokeRunner {
         report = [
             "schemaVersion": 1, "status": "running", "phase": "prepared",
             "pid": ProcessInfo.processInfo.processIdentifier,
+            "operatingSystem": ProcessInfo.processInfo.operatingSystemVersionString,
             "bundleIdentifier": Bundle.main.bundleIdentifier ?? "",
             "captureMethods": ["workspace": "NSView.cacheDisplay", "octopus": "ARView.snapshot",
                                "widget": "ScreenCaptureKit.currentProcess exact own window"],
@@ -374,9 +375,14 @@ final class CompanionSmokeRunner {
         // currentProcess is the permission-free, redacted own-application API.
         // Never substitute SCShareableContent.current or a desktop capture.
         report["ownProcessWindowCaptureAttempted"] = true
+        report["captureStage"] = "enumerating-own-process"
+        try checkpoint()
         let content: SCShareableContent
         do { content = try await SCShareableContent.currentProcess }
         catch { throw SmokeUnsupported("The runner could not provide this process's own capturable windows: \(error.localizedDescription)") }
+        report["captureStage"] = "matching-own-window"
+        report["ownProcessCaptureWindowCount"] = content.windows.count
+        try checkpoint()
         let pid = ProcessInfo.processInfo.processIdentifier
         guard let own = content.windows.first(where: {
             $0.windowID == CGWindowID(window.windowNumber) && $0.owningApplication?.processID == pid
@@ -391,10 +397,19 @@ final class CompanionSmokeRunner {
         configuration.includeChildWindows = false
         configuration.ignoreShadowsSingleWindow = true
         configuration.shouldBeOpaque = false
-        configuration.backgroundColor = NSColor.clear.cgColor
+        // ScreenCaptureKit declares this property unowned(unsafe). The color
+        // must outlive the asynchronous capture, not just this assignment.
+        let captureBackground = NSColor.clear.cgColor
+        defer { withExtendedLifetime(captureBackground) {} }
+        configuration.backgroundColor = captureBackground
         let filter = SCContentFilter(desktopIndependentWindow: own)
+        report["captureStage"] = "capturing-matched-own-window"
+        report["captureWindowID"] = Int(own.windowID)
+        try checkpoint()
         do {
             let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+            report["captureStage"] = "own-window-image-returned"
+            try checkpoint()
             return NSBitmapImageRep(cgImage: image)
         } catch {
             throw SmokeUnsupported("The runner could not capture the exact own-process widget window: \(error.localizedDescription)")
