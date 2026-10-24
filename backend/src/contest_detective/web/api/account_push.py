@@ -13,6 +13,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from contest_detective.common.exceptions import BizException
 from contest_detective.common.result import Response
 from contest_detective.framework.db import get_session
+from contest_detective.server.account.providers import runtime_for
+from contest_detective.server.auth.service import current as query_user
 from contest_detective.server.auth.service import current
 from contest_detective.server.agent.llm import create_model
 from contest_detective.server.account.models import MailDelivery, Track
@@ -37,9 +39,10 @@ class TrackUpdate(BaseModel):
     text: Text | None = None
 
 
-def get_tracking_parser(session: Session = Depends(get_session)):
+def get_tracking_parser(session: Session = Depends(get_session), user_id: str | None = Depends(query_user)):
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    return create_tracking_parser(lambda: create_model(session_factory=factory))
+    runtime = runtime_for(session, user_id)
+    return create_tracking_parser(lambda: create_model(settings=runtime.llm, session_factory=factory))
 
 
 def get_mailer():
