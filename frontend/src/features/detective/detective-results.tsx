@@ -80,15 +80,11 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
           >
             <div
               aria-hidden="true"
-              className="detective-recommendation__cover pointer-events-none relative w-16 shrink-0 self-stretch overflow-hidden sm:w-28"
+              className="detective-recommendation__cover pointer-events-none relative w-20 shrink-0 self-stretch overflow-hidden bg-surface-muted sm:w-48"
             >
               <ContestCover
                 contest={contest}
-                className="absolute inset-0 h-full w-full scale-110 object-cover blur-lg"
-              />
-              <ContestCover
-                contest={contest}
-                className="absolute inset-0 h-full w-full object-contain"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-2 px-3 py-3 sm:px-4">
