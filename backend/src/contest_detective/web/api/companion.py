@@ -1,5 +1,7 @@
 """Authenticated, bounded document-answer endpoint for the native companion."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
@@ -46,7 +48,7 @@ router = APIRouter(route_class=BoundedDocumentRoute)
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
 
 
-def get_document_answerer(session: Session = Depends(get_session), user_id: str | None = Depends(query_user)) -> DocumentAnswering:
+def get_document_answerer(session: Session = Depends(get_session), user_id: Annotated[str | None, Depends(query_user)] = None) -> DocumentAnswering:
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     return BoundedDocumentAnswerer(model_factory=lambda: create_model(settings=runtime.llm, session_factory=factory))
