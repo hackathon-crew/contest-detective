@@ -1,6 +1,6 @@
 # 服务器运行
 
-使用已发布版本。静态文件在 `frontend/dist`，后端只监听回环地址，nginx 将 `/api/` 转发给后端。数据库放在 `/var/lib/contest-detective`，更新代码时保留该目录。
+使用已发布版本。静态文件在 `frontend/dist`，后端只监听回环地址，nginx 将 `/api/` 转发给后端。独立只读 MCP 监听 `127.0.0.1:8001`，nginx 将 `/mcp` 原路径转发给它。两个进程读取同一份 `/var/lib/contest-detective/contest.db`，更新代码时保留该目录。
 
 服务器安装 nginx、uv 和 Git。前端在本地对应版本运行 `npm ci && npm run build`，将 `dist` 传到服务器；后端在服务器运行：
 
@@ -77,8 +77,14 @@ systemctl is-active contest-detective
 ```sh
 sudo install -m 755 deploy/release.py /usr/local/sbin/contest-detective-deploy
 sudo install -m 644 deploy/nginx.conf /etc/nginx/sites-available/contest-detective
+sudo install -m 644 deploy/contest-detective-mcp.service /etc/systemd/system/
+sudo systemctl daemon-reload
 sudo nginx -t && sudo systemctl reload nginx
 ```
+
+首次启用 MCP 时，在发布包含 HTTP 入口的版本前安装上述 unit、代理配置与部署脚本；部署脚本在切换代码后启动 MCP。首次发布成功后执行 `sudo systemctl enable contest-detective-mcp`，使其开机启动。不要在仍运行旧版本代码时启动该 unit。
+
+MCP 不执行迁移或采集，SQLite 使用 `mode=ro`，systemd 也将数据目录设为只读；缺库或缺表时启动失败。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
 
 为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
 
@@ -98,7 +104,7 @@ restrict,command="sudo -n /usr/local/sbin/contest-detective-deploy" ssh-ed25519 
 | Secret | `PRODUCTION_SSH_KEY` | 专用部署私钥 |
 | Secret | `PRODUCTION_KNOWN_HOSTS` | 已核验的 SSH known_hosts 条目 |
 
-Action 通过 SSH 标准输入发送构建包。服务器先在 `/srv/contest-detective-releases/` 准备依赖，再暂停公网访问、停止服务、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。后端、nginx 和前端版本检查通过后恢复访问。失败会恢复旧代码与数据库；恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective` 后处理。`/etc/contest-detective.env` 保持原样，健康检查不调用模型或搜索。
+Action 通过 SSH 标准输入发送构建包。服务器先在 `/srv/contest-detective-releases/` 准备依赖，再暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。后端、nginx、前端版本与 MCP 初始化检查通过后恢复访问。失败会恢复旧代码与数据库，并按旧版本能力启动服务；回退到尚无 HTTP 入口的版本时保持 MCP 停止。恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective -u contest-detective-mcp` 后处理。`/etc/contest-detective.env` 保持原样，健康检查不调用模型或搜索。
 
 数据库快照在 `/srv/contest-detective-backups/release-*/contest.db`，同目录的 `previous-release` 指向更新前代码。旧发布目录与快照保留供恢复，管理员应按磁盘容量定期清理，当前链接指向的发布目录必须保留。回退到旧 tag 会保留当前数据库并执行该版本迁移，不等同于还原历史数据库；存在不兼容迁移时应由管理员先确认恢复方案。
 
