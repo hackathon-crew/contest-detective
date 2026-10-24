@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
@@ -26,7 +26,7 @@ def get_github_builder():
     return build_github_profile
 
 
-def get_resume_extractor(session: Session = Depends(get_session), user_id: str | None = Depends(query_user)):
+def get_resume_extractor(session: Session = Depends(get_session), user_id: Annotated[str | None, Depends(query_user)] = None):
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     return create_profile_extractor(model_factory=lambda: create_model(settings=runtime.llm, session_factory=factory), manage_model=True)
