@@ -1,5 +1,8 @@
 from fastapi import APIRouter, Depends, Request, Response as HttpResponse
 from pydantic import BaseModel, EmailStr, Field
+import uuid
+from sqlalchemy import select, func
+from contest_detective.server.account.models import Follow, Track
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from contest_detective.common.exceptions import BizException
@@ -51,3 +54,13 @@ async def confirm_profile(body: Profile, user_id: str | None = Depends(service.c
     if not user_id:
         raise BizException('请先登录', code=401)
     return Response.success(await users.confirm_profile(session, user_id, body))
+
+
+@router.get('/account/summary', response_model=Response[dict[str, int]])
+async def account_summary(user_id: str | None = Depends(service.current), session: AsyncSession = Depends(get_async_session)):
+    if not user_id:
+        raise BizException('请先登录', code=401)
+    owner = uuid.UUID(user_id)
+    follows = await session.scalar(select(func.count()).select_from(Follow).where(Follow.user_id == owner))
+    tracks = await session.scalar(select(func.count()).select_from(Track).where(Track.user_id == owner))
+    return Response.success({'follows': follows or 0, 'tracks': tracks or 0})
