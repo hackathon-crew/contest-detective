@@ -70,6 +70,12 @@ systemctl is-active contest-detective
 
 查看日志用 `journalctl -u contest-detective`。更新先保留旧发布目录与数据库副本，再换到新发布文件并重启服务。已有的其他服务不参与此流程。
 
+## 个人中心配置
+
+配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY` 后才能保存个人模型与搜索密钥。使用独立的 Fernet 主密钥，生成方式见根目录 `.env.example`，生产环境单独生成并保管，不复用开发密钥。`DETECTIVE_PUBLIC_BASE_URL` 设为网站的 HTTPS 地址，供日历订阅和验证邮件使用。`DETECTIVE_QUERY_LIMITS_ENABLED=false` 为活动期间不限提问次数。
+
+邮件默认关闭。启用 Resend 前配置 API key、已验证的发信域名和发件地址；默认限制 100 封/天、3000 封/月，超出免费预算前先确认费用。配置回执时填写 `DETECTIVE_RESEND_WEBHOOK_SECRET`。日常部署保留这些环境配置，不会自动生成主密钥或启用发信。
+
 ## 自动部署
 
 只有一个生产环境。发布正式 GitHub Release 后，`Deploy production` 自动构建对应 tag 并部署；草稿、预发布、未合入 main 的提交不会部署。tag 使用 `vX.Y.Z`。发布前应确认该提交的常规 CI 已通过。
@@ -88,7 +94,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 首次启用 MCP 时，在发布包含 HTTP 入口的版本前安装上述 unit、代理配置与部署脚本；部署脚本在切换代码后启动 MCP。首次发布成功后执行 `sudo systemctl enable contest-detective-mcp`，使其开机启动。不要在仍运行旧版本代码时启动该 unit。
 
-MCP 不执行迁移或采集，SQLite 使用 `mode=ro`，systemd 也将数据目录设为只读；缺库或缺表时启动失败。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
+MCP 不执行迁移或采集，赛事与个人资料查询使用 SQLite `mode=ro`；缺库或缺表时启动失败。个人令牌鉴权另用连接更新最近使用时间，因此 systemd 允许服务写入同一数据目录；工具不提供业务数据写入操作。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
 
 为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
 
