@@ -1,8 +1,18 @@
 import { safeUrl } from '@/entities/contest'
-import type { ConversationMessage } from '@/shared/api/generated'
+import type { ContestDetail, ConversationMessage, MatchItem, Profile } from '@/shared/api'
 import { parseTrace, type TraceEvent, type TraceSource } from './events'
 
 export type ToolEvent = Extract<TraceEvent, { type: 'step' | 'observation' }>
+export interface ContestRecommendation {
+  contest: ContestDetail
+  introduction?: string
+  reason: string
+}
+export interface ProfileFile {
+  name: string
+  profile: Profile
+  candidates: MatchItem[]
+}
 export interface DetectiveTurn {
   id: string
   question: string
@@ -11,6 +21,9 @@ export interface DetectiveTurn {
   sources: TraceSource[]
   status: 'running' | 'completed' | 'stopped' | 'error'
   error?: string
+  // 预览中的结构化内容与原文并存；正式 SSE 接线另行实现。
+  recommendations?: ContestRecommendation[]
+  profileFile?: ProfileFile
 }
 
 export const conversationKey = (scope: string) => `contest-detective.conversation.${scope}`

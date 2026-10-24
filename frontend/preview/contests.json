@@ -1,0 +1,344 @@
+[
+  {
+    "id": "c4dad553-4966-458e-af0c-93cb214271da",
+    "name": "PayPal AI Hackathon",
+    "cover_url": "https://d112y698adiu2z.cloudfront.net/photos/production/challenge_thumbnails/005/288/985/datas/medium_square.png",
+    "status": "upcoming",
+    "fields": {
+      "start_at": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "end_at": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "registration_deadline": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "submission_deadline": {
+        "value": "2026-11-12T00:00:00Z",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://paypalaihackathon.devpost.com/",
+            "site": "Devpost",
+            "title": "PayPal AI Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "2026-11-12T00:00:00Z",
+            "excerpt": "submission_period_dates: Oct 01 - Nov 12, 2026",
+            "stale": false,
+            "precision": "day"
+          }
+        ],
+        "precision": "day"
+      },
+      "deadline_unspecified": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "city": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "mode": {
+        "value": "online",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://paypalaihackathon.devpost.com/",
+            "site": "Devpost",
+            "title": "PayPal AI Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "online",
+            "excerpt": "location: Online",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "prize": {
+        "value": "$67,500",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://paypalaihackathon.devpost.com/",
+            "site": "Devpost",
+            "title": "PayPal AI Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "$67,500",
+            "excerpt": "prize_amount: $<span data-currency-value>67,500</span>",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "registration_url": {
+        "value": "https://paypalaihackathon.devpost.com/",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://paypalaihackathon.devpost.com/",
+            "site": "Devpost",
+            "title": "PayPal AI Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "https://paypalaihackathon.devpost.com/",
+            "excerpt": "url: https://paypalaihackathon.devpost.com/",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "organizer": {
+        "value": "PayPal",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://paypalaihackathon.devpost.com/",
+            "site": "Devpost",
+            "title": "PayPal AI Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "PayPal",
+            "excerpt": "organization_name: PayPal",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "venue": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "eligibility": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "team_size": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "entry_fee": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "entry_requirements": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "judging_criteria": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "past_statistics": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      }
+    },
+    "summary": "Low/No Code、Machine Learning/AI、Web\n\n提交区间：Oct 01 - Nov 12, 2026"
+  },
+  {
+    "id": "1920ca40-eadf-4e3c-8754-83bf288edb63",
+    "name": "Qloo Agentic Hackathon",
+    "cover_url": "https://d112y698adiu2z.cloudfront.net/photos/production/challenge_thumbnails/005/363/782/datas/medium_square.png",
+    "status": "upcoming",
+    "fields": {
+      "start_at": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "end_at": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "registration_deadline": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "submission_deadline": {
+        "value": "2026-10-30T00:00:00Z",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://qloo.devpost.com/",
+            "site": "Devpost",
+            "title": "Qloo Agentic Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "2026-10-30T00:00:00Z",
+            "excerpt": "submission_period_dates: Sep 30 - Oct 30, 2026",
+            "stale": false,
+            "precision": "day"
+          }
+        ],
+        "precision": "day"
+      },
+      "deadline_unspecified": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "city": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "mode": {
+        "value": "online",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://qloo.devpost.com/",
+            "site": "Devpost",
+            "title": "Qloo Agentic Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "online",
+            "excerpt": "location: Online",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "prize": {
+        "value": "$25,000",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://qloo.devpost.com/",
+            "site": "Devpost",
+            "title": "Qloo Agentic Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "$25,000",
+            "excerpt": "prize_amount: $<span data-currency-value>25,000</span>",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "registration_url": {
+        "value": "https://qloo.devpost.com/",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://qloo.devpost.com/",
+            "site": "Devpost",
+            "title": "Qloo Agentic Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "https://qloo.devpost.com/",
+            "excerpt": "url: https://qloo.devpost.com/",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "organizer": {
+        "value": "Qloo",
+        "level": "official",
+        "sources": [
+          {
+            "url": "https://qloo.devpost.com/",
+            "site": "Devpost",
+            "title": "Qloo Agentic Hackathon",
+            "published_at": null,
+            "is_official": true,
+            "value": "Qloo",
+            "excerpt": "organization_name: Qloo",
+            "stale": false,
+            "precision": "datetime"
+          }
+        ],
+        "precision": "datetime"
+      },
+      "venue": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "eligibility": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "team_size": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "entry_fee": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "entry_requirements": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "judging_criteria": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      },
+      "past_statistics": {
+        "value": null,
+        "level": "not_found",
+        "sources": [],
+        "precision": "datetime"
+      }
+    },
+    "summary": "Machine Learning/AI\n\n提交区间：Sep 30 - Oct 30, 2026"
+  }
+]
