@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
-from pydantic_ai.messages import ModelResponse, TextPart
+from pydantic_ai.messages import ModelResponse
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -21,7 +23,7 @@ def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path)
     instructions = []
     def respond(_, info):
         instructions.append(info.instructions)
-        return ModelResponse([TextPart('库中暂未找到符合条件的比赛。')])
+        return ModelResponse([answer_part('库中暂未找到符合条件的比赛。')])
     def profile_reader(user_id):
         with sessions() as session:
             user = users.get(session, user_id)

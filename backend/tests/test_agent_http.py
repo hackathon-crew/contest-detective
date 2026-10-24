@@ -3,8 +3,10 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic_ai.messages import ModelResponse, TextPart
+from pydantic_ai.messages import ModelResponse
 from pydantic_ai.models.function import FunctionModel
+
+from agent_responses import answer_part
 from sqlalchemy import select
 
 from contest_detective.server.agent.loop import Investigator
@@ -22,7 +24,7 @@ def clear_limits():
 @pytest.fixture
 def local_client(client, session_factory):
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
-        FunctionModel(lambda *_: ModelResponse([TextPart('库中暂未找到符合条件的比赛。')])),
+        FunctionModel(lambda *_: ModelResponse([answer_part('库中暂未找到符合条件的比赛。')])),
         session_factory=session_factory)
     yield client
     client.app.dependency_overrides.pop(get_investigator)
