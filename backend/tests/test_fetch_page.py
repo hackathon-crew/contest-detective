@@ -31,7 +31,7 @@ def test_fetch_page_extracts_article_with_pinned_public_address():
     assert '网页导航' not in content
 
 
-def test_fetch_page_limits_the_text_given_to_the_caller():
+def test_fetch_page_preserves_the_full_extracted_text():
     from contest_detective.server.research_pipeline.pages import fetch_page
 
     body = '<html><body><article><p>' + '公开赛事正文。' * 2000 + '</p></article></body></html>'
@@ -39,7 +39,7 @@ def test_fetch_page_limits_the_text_given_to_the_caller():
         200, headers={'Content-Type': 'text/html'}, text=body,
     ))) as client:
         content = fetch_page('https://example.org/contest', client=client, resolver=public_dns)
-    assert len(content) == 6000
+    assert content.count('公开赛事正文。') == 2000
 
 
 @pytest.mark.parametrize('url', [
@@ -146,3 +146,25 @@ def test_fetch_page_rejects_multicast_and_site_local_targets(url):
     ))) as client:
         with pytest.raises(ValueError):
             fetch_page(url, client=client, resolver=public_dns)
+
+
+def test_fetch_page_accepts_gzip_and_preserves_a_deadline_after_six_thousand_chars():
+    import gzip
+    from contest_detective.server.research_pipeline.pages import fetch_page
+    text = '公开介绍。' * 1600 + '报名截止：10月25日。'
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(
+        200, headers={'Content-Type': 'text/plain; charset=utf-8', 'Content-Encoding': 'gzip'},
+        content=gzip.compress(text.encode()),
+    ))) as client:
+        assert fetch_page('https://example.org/rules', client=client, resolver=public_dns) == text
+
+
+def test_gzip_response_still_obeys_the_decoded_download_limit():
+    import gzip
+    from contest_detective.server.research_pipeline.pages import fetch_page
+    with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(
+        200, headers={'Content-Type': 'text/plain', 'Content-Encoding': 'gzip'},
+        content=gzip.compress(b'x' * 1_048_577),
+    ))) as client:
+        with pytest.raises(ValueError, match='网页过大'):
+            fetch_page('https://example.org/large', client=client, resolver=public_dns)
