@@ -34,6 +34,7 @@ dependencies = [
 contest-detective = "contest_detective.web.bootstrap.app:main"
 contest-detective-sync = "contest_detective.web.bootstrap.source_sync:main"
 contest-detective-mcp = "contest_detective.web.bootstrap.mcp:main"
+contest-detective-refresh = "contest_detective.web.bootstrap.offline_refresh:main"
 
 [build-system]
 requires = ["hatchling"]

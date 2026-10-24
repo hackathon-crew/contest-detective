@@ -1,4 +1,5 @@
 import type { ContestSummary, FieldValue } from './api'
+import { groundedIntroduction } from './content'
 import { cardDate } from './card-date'
 import { dateFields, formatDate } from './format'
 
@@ -76,18 +77,20 @@ const themeNames: Record<string, string> = {
   Lifehacks: '生活工具',
 }
 export function contestThemes(contest: LibraryContest): string[] {
-  const first = contest.summary
-    ?.split('\n')[0]
-    ?.replace(/^(?:主题|Themes?)\s*[:：]\s*/i, '')
-    .trim()
-  if (!first) return []
+  // New summaries carry themes directly; only older payloads use the historical tag header.
+  if (contest.themes) return [...new Set(contest.themes.map((theme) => themeNames[theme] ?? theme))]
+  const first = contest.summary?.split('\n')[0]?.trim()
+  if (!first || !/^(?:主题|Themes?)\s*[:：]/i.test(first)) return []
   return first
+    .replace(/^(?:主题|Themes?)\s*[:：]\s*/i, '')
     .split(/[,，、|]/)
-    .map((t) => t.trim())
+    .map((theme) => theme.trim())
     .filter(
-      (t) => t in themeNames || ['AI', 'Web', 'AR/VR', 'IoT', 'DevOps', 'Serverless'].includes(t),
+      (theme) =>
+        theme in themeNames ||
+        ['AI', 'Web', 'AR/VR', 'IoT', 'DevOps', 'Serverless'].includes(theme),
     )
-    .map((t) => themeNames[t] ?? t)
+    .map((theme) => themeNames[theme] ?? theme)
 }
 const dayFormatter = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Shanghai',
@@ -115,7 +118,7 @@ export function monthDay(day: string) {
 }
 export function dateText(info: FieldValue): string {
   const day = fieldDay(info)
-  if (!day) return '日期未公布'
+  if (!day) return '日期未核实'
   return info.precision === 'day' ? monthDay(day) : formatDate(info.value, info.precision)
 }
 export function libraryDate(contest: LibraryContest, now = new Date()): LibraryDate | null {
@@ -131,15 +134,7 @@ export function libraryDate(contest: LibraryContest, now = new Date()): LibraryD
     : null
 }
 export function contestAbout(contest: LibraryContest) {
-  return (
-    contest.summary
-      ?.replace(/^#{1,6}[^\n]*$/gm, '')
-      .replace(/\*\*/g, '')
-      .split(/\n\s*\n/)
-      .map((part) => part.trim())
-      .find(Boolean)
-      ?.slice(0, 300) ?? null
-  )
+  return groundedIntroduction(contest)?.text.slice(0, 300) ?? null
 }
 export function contestCity(contest: LibraryContest) {
   const city = contest.fields.city?.value

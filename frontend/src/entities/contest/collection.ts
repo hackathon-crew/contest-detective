@@ -1,10 +1,4 @@
-import {
-  getContest,
-  listContests,
-  type ContestDetail,
-  type ContestFilters,
-  type ContestSummary,
-} from './api'
+import { listContests, type ContestFilters, type ContestSummary } from './api'
 
 export async function loadContestCollection(
   query: Omit<ContestFilters, 'page' | 'page_size'> = {},
@@ -25,24 +19,7 @@ export async function listAllContests(query: Omit<ContestFilters, 'page' | 'page
   return (await loadContestCollection(query)).items
 }
 
-/** 列表尚不返回摘要和出处；限定六个并发补齐，成功详情交给调用方复用。 */
-export async function loadContestLibrary(
-  onDetail?: (detail: ContestDetail) => void,
-  onList?: (items: ContestSummary[]) => void,
-) {
-  const items = await listAllContests()
-  onList?.(items)
-  const details: ContestDetail[] = new Array(items.length)
-  let cursor = 0
-  await Promise.all(
-    Array.from({ length: Math.min(6, items.length) }, async () => {
-      while (cursor < items.length) {
-        const index = cursor++
-        const detail = await getContest(items[index]!.id)
-        details[index] = detail
-        onDetail?.(detail)
-      }
-    }),
-  )
-  return details
+/** 赛事库只加载轻量列表；原文和详细证据在打开单场赛事时读取。 */
+export function loadContestLibrary(): Promise<ContestSummary[]> {
+  return listAllContests()
 }
