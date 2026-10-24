@@ -29,20 +29,21 @@ struct PetWidgetView: View {
                 .background(InkpawColors.surface, in: Capsule())
             } else {
                 GeometryReader { proxy in
-                    let progress = min(max(store.timeline?.progressFraction ?? 0.5, 0), 1)
-                    ZStack(alignment: .bottomLeading) {
-                        RoundedRectangle(cornerRadius: 2).fill(InkpawColors.rule).frame(height: 3)
-                            .padding(.horizontal, 20).offset(y: -3)
-                        if store.timeline?.progressFraction != nil {
+                    let geometry = PetRailGeometry(width: Double(proxy.size.width), progressFraction: store.timeline?.progressFraction)
+                    ZStack(alignment: .topLeading) {
+                        if geometry.showsTrack {
+                            RoundedRectangle(cornerRadius: 2).fill(InkpawColors.rule)
+                                .frame(width: geometry.trackWidth, height: 3)
+                                .position(x: geometry.trackStartX + geometry.trackWidth / 2, y: geometry.groundY)
                             RoundedRectangle(cornerRadius: 2).fill(InkpawColors.accent)
-                                .frame(width: max(0, (proxy.size.width - 40) * progress), height: 3)
-                                .padding(.leading, 20).offset(y: -3)
+                                .frame(width: geometry.filledTrackWidth, height: 3)
+                                .position(x: geometry.trackStartX + geometry.filledTrackWidth / 2, y: geometry.groundY)
                         }
                         OctopusView(mood: mood, reduceMotion: reduceMotion)
-                            .frame(width: 140, height: 140)
-                            .offset(x: (proxy.size.width - 140) * progress, y: 0)
+                            .frame(width: geometry.canvasWidth, height: geometry.canvasHeight)
+                            .position(x: geometry.petCenterX, y: geometry.canvasOriginY + geometry.canvasHeight / 2)
                             .allowsHitTesting(false)
-                    }
+                    }.frame(width: proxy.size.width, height: geometry.canvasHeight)
                 }
                 .frame(height: 140)
                 VStack(alignment: .leading, spacing: 8) {
@@ -59,7 +60,7 @@ struct PetWidgetView: View {
                         }
                         Spacer()
                         Button(action: openWorkspace) { Image(systemName: "arrow.up.right") }
-                            .buttonStyle(.borderedProminent).tint(InkpawColors.accent).help("打开工作台")
+                            .buttonStyle(InkpawButtonStyle(.primary, size: .small, iconOnly: true)).help("打开工作台")
                     }
                     HStack {
                         Text(store.timeline?.progressFraction.map { "赛程 \(Int($0 * 100))%" } ?? "赛程待核实")
@@ -68,10 +69,10 @@ struct PetWidgetView: View {
                     }
                     .font(.system(size: 11)).foregroundStyle(InkpawColors.muted)
                 }
-                .padding(16)
+                .padding(16).frame(height: 120, alignment: .top)
                 .background(InkpawColors.surface, in: RoundedRectangle(cornerRadius: 16))
                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(InkpawColors.rule, lineWidth: 1))
-                .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+                .modifier(InkpawPrincipalShadow())
                 .padding(.horizontal, 8)
             }
         }
@@ -81,7 +82,7 @@ struct PetWidgetView: View {
         .buttonStyle(.plain)
         .preferredColorScheme(.light)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Inkpaw 比赛挂件，章鱼位置表示赛程经过时间")
+        .accessibilityLabel(store.timeline?.progressFraction == nil ? "Inkpaw 比赛挂件，赛程位置待设置或核实" : "Inkpaw 比赛挂件，章鱼位置表示赛程经过时间")
     }
 }
 
@@ -105,34 +106,42 @@ struct CompanionWorkspaceView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Inkpaw").font(.system(size: 25, weight: .bold)).padding(.bottom, 2)
-                Text("把项目推进到交付").font(.system(size: 12)).foregroundStyle(InkpawColors.muted).padding(.bottom, 22)
+            VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Inkpaw").font(.system(size: 24, weight: .bold))
+                    Text("把项目推进到交付").font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+                }.padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 24)
                 ForEach(WorkspaceTab.allCases) { item in
                     Button { tab = item } label: {
-                        Label(item.rawValue, systemImage: item.icon)
-                            .font(.system(size: 14, weight: tab == item ? .semibold : .regular))
-                            .frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 12).padding(.vertical, 11)
-                            .foregroundStyle(tab == item ? InkpawColors.accent : InkpawColors.body)
-                            .background(tab == item ? InkpawColors.accentSoft : .clear, in: RoundedRectangle(cornerRadius: 10))
-                    }.buttonStyle(.plain)
+                        HStack(spacing: 12) {
+                            Image(systemName: item.icon).font(.system(size: 16, weight: .medium)).frame(width: 20)
+                            Text(item.rawValue).font(InkpawType.control)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                    .buttonStyle(InkpawNavigationStyle(isSelected: tab == item))
+                    .accessibilityAddTraits(tab == item ? .isSelected : [])
                 }
-                Spacer()
-                Text("原生桌面插件 · 本地项目只读")
-                    .font(.system(size: 10)).foregroundStyle(InkpawColors.faint)
+                Spacer(minLength: 24)
+                VStack(alignment: .leading, spacing: 8) {
+                    Label("本地优先", systemImage: "externaldrive")
+                    Text("文档发送前由你确认")
+                }.font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+                    .padding(.horizontal, 12).padding(.bottom, 8)
             }
-            .padding(20).frame(width: 200).background(InkpawColors.surfaceMuted)
+            .padding(16).frame(width: InkpawLayout.sidebarWidth).background(InkpawColors.surfaceMuted)
             Rectangle().fill(InkpawColors.rule).frame(width: 1)
             VStack(spacing: 0) {
                 if let message = store.errorMessage {
-                    HStack(alignment: .top) {
-                        Image(systemName: "exclamationmark.circle")
-                        Text(message).font(.system(size: 12)).textSelection(.enabled)
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "exclamationmark.circle").padding(.top, 8)
+                        Text(message).font(InkpawType.metadata).textSelection(.enabled).padding(.vertical, 8)
                         Spacer(minLength: 8)
-                        Button { store.errorMessage = nil } label: { Image(systemName: "xmark") }.buttonStyle(.plain)
+                        Button { store.errorMessage = nil } label: { Image(systemName: "xmark") }
+                            .buttonStyle(InkpawButtonStyle(.danger, size: .small, iconOnly: true)).help("关闭提示")
                     }
-                    .foregroundStyle(InkpawColors.danger).padding(12)
-                    .background(InkpawColors.danger.opacity(0.07))
+                    .foregroundStyle(InkpawColors.danger).padding(.horizontal, 24).padding(.vertical, 8)
+                    .background(InkpawColors.dangerSoft)
                 }
                 Group {
                     switch tab {
@@ -147,21 +156,28 @@ struct CompanionWorkspaceView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(InkpawColors.canvas)
-        .foregroundStyle(InkpawColors.ink)
+        .background(InkpawColors.canvas).foregroundStyle(InkpawColors.ink)
+        .font(InkpawType.body).lineSpacing(4)
+        .buttonStyle(InkpawButtonStyle())
+        .textFieldStyle(InkpawTextFieldStyle())
         .preferredColorScheme(.light)
         .frame(minWidth: 780, minHeight: 540)
     }
 }
 
 struct InkpawCard<Content: View>: View {
+    let elevated: Bool
     let content: () -> Content
-    init(@ViewBuilder content: @escaping () -> Content) { self.content = content }
+    init(elevated: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.elevated = elevated; self.content = content
+    }
     var body: some View {
-        VStack(alignment: .leading, spacing: 12, content: content)
-            .frame(maxWidth: .infinity, alignment: .leading).padding(18)
-            .background(InkpawColors.surface, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(InkpawColors.rule, lineWidth: 1))
+        VStack(alignment: .leading, spacing: 16, content: content)
+            .frame(maxWidth: .infinity, alignment: .leading).padding(InkpawLayout.cardPadding)
+            .background(InkpawColors.surface, in: RoundedRectangle(cornerRadius: InkpawLayout.cardRadius, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: InkpawLayout.cardRadius, style: .continuous).stroke(InkpawColors.rule, lineWidth: 1))
+            .shadow(color: InkpawColors.ink.opacity(elevated ? 0.04 : 0), radius: 1, x: 0, y: 1)
+            .shadow(color: InkpawColors.ink.opacity(elevated ? 0.06 : 0), radius: 16, x: 0, y: 12)
     }
 }
 
@@ -169,10 +185,41 @@ struct WorkspaceTitle: View {
     let title: String
     let subtitle: String
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.system(size: 25, weight: .bold))
-            Text(subtitle).font(.system(size: 13)).foregroundStyle(InkpawColors.muted)
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(InkpawType.pageTitle)
+            Text(subtitle).font(InkpawType.body).foregroundStyle(InkpawColors.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Real empty state, with a working action and no sample dates, progress, or account status.
+struct InkpawEmptyState<Action: View>: View {
+    let symbol: String
+    let title: String
+    let detail: String
+    let note: String
+    let action: () -> Action
+    init(symbol: String, title: String, detail: String, note: String = "", @ViewBuilder action: @escaping () -> Action) {
+        self.symbol = symbol; self.title = title; self.detail = detail; self.note = note; self.action = action
+    }
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: symbol).font(.system(size: 32, weight: .light)).foregroundStyle(InkpawColors.accent)
+                .frame(width: 80, height: 80)
+                .background(InkpawColors.accentSoft, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .accessibilityHidden(true)
+            VStack(spacing: 8) {
+                Text(title).font(InkpawType.section).foregroundStyle(InkpawColors.ink)
+                Text(detail).font(InkpawType.body).foregroundStyle(InkpawColors.muted)
+                    .multilineTextAlignment(.center).lineSpacing(4).frame(maxWidth: 360)
+            }
+            action()
+            if !note.isEmpty {
+                Text(note).font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+                    .multilineTextAlignment(.center).frame(maxWidth: 400)
+            }
+        }.frame(maxWidth: .infinity).padding(.vertical, 16)
     }
 }
 
@@ -185,10 +232,11 @@ struct ScheduleWorkspaceView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 HStack(alignment: .top) {
                     WorkspaceTitle(title: "比赛赛程", subtitle: "查看比赛倒计时、赛程节点和提交准备情况。")
-                    Button("新建比赛") { createNew = true; editing = true }.buttonStyle(.borderedProminent).tint(InkpawColors.accent)
+                    Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
+                        .buttonStyle(InkpawButtonStyle(store.selectedSchedule == nil ? .secondary : .primary))
                 }
                 if let schedule = store.selectedSchedule {
                     if store.state.schedules.count > 1 {
@@ -196,72 +244,116 @@ struct ScheduleWorkspaceView: View {
                             ForEach(store.state.schedules) { Text($0.title).tag($0.id) }
                         }
                     }
-                    InkpawCard {
-                        HStack {
-                            Text(schedule.title).font(.system(size: 20, weight: .semibold))
-                            Spacer()
+                    InkpawCard(elevated: true) {
+                        HStack(alignment: .top, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(schedule.title).font(InkpawType.section)
+                                InkpawTag(title: phaseTitle, accented: store.timeline?.phase == .active)
+                            }
+                            Spacer(minLength: 8)
                             Button("编辑时间") { createNew = false; editing = true }
+                                .buttonStyle(InkpawButtonStyle(.secondary, size: .small))
                         }
                         Text(store.countdownTitle).font(.system(size: 13)).foregroundStyle(InkpawColors.muted)
-                        Text(store.countdownText).font(.system(size: 28, weight: .bold, design: .monospaced))
+                        Text(store.countdownText).font(.system(size: 32, weight: .semibold)).monospacedDigit().minimumScaleFactor(0.75)
                         if let progress = store.timeline?.progressFraction {
-                            ProgressView(value: progress).tint(InkpawColors.accent)
+                            InkpawProgressTrack(value: progress)
                             Text("已走过赛程 \(Int(progress * 100))% · 章鱼沿这条时间轨道移动")
                                 .font(.system(size: 12)).foregroundStyle(InkpawColors.muted)
                         } else {
                             Label("时间精度或时区不足，暂不显示精确进度。", systemImage: "questionmark.circle")
-                                .font(.system(size: 12)).foregroundStyle(InkpawColors.danger)
+                                .font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
                         }
                         Divider()
-                        dateRow("开始", instant: schedule.start)
-                        dateRow("结束", instant: schedule.end)
+                        HStack(alignment: .top, spacing: 24) {
+                            dateRow("开始", instant: schedule.start)
+                            dateRow("结束", instant: schedule.end)
+                        }
                         Text("以上时间由你录入，不代表已从官方材料核实。时区变化不会改变保存的绝对时间。")
-                            .font(.system(size: 11)).foregroundStyle(InkpawColors.faint)
+                            .font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
                     }
                     InkpawCard {
-                        Text("赛程节点").font(.system(size: 16, weight: .semibold))
+                        HStack {
+                            Text("赛程节点").font(InkpawType.cardTitle)
+                            Spacer()
+                            InkpawTag(title: "\(schedule.milestones.count) 个节点")
+                        }
+                        if schedule.milestones.isEmpty {
+                            Text("还没有节点。把报名、作品提交或答辩时间放在这里。")
+                                .font(InkpawType.body).foregroundStyle(InkpawColors.muted).padding(.vertical, 8)
+                        }
                         ForEach(schedule.milestones.sorted { ($0.instant.date ?? .distantFuture) < ($1.instant.date ?? .distantFuture) }) { milestone in
                             HStack {
-                                VStack(alignment: .leading, spacing: 3) {
+                                VStack(alignment: .leading, spacing: 4) {
                                     Text(milestone.title)
                                     Text(formattedInstant(milestone.instant)).font(.system(size: 12)).foregroundStyle(InkpawColors.muted)
                                 }
                                 Spacer()
                                 if let date = milestone.instant.date, date <= store.now {
-                                    Text("已到节点").font(.system(size: 11)).foregroundStyle(InkpawColors.muted)
+                                    InkpawTag(title: "已到节点")
                                 }
-                                Button { store.removeMilestone(milestone.id) } label: { Image(systemName: "trash") }.help("删除节点")
-                            }
-                            Divider()
+                                Button { store.removeMilestone(milestone.id) } label: { Image(systemName: "trash") }
+                                    .buttonStyle(InkpawButtonStyle(.ghost, size: .small, iconOnly: true)).help("删除节点")
+                            }.padding(.vertical, 8)
                         }
-                        TextField("节点名称，例如作品提交截止", text: $milestoneTitle)
-                        HStack {
+                        Divider()
+                        InkpawFieldLabel("新增节点")
+                        TextField("例如作品提交截止", text: $milestoneTitle).accessibilityLabel("节点名称")
+                        HStack(alignment: .bottom, spacing: 16) {
                             DatePicker("时间", selection: $milestoneDate, displayedComponents: [.date, .hourAndMinute])
                                 .environment(\.timeZone, TimeZone(identifier: schedule.end.timeZoneIdentifier ?? "") ?? .current)
+                                .controlSize(.large).frame(minHeight: 40)
                             Button("添加节点") {
                                 do { try store.addMilestone(title: milestoneTitle, date: milestoneDate); milestoneTitle = "" }
                                 catch { store.errorMessage = error.localizedDescription }
-                            }.disabled(milestoneTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            }.buttonStyle(InkpawButtonStyle(.primary, size: .compact))
+                                .disabled(milestoneTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                         Text("节点时区：\(schedule.end.timeZoneIdentifier ?? "待确认")")
-                            .font(.system(size: 11)).foregroundStyle(InkpawColors.muted)
+                            .font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
                     }
                 } else {
-                    InkpawCard {
-                        Label("先录入起止时间与时区", systemImage: "calendar.badge.plus").font(.system(size: 18, weight: .semibold))
-                        Text("录入比赛日期；补充准确时间和时区后显示倒计时。")
-                            .foregroundStyle(InkpawColors.muted)
+                    InkpawCard(elevated: true) {
+                        InkpawEmptyState(symbol: "calendar.badge.plus", title: "从一场比赛开始",
+                            detail: "记下比赛的起止日期与时区，让每一个重要节点都清晰可见。",
+                            note: "还不确定准确时刻？可以先保存日期，核实后再开启精确倒计时。") {
+                            Button { createNew = true; editing = true } label: { Label("新建比赛", systemImage: "plus") }
+                                .buttonStyle(InkpawButtonStyle(.primary))
+                        }.frame(minHeight: 272)
                     }
+                    HStack(alignment: .top, spacing: 24) {
+                        setupStep("01", title: "录入时间", detail: "保留日期精度与时区")
+                        setupStep("02", title: "整理材料", detail: "规则与清单各有出处")
+                        setupStep("03", title: "按时提醒", detail: "确认节点后自主开启")
+                    }.padding(.horizontal, 8).padding(.top, 8)
                 }
-            }.padding(26)
+            }.frame(maxWidth: InkpawLayout.contentMeasure).padding(InkpawLayout.pagePadding).frame(maxWidth: .infinity)
         }
         .sheet(isPresented: $editing) {
             ScheduleEditor(store: store, existing: createNew ? nil : store.selectedSchedule)
         }
     }
 
+    private var phaseTitle: String {
+        switch store.timeline?.phase {
+        case .upcoming: return "尚未开赛"
+        case .active: return "进行中"
+        case .completed: return "已结束"
+        case .unknown, .none: return "时间待核实"
+        }
+    }
     private func dateRow(_ title: String, instant: ScheduleInstant) -> some View {
-        HStack { Text(title).foregroundStyle(InkpawColors.muted); Spacer(); Text(formattedInstant(instant)) }.font(.system(size: 13))
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+            Text(formattedInstant(instant)).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
+    private func setupStep(_ number: String, title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(number).font(.system(size: 12, weight: .medium, design: .monospaced)).foregroundStyle(InkpawColors.accent)
+            Text(title).font(InkpawType.control)
+            Text(detail).font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+        }.frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -278,15 +370,23 @@ struct ScheduleEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(existing == nil ? "录入比赛" : "编辑比赛").font(.title2.bold())
-            TextField("比赛名称", text: $title)
-            TextField("IANA 时区，例如 Asia/Shanghai", text: $zone)
+            Text(existing == nil ? "录入比赛" : "编辑比赛").font(InkpawType.dialogTitle)
+            VStack(alignment: .leading, spacing: 8) {
+                InkpawFieldLabel("比赛名称")
+                TextField("输入这场比赛的名称", text: $title).accessibilityLabel("比赛名称")
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                InkpawFieldLabel("IANA 时区")
+                TextField("例如 Asia/Shanghai", text: $zone).accessibilityLabel("IANA 时区")
+            }
             Toggle("仅知道日期，准确时刻尚未核实", isOn: $dateOnly)
             DatePicker("开始", selection: $start, displayedComponents: dateOnly ? [.date] : [.date, .hourAndMinute])
+                .controlSize(.large).frame(minHeight: 40)
             DatePicker("结束", selection: $end, displayedComponents: dateOnly ? [.date] : [.date, .hourAndMinute])
+                .controlSize(.large).frame(minHeight: 40)
             Text("界面中的时间按上方时区录入。只有准确时间与有效时区齐备时才显示倒计时。")
-                .font(.caption).foregroundStyle(InkpawColors.muted)
-            if let error { Text(error).font(.caption).foregroundStyle(InkpawColors.danger) }
+                .font(InkpawType.metadata).foregroundStyle(InkpawColors.muted)
+            if let error { Text(error).font(InkpawType.metadata).foregroundStyle(InkpawColors.danger) }
             HStack {
                 Spacer()
                 Button("取消") { dismiss() }.keyboardShortcut(.cancelAction)
@@ -296,10 +396,10 @@ struct ScheduleEditor: View {
                                                precision: dateOnly ? .day : .exact)
                         dismiss()
                     } catch { self.error = error.localizedDescription }
-                }.buttonStyle(.borderedProminent).tint(InkpawColors.accent).keyboardShortcut(.defaultAction)
+                }.buttonStyle(InkpawButtonStyle(.primary)).keyboardShortcut(.defaultAction)
             }
         }
-        .padding(26).frame(width: 470)
+        .modifier(InkpawDialogChrome()).frame(width: 500)
         .environment(\.timeZone, TimeZone(identifier: zone) ?? .current)
         .onAppear {
             if let existing {
@@ -316,38 +416,45 @@ struct ChecklistWorkspaceView: View {
     @State private var itemTitle = ""
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: InkpawLayout.sectionGap) {
                 WorkspaceTitle(title: "提交清单", subtitle: "逐项准备真正需要交付的材料。勾选不会改变章鱼的赛程位置。")
                 if let checklist = store.selectedChecklist {
                     InkpawCard {
                         HStack {
                             Text(store.selectedSchedule?.title ?? checklist.title).font(.system(size: 18, weight: .semibold))
                             Spacer()
-                            Text("\(store.completedItemCount) / \(store.itemCount)").monospacedDigit().foregroundStyle(InkpawColors.accent)
+                            InkpawTag(title: "\(store.completedItemCount) / \(store.itemCount)", accented: true)
                         }
-                        if !checklist.items.isEmpty { ProgressView(value: Double(store.completedItemCount), total: Double(store.itemCount)).tint(InkpawColors.accent) }
+                        if !checklist.items.isEmpty { InkpawProgressTrack(value: Double(store.completedItemCount) / Double(store.itemCount)) }
                         ForEach(checklist.items) { item in
                             HStack(spacing: 12) {
                                 Button { store.toggleChecklistItem(item.id) } label: {
                                     Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
                                         .font(.system(size: 19)).foregroundStyle(item.isCompleted ? InkpawColors.accent : InkpawColors.faint)
-                                }.buttonStyle(.plain).accessibilityLabel(item.isCompleted ? "标记未完成：\(item.title)" : "标记完成：\(item.title)")
+                                }.buttonStyle(InkpawButtonStyle(.ghost, size: .small, iconOnly: true)).accessibilityLabel(item.isCompleted ? "标记未完成：\(item.title)" : "标记完成：\(item.title)")
                                 Text(item.title).strikethrough(item.isCompleted).foregroundStyle(item.isCompleted ? InkpawColors.muted : InkpawColors.body)
                                 Spacer()
-                                Button { store.removeChecklistItem(item.id) } label: { Image(systemName: "trash") }.help("删除清单项")
-                            }.padding(.vertical, 5)
+                                Button { store.removeChecklistItem(item.id) } label: { Image(systemName: "trash") }
+                                    .buttonStyle(InkpawButtonStyle(.ghost, size: .small, iconOnly: true)).help("删除清单项")
+                            }.frame(minHeight: 48).padding(.vertical, 4)
                         }
-                        HStack {
-                            TextField("新增材料或交付检查项", text: $itemTitle).onSubmit(addItem)
-                            Button("添加", action: addItem).disabled(itemTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        Divider()
+                        InkpawFieldLabel("新增检查项")
+                        HStack(spacing: 12) {
+                            TextField("需要准备的材料或交付检查项", text: $itemTitle).onSubmit(addItem).accessibilityLabel("新增检查项")
+                            Button("添加", action: addItem).buttonStyle(InkpawButtonStyle(.primary)).disabled(itemTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                     }
                     Text("清单由你确认。规则问答提供来源参考，不会自动把推断加入清单。")
                         .font(.system(size: 12)).foregroundStyle(InkpawColors.muted)
                 } else {
-                    InkpawCard { Text("请先在赛程页录入比赛，再建立属于这场比赛的提交清单。") }
+                    InkpawCard {
+                        InkpawEmptyState(symbol: "checklist", title: "为交付留一张清单",
+                            detail: "请先在赛程页录入比赛，再把需要提交的材料逐项记在这里。",
+                            note: "清单完成度与时间进度分别记录，不会互相替代。") { EmptyView() }
+                    }
                 }
-            }.padding(26)
+            }.frame(maxWidth: InkpawLayout.contentMeasure).padding(InkpawLayout.pagePadding).frame(maxWidth: .infinity)
         }
     }
     private func addItem() { store.addChecklistItem(itemTitle); itemTitle = "" }

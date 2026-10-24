@@ -2,13 +2,16 @@
 import AppKit
 import CoreGraphics
 import Foundation
+import InkpawCore
 import Metal
 import RealityKit
+import ScreenCaptureKit
 import UserNotifications
 
 /// Explicit CI-only launch mode. It exercises the real windows and renderer while
 /// replacing persistence, notifications and service access with isolated boundaries.
-/// No screen recording, Accessibility, automation, or permission APIs are used.
+/// Captures only this process's own windows, without Accessibility, automation,
+/// desktop capture, or permission-request APIs.
 @MainActor
 final class CompanionSmokeRunner {
     private let directory: URL
@@ -65,8 +68,11 @@ final class CompanionSmokeRunner {
             "schemaVersion": 1, "status": "running", "phase": "prepared",
             "pid": ProcessInfo.processInfo.processIdentifier,
             "bundleIdentifier": Bundle.main.bundleIdentifier ?? "",
-            "captureMethods": ["workspace": "NSView.cacheDisplay", "octopus": "ARView.snapshot"],
-            "screenCaptureAttempted": false, "permissionChangesAttempted": false,
+            "captureMethods": ["workspace": "NSView.cacheDisplay", "octopus": "ARView.snapshot",
+                               "widget": "ScreenCaptureKit.currentProcess exact own window"],
+            "desktopCaptureAttempted": false, "otherProcessCaptureAttempted": false,
+            "permissionChangesAttempted": false,
+            "ownProcessWindowCaptureAttempted": false,
             "syntheticStateOnly": true, "survivalSeconds": 3,
             "files": [String](), "checks": [String: Bool]()
         ]
@@ -228,25 +234,61 @@ final class CompanionSmokeRunner {
             throw SmokeFailure("The visible pet does not contain a laid-out native ARView.")
         }
         report["octopusViewBounds"] = rectDescription(arView.bounds)
-        snapshotCompleted = false
-        snapshotImage = nil
-        arView.snapshot(saveToHDR: false) { [weak self] image in
-            Task { @MainActor [weak self] in
-                self?.snapshotImage = image
-                self?.snapshotCompleted = true
-            }
-        }
-        let snapshotDeadline = ProcessInfo.processInfo.systemUptime + 10
-        while !snapshotCompleted && ProcessInfo.processInfo.systemUptime < snapshotDeadline {
-            try await Task.sleep(nanoseconds: 100_000_000)
-        }
-        guard snapshotCompleted else { throw SmokeUnsupported("The real ARView snapshot callback timed out after 10 seconds.") }
-        guard let image = snapshotImage, let tiff = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiff) else {
-            throw SmokeUnsupported("RealityKit returned no usable native scene image on this runner.")
-        }
+        let bitmap = try await captureSnapshot(from: arView)
         report["octopusPixels"] = try saveBitmap(bitmap, filename: "native-octopus.png")
         setCheck("realityKitPixelExport", true)
+        guard let pixelRenderer = arView as? any InkpawPixelRenderingDiagnostics else {
+            throw SmokeFailure("The actual ARView does not expose the native pixel renderer diagnostics.")
+        }
+        let firstDiagnostics = pixelRenderer.pixelRenderDiagnostics
+        report["pixelRenderer"] = firstDiagnostics
+        try verifyPixelGrid(bitmap, diagnostics: firstDiagnostics)
+        setCheck("nearestPixelGrid", true)
+        guard let span = firstDiagnostics["inferredVerticalSpan"] as? Double else {
+            throw SmokeFailure("The renderer did not report its actual projection matrix span.")
+        }
+        try require(abs(span - Double(OctopusPoseModel.verticalSpan)) < 0.02,
+                    "The real camera projection does not match the tested pose-model frustum.")
+        setCheck("cameraProjectionMatchesFrustum", true)
+        try checkpoint()
+
+        // Two exports of the same live view verify that the pixel output is not a
+        // frozen bitmap. Never recolor or rescale a snapshot to manufacture pixels.
+        try await Task.sleep(nanoseconds: 1_200_000_000)
+        let laterBitmap = try await captureSnapshot(from: arView)
+        _ = try saveBitmap(laterBitmap, filename: "native-octopus-later.png")
+        let laterDiagnostics = pixelRenderer.pixelRenderDiagnostics
+        report["pixelRendererLater"] = laterDiagnostics
+        try verifyPixelGrid(laterBitmap, diagnostics: laterDiagnostics)
+        let changedPixels = changedVisiblePixels(bitmap, laterBitmap)
+        report["animatedPixelDifference"] = changedPixels
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            report["motionVerification"] = "System Reduce Motion is enabled; animated-pixel comparison is intentionally unsupported."
+            throw SmokeUnsupported("The runner has Reduce Motion enabled; the real static pixel renderer was verified, animation was not.")
+        }
+        try require(changedPixels >= 4, "Two actual pixel-rendered scene frames did not demonstrate continuing animation.")
+        setCheck("livePixelAnimation", true)
+        if let gridEvidence = report["pixelGridEvidence"] as? [String: Any],
+           let shadowBottom = gridEvidence["shadowBottomPixels"] as? Int {
+            let viewFrame = arView.convert(arView.bounds, to: petContent)
+            let top = petContent.isFlipped ? viewFrame.minY : petContent.bounds.height - viewFrame.maxY
+            let shadowGround = Double(top) + Double(shadowBottom + 1) * Double(arView.bounds.height) / Double(laterBitmap.pixelsHigh)
+            let expectedGround = PetRailGeometry(width: Double(petContent.bounds.width), progressFraction: 0).groundY
+            report["groundAlignment"] = ["actualShadowBottomY": shadowGround, "trackGroundY": expectedGround,
+                                         "allowedAnimatedVariationPoints": 6]
+            try require(abs(shadowGround - expectedGround) <= 6,
+                        "The visible native shadow does not meet the shared track baseline within its animated tolerance.")
+            setCheck("pixelShadowGroundAlignment", true)
+        } else {
+            throw SmokeFailure("The native shadow had no measured grounding evidence.")
+        }
+
+        report["phase"] = "whole-widget-pixels"
+        try checkpoint()
+        let widgetBitmap = try await captureOwnWindow(pet)
+        _ = try saveBitmap(widgetBitmap, filename: "native-widget.png")
+        setCheck("wholeNativeWidgetExport", true)
+        try await captureTimelinePositions(coordinator: coordinator, pet: pet)
 
         // Exercise the real published-state resize path, without synthesizing input
         // or creating a second window. The synthetic state is safe to leave collapsed.
@@ -286,6 +328,9 @@ final class CompanionSmokeRunner {
         try require(abs(collapsedWidth - 156) <= 1 && abs(collapsedHeight - 176) <= 1,
                     "The window server did not confirm the actual collapsed pet size.")
         setCheck("collapsedPetSizeAndContainment", collapsedCanFit)
+        let collapsedBitmap = try await captureOwnWindow(pet)
+        _ = try saveBitmap(collapsedBitmap, filename: "native-widget-collapsed.png")
+        setCheck("wholeCollapsedWidgetExport", true)
 
         try require(serviceAttempts == 0 && notificationCenter.prohibitedAttempts == 0,
                     "The smoke app attempted a prohibited service or notification operation.")
@@ -297,6 +342,175 @@ final class CompanionSmokeRunner {
             finish(status: "unsupported", reason: unsupportedContainment.joined(separator: " "), code: 77)
         }
         finish(status: "passed", reason: "Real app windows, native geometry and separate native pixel exports passed the smoke checks.", code: 0)
+    }
+
+    private func captureSnapshot(from view: ARView) async throws -> NSBitmapImageRep {
+        snapshotCompleted = false
+        snapshotImage = nil
+        view.snapshot(saveToHDR: false) { [weak self] image in
+            Task { @MainActor [weak self] in
+                self?.snapshotImage = image
+                self?.snapshotCompleted = true
+            }
+        }
+        let deadline = ProcessInfo.processInfo.systemUptime + 10
+        while !snapshotCompleted && ProcessInfo.processInfo.systemUptime < deadline {
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard snapshotCompleted else { throw SmokeUnsupported("The real ARView snapshot callback timed out after 10 seconds.") }
+        guard let image = snapshotImage, let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff) else {
+            throw SmokeUnsupported("RealityKit returned no usable native scene image on this runner.")
+        }
+        return bitmap
+    }
+
+    private func captureOwnWindow(_ window: NSWindow) async throws -> NSBitmapImageRep {
+        // currentProcess is the permission-free, redacted own-application API.
+        // Never substitute SCShareableContent.current or a desktop capture.
+        report["ownProcessWindowCaptureAttempted"] = true
+        let content: SCShareableContent
+        do { content = try await SCShareableContent.currentProcess }
+        catch { throw SmokeUnsupported("The runner could not provide this process's own capturable windows: \(error.localizedDescription)") }
+        let pid = ProcessInfo.processInfo.processIdentifier
+        guard let own = content.windows.first(where: {
+            $0.windowID == CGWindowID(window.windowNumber) && $0.owningApplication?.processID == pid
+        }) else {
+            throw SmokeUnsupported("The exact own-process widget window is not available for native capture.")
+        }
+        let configuration = SCStreamConfiguration()
+        configuration.width = Int((window.frame.width * window.backingScaleFactor).rounded())
+        configuration.height = Int((window.frame.height * window.backingScaleFactor).rounded())
+        configuration.showsCursor = false
+        configuration.capturesAudio = false
+        configuration.includeChildWindows = false
+        configuration.ignoreShadowsSingleWindow = true
+        configuration.shouldBeOpaque = false
+        configuration.backgroundColor = NSColor.clear.cgColor
+        let filter = SCContentFilter(desktopIndependentWindow: own)
+        do {
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: configuration)
+            return NSBitmapImageRep(cgImage: image)
+        } catch {
+            throw SmokeUnsupported("The runner could not capture the exact own-process widget window: \(error.localizedDescription)")
+        }
+    }
+
+    private func captureTimelinePositions(coordinator: CompanionCoordinator, pet: NSWindow) async throws {
+        report["phase"] = "time-rail-positions"
+        report["syntheticScenario"] = "Empty startup followed by an isolated synthetic contest at 0%, 50%, and 100%; no user contest data."
+        var positions: [[String: Any]] = []
+        for (expected, name) in [(0.0, "start"), (0.5, "middle"), (1.0, "end")] {
+            let anchor = Date()
+            let start: Date, end: Date
+            if expected == 0 { start = anchor.addingTimeInterval(3600); end = anchor.addingTimeInterval(7200) }
+            else if expected == 1 { start = anchor.addingTimeInterval(-7200); end = anchor.addingTimeInterval(-3600) }
+            else { start = anchor.addingTimeInterval(-86400); end = anchor.addingTimeInterval(86400) }
+            try coordinator.store.saveSchedule(id: "native-smoke-time-rail", title: "示例赛程（验证用）",
+                                               start: start, end: end, zone: "UTC", precision: .exact)
+            try await Task.sleep(nanoseconds: 400_000_000)
+            guard let content = pet.contentView, let view = findARView(in: content),
+                  let progress = coordinator.store.timeline?.progressFraction else {
+                throw SmokeFailure("The actual synthetic schedule did not produce a visible time-positioned renderer.")
+            }
+            content.layoutSubtreeIfNeeded()
+            let geometry = PetRailGeometry(width: Double(content.bounds.width), progressFraction: progress)
+            let frame = view.convert(view.bounds, to: content)
+            try require(abs(progress - expected) < 0.001, "The synthetic contest did not reach its expected time fraction.")
+            try require(abs(Double(frame.midX) - geometry.petCenterX) <= 1,
+                        "The real pet center does not match its shared time-rail coordinate.")
+            positions.append(["scenario": name, "progress": progress, "actualPetCenterX": Double(frame.midX),
+                              "expectedPetCenterX": geometry.petCenterX, "trackStartX": geometry.trackStartX,
+                              "trackEndX": geometry.trackEndX, "groundY": geometry.groundY,
+                              "nativeViewFrame": rectDescription(frame)])
+            let bitmap = try await captureOwnWindow(pet)
+            _ = try saveBitmap(bitmap, filename: "native-widget-" + name + ".png")
+        }
+        report["timeRailPositions"] = positions
+        setCheck("timeRailPositionsMatchActualView", true)
+    }
+
+    private func channels(_ bitmap: NSBitmapImageRep, x: Int, y: Int) -> [Int] {
+        guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { return [0, 0, 0, 0] }
+        let values = [color.redComponent, color.greenComponent, color.blueComponent, color.alphaComponent]
+        return values.map { Int(max(0, min(255, ($0 * 255).rounded()))) }
+    }
+
+    private func verifyPixelGrid(_ bitmap: NSBitmapImageRep, diagnostics: [String: Any]) throws {
+        guard diagnostics["activePipeline"] as? Bool == true,
+              diagnostics["failureReason"] as? String == "",
+              let completed = diagnostics["completedFrameCount"] as? Int, completed > 0,
+              let outputWidth = diagnostics["outputWidth"] as? Int, outputWidth > 0,
+              let outputHeight = diagnostics["outputHeight"] as? Int, outputHeight > 0,
+              let scale = diagnostics["integerScale"] as? Int, scale >= 2,
+              let offsetX = diagnostics["gridOffsetX"] as? Int,
+              let offsetY = diagnostics["gridOffsetY"] as? Int,
+              let gridWidth = diagnostics["lowResolutionWidth"] as? Int, gridWidth > 0,
+              let gridHeight = diagnostics["lowResolutionHeight"] as? Int, gridHeight > 0 else {
+            throw SmokeFailure("The live native pixel pipeline was not successfully completed with valid grid diagnostics.")
+        }
+        let ratioX = Double(bitmap.pixelsWide) / Double(outputWidth)
+        let ratioY = Double(bitmap.pixelsHigh) / Double(outputHeight)
+        let scaledCell = Double(scale) * ratioX
+        let cell = Int(scaledCell.rounded())
+        let originX = Int((Double(offsetX) * ratioX).rounded())
+        let originY = Int((Double(offsetY) * ratioY).rounded())
+        try require(abs(ratioX - ratioY) < 0.001 && abs(Double(cell) - scaledCell) < 0.001 && cell >= 2,
+                    "The native snapshot did not preserve an integer pixel enlargement.")
+        try require(originX >= 0 && originY >= 0 && originX + gridWidth * cell <= bitmap.pixelsWide &&
+                    originY + gridHeight * cell <= bitmap.pixelsHigh, "The reported pixel grid lies outside the actual image.")
+        for (x, y) in [(0, 0), (bitmap.pixelsWide - 1, 0),
+                       (0, bitmap.pixelsHigh - 1), (bitmap.pixelsWide - 1, bitmap.pixelsHigh - 1)] {
+            try require(channels(bitmap, x: x, y: y)[3] <= 1,
+                        "The actual pixel scene lost its transparent background.")
+        }
+        var occupiedCells = 0
+        var shadowCells = 0
+        var shadowBottom = -1
+        var minX = bitmap.pixelsWide, minY = bitmap.pixelsHigh, maxX = -1, maxY = -1
+        for gy in 0..<gridHeight {
+            for gx in 0..<gridWidth {
+                let x = originX + gx * cell, y = originY + gy * cell
+                let first = channels(bitmap, x: x, y: y)
+                if first[3] >= 40 && first[3] <= 150 && first[0] < 40 && first[1] < 40 && first[2] < 40 {
+                    shadowCells += 1
+                    shadowBottom = max(shadowBottom, y + cell - 1)
+                }
+                if first[3] >= 128 {
+                    occupiedCells += 1
+                    minX = min(minX, x); minY = min(minY, y)
+                    maxX = max(maxX, x + cell - 1); maxY = max(maxY, y + cell - 1)
+                }
+                for dy in 0..<cell {
+                    for dx in 0..<cell {
+                        let value = channels(bitmap, x: x + dx, y: y + dy)
+                        try require(zip(first, value).allSatisfy { abs($0.0 - $0.1) <= 1 },
+                                    "The actual ARView image contains smoothing inside a declared nearest-neighbor pixel cell.")
+                    }
+                }
+            }
+        }
+        try require(occupiedCells >= 32, "The pixel renderer did not produce a recognizable occupied scene.")
+        try require(shadowCells >= 4, "The actual native pixel scene did not include its translucent dotted shadow.")
+        try require(Double(maxX - minX + 1) >= Double(bitmap.pixelsWide) * 0.5 &&
+                    Double(maxY - minY + 1) >= Double(bitmap.pixelsHigh) * 0.4,
+                    "The real octopus is too small in the native frame to read at widget size.")
+        report["pixelGridEvidence"] = ["cellPixels": cell, "gridWidth": gridWidth, "gridHeight": gridHeight,
+            "occupiedCells": occupiedCells, "shadowCells": shadowCells,
+            "shadowBottomPixels": shadowBottom,
+            "occupiedWidth": maxX - minX + 1, "occupiedHeight": maxY - minY + 1]
+    }
+
+    private func changedVisiblePixels(_ first: NSBitmapImageRep, _ second: NSBitmapImageRep) -> Int {
+        guard first.pixelsWide == second.pixelsWide, first.pixelsHigh == second.pixelsHigh else { return 0 }
+        var changed = 0
+        for y in 0..<first.pixelsHigh {
+            for x in 0..<first.pixelsWide {
+                let a = channels(first, x: x, y: y), b = channels(second, x: x, y: y)
+                if max(a[3], b[3]) > 0 && zip(a, b).contains(where: { abs($0.0 - $0.1) > 2 }) { changed += 1 }
+            }
+        }
+        return changed
     }
 
     private func findARView(in view: NSView) -> ARView? {
@@ -356,8 +570,11 @@ final class CompanionSmokeRunner {
         let metrics: [String: Any] = ["widthPixels": bitmap.pixelsWide, "heightPixels": bitmap.pixelsHigh,
                                       "sampledPixels": sampled, "nonTransparentSamples": visible,
                                       "distinctSampledColors": colors.count, "file": filename]
-        report[filename == "native-octopus.png" ? "octopusPixels" : "workspacePixels"] = metrics
-        guard visible >= 8, colors.count >= 8 else {
+        if filename == "workspace-content.png" { report["workspacePixels"] = metrics }
+        else if filename == "native-octopus.png" { report["octopusPixels"] = metrics }
+        else { report[filename + "Metrics"] = metrics }
+        let minimumColors = filename.hasPrefix("native-octopus") ? 4 : 8
+        guard visible >= 8, colors.count >= minimumColors else {
             throw SmokeUnsupported("\(filename) contains insufficient nonblank native pixels; rendering was not verified.")
         }
         return metrics

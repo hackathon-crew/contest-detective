@@ -44,6 +44,14 @@ private struct NativeOctopusView: NSViewRepresentable {
         // are iOS-only APIs, so neither belongs in this native macOS implementation.
         let view = TransparentOctopusARView(frame: .zero)
         view.environment.background = .color(.clear)
+        view.renderOptions.insert(.disableMotionBlur)
+        view.renderOptions.insert(.disableDepthOfField)
+        let pixels = view.pixelRenderer
+        pixels.observeFailures { [weak view] message in view?.showPixelFailure(message) }
+        // Bound nonisolated methods avoid inheriting makeNSView's MainActor
+        // isolation in callbacks that RealityKit may invoke on its render thread.
+        view.renderCallbacks.prepareWithDevice = pixels.prepare(device:)
+        view.renderCallbacks.postProcess = pixels.process
         view.wantsLayer = true
         view.layer?.isOpaque = false
         view.layer?.backgroundColor = NSColor.clear.cgColor
@@ -59,14 +67,39 @@ private struct NativeOctopusView: NSViewRepresentable {
 
     static func dismantleNSView(_ view: TransparentOctopusARView, coordinator: OctopusSceneCoordinator) {
         coordinator.stop()
+        view.renderCallbacks.postProcess = nil
+        view.renderCallbacks.prepareWithDevice = nil
+        view.pixelRenderer.observeFailures(nil)
         view.onLayoutOrWindowChange = nil
     }
 }
 
 @MainActor
-private final class TransparentOctopusARView: ARView {
+private final class TransparentOctopusARView: ARView, InkpawPixelRenderingDiagnostics {
+    let pixelRenderer = InkpawPixelRenderer()
+    var pixelRenderDiagnostics: [String: Any] { pixelRenderer.diagnostics }
     var onLayoutOrWindowChange: (() -> Void)?
+    private var failureLabel: NSTextField?
     override var isOpaque: Bool { false }
+
+    func showPixelFailure(_ message: String) {
+        guard failureLabel == nil else { return }
+        let label = NSTextField(wrappingLabelWithString: "像素渲染不可用")
+        label.font = .systemFont(ofSize: 10, weight: .medium)
+        label.textColor = .secondaryLabelColor
+        label.alignment = .center
+        label.drawsBackground = true
+        label.backgroundColor = .windowBackgroundColor
+        label.toolTip = message
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+        failureLabel = label
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
@@ -135,7 +168,10 @@ private final class OctopusSceneCoordinator {
         projection.near = 0.01
         projection.far = 10
         projection.scaleDirection = .vertical
-        projection.scale = OctopusPoseModel.verticalSpan * max(1, 1 / aspect)
+        // RealityKit's scale is the half-span, while the pose model stores full
+        // vertical framing. Smoke checks verify 2 / projection[1][1] == this span.
+        projection.scale = OctopusPoseModel.verticalSpan / 2 * max(1, 1 / aspect)
+        view?.pixelRenderer.setLogicalSize(size)
         camera.components.set(projection)
         camera.look(at: OctopusPoseModel.cameraTarget, from: OctopusPoseModel.cameraPosition, relativeTo: nil)
     }
