@@ -25,6 +25,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/mcp': { target: process.env.VITE_MCP_PROXY_TARGET ?? 'http://127.0.0.1:8001' },
       '/api': {
         target: apiTarget,
         changeOrigin: true,
