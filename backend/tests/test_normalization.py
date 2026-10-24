@@ -46,10 +46,24 @@ def test_output_schema_rejects_empty_name():
 def test_prompt_separates_rules_and_single_contest_context():
     messages = build_messages(item())
     assert len(messages) == 2
-    assert '适配器已经提供的字段不可覆盖' in messages[0].content
+    assert messages[0].type == 'system'
+    assert messages[1].type == 'human'
     assert '公开测试黑客松' in messages[1].content
     assert 'https://official.example/event' in messages[1].content
     assert '地点：上海' in messages[1].content
+
+
+def test_json_mode_prompt_provides_the_claim_schema():
+    import json
+
+    system = build_messages(item())[0].content
+    schema_start = system.find('{')
+    assert schema_start >= 0
+    schema = json.loads(system[schema_start:])
+
+    claim = schema['$defs']['ClaimIn']['properties']
+    assert {'start_at', 'end_at', 'city'} <= set(claim['field']['enum'])
+    assert {'value', 'excerpt', 'precision'} <= set(claim)
 
 
 def test_parser_uses_parsed_output_and_raw_message():
@@ -94,6 +108,15 @@ def test_parser_rejects_missing_parsed_output():
         })
 
 
+def test_parser_recovers_valid_json_when_the_provider_parser_failed():
+    raw = AIMessage(content='```json\n{"name":"赛事","claims":[{"field":"city","value":"上海","excerpt":"地点：上海"}]}\n```')
+
+    result = parse_normalized({'parsed': None, 'raw': raw, 'parsing_error': ValueError('provider parser failed')})
+
+    assert result.output.claims[0].value == '上海'
+    assert result.raw is raw
+
+
 def test_normalizer_merges_only_supported_new_claims():
     async def invoke(_item):
         return {
@@ -126,6 +149,25 @@ def test_factory_disabled_does_not_construct_model(session_factory):
 def test_usage_rejects_missing_tokens():
     with pytest.raises(ValueError):
         usage_from_response(AIMessage(content='{}'))
+
+
+def test_missing_usage_does_not_discard_a_valid_normalization(session_factory):
+    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='external')
+
+    async def invoke(_item):
+        return {
+            'parsed': {'name': '公开测试黑客松',
+                       'claims': [{'field': 'city', 'value': '上海', 'excerpt': '地点：上海'}]},
+            'raw': AIMessage(content='{}'), 'parsing_error': None,
+        }
+
+    result = asyncio.run(LangChainNormalizer(invoke=invoke, budget=Budget(session_factory, settings))(item()))
+
+    assert result.claims[-1].value == '上海'
+    with session_factory() as session:
+        row = session.scalars(select(LLMUsage)).one()
+        assert row.status == 'reserved'
+        assert row.cost_cny == row.reserved_cny
 
 
 def test_default_prompt_loads_from_package_when_cwd_is_unrelated(tmp_path, monkeypatch):
