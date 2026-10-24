@@ -125,8 +125,9 @@ def register_tools(agent: Agent, *, web_enabled: bool):
         if ctx.deps.record is None:
             return {'contest_id': None, 'summary': '页面保存暂未配置', 'sources': []}
 
+        # 网页抽取属于同一轮查证，必须共用计数和上限，不能另领一份请求预算。
         extract = create_page_extractor(model=ctx.deps.model, session_factory=ctx.deps.session_factory,
-                                        usage=ctx.usage)
+                                        usage=ctx.usage, usage_limits=ctx.usage_limits)
 
         context = {}
         if contest_id:
