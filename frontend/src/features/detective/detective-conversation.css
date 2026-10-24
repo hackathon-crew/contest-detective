@@ -16,6 +16,9 @@
 .detective-turn__question {
   display: flex;
   min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
   justify-content: flex-end;
 }
 .detective-turn__question > p {
