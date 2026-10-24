@@ -75,6 +75,8 @@ struct PetWidgetView: View {
                 .padding(.horizontal, 8)
             }
         }
+        .frame(width: store.state.isCollapsed ? 156 : 380,
+               height: store.state.isCollapsed ? 176 : 260)
         .foregroundStyle(InkpawColors.ink)
         .buttonStyle(.plain)
         .preferredColorScheme(.light)
@@ -185,7 +187,7 @@ struct ScheduleWorkspaceView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .top) {
-                    WorkspaceTitle(title: "比赛赛程", subtitle: "时间进度与材料完成率分别计算，不把“做完了”当成“时间到了”。")
+                    WorkspaceTitle(title: "比赛赛程", subtitle: "查看比赛倒计时、赛程节点和提交准备情况。")
                     Button("新建比赛") { createNew = true; editing = true }.buttonStyle(.borderedProminent).tint(InkpawColors.accent)
                 }
                 if let schedule = store.selectedSchedule {
@@ -247,7 +249,7 @@ struct ScheduleWorkspaceView: View {
                 } else {
                     InkpawCard {
                         Label("先录入起止时间与时区", systemImage: "calendar.badge.plus").font(.system(size: 18, weight: .semibold))
-                        Text("可以只记录日期。缺少准确时刻时，挂件会明确提示待核实，不会编造小时倒计时。")
+                        Text("录入比赛日期；补充准确时间和时区后显示倒计时。")
                             .foregroundStyle(InkpawColors.muted)
                     }
                 }

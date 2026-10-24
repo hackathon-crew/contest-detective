@@ -122,8 +122,12 @@ final class CompanionCoordinator: NSObject, NSWindowDelegate {
             panel.becomesKeyOnlyIfNeeded = true
             panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             panel.delegate = self
-            panel.contentView = DraggableHostingView(rootView: PetWidgetView(store: store,
+            let content = DraggableHostingView(rootView: PetWidgetView(store: store,
                 openWorkspace: { [weak self] in self?.showWorkspace() }))
+            // The coordinator owns panel geometry. SwiftUI's intrinsic sizing
+            // otherwise rewrites window constraints after the collapse resize.
+            content.sizingOptions = []
+            panel.contentView = content
             self.panel = panel
             restorePanelPosition()
         }
