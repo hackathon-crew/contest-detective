@@ -16,7 +16,33 @@
 
 ## 当前状态
 
-已提供赛事查询、来源核实、画像匹配和本地只读 MCP。前端运行方式见 [frontend/README.md](frontend/README.md)，开发进度见 [Milestones](https://github.com/hackathon-crew/contest-detective/milestones)。
+已提供赛事查询、来源核实、画像匹配和只读 MCP，支持远程 HTTP 与本地 stdio。前端运行方式见 [frontend/README.md](frontend/README.md)，开发进度见 [Milestones](https://github.com/hackathon-crew/contest-detective/milestones)。
+
+## 远程只读 MCP
+
+服务地址为 `http://43.142.60.212/mcp`，使用 Streamable HTTP，无需登录或 API key，直接读取网站同一份赛事库。
+
+Claude Code 按[官方 HTTP 配置方式](https://code.claude.com/docs/en/mcp)添加：
+
+```bash
+claude mcp add --transport http inkpaw http://43.142.60.212/mcp
+```
+
+Cursor 在项目的 `.cursor/mcp.json` 或用户的 `~/.cursor/mcp.json` 中加入以下配置，见[官方 MCP 说明](https://cursor.com/docs/mcp)：
+
+```json
+{
+  "mcpServers": {
+    "inkpaw": {
+      "url": "http://43.142.60.212/mcp"
+    }
+  }
+}
+```
+
+远程与本地服务提供相同的三个工具，参数和返回结构见下表。日期精度、核实等级和来源链接保持原样；画像只用于当前请求，不保存或读取账号。服务不调用搜索或模型。公网每个 IP 每分钟允许 60 次请求，支持短时突发 20 次，最多 4 个并发连接；超限返回 HTTP 429。单次请求上限为 64 KiB。
+
+公网当前使用 HTTP；匿名画像只需填写用于筛选的技能、地点和时间，不包含简历原文或凭据。
 
 ## 本地只读 MCP
 
