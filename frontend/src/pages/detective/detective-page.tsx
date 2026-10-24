@@ -137,13 +137,12 @@ export function DetectivePage() {
           </PrimitiveDialog.Content>
         </PrimitiveDialog.Root>
       </div>
-      {profileOpen && (
-        <ProfileMatchDialog
-          user={user}
-          onClose={() => setProfileOpen(false)}
-          onConfirmed={confirmed}
-        />
-      )}
+      <ProfileMatchDialog
+        open={profileOpen}
+        user={user}
+        onClose={() => setProfileOpen(false)}
+        onConfirmed={confirmed}
+      />
     </div>
   )
 }

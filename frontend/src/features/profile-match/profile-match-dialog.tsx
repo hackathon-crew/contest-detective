@@ -91,15 +91,28 @@ const modes = [
 ] as const
 const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 
-export function ProfileMatchDialog({
-  user = null,
-  onClose,
-  onConfirmed,
-}: {
+interface ProfileMatchDialogProps {
+  open?: boolean
   user?: PublicUser | null
   onClose: () => void
   onConfirmed?: (profile: Profile) => void
-}) {
+}
+
+export function ProfileMatchDialog({ open = true, ...props }: ProfileMatchDialogProps) {
+  return (
+    <Dialog open={open} title="按我的情况挑比赛" onClose={props.onClose}>
+      <ProfileMatchForm {...props} active={open} />
+    </Dialog>
+  )
+}
+
+/* 表单由弹窗内容托管，退场结束才卸载；下次打开仍从已确认的画像开始。 */
+function ProfileMatchForm({
+  active,
+  user = null,
+  onClose,
+  onConfirmed,
+}: Omit<ProfileMatchDialogProps, 'open'> & { active: boolean }) {
   const [profile, setProfile] = useState<Profile>(
     () => user?.profile ?? loadConfirmedProfile() ?? {},
   )
@@ -113,6 +126,9 @@ export function ProfileMatchDialog({
     if (results !== null) resultsRef.current?.scrollIntoView?.({ block: 'start' })
   }, [results])
   const controller = useRef<AbortController | null>(null)
+  useEffect(() => {
+    if (!active) controller.current?.abort()
+  }, [active])
   useEffect(() => () => controller.current?.abort(), [])
   const id = useId()
 
@@ -150,7 +166,7 @@ export function ProfileMatchDialog({
   }
 
   return (
-    <Dialog title="按我的情况挑比赛" onClose={onClose}>
+    <>
       <div className="space-y-6" aria-busy={busy}>
         <div className="grid gap-4 border-b border-rule pb-6 sm:grid-cols-2">
           <form
@@ -486,6 +502,6 @@ export function ProfileMatchDialog({
           </section>
         )}
       </div>
-    </Dialog>
+    </>
   )
 }
