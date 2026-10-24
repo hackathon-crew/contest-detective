@@ -18,12 +18,16 @@ logger = logging.getLogger(__name__)
 
 def run_pipeline(session_factory, *, extractor=None, normalizer=None, tavily=None, client=None,
                  settings: AppSettings | None = None, sources=None, searcher=None, fetcher=None,
-                 listings=None, sleep=None, now=None) -> ContestSyncOutput:
+                 listings=None, sleep=None, now=None, publish_notifications=True) -> ContestSyncOutput:
     resolved = settings if settings is not None else get_app_settings()
     ctx = ContestSyncContext(request=ContestSyncInput(keywords=('黑客松',)))
-    coroutine = _run(
-        ctx, session_factory, resolved, extractor, normalizer, tavily, client, sources, searcher, fetcher, listings, sleep, now,
-    )
+    from contest_detective.server.contest.service import event_publication
+    async def execute():
+        with event_publication(publish_notifications):
+            return await _run(
+                ctx, session_factory, resolved, extractor, normalizer, tavily, client, sources, searcher, fetcher, listings, sleep, now,
+            )
+    coroutine = execute()
     try:
         asyncio.get_running_loop()
     except RuntimeError:
