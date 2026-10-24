@@ -63,8 +63,22 @@
   position: absolute;
   z-index: 20;
   inset: var(--chat-site-header) 0 auto;
-  background: color-mix(in srgb, var(--color-page) 78%, transparent);
-  backdrop-filter: blur(16px) saturate(1.4);
+  pointer-events: none;
+}
+.detective-workspace__main:has(.detective-conversation[data-empty='false'])
+  .detective-workspace__header
+  :is(button, a) {
+  pointer-events: auto;
+}
+.detective-workspace__main:has(.detective-conversation[data-empty='false'])
+  .detective-workspace__header
+  h1 {
+  flex: 0 1 auto;
+  margin-right: auto;
+  background: var(--color-canvas);
+}
+.detective-workspace__header .detective-icon {
+  background: var(--color-canvas);
 }
 .detective-workspace__header {
   display: flex;
