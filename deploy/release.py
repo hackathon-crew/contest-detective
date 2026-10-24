@@ -150,6 +150,7 @@ def deploy(stream):
     stage.chmod(0o755)
     stopped = False
     snapshot = None
+    migration_unit = 'contest-detective-migrate-' + stage.name
     previous = APP.resolve()
     try:
         with tempfile.TemporaryFile() as bundle:
@@ -181,7 +182,7 @@ def deploy(stream):
             (backup / 'previous-release').write_text(str(previous) + '\n')
             point_to(previous)
         # Migrations receive the same env file and Unix identity as the production service.
-        run('systemd-run', '--wait', '--pipe', '--collect',
+        run('systemd-run', '--wait', '--pipe', '--collect', f'--unit={migration_unit}',
             '--property=User=contest-detective', '--property=Group=contest-detective',
             '--property=EnvironmentFile=/etc/contest-detective.env',
             f'--property=WorkingDirectory={stage / "backend"}',
@@ -195,6 +196,12 @@ def deploy(stream):
         if stopped:
             log('Deployment failed; restoring the previous release')
             run('systemctl', 'stop', SERVICE)
+            # A disconnected systemd-run client can leave its migration unit running.
+            try:
+                run('systemctl', 'stop', migration_unit)
+            except subprocess.CalledProcessError as error:
+                if error.returncode != 5:  # An already collected unit no longer exists.
+                    raise
             if snapshot is not None:
                 restore_database(snapshot, DATABASE)
             point_to(previous)
