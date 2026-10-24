@@ -41,7 +41,6 @@ export function DetectiveComposer({
         placeholder="问一个问题"
         value={value}
         rows={1}
-        maxLength={500}
         disabled={pending}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
