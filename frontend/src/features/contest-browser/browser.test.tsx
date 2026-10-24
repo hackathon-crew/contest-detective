@@ -29,12 +29,18 @@ function QueryAdapter({ children }: { children: ReactNode }) {
     </NuqsTestingAdapter>
   )
 }
-function start(path = '/contests') {
+function start(path = '/contests', collectionResponse?: (url: URL) => Promise<Response>) {
   window.history.replaceState(null, '', path)
   requested = []
   vi.stubGlobal('fetch', async (input: string) => {
     requested.push(input)
     const url = new URL(input, 'https://example.com')
+    if (
+      url.pathname === '/api/contests' &&
+      !url.searchParams.has('date_from') &&
+      collectionResponse
+    )
+      return collectionResponse(url)
     let data: unknown
     if (url.pathname === '/api/contests/one')
       data = {
@@ -158,4 +164,33 @@ it('date survives in result links and can be toggled without erasing other day c
       new URLSearchParams(screen.getByTestId('query').textContent ?? '').get('date'),
     ).toBeNull(),
   )
+})
+
+it('keeps loaded cards during keyword filtering and a later page failure', async () => {
+  let finish!: (response: Response) => void
+  const remaining = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  start('/contests?keyword=真实', async (url) =>
+    url.searchParams.get('page') === '2'
+      ? remaining
+      : Response.json({
+          code: 200,
+          message: 'ok',
+          data: [item],
+          total: 101,
+          page: 1,
+          page_size: 100,
+        }),
+  )
+  const library = within(screen.getByRole('region', { name: '全部赛事' }))
+  try {
+    expect(await library.findByRole('link', { name: '真实接口赛事' })).toBeTruthy()
+    expect(library.getByText(/已找到/)).toBeTruthy()
+  } finally {
+    finish(Response.json({ code: 503, message: '后续赛事暂时不可用', data: null }, { status: 503 }))
+  }
+  await library.findByRole('alert')
+  expect(library.getByRole('link', { name: '真实接口赛事' })).toBeTruthy()
+  expect(library.getByRole('button', { name: '重试' })).toBeTruthy()
 })
