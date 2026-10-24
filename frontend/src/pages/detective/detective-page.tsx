@@ -25,14 +25,18 @@ import '@/features/detective/detective-workspace.css'
 
 export function DetectivePage() {
   const { conversationId } = useParams()
-  return <DetectiveWorkspace key={conversationId ?? 'new'} conversationId={conversationId} />
-}
-
-function DetectiveWorkspace({ conversationId }: { conversationId?: string }) {
   const { sessions, storageError, send, stop } = useDetective()
   const session = sessions.find((item) => item.id === conversationId)
-  // 沿用 Everplain 的手动收起优先规则，切换对话时由工作区 key 重置。
-  const [researchMode, setResearchMode] = useState<'auto' | 'open' | 'closed'>('auto')
+  const [researchState, setResearchState] = useState<{
+    conversationId?: string
+    mode: 'auto' | 'open' | 'closed'
+  }>({ conversationId, mode: 'auto' })
+  // 切换对话只重置面板偏好，保留工作区节点，避免重播整页入场动画。
+  if (researchState.conversationId !== conversationId) {
+    setResearchState({ conversationId, mode: 'auto' })
+  }
+  const researchMode = researchState.mode
+  const setResearchMode = (mode: 'open' | 'closed') => setResearchState({ conversationId, mode })
   const hasResearch =
     session?.turns.some((turn) => turn.trace.length || turn.sources.length) ?? false
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
@@ -127,7 +131,11 @@ function DetectiveWorkspace({ conversationId }: { conversationId?: string }) {
               if (event.key === 'Escape') closeResearch()
             }}
           >
-            <ResearchPanel turns={session?.turns ?? []} onClose={closeResearch} />
+            <ResearchPanel
+              key={conversationId ?? 'new'}
+              turns={session?.turns ?? []}
+              onClose={closeResearch}
+            />
           </aside>
         </Collapsible.Content>
         <PrimitiveDialog.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
