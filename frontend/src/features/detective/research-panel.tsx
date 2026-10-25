@@ -3,6 +3,9 @@ import { CheckCircle2, ChevronRight, CircleAlert, LoaderCircle, X } from 'lucide
 import { safeUrl } from '@/entities/contest'
 import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
+import { ExecutionDetails, InvestigationProgress } from './evidence-report'
+import type { SearchExecution } from './verification-contracts'
+import { publicReportUrl, reportStatusNames, sourceLevelNames } from './verification-report'
 import { SourceIcon } from './source-icon'
 import './research-panel.css'
 
@@ -11,13 +14,20 @@ interface Activity {
   tool: string
   label: string
   summary?: string
-  status: 'running' | 'completed' | 'interrupted'
+  status: 'running' | 'completed' | 'interrupted' | 'failed'
+  execution?: SearchExecution
 }
 
 function researchFor(turns: readonly DetectiveTurn[]) {
   const sources = new Map<string, TraceSource>()
   const activities = turns.flatMap((turn) => {
     const steps: Activity[] = []
+    const finalSources = turn.report
+      ? new Set([
+          ...turn.sources.map((source) => source.url),
+          ...turn.report.evidence.map((source) => source.url),
+        ])
+      : undefined
     for (const [index, event] of turn.trace.entries()) {
       if (event.type === 'step') {
         steps.push({
@@ -32,18 +42,23 @@ function researchFor(turns: readonly DetectiveTurn[]) {
         )
         if (step) {
           step.summary = event.summary
-          step.status = 'completed'
+          step.status = event.execution?.status === 'failure' ? 'failed' : 'completed'
+          step.execution = event.execution
         } else {
           steps.push({
             id: `${turn.id}:${index}`,
             tool: event.tool,
             label: event.tool,
             summary: event.summary,
-            status: 'completed',
+            status: event.execution?.status === 'failure' ? 'failed' : 'completed',
+            execution: event.execution,
           })
         }
         for (const source of event.sources) {
-          if (!safeUrl(source.url)) continue
+          if (!safeUrl(source.url) || (finalSources && !finalSources.has(source.url))) {
+            if (finalSources) sources.delete(source.url)
+            continue
+          }
           // 搜索和正文读取没有核实身份，和后端 remember 一样保留已知来源的等级。
           if (
             (event.tool === 'web_search' || event.tool === 'fetch_page') &&
@@ -124,6 +139,9 @@ function Sources({ sources }: { sources: TraceSource[] }) {
       <span>
         <strong>{source.title || source.site || new URL(source.url).hostname}</strong>
         <small>{new URL(source.url).hostname.replace(/^www\./u, '')}</small>
+        {source.provider && <small>服务：{source.provider}</small>}
+        {source.query && <small>查询：{source.query}</small>}
+        {source.retrieved_at && <small>获取时间：{source.retrieved_at}</small>}
         {source.stale ? <em>来源已过期</em> : !source.is_official ? <em>待核实</em> : null}
       </span>
     </a>
@@ -146,6 +164,38 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
         </button>
       </header>
       <div className="detective-research__body">
+        {turns
+          .filter((turn) => turn.plan || turn.report)
+          .map((turn) => (
+            <section
+              key={turn.id}
+              className="detective-research__section-body"
+              aria-label={`关于${turn.question}的查证过程`}
+            >
+              <p>{turn.question}</p>
+              {turn.report && <p>{reportStatusNames[turn.report.status]}</p>}
+              <InvestigationProgress
+                plan={turn.report?.plan ?? turn.plan}
+                queries={
+                  turn.report?.queries ??
+                  turn.trace.flatMap((event) =>
+                    event.type === 'observation' && event.execution ? [event.execution] : [],
+                  )
+                }
+              />
+              {turn.report?.evidence.map(
+                (evidence) =>
+                  publicReportUrl(evidence.url) && (
+                    <p key={evidence.id}>
+                      <a href={evidence.url} target="_blank" rel="noreferrer">
+                        {evidence.title || evidence.id}
+                      </a>{' '}
+                      · {sourceLevelNames[evidence.source_level]}
+                    </p>
+                  ),
+              )}
+            </section>
+          ))}
         <RailSection
           title="赛事官网"
           count={official.length}
@@ -175,19 +225,22 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
               ) : activity.status === 'completed' ? (
                 <CheckCircle2 aria-label="已完成" />
               ) : (
-                <CircleAlert aria-label="已中断" />
+                <CircleAlert aria-label={activity.status === 'failed' ? '失败' : '已中断'} />
               )}
               <div>
                 <strong>{activity.label}</strong>
                 <small>{activity.tool}</small>
                 {activity.summary && <p>{activity.summary}</p>}
+                {activity.execution && <ExecutionDetails execution={activity.execution} />}
               </div>
               <span>
                 {activity.status === 'running'
                   ? '进行中'
                   : activity.status === 'completed'
                     ? '已完成'
-                    : '已中断'}
+                    : activity.status === 'failed'
+                      ? '失败'
+                      : '已中断'}
               </span>
             </article>
           ))}

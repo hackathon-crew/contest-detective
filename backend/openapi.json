@@ -1784,6 +1784,29 @@
             },
             "type": "array",
             "title": "History"
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "database",
+                  "realtime",
+                  "deep"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "confirmed_claims": {
+            "items": {
+              "$ref": "#/components/schemas/ConfirmedClaim"
+            },
+            "type": "array",
+            "title": "Confirmed Claims"
           }
         },
         "type": "object",
@@ -1861,6 +1884,36 @@
           "url"
         ],
         "title": "CalendarRead"
+      },
+      "ConfirmedClaim": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "user",
+              "screenshot"
+            ],
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "origin"
+        ],
+        "title": "ConfirmedClaim"
       },
       "ConnectionRead": {
         "properties": {
@@ -5031,6 +5084,40 @@
             "type": "boolean",
             "title": "Stale",
             "default": false
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved At"
           }
         },
         "type": "object",

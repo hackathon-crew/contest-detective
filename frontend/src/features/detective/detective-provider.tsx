@@ -49,6 +49,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       if (
         !legacyTurns.current.has(turn.id) ||
         turn.status !== 'completed' ||
+        turn.report ||
         turn.recommendations !== undefined ||
         recovering.current.has(turn.id)
       )
@@ -177,6 +178,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
             content: event.content,
             sources: event.sources,
             recommendations: event.recommendations,
+            report: event.report,
+            plan: event.report?.plan ?? turn.plan,
             status: 'completed',
           }))
           terminal = true
@@ -188,6 +191,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           fail(event.message)
           terminal = true
           break
+        }
+        if (event.type === 'plan') {
+          update(sessionId, turnId, (turn) => ({ ...turn, plan: event.plan }))
+          continue
         }
         if (event.type === 'delta')
           update(sessionId, turnId, (turn) => ({ ...turn, content: turn.content + event.content }))

@@ -43,6 +43,14 @@ export type AskRequest = {
      * History
      */
     history?: Array<ConversationMessage>;
+    /**
+     * Mode
+     */
+    mode?: 'database' | 'realtime' | 'deep' | null;
+    /**
+     * Confirmed Claims
+     */
+    confirmed_claims?: Array<ConfirmedClaim>;
 };
 
 /**
@@ -85,6 +93,24 @@ export type CalendarRead = {
      * Url
      */
     url: string;
+};
+
+/**
+ * ConfirmedClaim
+ */
+export type ConfirmedClaim = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Origin
+     */
+    origin: 'user' | 'screenshot';
 };
 
 /**
@@ -1982,6 +2008,18 @@ export type ToolSource = {
      * Stale
      */
     stale?: boolean;
+    /**
+     * Provider
+     */
+    provider?: string | null;
+    /**
+     * Query
+     */
+    query?: string | null;
+    /**
+     * Retrieved At
+     */
+    retrieved_at?: string | null;
 };
 
 /**

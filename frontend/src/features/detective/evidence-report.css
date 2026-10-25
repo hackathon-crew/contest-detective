@@ -1,0 +1,107 @@
+.detective-report {
+  display: grid;
+  min-width: 0;
+  gap: var(--chat-gap);
+  color: var(--color-ink);
+  font: var(--chat-reading-size)/var(--chat-reading-leading) var(--chat-reading-font);
+  overflow-wrap: anywhere;
+}
+.detective-report :is(h2, h3, p, dl, dd) {
+  margin: 0;
+}
+.detective-report h2,
+.detective-report h3 {
+  font-size: inherit;
+  font-weight: 600;
+}
+.detective-report__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.detective-report__heading > span,
+.detective-report__metadata,
+.detective-report__details {
+  color: var(--color-muted);
+  font: var(--chat-meta)/1.65 var(--font-sans);
+}
+.detective-report__claims,
+.detective-report__claim,
+.detective-report__progress,
+.detective-report__evidence {
+  display: grid;
+  min-width: 0;
+  gap: 0.5rem;
+}
+.detective-report__claim,
+.detective-report__evidence {
+  padding-block: 0.75rem;
+  border-top: 1px solid var(--color-rule);
+}
+.detective-report__claim dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  color: var(--color-ink-soft);
+  font: var(--chat-control-size)/1.6 var(--font-sans);
+}
+.detective-report__claim dl > div {
+  display: flex;
+}
+.detective-report ul,
+.detective-report__details ol {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.5em;
+}
+.detective-report ul {
+  list-style: disc;
+}
+.detective-report__details ol {
+  list-style: decimal;
+}
+.detective-report a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.detective-report a:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.detective-report__references {
+  font: var(--chat-meta)/1.65 var(--font-sans);
+}
+.detective-report__details summary {
+  width: fit-content;
+  min-height: 2rem;
+  padding-block: 0.25rem;
+  cursor: pointer;
+  color: var(--color-ink-soft);
+  font-weight: 500;
+}
+.detective-report__details > ol {
+  margin-block: 0.5rem;
+}
+.detective-report__details strong {
+  font-weight: 500;
+}
+.detective-report__evidence {
+  scroll-margin-top: 1rem;
+}
+.detective-report__evidence h3,
+.detective-report__excerpt {
+  color: var(--color-ink-soft);
+  font: var(--chat-control-size)/1.65 var(--font-sans);
+}
+.detective-report__excerpt {
+  white-space: pre-wrap;
+}
+.detective-report__downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
