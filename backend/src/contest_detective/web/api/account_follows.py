@@ -9,6 +9,7 @@ from contest_detective.framework.db import get_session
 from contest_detective.server.auth.service import current
 from contest_detective.server.contest.schemas import ContestDetail
 from contest_detective.server.account import follows
+from contest_detective.server.notifications.watch.service import remove_subscription
 from contest_detective.server.account.models import Follow, AccountSettings
 from contest_detective.server.account.schemas import Timestamp
 from contest_detective.server.account.store import owner
@@ -80,6 +81,7 @@ def update_follow(contest_id: str, body: FollowUpdate, user_id: str | None = Dep
 def unfollow(contest_id: str, user_id: str | None = Depends(current), session: Session = Depends(get_session)):
     row = session.get(Follow, (owner(session, user_id).id, contest_id))
     if row is not None:
+        remove_subscription(session, row.user_id, contest_id)
         session.delete(row)
         session.commit()
     return Response.success()

@@ -29,6 +29,8 @@ from contest_detective.server.notifications.models import (
     SeenNotification,
 )
 from contest_detective.server.notifications.service import deliver
+from contest_detective.server.notifications.watch.models import Cursor, Notification, Subscription
+from contest_detective.server.notifications.watch.service import export_data
 
 
 def utc(value):
@@ -151,6 +153,7 @@ def export_account(session, user_id):
     user = owner(session, user_id)
     row = settings_for(session, user.id)
     return {
+        "watch": export_data(session, user.id),
         "email": user.email,
         "created_at": utc(user.created_at).isoformat(),
         "profile": user.profile,
@@ -186,6 +189,9 @@ def delete_account(session, user_id, email):
     )
     session.execute(delete(Investigation).where(Investigation.user_id == str(user.id)))
     for model in (
+        Cursor,
+        Notification,
+        Subscription,
         AccessToken,
         PendingNotification,
         SeenNotification,

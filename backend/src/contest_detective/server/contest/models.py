@@ -75,6 +75,10 @@ class ContestPageLink(Base):
     """即使本轮没抽到字段，仍保留网页与赛事的关联供下轮更新。"""
     __tablename__ = 'contest_page_links'
 
+    revision: Mapped[int] = mapped_column(Integer, default=0, server_default='0')
+    verified_content_hash: Mapped[str | None] = mapped_column(String(64))
+    verified_extractor_version: Mapped[str | None] = mapped_column(String(100))
+
     contest_id: Mapped[str] = mapped_column(ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True)
     page_id: Mapped[str] = mapped_column(ForeignKey('contest_pages.id', ondelete='CASCADE'), primary_key=True)
 
@@ -85,6 +89,8 @@ class ContestEvent(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     contest_id: Mapped[str] = mapped_column(ForeignKey('contests.id', ondelete='CASCADE'), index=True)
+    before_snapshot: Mapped[dict | None] = mapped_column(JSON)
+    after_snapshot: Mapped[dict | None] = mapped_column(JSON)
     kind: Mapped[str] = mapped_column(String(10))
     version: Mapped[str] = mapped_column(String(64))
     occurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

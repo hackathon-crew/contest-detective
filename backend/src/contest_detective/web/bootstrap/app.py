@@ -11,6 +11,7 @@ from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.server.research_pipeline.scheduler import start_scheduler
 
 from contest_detective.server.notifications.service import start_account_scheduler
+from contest_detective.server.notifications.watch.scheduler import start_watch_scheduler
 
 from contest_detective.common.result import Response
 from contest_detective.web.api import router
@@ -56,9 +57,12 @@ def create_app(*, db_engine=None, async_session_factory=None,
                 daily_at=daily_at, window_minutes=window_minutes,
             )
         account_scheduler = start_account_scheduler(factory)
+        watch_scheduler = start_watch_scheduler(factory, extractor_factory=lambda: configured_extractor(factory))
         try:
             yield
         finally:
+            if watch_scheduler is not None:
+                watch_scheduler.shutdown(wait=True)
             if account_scheduler is not None:
                 account_scheduler.shutdown(wait=True)
             if scheduler is not None:
