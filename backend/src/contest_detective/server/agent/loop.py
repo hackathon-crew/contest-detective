@@ -8,7 +8,7 @@ from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-from pydantic_ai import Agent, ModelRetry, RunContext, ToolOutput
+from pydantic_ai import Agent, ToolOutput
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits, RunUsage
@@ -22,7 +22,6 @@ from .models import Investigation, TraceRecord
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
 from .tools import ToolDeps, invoke, register_tools
-from .answer_grounding import check_answer_precision, check_evidence_precision
 from .verification import VerificationState, render_report, scope_check, export_text, public_payload
 from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
@@ -72,32 +71,11 @@ class Investigator:
         self.profile_reader = profile_reader
         self.preferences = preferences
         self.agent = Agent(model, deps_type=ToolDeps,
-                           output_type=ToolOutput(DetectiveReply, name='respond_to_user'),
+                           output_type=[str, ToolOutput(DetectiveReply, name='respond_to_user')],
                            instructions=RULES + (LIVE_RULES if mode in {'realtime', 'deep'} else ''), retries={'tools': 3},
                            model_settings={'parallel_tool_calls': False})
         register_tools(self.agent, web_enabled=search is not None, external_enabled=mode != 'database',
                        verification_enabled=mode in {'realtime', 'deep'})
-
-        @self.agent.output_validator
-        def validate_reply(ctx: RunContext[ToolDeps], reply: DetectiveReply):
-            missing = {item.contest_id for item in reply.recommendations} - ctx.deps.contest_ids
-            if missing:
-                raise ModelRetry('请先用 get_contest 读取推荐的比赛，再使用工具返回的真实 contest_id：' + '、'.join(sorted(missing)))
-            errors = [] if ctx.deps.verification else check_answer_precision(reply.content, ctx.deps.observed_contests, ctx.deps.fetched_pages)
-            for item in reply.recommendations:
-                observed = {item.contest_id: ctx.deps.observed_contests[item.contest_id]} if item.contest_id in ctx.deps.observed_contests else {}
-                name = observed.get(item.contest_id, {}).get('name', '')
-                errors.extend(check_answer_precision(name + '\n' + item.introduction + '\n' + item.reason,
-                                                     observed, ctx.deps.fetched_pages))
-            if ctx.deps.verification:
-                errors.extend(ctx.deps.verification.validate_assessments(reply.assessments))
-                for item in reply.assessments:
-                    excerpts = [ctx.deps.verification.evidence[key].excerpt for key in item.evidence_ids
-                                if key in ctx.deps.verification.evidence and ctx.deps.verification.evidence[key].evidence_kind == 'fetched_page']
-                    errors.extend(check_evidence_precision(item.comparison, excerpts))
-            if errors:
-                raise ModelRetry('请按本轮实际原文修正，证据不足明确说未知，不补日期时刻：' + '；'.join(dict.fromkeys(errors)))
-            return reply
 
     async def ask(self, question: str, user_id: str | None = None,
                   profile: Profile | None = None,
@@ -219,11 +197,15 @@ class Investigator:
                 result = run.result
             if result is None:
                 raise RuntimeError('查证没有完成结果')
-            report = state.build(result.output.assessments) if state else None
-            answer = render_report(report) if report and confirmed_claims else result.output.content
+            # 正文是交付结果；卡片和核验元数据不能让已生成的回复进入重试后丢失。
+            reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
+                content=result.output, recommendations=[])
+            report = state.build(reply.assessments) if state else None
+            answer = render_report(report) if report and confirmed_claims else reply.content
             status = report.status if report and report.status != 'complete' else 'completed'
             with self.session_factory() as session:
-                recommendations = materialize(session, result.output.recommendations)
+                recommendations = materialize(session, [item for item in reply.recommendations
+                    if item.contest_id in deps.contest_ids])
             await queue.put(store(TraceEvent(type='answer', payload={
                 'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
                 'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
