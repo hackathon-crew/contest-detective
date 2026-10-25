@@ -1,0 +1,22 @@
+.detail-preview-main {
+  padding-block: 40px;
+}
+.detail-preview-main h1 {
+  color: var(--color-ink);
+  font-size: 32px;
+  font-weight: 700;
+}
+.detail-preview-note {
+  margin-block: 8px 32px;
+  color: var(--color-muted);
+  font-size: 14px;
+}
+.detail-preview-badge {
+  color: var(--color-muted);
+  font-size: 12px;
+}
+@media (max-width: 640px) {
+  .detail-preview-badge {
+    max-width: 110px;
+  }
+}

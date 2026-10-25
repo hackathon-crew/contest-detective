@@ -827,6 +827,9 @@
   font-size: 13px;
   min-width: 0;
 }
+.contests-page .item-extra:empty {
+  display: none;
+}
 .contests-page .prize-t {
   flex: none;
   color: var(--color-muted);
@@ -853,12 +856,38 @@
   background: var(--color-accent-soft);
   color: var(--color-accent);
 }
+.contests-page .tag.conflict {
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.contests-page .prize-t.conflict {
+  color: var(--color-danger);
+}
 .contests-page .about {
   min-width: 0;
   color: var(--color-ink-soft);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.contests-page .item-description {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 3px;
+  font-size: 13px;
+}
+.contests-page .item-description .about {
+  flex: 1;
+}
+.contests-page .item-source-link {
+  flex: none;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+.contests-page .item-source-link:hover {
+  color: var(--color-accent);
 }
 .contests-page .reasons {
   display: flex;

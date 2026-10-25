@@ -1,0 +1,95 @@
+{
+  "kind": "current-public-api-snapshot",
+  "notice": "Read-only UI preview snapshots, not live data. Raw responses preserve source URL, capture boundary, server date and response SHA-256.",
+  "scenarios": [
+    {
+      "scenario": "full",
+      "name": "怀柔科学城48小时黑客松（2026怀柔科学城 AI for Science·OPC创新挑战赛）",
+      "snapshot_file": "detail-full-public-snapshot.json",
+      "public_api_url": "http://43.142.60.212/api/contests/e5e421d3-01cf-4c53-add5-00d24160371f",
+      "captured_after_utc": "2026-10-24T21:35:51Z",
+      "server_date": "Sat, 24 Oct 2026 21:36:02 GMT",
+      "response_sha256": "8647f9daec3deb1fac10766b0957fd819a5ef4004393c804be19043405eda7cb",
+      "cover": {
+        "url": "https://7465-test-1-d8gn28apcbf409627-1445960691.tcb.qcloud.la/image-optimized/event-cover/529074b31ab108caeb809c57.webp",
+        "media_type": "image/webp",
+        "sha256": "301ebf9fc7f30d5a2cf6df520e7b07e30402d4c1c9a68267fbcd5b5e8ae3cfea",
+        "file": "covers/detail-huairou.webp"
+      }
+    },
+    {
+      "scenario": "conflict",
+      "name": "Cal Hacks 13.0",
+      "snapshot_file": "detail-conflict-public-snapshot.json",
+      "public_api_url": "http://43.142.60.212/api/contests/7e7ddb63-c1d4-40e8-a840-b1bd3c8b6f6d",
+      "captured_after_utc": "2026-10-24T21:35:51Z",
+      "server_date": "Sat, 24 Oct 2026 21:36:06 GMT",
+      "response_sha256": "53863f6bddcfd94fd180e75c23e7c690e939d288fb1a740dfaef89085bd555e4",
+      "cover": {
+        "url": "https://d112y698adiu2z.cloudfront.net/photos/production/challenge_thumbnails/005/519/078/datas/medium_square.png",
+        "media_type": "image/png",
+        "sha256": "9f88f8a3cec6466cf475a62ad4b827ed755c71de7820592ade0d4bfb82345d0b",
+        "file": "covers/detail-calhacks.png"
+      }
+    },
+    {
+      "scenario": "long-reward",
+      "name": "麦当劳程序员创意开发大赛",
+      "snapshot_file": "detail-long-reward-public-snapshot.json",
+      "public_api_url": "http://43.142.60.212/api/contests/5894865a-08b9-45ea-9f67-b21ab7de2661",
+      "captured_after_utc": "2026-10-24T21:35:51Z",
+      "server_date": "Sat, 24 Oct 2026 21:36:10 GMT",
+      "response_sha256": "8ce9517611aa99a1aabf643ddb555ed38efaf7c9ab64e3fb89a5a56d505ad739",
+      "cover": {
+        "url": "https://cdn-waic.waytoagi.com/covers/9609b26d33aa2fa9.webp",
+        "media_type": "image/webp",
+        "sha256": "79e8d3e4da9e0e499e8583ab8e6fbf33715ec925f894806752d10d543501f3d5",
+        "file": "covers/detail-mcd.webp"
+      },
+      "embedded_images": [
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/85b39e5adfc9963d.png",
+          "file": "covers/detail-mcd-history-1.png",
+          "media_type": "image/png",
+          "sha256": "1238b1f1b1b96ccf6b4419d4a56fe12bdea494b9d1e98c4a82a043776e1de7c1",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:50 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/f02c30f91efef0ec.png",
+          "file": "covers/detail-mcd-history-2.png",
+          "media_type": "image/png",
+          "sha256": "528b5f83810842800eab24746502d2e1ae3ca55e5a2a28fa7ab4b7c56817b2a5",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:54 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/a13451aa13669815.png",
+          "file": "covers/detail-mcd-history-3.png",
+          "media_type": "image/png",
+          "sha256": "cd93f49b1661ccc6b2ba91f7cffec409ee600f2703d4555b2ea80eda95fd6a20",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:09:57 GMT"
+        },
+        {
+          "url": "https://cdn-waic.waytoagi.com/covers/27f1475a93d96e3e.webp",
+          "file": "covers/detail-mcd-history-4.webp",
+          "media_type": "image/webp",
+          "sha256": "09bd146afb4b831779de9b187f70c68e93b2532b17b351e1808b15f4b8d8c97d",
+          "retrieved_after_utc": "2026-10-24T22:09:14Z",
+          "server_date": "Sat, 24 Oct 2026 22:10:00 GMT"
+        }
+      ]
+    }
+  ],
+  "synthetic_scenarios": [
+    {
+      "scenario": "sparse",
+      "name": "信息待完善的比赛 · 预览样本",
+      "label": "边界测试样本",
+      "kind": "synthetic-boundary",
+      "source_url": null,
+      "notice": "Only absent values and collection-state placeholders; no invented verified facts or live contest claims."
+    }
+  ]
+}

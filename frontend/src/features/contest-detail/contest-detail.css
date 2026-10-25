@@ -1,12 +1,25 @@
+@reference '../../index.css';
+
+/* Keep the existing detail shell and shared controls; only the reading body scrolls. */
 .contest-detail[data-slot='dialog-content'] {
   width: min(560px, calc(100% - 32px));
   max-width: 560px;
   max-height: calc(100dvh - 48px);
   padding: 0;
-  display: block;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   gap: 0;
   box-shadow: 0 24px 64px light-dark(rgb(17 17 17 / 18%), rgb(0 0 0 / 48%));
+}
+.contest-detail--library[data-slot='dialog-content'] {
+  --font-contest: 'Inkpaw Contest Sans', var(--font-sans);
+  width: min(600px, calc(100% - 32px));
+  max-width: 600px;
+  font-family: var(--font-contest);
+}
+.contest-detail-scroll {
+  @apply min-h-0 overflow-y-auto overscroll-contain scroll-py-6;
 }
 .contest-detail-cover {
   height: 200px;
@@ -26,6 +39,7 @@
   font-weight: 700;
   color: var(--color-ink);
   text-wrap: balance;
+  overflow-wrap: anywhere;
   outline: none;
 }
 .contest-detail [data-slot='dialog-close'] {
@@ -42,44 +56,174 @@
   font-size: 14px;
   color: var(--color-muted);
 }
-.contest-detail-fields {
-  border-top: 1px solid var(--color-rule);
+.contest-detail-inline-level {
+  @apply ml-1.5 text-xs;
 }
-.contest-detail-fields > div {
-  display: grid;
-  grid-template-columns: 80px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: baseline;
-  padding-block: 10px;
-  border-bottom: 1px solid var(--color-rule);
+.contest-detail-about {
   font-size: 14px;
-}
-.contest-detail-fields dt {
-  color: var(--color-muted);
-}
-.contest-detail-fields dd {
-  color: var(--color-ink);
+  line-height: 1.7;
+  color: var(--color-ink-soft);
+  white-space: pre-line;
   overflow-wrap: anywhere;
 }
-.contest-detail-source {
+.contest-detail-about.is-clamped {
+  @apply line-clamp-3;
+}
+.contest-detail-introduction-tools {
+  @apply mt-1 flex items-center gap-2;
+}
+.contest-detail-text-button,
+.contest-detail-source-return,
+.contest-detail-source-ref {
+  @apply cursor-pointer border-0 bg-transparent p-0 text-xs text-muted underline underline-offset-3;
+}
+.contest-detail-text-button:hover,
+.contest-detail-source-return:hover,
+.contest-detail-source-ref:hover {
+  @apply text-accent;
+}
+.contest-detail-text-button:focus-visible,
+.contest-detail-source-return:focus-visible,
+.contest-detail-source-ref:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
+.contest-detail-overview {
+  @apply border-y border-rule py-4;
+}
+.contest-detail-highlights {
+  @apply flex flex-wrap items-start gap-6;
+}
+.contest-detail-deadline,
+.contest-detail-reward {
+  @apply min-w-0 flex-1;
+}
+.contest-detail-eyebrow {
+  @apply text-xs text-muted;
+}
+.contest-detail-date {
+  @apply my-1 text-sm text-ink tabular-nums;
+}
+.contest-detail-reward .contest-detail-fact {
+  @apply block border-0 p-0;
+}
+.contest-detail-reward .contest-detail-fact > dt {
+  @apply mb-1;
+}
+.contest-detail-location {
+  @apply mt-4 flex flex-wrap items-baseline gap-x-1.5 text-sm text-ink-soft;
+}
+.contest-detail-location > span:not(.contest-detail-source-references) {
+  @apply min-w-0 wrap-anywhere;
+}
+.contest-detail-section h2 {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 650;
+  color: var(--color-ink);
+}
+.contest-detail-fact {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  @apply items-baseline gap-3 border-b border-rule py-2.5 text-sm;
+}
+.contest-detail-fact:last-child {
+  @apply border-b-0;
+}
+.contest-detail-fact dt {
+  @apply text-muted;
+}
+.contest-detail-fact dd {
+  @apply min-w-0 text-ink wrap-anywhere;
+}
+.contest-detail-fact-meta {
+  @apply inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-normal text-muted;
+}
+.contest-detail-fact dd > .contest-detail-fact-meta {
+  @apply ml-1.5;
+}
+.contest-detail-conflict-label {
+  @apply text-sm text-muted;
+}
+.contest-detail-conflict-values {
+  @apply mt-1 grid gap-2 text-sm;
+}
+.contest-detail-conflict-values li > span {
+  @apply block text-xs text-muted;
+}
+.contest-detail-source-references {
+  @apply inline-flex items-baseline gap-2;
+}
+.contest-detail-sources,
+.contest-detail-history {
+  @apply border-t border-rule pt-4 text-xs text-muted;
+}
+.contest-detail-sources-summary,
+.contest-detail-history > summary {
+  @apply w-fit cursor-pointer text-sm text-ink-soft;
+}
+.contest-detail-sources-body {
+  @apply pt-2;
+}
+.contest-detail-empty,
+.contest-detail-coverage {
+  margin-top: 4px;
   font-size: 12px;
+  line-height: 1.6;
   color: var(--color-muted);
-  margin-top: 8px;
+}
+.contest-detail-source-list {
+  @apply mt-4 grid gap-4;
+}
+.contest-detail-source-group {
+  @apply min-w-0 outline-none wrap-anywhere;
+}
+.contest-detail-source-group + .contest-detail-source-group {
+  @apply border-t border-rule pt-4;
+}
+.contest-detail-source-heading {
+  @apply flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1;
+}
+.contest-detail-source-heading > a {
+  @apply text-sm text-ink;
 }
 .contest-detail a:not(.site-button) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.contest-detail-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  align-items: center;
+.contest-detail-source-meta {
+  @apply text-xs text-muted;
 }
-.contest-detail-summary {
-  font-size: 14px;
-  line-height: 1.7;
-  overflow-wrap: anywhere;
+.contest-detail-source-meta p + p {
+  @apply mt-1;
+}
+.contest-detail-source-meta p > .lv {
+  @apply ml-2;
+}
+.contest-detail-source-excerpt {
+  @apply mt-2 scroll-my-5 text-xs whitespace-pre-line text-muted;
+}
+.contest-detail-source-excerpt:focus,
+.contest-detail-source-meta:focus {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
+.contest-detail-source-versions {
+  @apply mt-3;
+}
+.contest-detail-source-versions > summary {
+  @apply w-fit cursor-pointer;
+}
+.contest-detail-source-versions ul {
+  @apply grid gap-3 pt-2;
+}
+.contest-detail-source-observations {
+  @apply mt-3 border-t border-rule pt-2;
+}
+.contest-detail-source-observations > p:first-child {
+  @apply mb-1;
+}
+.contest-detail-history > p {
+  @apply mt-2;
 }
 .contest-detail .lv {
   display: inline-flex;
@@ -105,100 +249,32 @@
 .contest-detail .lv-not_found {
   color: var(--color-faint);
 }
-@media (max-width: 390px) {
-  .contest-detail-fields > div {
-    grid-template-columns: 68px minmax(0, 1fr);
-    gap: 6px 12px;
-  }
-  .contest-detail-fields .lv {
-    grid-column: 2;
-  }
+.contest-detail-actions {
+  @apply flex flex-none flex-wrap items-center gap-3 border-t border-rule bg-surface px-6 py-4;
 }
-.contest-detail--library[data-slot='dialog-content'] {
-  --font-contest: 'Inkpaw Contest Sans', var(--font-sans);
-  width: min(600px, calc(100% - 32px));
-  max-width: 600px;
-  font-family: var(--font-contest);
-}
-.contest-detail--library .contest-detail-fields > div {
-  grid-template-columns: 88px minmax(0, 1fr) auto;
-}
-.contest-detail-first-source {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-self: end;
-}
-.contest-detail-first-source a {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 12px;
-  color: var(--color-muted);
-  white-space: nowrap;
-}
-.contest-detail-first-source .ic {
-  width: 12px;
-  height: 12px;
-}
-.contest-detail-about {
-  font-size: 14px;
-  line-height: 1.7;
-  color: var(--color-ink-soft);
-}
-.contest-detail-evidence {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--color-muted);
-}
-.contest-detail-evidence summary {
-  cursor: pointer;
-}
-.contest-detail-evidence[open] .contest-detail-source {
-  animation: popup-fade-in 240ms var(--ease-out);
+.contest-detail--library .contest-detail-fact {
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 @media (max-width: 640px) {
-  .contest-detail--library .contest-detail-fields > div {
+  .contest-detail-fact,
+  .contest-detail--library .contest-detail-fact {
     grid-template-columns: 72px minmax(0, 1fr);
   }
-  .contest-detail-first-source {
-    grid-column: 2;
-    justify-self: start;
+  .contest-detail[data-slot='dialog-content'] {
+    @apply inset-0 h-dvh max-h-dvh w-full max-w-none translate-none transform-none rounded-none;
   }
-}
-.contest-detail-introduction h2,
-.contest-detail-documents h2,
-.contest-detail-summary h2 {
-  margin-bottom: 8px;
-  font-size: 14px;
-  line-height: 1.5;
-  font-weight: 650;
-  color: var(--color-ink);
-}
-.contest-detail-about {
-  white-space: pre-line;
-  overflow-wrap: anywhere;
-}
-.contest-detail-empty,
-.contest-detail-coverage {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--color-muted);
-}
-.contest-detail-documents,
-.contest-detail-summary {
-  border-top: 1px solid var(--color-rule);
-  padding-top: 16px;
-}
-.contest-detail-document {
-  margin-top: 12px;
-  overflow-wrap: anywhere;
-}
-.contest-detail-document-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
+  .contest-detail-scroll {
+    @apply flex-1;
+  }
+  .contest-detail-highlights {
+    @apply flex-col gap-4;
+  }
+  .contest-detail-deadline,
+  .contest-detail-reward {
+    @apply w-full;
+  }
+  .contest-detail-actions {
+    @apply px-4;
+    padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom));
+  }
 }
