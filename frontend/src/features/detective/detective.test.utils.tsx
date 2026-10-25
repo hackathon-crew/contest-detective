@@ -6,6 +6,7 @@ import { currentUserKey } from '@/entities/user'
 import type { Profile } from '@/shared/api'
 import { DetectiveDock } from './detective-dock'
 import { DetectivePage } from '@/pages/detective'
+import { detectiveOnboardingKey } from '@/pages/detective/detective-onboarding'
 import { DetectiveProvider } from './detective-provider'
 
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
@@ -27,6 +28,8 @@ export function renderDetective(
   path = '/',
 ) {
   stubResizeObserver()
+  // 会话用例从回访用户开始；首次进入的行为由页面测试覆盖。
+  localStorage.setItem(detectiveOnboardingKey, '1')
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   client.setQueryData(currentUserKey, null)
   return render(

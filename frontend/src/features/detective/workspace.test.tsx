@@ -6,10 +6,12 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
 import { stubResizeObserver } from './detective.test.utils'
+import { detectiveOnboardingKey } from '@/pages/detective/detective-onboarding'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem(detectiveOnboardingKey, '1')
   stubResizeObserver()
 })
 afterEach(() => {
