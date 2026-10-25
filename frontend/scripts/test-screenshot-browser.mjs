@@ -20,6 +20,7 @@ const server = spawn(
   { stdio: 'pipe' },
 )
 let browser
+let page
 const evidence = {
   runtime: 'Chromium, real self-hosted Tesseract WASM',
   synthetic_fixtures: true,
@@ -74,7 +75,7 @@ try {
       })
     } else await route.continue()
   })
-  const page = await context.newPage()
+  page = await context.newPage()
   page.on('pageerror', (error) => evidence.errors.push(error.message))
   await page.goto(`${base}/detective`)
   const open = async () => {
@@ -169,6 +170,67 @@ try {
   await expect.poll(() => page.workers().length).toBe(0)
   releaseLanguage()
   await context.unroute('**/ocr/lang/*')
+  // A replacement cancels the old owner and its child before the next OCR finishes.
+  let releaseReplacement
+  const replacementGate = new Promise((done) => {
+    releaseReplacement = done
+  })
+  await context.route('**/ocr/lang/*', async (route) => {
+    await replacementGate
+    await route.continue().catch(() => {})
+  })
+  const replaceDialog = await open()
+  const firstLoading = page.waitForRequest((request) => request.url().includes('/ocr/lang/'))
+  await replaceDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await firstLoading
+  const oldWorkers = [...page.workers()]
+  await replaceDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/blank.png'))
+  await expect.poll(() => oldWorkers.every((worker) => !page.workers().includes(worker))).toBe(true)
+  releaseReplacement()
+  await context.unroute('**/ocr/lang/*')
+  await expect(replaceDialog.getByText(/没有识别到可查证的文字/)).toBeVisible({ timeout: 60_000 })
+  await replaceDialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect.poll(() => page.workers().length).toBe(0)
+  // Timeout must clean an initializing child, not just report an error to the UI.
+  let releaseTimeout
+  const timeoutGate = new Promise((done) => {
+    releaseTimeout = done
+  })
+  await context.route('**/ocr/lang/*', async (route) => {
+    await timeoutGate
+    await route.continue().catch(() => {})
+  })
+  const timeoutDialog = await open()
+  await timeoutDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await expect(timeoutDialog.getByText(/图片识别超时/)).toBeVisible({ timeout: 55_000 })
+  await expect.poll(() => page.workers().length).toBe(0)
+  releaseTimeout()
+  await context.unroute('**/ocr/lang/*')
+  await timeoutDialog.getByRole('button', { name: '取消', exact: true }).click()
+  // Resource failure remains a failure, with no synthesized text or leaked worker.
+  await context.route('**/ocr/lang/*', (route) => route.abort('failed'))
+  const errorDialog = await open()
+  await errorDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await expect(errorDialog.getByRole('alert')).toBeVisible({ timeout: 15_000 })
+  await expect(errorDialog.getByRole('button', { name: '确认文字并查证' })).toBeDisabled()
+  await expect.poll(() => page.workers().length).toBe(0)
+  await errorDialog.getByRole('button', { name: '取消', exact: true }).click()
+  await context.unroute('**/ocr/lang/*')
+  const immediateDialog = await open()
+  await immediateDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await immediateDialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect.poll(() => page.workers().length).toBe(0)
+  expect(asks).toHaveLength(1)
   // Narrow viewport: shared dialog scroll area must not hide confirmation/close.
   await page.setViewportSize({ width: 390, height: 844 })
   const mobile = await open()
@@ -191,6 +253,8 @@ try {
   evidence.status = 'passed'
 } catch (error) {
   evidence.status = 'failed'
+  evidence.remaining_workers = page?.workers().map((worker) => worker.url())
+  await page?.screenshot({ path: `${output}/failure.png` }).catch(() => {})
   evidence.failure = String(error.stack ?? error)
   throw error
 } finally {

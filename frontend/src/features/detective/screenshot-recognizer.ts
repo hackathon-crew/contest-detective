@@ -21,24 +21,35 @@ export const recognizeScreenshot: ScreenshotRecognizer = async (file, { signal, 
     }
     let finished = false
     let timer: ReturnType<typeof setTimeout>
-    const finish = (result?: ScreenshotExtraction, error?: unknown) => {
+    let cleanupTimer: ReturnType<typeof setTimeout> | undefined
+    const finish = (result?: ScreenshotExtraction, error?: unknown, cancelChildren = false) => {
       if (finished) return
       finished = true
       clearTimeout(timer)
       signal.removeEventListener('abort', abort)
-      worker.terminate()
+      if (cancelChildren) {
+        // Let the responsive owner terminate its children before stopping it.
+        cleanupTimer = setTimeout(() => worker.terminate(), 1000)
+        worker.postMessage({ type: 'cancel' })
+      } else worker.terminate()
       if (error) reject(error)
       else if (result) resolve(result)
     }
-    const abort = () => finish(undefined, new DOMException('图片识别已取消', 'AbortError'))
+    const abort = () => finish(undefined, new DOMException('图片识别已取消', 'AbortError'), true)
     signal.addEventListener('abort', abort, { once: true })
     timer = setTimeout(
-      () => finish(undefined, new Error('图片识别超时，请裁剪图片或稍后重试。')),
+      () => finish(undefined, new Error('图片识别超时，请裁剪图片或稍后重试。'), true),
       SCREENSHOT_TIMEOUT_MS,
     )
-    worker.onerror = () => finish(undefined, new Error('图片识别资源无法运行，请稍后重试。'))
+    worker.onerror = () => finish(undefined, new Error('图片识别资源无法运行，请稍后重试。'), true)
     worker.onmessage = ({ data }) => {
-      if (finished) return
+      if (finished) {
+        if (data.type === 'cancelled' || data.type === 'result' || data.type === 'error') {
+          clearTimeout(cleanupTimer)
+          worker.terminate()
+        }
+        return
+      }
       if (data.type === 'progress' && Number.isFinite(data.progress)) onProgress?.(data.progress)
       else if (data.type === 'error') finish(undefined, new Error(data.message))
       else if (data.type === 'result') finish(data.result)
@@ -49,6 +60,7 @@ export const recognizeScreenshot: ScreenshotRecognizer = async (file, { signal, 
     }
     worker.postMessage(
       {
+        type: 'recognize',
         bytes,
         source,
         assets: new URL(`${import.meta.env.BASE_URL}ocr/`, window.location.origin).href,

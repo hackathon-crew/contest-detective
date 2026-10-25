@@ -31,21 +31,22 @@ it('只将无文件名的本地字节交给可取消 Worker', async () => {
   const request = recognizeScreenshot(file(), { signal: new AbortController().signal })
   await vi.waitFor(() => expect(workers).toHaveLength(1))
   const payload = workers[0]!.postMessage.mock.calls[0]![0]
-  expect(Object.keys(payload).sort()).toEqual(['assets', 'bytes', 'source'])
+  expect(Object.keys(payload).sort()).toEqual(['assets', 'bytes', 'source', 'type'])
   expect(new URL(payload.assets).origin).toBe(window.location.origin)
   const result = { status: 'no_text', text: '', claims: [] }
   workers[0]!.onmessage?.({ data: { type: 'result', result } } as MessageEvent)
   expect(await request).toEqual(result)
   expect(workers[0]!.terminate).toHaveBeenCalledOnce()
 })
-it('取消包括初始化阶段，立即销毁 Worker 并忽略迟到结果', async () => {
+it('取消包括初始化阶段，先终止子 Worker，再释放父 Worker', async () => {
   const controller = new AbortController()
   const request = recognizeScreenshot(file(), { signal: controller.signal })
   const rejection = expect(request).rejects.toMatchObject({ name: 'AbortError' })
   await vi.waitFor(() => expect(workers).toHaveLength(1))
   controller.abort()
   await rejection
-  expect(workers[0]!.terminate).toHaveBeenCalledOnce()
+  expect(workers[0]!.postMessage).toHaveBeenLastCalledWith({ type: 'cancel' })
+  expect(workers[0]!.terminate).not.toHaveBeenCalled()
   workers[0]!.onmessage?.({ data: { type: 'result', result: {} } } as MessageEvent)
   expect(workers[0]!.terminate).toHaveBeenCalledOnce()
 })
@@ -55,7 +56,7 @@ it('超时与资源错误是真实失败，不当成空白成功', async () => {
   const rejection = expect(request).rejects.toThrow('超时')
   await Promise.resolve()
   await Promise.resolve()
-  await vi.advanceTimersByTimeAsync(SCREENSHOT_TIMEOUT_MS)
+  await vi.advanceTimersByTimeAsync(SCREENSHOT_TIMEOUT_MS + 1000)
   await rejection
   expect(workers[0]!.terminate).toHaveBeenCalledOnce()
 })
