@@ -7,6 +7,7 @@ import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } fro
 import { parseTrace } from './events'
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
+import type { VerificationOptions } from './verification-contracts'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
   const client = useQueryClient()
@@ -108,7 +109,12 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       ),
     )
   }
-  function send(question: string, profile?: Profile | null, sessionId?: string) {
+  function send(
+    question: string,
+    profile?: Profile | null,
+    sessionId?: string,
+    verificationOptions?: VerificationOptions,
+  ) {
     const text = question.trim()
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
@@ -129,7 +135,15 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     change((items) =>
       existing ? items.map((session) => (session.id === id ? next : session)) : [next, ...items],
     )
-    void run(id, turnId, text, historyFor(existing?.turns ?? []), profile, controller)
+    void run(
+      id,
+      turnId,
+      text,
+      historyFor(existing?.turns ?? []),
+      profile,
+      controller,
+      verificationOptions,
+    )
     return id
   }
   async function run(
@@ -139,6 +153,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     history: ReturnType<typeof historyFor>,
     profile: Profile | null | undefined,
     controller: AbortController,
+    verificationOptions?: VerificationOptions,
   ) {
     let terminal = false
     const fail = (message: string) =>
@@ -146,7 +161,12 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     try {
       for await (const raw of apiClient.stream('/agent/ask', {
         method: 'POST',
-        json: { question, ...(history.length ? { history } : {}), ...(profile ? { profile } : {}) },
+        json: {
+          question,
+          ...(history.length ? { history } : {}),
+          ...(profile ? { profile } : {}),
+          ...verificationOptions,
+        },
         signal: controller.signal,
       })) {
         if (controller.signal.aborted) break

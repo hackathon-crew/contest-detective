@@ -1,11 +1,17 @@
 import { createContext, useContext } from 'react'
 import type { Profile } from '@/shared/api'
 import type { DetectiveSession } from './sessions'
+import type { VerificationOptions } from './verification-contracts'
 
 interface DetectiveStore {
   sessions: DetectiveSession[]
   storageError: boolean
-  send: (question: string, profile?: Profile | null, sessionId?: string) => string
+  send: (
+    question: string,
+    profile?: Profile | null,
+    sessionId?: string,
+    verificationOptions?: VerificationOptions,
+  ) => string
   stop: (sessionId: string) => void
 }
 export const DetectiveContext = createContext<DetectiveStore | null>(null)
