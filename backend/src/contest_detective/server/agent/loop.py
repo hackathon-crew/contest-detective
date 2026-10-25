@@ -265,6 +265,10 @@ class Investigator:
 
 
 def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None, mode: VerificationMode | None = None) -> Investigator:
+    # Temporary kill switch: older clients still send realtime/deep for ordinary
+    # questions. Keep the known-working mixed workflow; never expose its planner.
+    if mode in {'realtime', 'deep'}:
+        mode = None
     from .llm import create_model
     from contest_detective.server import research_pipeline
     strict = mode in {'realtime', 'deep'}

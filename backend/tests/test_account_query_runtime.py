@@ -26,6 +26,7 @@ def test_interactive_query_builds_only_the_current_users_provider_settings(
 
     class Investigator:
         agent = Scope()
+        mode = None
 
         async def ask(self, *_, **__):
             yield TraceEvent(type="answer", payload={"content": "ok"})

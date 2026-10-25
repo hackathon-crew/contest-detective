@@ -398,10 +398,10 @@ export function ResearchPreview({
           <button
             className="btn btn-primary"
             type="button"
-            disabled={!question.trim()}
-            onClick={() => onAsk(question, { mode: 'deep' })}
+            disabled
+            onClick={() => onAsk(question)}
           >
-            开始深度检索
+            深度检索暂不可用
             <Icon name="arrow-right" />
           </button>
         </div>

@@ -29,12 +29,12 @@ def test_request_preserves_legacy_and_accepts_confirmed_claims():
     assert request.confirmed_claims[0].origin == 'screenshot'
 
 
-def test_factory_fails_before_model_when_yuanbao_absent(monkeypatch):
-    def forbidden(**kwargs):
-        pytest.fail('missing Yuanbao must not initialize model')
-    monkeypatch.setattr('contest_detective.server.agent.llm.create_model', forbidden)
-    with pytest.raises(Exception, match='元宝'):
-        create_investigator(mode='realtime', search_settings=SearchSettings(_env_file=None))
+@pytest.mark.parametrize('mode', ['realtime', 'deep'])
+def test_factory_disables_strict_modes_without_requiring_yuanbao(monkeypatch, mode):
+    monkeypatch.setattr('contest_detective.server.agent.llm.create_model',
+        lambda **_: FunctionModel(lambda *_: ModelResponse([answer_part('普通推荐') ])))
+    investigator = create_investigator(mode=mode, search_settings=SearchSettings(_env_file=None))
+    assert investigator.mode is None
 
 
 def test_database_registers_no_external_tools(session_factory):
@@ -163,20 +163,21 @@ def test_unverified_day_anchor_cannot_turn_into_answer_or_recommendation_clock(s
     assert not events[-1].payload.get('recommendations')
 
 
-def test_mode_and_confirmed_claims_are_forwarded_by_http(client):
+def test_http_uses_the_effective_executor_mode(client):
     from contest_detective.web.api.agent import get_investigator
     from contest_detective.server.agent.schemas import TraceEvent
     received={}
     class FakeInvestigator:
+        mode = None
         async def ask(self, question, user_id, **kwargs):
             received.update(question=question,user_id=user_id,**kwargs)
             yield TraceEvent(type='answer',payload={'content':'mock'})
     client.app.dependency_overrides[get_investigator]=lambda:FakeInvestigator()
     try:
-        response=client.post('/agent/ask',json={'question':'比赛规则','mode':'deep','confirmed_claims':[{'id':'c1','text':'截止日期','origin':'screenshot'}]})
+        response=client.post('/agent/ask',json={'question':'比赛规则','mode':'deep'})
         assert 'event: answer' in response.text
-        assert received['mode']=='deep'
-        assert received['confirmed_claims'][0].origin=='screenshot'
+        assert received['mode'] is None
+        assert 'confirmed_claims' not in received
     finally:
         client.app.dependency_overrides.pop(get_investigator)
 

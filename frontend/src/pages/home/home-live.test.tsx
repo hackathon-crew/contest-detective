@@ -121,7 +121,7 @@ it('sends the exact hero question into a real conversation route', async () => {
         ({ url, init }) =>
           url.pathname.endsWith('/agent/ask') &&
           JSON.parse(String(init?.body)).question === '帮我核对 Python 比赛的截止时间' &&
-          JSON.parse(String(init?.body)).mode === 'deep',
+          JSON.parse(String(init?.body)).mode === undefined,
       ),
     ).toBe(true),
   )
@@ -156,22 +156,16 @@ it('opens GitHub profile import from the primary personalized recommendation act
   const dialog = await screen.findByRole('dialog', { name: '连接到 GitHub' })
   expect(within(dialog).getByRole('textbox', { name: 'GitHub 用户名' })).toBeTruthy()
 })
-it('starts an explicitly requested deep investigation with the edited question', async () => {
+it('temporarily disables the deep investigation entry without starting a request', async () => {
   const calls = show()
   fireEvent.change(screen.getByRole('textbox', { name: '深度检索问题' }), {
     target: { value: '帮我核对 Python Hack 的报名条件和作品提交截止时间' },
   })
   expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
-  fireEvent.click(screen.getByRole('button', { name: '开始深度检索' }))
-  await waitFor(() => {
-    const request = calls.find(({ url }) => url.pathname.endsWith('/agent/ask'))
-    expect(request).toBeTruthy()
-    expect(JSON.parse(String(request?.init?.body))).toMatchObject({
-      question: '帮我核对 Python Hack 的报名条件和作品提交截止时间',
-      mode: 'deep',
-    })
-  })
-  expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
+  const button = screen.getByRole('button', { name: '深度检索暂不可用' })
+  expect((button as HTMLButtonElement).disabled).toBe(true)
+  fireEvent.click(button)
+  expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
 })
 it('asks the detective about the opened contest instead of replaying the demo', async () => {
   const calls = show('/contests/python')
