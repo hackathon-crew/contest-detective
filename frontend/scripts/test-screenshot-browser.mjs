@@ -212,7 +212,11 @@ try {
   expect(evidence.requests.filter((request) => request.method !== 'GET')).toHaveLength(1)
   const panel = page.getByRole('complementary', { name: '研究面板' })
   await expect(panel).toBeVisible()
-  const reportView = panel.getByRole('region', { name: '查证报告' })
+  await expect(panel.getByText('查证未完成', { exact: true })).toBeVisible()
+  await expect(panel.getByText('调查计划', { exact: true })).toBeVisible()
+  const reportView = page
+    .getByRole('log', { name: '对话内容' })
+    .getByRole('region', { name: '查证报告' })
   await expect(reportView.getByRole('heading', { name: correctedClaim, exact: true })).toBeVisible()
   await expect(reportView.getByText('查证未完成', { exact: true })).toBeVisible()
   await expect(reportView.getByText('证据不足', { exact: true })).toBeVisible()
