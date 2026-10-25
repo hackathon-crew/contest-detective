@@ -1,23 +1,22 @@
 import { useMemo, useRef, type ReactNode } from 'react'
-import { AlertCircle, ArrowUpRight, CalendarDays, MapPin, Sparkles } from 'lucide-react'
 import {
   ContestCover,
   dateFields,
   dateText,
   formatDate,
   groundedIntroduction,
-  statusNames,
+  safeUrl,
   useContest,
   type ContestDetail as Contest,
 } from '@/entities/contest'
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
+import { Icon } from '@/shared/ui/site-icon'
 import { ContestIntroductionSection } from './content'
 import { buildEvidenceIndex, type EvidenceIndex } from './evidence-index'
 import {
   conflictValues,
   criticalUnknowns,
-  detailAction,
   detailLabels,
   displayField,
   hasConflict,
@@ -111,7 +110,6 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
   const pending = criticalUnknowns(contest)
   const generic = pending.filter((item) => item.generic)
   const specific = pending.filter((item) => !item.generic)
-  const conflicts = Object.keys(contest.fields).filter((field) => hasConflict(contest, field))
   const mode = supportedValue(contest, 'mode')
   const city = mode !== 'online' ? supportedValue(contest, 'city') : null
   const venue = mode !== 'online' ? supportedValue(contest, 'venue') : null
@@ -145,10 +143,7 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
           <div className="contest-detail-highlights">
             {next && (
               <div className="contest-detail-deadline">
-                <div className="contest-detail-eyebrow">
-                  <CalendarDays aria-hidden="true" />
-                  {detailLabels[next.field]}
-                </div>
+                <div className="contest-detail-eyebrow">{detailLabels[next.field]}</div>
                 <p className="contest-detail-date">
                   {next.info.precision === 'day'
                     ? Number(next.info.value!.slice(0, 4)) + '年' + dateText(next.info)
@@ -175,7 +170,6 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
           </div>
           {(modeText || place) && (
             <div className="contest-detail-location">
-              <MapPin aria-hidden="true" />
               <span>{[modeText, place].filter(Boolean).join(' · ')}</span>
               {locationReposted && (
                 <span className="contest-detail-inline-level">
@@ -187,32 +181,20 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
           )}
         </section>
       )}
-      {!!conflicts.length && (
-        <aside className="contest-detail-notice is-conflict" aria-label="来源冲突提醒">
-          <AlertCircle aria-hidden="true" />
-          <p>
-            {conflicts.map((field) => detailLabels[field] ?? field).join('、')}
-            的来源说法不一，请先核实。
-          </p>
-        </aside>
-      )}
       {!!pending.length && (
-        <aside className="contest-detail-notice" aria-label="参赛前待确认">
-          <AlertCircle aria-hidden="true" />
-          <div>
-            {!!generic.length && <p>{generic.map((item) => item.label).join('、')}待确认。</p>}
-            {specific.map((item) => (
-              <p key={item.field}>
-                {item.message}。
-                <SourceReferences
-                  index={index}
-                  refs={index.refsByField[item.field] ?? []}
-                  label={item.label}
-                />
-              </p>
-            ))}
-          </div>
-        </aside>
+        <div className="contest-detail-coverage" aria-label="参赛前待确认">
+          {!!generic.length && <p>{generic.map((item) => item.label).join('、')}待确认。</p>}
+          {specific.map((item) => (
+            <p key={item.field}>
+              {item.message}。
+              <SourceReferences
+                index={index}
+                refs={index.refsByField[item.field] ?? []}
+                label={item.label}
+              />
+            </p>
+          ))}
+        </div>
       )}
       <FactSection
         title="参赛条件"
@@ -251,20 +233,8 @@ export function ContestDetail({
   const title = useRef<HTMLHeadingElement>(null)
   const contest = query.data
   const index = useMemo(() => (contest ? buildEvidenceIndex(contest) : null), [contest])
-  const primaryAction = contest ? detailAction(contest) : null
+  const registration = safeUrl(contest?.fields.registration_url?.value)
   const organizer = contest ? supportedValue(contest, 'organizer') : null
-  const ask = () => {
-    if (!contest || !onAsk) return
-    const topics = [
-      ...criticalUnknowns(contest).map((item) => item.label),
-      ...Object.keys(contest.fields)
-        .filter((field) => hasConflict(contest, field))
-        .map((field) => detailLabels[field] ?? field),
-    ]
-    onAsk(
-      `帮我核实一下「${contest.name}」的${[...new Set(topics)].join('、') || '关键参赛信息'}，并给出来源。`,
-    )
-  }
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent
@@ -276,12 +246,11 @@ export function ContestDetail({
         }}
       >
         <div className="contest-detail-scroll">
-          <header className="contest-detail-header">
-            <div className="contest-detail-heading">
-              <div className="contest-detail-kicker">
-                <span>赛事详情</span>
-                {contest && <span>{statusNames[contest.status]}</span>}
-              </div>
+          {contest?.cover_url && (
+            <ContestCover contest={contest} className="contest-detail-cover" />
+          )}
+          <div className="contest-detail-body">
+            <header className="contest-detail-header">
               <DialogTitle ref={title} tabIndex={-1}>
                 {contest?.name ?? '赛事详情'}
               </DialogTitle>
@@ -298,40 +267,36 @@ export function ContestDetail({
                   />
                 </p>
               )}
-            </div>
-            {contest?.cover_url && (
-              <ContestCover contest={contest} className="contest-detail-cover" />
+            </header>
+            {query.isPending ? (
+              <Skeleton className="h-32 w-full" />
+            ) : query.isError ? (
+              <ErrorState error={query.error} retry={() => void query.refetch()} />
+            ) : (
+              contest &&
+              index && <ReadingContent key={contest.id} contest={contest} index={index} />
             )}
-          </header>
-          {query.isPending ? (
-            <Skeleton className="h-32 w-full" />
-          ) : query.isError ? (
-            <ErrorState error={query.error} retry={() => void query.refetch()} />
-          ) : (
-            contest && index && <ReadingContent key={contest.id} contest={contest} index={index} />
-          )}
+          </div>
         </div>
-        {contest && (primaryAction || onAsk || action) && (
+        {contest && (registration || onAsk || action) && (
           <footer className="contest-detail-actions" aria-label="赛事操作">
-            {primaryAction && (
+            {registration && (
               <a
                 className="site-button site-button--primary"
-                href={primaryAction.href}
+                href={registration}
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                {primaryAction.label} <ArrowUpRight aria-hidden="true" />
+                去报名 <Icon name="arrow-right" />
               </a>
             )}
             {onAsk && (
               <button
                 type="button"
-                className={
-                  'site-button ' + (primaryAction ? 'site-button--outline' : 'site-button--primary')
-                }
-                onClick={ask}
+                className="site-button site-button--outline"
+                onClick={() => onAsk(`帮我核实一下「${contest.name}」的截止时间`)}
               >
-                <Sparkles aria-hidden="true" /> 问侦探
+                问侦探这场比赛
               </button>
             )}
             {action}

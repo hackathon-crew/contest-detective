@@ -117,16 +117,3 @@ export function conflictValues(contest: ContestDetail, field: string) {
     return [{ value, site: source.site || source.title || '来源' }]
   })
 }
-
-export function detailAction(contest: ContestDetail): { href: string; label: string } | null {
-  const registration = safeUrl(supportedValue(contest, 'registration_url'))
-  if (registration)
-    return {
-      href: registration,
-      label: contest.status === 'ended' ? '查看赛事资料' : '查看报名页面',
-    }
-  const fallback = Object.values(contest.fields)
-    .flatMap((field) => field.sources ?? [])
-    .find((source) => !source.stale && safeUrl(source.url))
-  return fallback ? { href: safeUrl(fallback.url)!, label: '查看赛事原文' } : null
-}

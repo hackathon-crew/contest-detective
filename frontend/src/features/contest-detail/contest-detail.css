@@ -1,430 +1,241 @@
+@reference '../../index.css';
+
+/* Keep the existing detail shell and shared controls; only the reading body scrolls. */
 .contest-detail[data-slot='dialog-content'] {
-  width: min(720px, calc(100% - 48px));
-  max-width: 720px;
-  max-height: calc(100dvh - 64px);
+  width: min(560px, calc(100% - 32px));
+  max-width: 560px;
+  max-height: calc(100dvh - 48px);
   padding: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   gap: 0;
-  border-radius: 24px;
   box-shadow: 0 24px 64px light-dark(rgb(17 17 17 / 18%), rgb(0 0 0 / 48%));
 }
+.contest-detail--library[data-slot='dialog-content'] {
+  --font-contest: 'Inkpaw Contest Sans', var(--font-sans);
+  width: min(600px, calc(100% - 32px));
+  max-width: 600px;
+  font-family: var(--font-contest);
+}
 .contest-detail-scroll {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scroll-padding-block: 24px;
-  padding: 30px 32px 24px;
-}
-.contest-detail-header {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  padding-right: 22px;
-  margin-bottom: 18px;
-}
-.contest-detail-heading {
-  min-width: 0;
-  flex: 1;
-}
-.contest-detail-kicker {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 9px;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-.contest-detail-kicker span + span::before {
-  content: '·';
-  margin-right: 10px;
-  color: var(--color-faint);
-}
-.contest-detail [data-slot='dialog-title'] {
-  color: var(--color-ink);
-  font-size: 24px;
-  line-height: 1.4;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  text-wrap: pretty;
-  overflow-wrap: anywhere;
-  outline: none;
+  @apply min-h-0 overflow-y-auto overscroll-contain scroll-py-6;
 }
 .contest-detail-cover {
-  flex: none;
-  width: 76px;
-  height: 76px;
-  margin-top: 26px;
-  border-radius: 12px;
+  height: 200px;
+  width: 100%;
   object-fit: cover;
   background: var(--color-surface-strong);
 }
+.contest-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 24px;
+}
+.contest-detail [data-slot='dialog-title'] {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  outline: none;
+}
 .contest-detail [data-slot='dialog-close'] {
-  top: 14px;
-  right: 14px;
+  top: 12px;
+  right: 12px;
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  color: var(--color-muted);
   background: var(--color-surface);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--color-ink) 16%, transparent);
 }
 .contest-detail-organizer {
-  margin-top: 9px;
+  margin-top: 4px;
+  font-size: 14px;
   color: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.7;
 }
 .contest-detail-inline-level {
-  margin-left: 6px;
-  font-size: 11px;
-}
-.contest-detail-introduction {
-  margin-bottom: 22px;
+  @apply ml-1.5 text-xs;
 }
 .contest-detail-about {
-  color: var(--color-ink-soft);
   font-size: 14px;
-  line-height: 1.85;
+  line-height: 1.7;
+  color: var(--color-ink-soft);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .contest-detail-about.is-clamped {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  @apply line-clamp-3;
 }
 .contest-detail-introduction-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 3px;
+  @apply mt-1 flex items-center gap-2;
 }
 .contest-detail-text-button,
-.contest-detail-source-return {
-  padding: 3px 0;
-  border: 0;
-  background: transparent;
-  color: var(--color-muted);
-  font-size: 12px;
-  cursor: pointer;
+.contest-detail-source-return,
+.contest-detail-source-ref {
+  @apply cursor-pointer border-0 bg-transparent p-0 text-xs text-muted underline underline-offset-3;
 }
 .contest-detail-text-button:hover,
-.contest-detail-source-return:hover {
-  color: var(--color-accent);
+.contest-detail-source-return:hover,
+.contest-detail-source-ref:hover {
+  @apply text-accent;
+}
+.contest-detail-text-button:focus-visible,
+.contest-detail-source-return:focus-visible,
+.contest-detail-source-ref:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
 }
 .contest-detail-overview {
-  padding: 18px 0;
-  margin-bottom: 4px;
-  border-block: 1px solid var(--color-rule);
+  @apply border-y border-rule py-4;
 }
 .contest-detail-highlights {
-  display: flex;
-  align-items: flex-start;
-  gap: 28px;
+  @apply flex flex-wrap items-start gap-6;
 }
-.contest-detail-deadline {
-  flex: 1 1 52%;
-  min-width: 0;
+.contest-detail-deadline,
+.contest-detail-reward {
+  @apply min-w-0 flex-1;
 }
 .contest-detail-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-muted);
-  font-size: 12px;
-}
-.contest-detail-eyebrow svg {
-  width: 14px;
-  height: 14px;
+  @apply text-xs text-muted;
 }
 .contest-detail-date {
-  margin: 7px 0 3px;
-  color: var(--color-ink);
-  font-size: 23px;
-  line-height: 1.4;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  font-variant-numeric: tabular-nums;
-}
-.contest-detail-reward {
-  flex: 1 1 40%;
-  min-width: 0;
+  @apply my-1 text-sm text-ink tabular-nums;
 }
 .contest-detail-reward .contest-detail-fact {
-  display: block;
-  padding: 0;
-  border: 0;
+  @apply block border-0 p-0;
 }
 .contest-detail-reward .contest-detail-fact > dt {
-  margin-bottom: 7px;
-}
-.contest-detail-reward .contest-detail-fact > dd > span:first-child {
-  color: var(--color-ink);
-  font-size: 15px;
-  line-height: 1.6;
-  font-weight: 600;
+  @apply mb-1;
 }
 .contest-detail-location {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 6px;
-  margin-top: 15px;
-  color: var(--color-ink-soft);
-  font-size: 13px;
-  line-height: 1.7;
-}
-.contest-detail-location > svg {
-  width: 14px;
-  height: 14px;
-  align-self: flex-start;
-  margin-top: 4px;
-  flex: none;
+  @apply mt-4 flex flex-wrap items-baseline gap-x-1.5 text-sm text-ink-soft;
 }
 .contest-detail-location > span:not(.contest-detail-source-references) {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.contest-detail-notice {
-  display: flex;
-  gap: 8px;
-  align-items: flex-start;
-  margin-top: 14px;
-  padding: 10px 12px;
-  border-left: 2px solid var(--color-notice-line);
-  border-radius: 0 8px 8px 0;
-  color: var(--color-muted);
-  background: var(--color-surface-muted);
-  font-size: 12px;
-  line-height: 1.7;
-}
-.contest-detail-notice > svg {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  margin-top: 2px;
-}
-.contest-detail-notice.is-conflict {
-  color: var(--color-danger);
-  border-left-color: var(--color-danger);
-  background: var(--color-danger-soft);
-}
-.contest-detail-section {
-  padding-top: 22px;
+  @apply min-w-0 wrap-anywhere;
 }
 .contest-detail-section h2 {
-  margin-bottom: 9px;
-  color: var(--color-ink);
-  font-size: 15px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
   font-weight: 650;
-  line-height: 1.6;
+  color: var(--color-ink);
 }
 .contest-detail-fact {
   display: grid;
-  grid-template-columns: 100px minmax(0, 1fr);
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--color-rule);
-  font-size: 14px;
-  line-height: 1.75;
+  grid-template-columns: 80px minmax(0, 1fr);
+  @apply items-baseline gap-3 border-b border-rule py-2.5 text-sm;
 }
 .contest-detail-fact:last-child {
-  border-bottom: 0;
+  @apply border-b-0;
 }
 .contest-detail-fact dt {
-  color: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.9;
+  @apply text-muted;
 }
 .contest-detail-fact dd {
-  min-width: 0;
-  color: var(--color-ink-soft);
-  overflow-wrap: anywhere;
+  @apply min-w-0 text-ink wrap-anywhere;
 }
 .contest-detail-fact-meta {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 3px 7px;
-  align-items: baseline;
-  color: var(--color-muted);
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.7;
+  @apply inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-normal text-muted;
 }
 .contest-detail-fact dd > .contest-detail-fact-meta {
-  margin-left: 6px;
+  @apply ml-1.5;
 }
 .contest-detail-conflict-label {
-  color: var(--color-danger);
-  font-size: 13px;
+  @apply text-sm text-muted;
 }
 .contest-detail-conflict-values {
-  display: grid;
-  gap: 8px;
-  margin-top: 6px;
-}
-.contest-detail-conflict-values li {
-  padding-left: 10px;
-  border-left: 1px solid var(--color-rule);
-  font-size: 13px;
+  @apply mt-1 grid gap-2 text-sm;
 }
 .contest-detail-conflict-values li > span {
-  display: block;
-  color: var(--color-muted);
-  font-size: 11px;
+  @apply block text-xs text-muted;
 }
 .contest-detail-source-references {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 2px;
-}
-.contest-detail-source-ref {
-  min-width: 24px;
-  min-height: 24px;
-  padding: 2px 4px;
-  border: 0;
-  border-radius: 6px;
-  color: var(--color-muted);
-  background: transparent;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.5;
-  cursor: pointer;
-}
-.contest-detail-source-ref:hover,
-.contest-detail-source-ref:focus-visible {
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
-}
-.contest-detail-source-ref:focus-visible,
-.contest-detail-text-button:focus-visible,
-.contest-detail-source-return:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+  @apply inline-flex items-baseline gap-2;
 }
 .contest-detail-sources,
 .contest-detail-history {
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--color-rule);
-  color: var(--color-muted);
-  font-size: 12px;
-  line-height: 1.75;
+  @apply border-t border-rule pt-4 text-xs text-muted;
 }
 .contest-detail-sources-summary,
 .contest-detail-history > summary {
-  width: fit-content;
-  cursor: pointer;
-  color: var(--color-ink-soft);
-  font-size: 13px;
-  font-weight: 500;
+  @apply w-fit cursor-pointer text-sm text-ink-soft;
 }
 .contest-detail-sources-body {
-  padding-top: 10px;
+  @apply pt-2;
 }
 .contest-detail-empty,
 .contest-detail-coverage {
-  color: var(--color-muted);
+  margin-top: 4px;
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.6;
+  color: var(--color-muted);
 }
 .contest-detail-source-list {
-  display: grid;
-  gap: 18px;
-  margin-top: 16px;
+  @apply mt-4 grid gap-4;
 }
 .contest-detail-source-group {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  outline: none;
+  @apply min-w-0 outline-none wrap-anywhere;
 }
 .contest-detail-source-group + .contest-detail-source-group {
-  padding-top: 18px;
-  border-top: 1px solid var(--color-rule);
+  @apply border-t border-rule pt-4;
 }
 .contest-detail-source-heading {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
-  align-items: baseline;
+  @apply flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1;
 }
 .contest-detail-source-heading > a {
-  color: var(--color-ink-soft);
-  font-size: 13px;
-  font-weight: 550;
+  @apply text-sm text-ink;
 }
-.contest-detail-source-heading > a:hover {
-  color: var(--color-accent);
+.contest-detail a:not(.site-button) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .contest-detail-source-meta {
-  color: var(--color-muted);
-  font-size: 11px;
-  line-height: 1.7;
+  @apply text-xs text-muted;
 }
 .contest-detail-source-meta p + p {
-  margin-top: 3px;
+  @apply mt-1;
 }
 .contest-detail-source-meta p > .lv {
-  margin-left: 8px;
+  @apply ml-2;
 }
 .contest-detail-source-excerpt {
-  margin-top: 12px;
-  padding-left: 12px;
-  border-left: 2px solid var(--color-rule);
-  color: var(--color-ink-soft);
-  font-size: 13px;
-  line-height: 1.8;
-  white-space: pre-line;
-  scroll-margin-block: 20px;
+  @apply mt-2 scroll-my-5 text-xs whitespace-pre-line text-muted;
 }
 .contest-detail-source-excerpt:focus,
 .contest-detail-source-meta:focus {
-  outline: 2px solid var(--color-accent-line);
-  outline-offset: 5px;
+  @apply outline-2 outline-offset-2 outline-ring;
 }
 .contest-detail-source-versions {
-  margin-top: 12px;
+  @apply mt-3;
 }
 .contest-detail-source-versions > summary {
-  width: fit-content;
-  cursor: pointer;
+  @apply w-fit cursor-pointer;
 }
 .contest-detail-source-versions ul {
-  display: grid;
-  gap: 12px;
-  padding-top: 10px;
+  @apply grid gap-3 pt-2;
 }
 .contest-detail-source-observations {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-rule);
+  @apply mt-3 border-t border-rule pt-2;
 }
 .contest-detail-source-observations > p:first-child {
-  margin-bottom: 4px;
-}
-.contest-detail-history {
-  margin-top: 12px;
-  padding-top: 12px;
+  @apply mb-1;
 }
 .contest-detail-history > p {
-  margin-top: 9px;
-}
-.contest-detail-history a {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  @apply mt-2;
 }
 .contest-detail .lv {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 11px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .contest-detail .lv .ic {
   width: 12px;
   height: 12px;
+  stroke-width: 2.25;
 }
 .contest-detail .lv-official {
   color: var(--color-ink);
@@ -439,117 +250,31 @@
   color: var(--color-faint);
 }
 .contest-detail-actions {
-  display: flex;
-  flex: none;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 16px 32px;
-  border-top: 1px solid var(--color-rule);
-  background: var(--color-surface);
+  @apply flex flex-none flex-wrap items-center gap-3 border-t border-rule bg-surface px-6 py-4;
 }
-.contest-detail-actions .site-button {
-  min-height: 42px;
-  font-size: 13px;
-}
-.contest-detail-actions .site-button svg {
-  width: 15px;
-  height: 15px;
-}
-.contest-detail-actions > .site-button--primary {
-  margin-right: auto;
-}
-.contest-detail-actions > button:not(.site-button) {
-  min-height: 42px;
+.contest-detail--library .contest-detail-fact {
+  grid-template-columns: 88px minmax(0, 1fr);
 }
 @media (max-width: 640px) {
+  .contest-detail-fact,
+  .contest-detail--library .contest-detail-fact {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
   .contest-detail[data-slot='dialog-content'] {
-    inset: 0;
-    width: 100%;
-    max-width: none;
-    height: 100dvh;
-    max-height: 100dvh;
-    transform: none;
-    translate: none;
-    border-radius: 0;
+    @apply inset-0 h-dvh max-h-dvh w-full max-w-none translate-none transform-none rounded-none;
   }
   .contest-detail-scroll {
-    flex: 1;
-    padding: 22px 20px 24px;
-  }
-  .contest-detail-header {
-    gap: 12px;
-    padding-right: 28px;
-    margin-bottom: 15px;
-  }
-  .contest-detail [data-slot='dialog-title'] {
-    font-size: 20px;
-    line-height: 1.45;
-  }
-  .contest-detail-cover {
-    display: none;
-  }
-  .contest-detail-organizer {
-    font-size: 11px;
-  }
-  .contest-detail-introduction {
-    margin-bottom: 18px;
-  }
-  .contest-detail-about {
-    font-size: 13px;
-    line-height: 1.8;
+    @apply flex-1;
   }
   .contest-detail-highlights {
-    flex-direction: column;
-    gap: 14px;
+    @apply flex-col gap-4;
   }
   .contest-detail-deadline,
   .contest-detail-reward {
-    width: 100%;
-  }
-  .contest-detail-date {
-    font-size: 23px;
-  }
-  .contest-detail-reward .contest-detail-fact {
-    display: grid;
-    grid-template-columns: 52px minmax(0, 1fr);
-    gap: 12px;
-  }
-  .contest-detail-reward .contest-detail-fact > dt {
-    margin: 0;
-  }
-  .contest-detail-reward .contest-detail-fact > dd > span:first-child {
-    font-size: 14px;
-  }
-  .contest-detail-fact {
-    grid-template-columns: 76px minmax(0, 1fr);
-    gap: 12px;
-    font-size: 13px;
-  }
-  .contest-detail-fact dt {
-    font-size: 11px;
-  }
-  .contest-detail-section {
-    padding-top: 20px;
+    @apply w-full;
   }
   .contest-detail-actions {
-    gap: 8px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-  }
-  .contest-detail-actions .site-button {
-    min-height: 44px;
-    padding-inline: 12px;
-  }
-  .contest-detail-actions > .site-button--primary {
-    flex: 1;
-    margin-right: 0;
-  }
-  .contest-detail-actions > button:not(.site-button) {
-    min-height: 44px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .contest-detail-scroll {
-    scroll-behavior: auto;
+    @apply px-4;
+    padding-bottom: calc(--spacing(4) + env(safe-area-inset-bottom));
   }
 }
