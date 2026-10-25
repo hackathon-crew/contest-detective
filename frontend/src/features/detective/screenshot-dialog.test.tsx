@@ -47,7 +47,6 @@ it('高分不自动查询，确认只发送校正选择的文字', async () => {
     target: { value: '比赛报名截止是 10 月 30 日' },
   })
   fireEvent.click(screen.getByLabelText('查证这条说法 1'))
-  fireEvent.change(screen.getByLabelText('截图查证方式'), { target: { value: 'deep' } })
   fireEvent.click(screen.getByRole('button', { name: '确认文字并查证' }))
   fireEvent.click(screen.getByRole('button', { name: '确认文字并查证' }))
   expect(onConfirm).toHaveBeenCalledExactlyOnceWith({

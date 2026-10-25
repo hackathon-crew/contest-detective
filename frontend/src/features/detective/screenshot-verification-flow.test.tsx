@@ -80,14 +80,14 @@ it('所选校正说法进入共享核验，受阻报告自动打开研究面板�
   await waitFor(() => expect(requests).toHaveLength(1))
   expect(requests[0]).toMatchObject({
     question: '校正后的公开赛事截止说法',
-    mode: 'realtime',
+    mode: 'deep',
     confirmed_claims: [
       { id: 'screenshot-1', text: '校正后的公开赛事截止说法', origin: 'screenshot' },
     ],
   })
   const report = {
     ...reportFixture(),
-    mode: 'realtime',
+    mode: 'deep',
     status: 'blocked',
     plan: null,
     queries: [],
@@ -106,9 +106,6 @@ it('尚无查询步骤的计划也打开既有研究面板', async () => {
   renderDetective({}, '/detective')
   fireEvent.change(screen.getByRole('textbox', { name: '问侦探' }), {
     target: { value: '公开比赛报名截止' },
-  })
-  fireEvent.change(screen.getByRole('combobox', { name: '查证方式' }), {
-    target: { value: 'deep' },
   })
   fireEvent.click(screen.getByRole('button', { name: '查证' }))
   await waitFor(() => expect(requests).toHaveLength(1))
