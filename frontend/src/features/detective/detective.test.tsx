@@ -77,9 +77,39 @@ describe('侦探过程', () => {
     renderStream(event('step', { tool: 'search_contests', label: '查询比赛库' }))
     expect(await screen.findByText('查证提前结束，请重试。')).toBeTruthy()
   })
-  it('拒绝不合契约的载荷和不安全链接', () => {
-    expect(() => parseTrace({ event: 'answer', data: '{"content":42}', id: null })).toThrow()
-    expect(() =>
+  it('不可用的附加消息不打断后续回答', async () => {
+    renderStream(
+      'event: observation\ndata: broken\n\n' +
+        event('plan', {}) +
+        event('answer', { content: '已经找到可参加的比赛。', report: {}, sources: [] }),
+    )
+    expect(await screen.findByText('已经找到可参加的比赛。')).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+  it('缺少封面、简介与字段值时仍显示回答和推荐', async () => {
+    renderStream(
+      event('answer', {
+        content: '这场线上比赛可以使用 Python。',
+        sources: [],
+        recommendations: [
+          {
+            contest: {
+              id: 'python-online',
+              name: '线上 Python 挑战',
+              status: 'upcoming',
+              fields: { submission_deadline: { level: 'not_found', sources: [] } },
+            },
+            reason: '支持线上提交。',
+          },
+        ],
+      }),
+    )
+    expect(await screen.findByText('这场线上比赛可以使用 Python。')).toBeTruthy()
+    expect(screen.getByRole('link', { name: '线上 Python 挑战' })).toBeTruthy()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+  it('附加来源异常时保留正文，链接仍在显示时处理', () => {
+    expect(
       parseTrace({
         event: 'answer',
         data: JSON.stringify({
@@ -88,7 +118,13 @@ describe('侦探过程', () => {
         }),
         id: null,
       }),
-    ).toThrow()
+    ).toMatchObject({ type: 'answer', content: '结论' })
+  })
+  it('断流前已收到的正文继续显示，不要求重新提问', async () => {
+    renderStream(event('delta', { content: '已查到一场线上活动。' }))
+    expect(await screen.findByText('已查到一场线上活动。')).toBeTruthy()
+    await waitFor(() => expect(screen.queryByRole('button', { name: '停止查证' })).toBeNull())
+    expect(screen.queryByRole('alert')).toBeNull()
   })
   it('停止会取消进行中的请求并恢复输入', async () => {
     let aborted = false

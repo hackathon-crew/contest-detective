@@ -38,7 +38,7 @@ it('来源标签只在回复下方展示已核实的官方出处，过滤线索�
       ],
     }),
   })
-  if (answer.type !== 'answer') throw new Error('expected answer')
+  if (answer?.type !== 'answer') throw new Error('expected answer')
   render(
     <DetectiveMessage
       turn={{

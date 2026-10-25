@@ -1,5 +1,4 @@
 import type { ContestRecommendation, ServerSentEvent } from '@/shared/api'
-import { safeUrl } from '@/entities/contest'
 import type {
   InvestigationPlan,
   InvestigationReport,
@@ -44,87 +43,40 @@ export type TraceEvent =
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
-function invalid(): never {
-  throw new Error('查证消息格式无效，请重试。')
-}
 function sources(value: unknown): TraceSource[] {
-  if (value === undefined) return []
-  if (!Array.isArray(value)) return invalid()
-  return value.map((item) => {
-    if (
-      !record(item) ||
-      typeof item.title !== 'string' ||
-      typeof item.url !== 'string' ||
-      !safeUrl(item.url) ||
-      (item.site !== undefined && typeof item.site !== 'string') ||
-      (item.is_official !== undefined && typeof item.is_official !== 'boolean') ||
-      (item.stale !== undefined && typeof item.stale !== 'boolean') ||
-      ['provider', 'query', 'retrieved_at'].some(
-        (key) => item[key] != null && typeof item[key] !== 'string',
-      )
-    )
-      return invalid()
-    return {
-      title: item.title,
-      url: item.url,
-      site: item.site ?? '',
-      is_official: item.is_official === true,
-      stale: item.stale === true,
-      ...(item.provider !== undefined ? { provider: item.provider } : {}),
-      ...(item.query !== undefined ? { query: item.query } : {}),
-      ...(item.retrieved_at !== undefined ? { retrieved_at: item.retrieved_at } : {}),
-    } as TraceSource
-  })
+  if (!Array.isArray(value)) return []
+  return value.filter(record).map((item) => ({
+    ...item,
+    title: typeof item.title === 'string' ? item.title : '',
+    url: typeof item.url === 'string' ? item.url : '',
+    site: typeof item.site === 'string' ? item.site : '',
+    is_official: item.is_official === true,
+    stale: item.stale === true,
+  })) as TraceSource[]
 }
 
-function recommendations(value: unknown): ContestRecommendation[] | undefined {
-  if (value === undefined) return undefined
-  if (!Array.isArray(value)) return invalid()
-  for (const item of value) {
-    if (
-      !record(item) ||
-      !record(item.contest) ||
-      typeof item.reason !== 'string' ||
-      (item.introduction !== undefined &&
-        item.introduction !== null &&
-        typeof item.introduction !== 'string')
-    )
-      return invalid()
-    const contest = item.contest
-    if (
-      typeof contest.id !== 'string' ||
-      typeof contest.name !== 'string' ||
-      !['upcoming', 'ongoing', 'ended'].includes(String(contest.status)) ||
-      (contest.cover_url !== null && typeof contest.cover_url !== 'string') ||
-      (contest.summary !== null && typeof contest.summary !== 'string') ||
-      !record(contest.fields)
-    )
-      return invalid()
-    for (const field of Object.values(contest.fields)) {
-      if (
-        !record(field) ||
-        (field.value !== null && typeof field.value !== 'string') ||
-        !['official', 'reposted', 'conflict', 'not_found'].includes(String(field.level)) ||
-        (field.sources !== undefined &&
-          (!Array.isArray(field.sources) ||
-            field.sources.some((source) => !record(source) || typeof source.url !== 'string')))
-      )
-        return invalid()
-    }
+function optional<T>(value: unknown, parse: (value: unknown) => T): T | undefined {
+  if (value == null) return undefined
+  try {
+    return parse(value)
+  } catch {
+    return undefined
   }
-  return value as ContestRecommendation[]
 }
 
-/** SSE 只负责分帧，这里检查业务载荷，避免半条结论或错误被当成回答。 */
-export function parseTrace(event: ServerSentEvent): TraceEvent {
+/** 附加资料不可用时继续接收正文，不因单个字段丢掉整条回答。 */
+export function parseTrace(event: ServerSentEvent): TraceEvent | null {
   let value: unknown
   try {
     value = JSON.parse(event.data)
   } catch {
-    return invalid()
+    return null
   }
-  if (!record(value)) return invalid()
-  if (event.event === 'plan') return { type: 'plan', plan: parseInvestigationPlan(value) }
+  if (!record(value)) return null
+  if (event.event === 'plan') {
+    const plan = optional(value, parseInvestigationPlan)
+    return plan ? { type: 'plan', plan } : null
+  }
   if (event.event === 'delta' && typeof value.content === 'string')
     return { type: 'delta', content: value.content }
   if (event.event === 'step' && typeof value.tool === 'string' && typeof value.label === 'string')
@@ -139,17 +91,21 @@ export function parseTrace(event: ServerSentEvent): TraceEvent {
       tool: value.tool,
       summary: value.summary,
       sources: sources(value.sources),
-      ...(value.execution != null ? { execution: parseSearchExecution(value.execution) } : {}),
+      execution: optional(value.execution, parseSearchExecution),
     }
-  if (event.event === 'answer' && typeof value.content === 'string' && value.content.trim())
+  if (event.event === 'answer' && typeof value.content === 'string') {
+    const report = optional(value.report, parseInvestigationReport)
     return {
       type: 'answer',
       content: value.content,
       sources: sources(value.sources),
-      recommendations: recommendations(value.recommendations),
-      ...(value.report != null ? { report: parseInvestigationReport(value.report) } : {}),
+      recommendations: Array.isArray(value.recommendations)
+        ? (value.recommendations as ContestRecommendation[])
+        : undefined,
+      ...(report ? { report } : {}),
     }
+  }
   if (event.event === 'error' && typeof value.message === 'string')
     return { type: 'error', message: value.message }
-  return invalid()
+  return null
 }
