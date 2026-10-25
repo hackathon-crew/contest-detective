@@ -1,5 +1,15 @@
 import type { ContestRecommendation, ServerSentEvent } from '@/shared/api'
 import { safeUrl } from '@/entities/contest'
+import type {
+  InvestigationPlan,
+  InvestigationReport,
+  SearchExecution,
+} from './verification-contracts'
+import {
+  parseInvestigationPlan,
+  parseInvestigationReport,
+  parseSearchExecution,
+} from './verification-report'
 
 export interface TraceSource {
   title: string
@@ -7,16 +17,27 @@ export interface TraceSource {
   site: string
   is_official?: boolean
   stale?: boolean
+  provider?: string | null
+  query?: string | null
+  retrieved_at?: string | null
 }
 export type TraceEvent =
+  | { type: 'plan'; plan: InvestigationPlan }
   | { type: 'step'; tool: string; label: string }
-  | { type: 'observation'; tool: string; summary: string; sources: TraceSource[] }
+  | {
+      type: 'observation'
+      tool: string
+      summary: string
+      sources: TraceSource[]
+      execution?: SearchExecution
+    }
   | { type: 'delta'; content: string }
   | {
       type: 'answer'
       content: string
       sources: TraceSource[]
       recommendations?: ContestRecommendation[]
+      report?: InvestigationReport
     }
   | { type: 'error'; message: string }
 
@@ -37,7 +58,10 @@ function sources(value: unknown): TraceSource[] {
       !safeUrl(item.url) ||
       (item.site !== undefined && typeof item.site !== 'string') ||
       (item.is_official !== undefined && typeof item.is_official !== 'boolean') ||
-      (item.stale !== undefined && typeof item.stale !== 'boolean')
+      (item.stale !== undefined && typeof item.stale !== 'boolean') ||
+      ['provider', 'query', 'retrieved_at'].some(
+        (key) => item[key] != null && typeof item[key] !== 'string',
+      )
     )
       return invalid()
     return {
@@ -46,6 +70,9 @@ function sources(value: unknown): TraceSource[] {
       site: item.site ?? '',
       is_official: item.is_official === true,
       stale: item.stale === true,
+      ...(item.provider !== undefined ? { provider: item.provider } : {}),
+      ...(item.query !== undefined ? { query: item.query } : {}),
+      ...(item.retrieved_at !== undefined ? { retrieved_at: item.retrieved_at } : {}),
     } as TraceSource
   })
 }
@@ -97,6 +124,7 @@ export function parseTrace(event: ServerSentEvent): TraceEvent {
     return invalid()
   }
   if (!record(value)) return invalid()
+  if (event.event === 'plan') return { type: 'plan', plan: parseInvestigationPlan(value) }
   if (event.event === 'delta' && typeof value.content === 'string')
     return { type: 'delta', content: value.content }
   if (event.event === 'step' && typeof value.tool === 'string' && typeof value.label === 'string')
@@ -111,6 +139,7 @@ export function parseTrace(event: ServerSentEvent): TraceEvent {
       tool: value.tool,
       summary: value.summary,
       sources: sources(value.sources),
+      ...(value.execution != null ? { execution: parseSearchExecution(value.execution) } : {}),
     }
   if (event.event === 'answer' && typeof value.content === 'string' && value.content.trim())
     return {
@@ -118,6 +147,7 @@ export function parseTrace(event: ServerSentEvent): TraceEvent {
       content: value.content,
       sources: sources(value.sources),
       recommendations: recommendations(value.recommendations),
+      ...(value.report != null ? { report: parseInvestigationReport(value.report) } : {}),
     }
   if (event.event === 'error' && typeof value.message === 'string')
     return { type: 'error', message: value.message }

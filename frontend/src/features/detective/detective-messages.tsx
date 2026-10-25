@@ -7,6 +7,9 @@ import type { TraceSource } from './events'
 import { rehypeStreamReveal } from './rehype-stream-reveal'
 import { useStreamPacer } from './use-stream-pacer'
 import { SourceIcon } from './source-icon'
+import { EvidenceReport, ExecutionDetails, InvestigationProgress } from './evidence-report'
+import type { SearchExecution } from './verification-contracts'
+import { reportStatusNames } from './verification-report'
 import { ProfileFileAttachment, RecommendationCards } from './detective-results'
 
 function Sources({ items }: { items: TraceSource[] }) {
@@ -40,7 +43,13 @@ function Sources({ items }: { items: TraceSource[] }) {
 }
 
 function ToolActivity({ turn }: { turn: DetectiveTurn }) {
-  const steps: { label: string; tool: string; summary?: string; sources: TraceSource[] }[] = []
+  const steps: {
+    label: string
+    tool: string
+    summary?: string
+    sources: TraceSource[]
+    execution?: SearchExecution
+  }[] = []
   for (const event of turn.trace) {
     if (event.type === 'step') steps.push({ label: event.label, tool: event.tool, sources: [] })
     else {
@@ -48,25 +57,39 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
       if (step) {
         step.summary = event.summary
         step.sources = event.sources
+        step.execution = event.execution
       }
     }
   }
   if (!steps.length) return null
   const active = turn.status === 'running' && !turn.content && steps.at(-1)!.summary === undefined
-  const completed = steps.filter((step) => step.summary !== undefined).length
-  const label = active
-    ? `正在${steps.at(-1)!.label}`
-    : turn.status === 'stopped'
-      ? `已停止，完成 ${completed} 项检索`
-      : turn.status === 'error'
-        ? '检索未完成'
-        : `已完成 ${steps.length} 项检索`
+  const completed = steps.filter(
+    (step) => step.summary !== undefined && step.execution?.status !== 'failure',
+  ).length
+  const failed = steps.some((step) => step.execution?.status === 'failure')
+  const unfinished = steps.some((step) => step.summary === undefined)
+  const label = turn.report
+    ? reportStatusNames[turn.report.status]
+    : active
+      ? `正在${steps.at(-1)!.label}`
+      : turn.status === 'stopped'
+        ? `已停止，完成 ${completed} 项检索`
+        : turn.status === 'error'
+          ? '检索未完成'
+          : failed || unfinished
+            ? `检索未完成，成功 ${completed} 项`
+            : `已完成 ${completed} 项检索`
   return (
     <details className="detective-tools">
       <summary aria-label={label}>
         <ChevronRight className="detective-tools__chevron" aria-hidden="true" />
         {active ? (
           <LoaderCircle className="detective-spin" aria-hidden="true" />
+        ) : failed ||
+          unfinished ||
+          turn.status !== 'completed' ||
+          (turn.report && turn.report.status !== 'complete') ? (
+          <Square aria-hidden="true" />
         ) : (
           <Check aria-hidden="true" />
         )}
@@ -77,7 +100,9 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
           <li key={index}>
             <div className="detective-tools__heading">
               <strong>{step.label}</strong>
-              {step.summary || turn.status === 'completed' ? (
+              {step.execution?.status === 'failure' ? (
+                <span>失败</span>
+              ) : step.summary !== undefined ? (
                 <Check aria-label="已完成" />
               ) : turn.status === 'running' ? (
                 <LoaderCircle className="detective-spin" aria-label="进行中" />
@@ -86,6 +111,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
               )}
             </div>
             {step.summary && <p>{step.summary}</p>}
+            {step.execution && <ExecutionDetails execution={step.execution} />}
           </li>
         ))}
       </ol>
@@ -123,15 +149,24 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
           />
         </div>
         <div className="detective-turn__body">
-          <ToolActivity turn={turn} />
+          {!turn.report && <ToolActivity turn={turn} />}
+          {!turn.report && turn.plan && (
+            <InvestigationProgress
+              plan={turn.plan}
+              queries={turn.trace.flatMap((event) =>
+                event.type === 'observation' && event.execution ? [event.execution] : [],
+              )}
+            />
+          )}
           {turn.status === 'running' &&
             !turn.content &&
+            !turn.plan &&
             (!turn.trace.length || turn.trace.at(-1)?.type === 'observation') && (
               <p className="detective-thinking" role="status">
                 {turn.trace.length ? '正在整理回复' : '正在看你的问题'}
               </p>
             )}
-          {paced.visible && (
+          {!turn.report && paced.visible && (
             <div className="detective-prose">
               <ReactMarkdown
                 urlTransform={(url) => safeUrl(url) ?? ''}
@@ -142,8 +177,9 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
               </ReactMarkdown>
             </div>
           )}
+          {turn.report && <EvidenceReport report={turn.report} />}
           {!!turn.recommendations?.length && <RecommendationCards items={turn.recommendations} />}
-          <Sources items={turn.sources} />
+          {!turn.report && <Sources items={turn.sources} />}
           {turn.error && (
             <p
               className="detective-turn__error"
