@@ -117,6 +117,8 @@ test('private watch preserves paused status, evidence precision and working cont
   await page.goto('/account/follows')
   const panel = page.getByRole('region', { name: '比赛盯梢', exact: true })
   await expect(panel).toBeVisible()
+  // Profile recommendations are debounced independently of the watch panel.
+  await expect.poll(() => [...nonGetRequests]).toEqual(['POST /match'])
   await expect(panel.getByText('已暂停盯梢', { exact: true })).toBeVisible()
   await panel.getByRole('switch', { name: '盯梢「公开赛事演示」' }).click()
   await expect(panel.getByText('订阅已开启，自动检查暂停', { exact: true })).toBeVisible()
