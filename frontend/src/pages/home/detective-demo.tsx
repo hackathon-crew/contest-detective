@@ -1,3 +1,4 @@
+import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ContestPreview,
@@ -18,7 +19,7 @@ export function DetectiveDemo({
   onAddProfile,
 }: {
   contests: ContestSummary[]
-  onAsk: (question: string) => void
+  onAsk: (question: string, verification?: VerificationOptions) => void
   onAddProfile: (section: 'github' | 'profile' | 'filters') => void
 }) {
   const picks = [
@@ -136,12 +137,13 @@ export function DetectiveDemo({
           value={input}
           pending={false}
           onChange={setInput}
-          onSubmit={(event) => {
+          onSubmit={(event, verification) => {
             event.preventDefault()
-            if (input.trim()) onAsk(input.trim())
+            if (input.trim()) onAsk(input.trim(), verification)
           }}
           onStop={() => {}}
           onAddProfile={onAddProfile}
+          onVerifyScreenshot={({ question, ...verification }) => onAsk(question, verification)}
         />
       </div>
     </div>

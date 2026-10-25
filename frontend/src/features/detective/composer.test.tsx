@@ -30,7 +30,7 @@ describe('侦探输入口', () => {
     expect((screen.getByRole('button', { name: '查证' }) as HTMLButtonElement).disabled).toBe(true)
     fireEvent.keyDown(screen.getByRole('button', { name: '添加简历或参赛资料' }), { key: 'Enter' })
     expect(onAddProfile).not.toHaveBeenCalled()
-    expect(await screen.findAllByRole('menuitem')).toHaveLength(3)
+    expect(await screen.findAllByRole('menuitem')).toHaveLength(4)
     fireEvent.click(screen.getByRole('menuitem', { name: '添加画像' }))
     expect(onAddProfile).toHaveBeenCalledWith('profile')
     expect(screen.queryByRole('menu')).toBeNull()
@@ -62,8 +62,26 @@ describe('侦探输入口', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
     expect(JSON.parse(init.body as string).question).toBe(question)
+    expect(JSON.parse(init.body as string).mode).toBeUndefined()
     expect(await screen.findByText('已整理参赛条件。')).toBeTruthy()
   })
+
+  it.each(['database', 'realtime', 'deep'])(
+    'typed %s selection is forwarded without screenshot claims',
+    async (mode) => {
+      const { fetch, input } = show()
+      fireEvent.change(screen.getByRole('combobox', { name: '查证方式' }), {
+        target: { value: mode },
+      })
+      fireEvent.change(input, { target: { value: '公开编程比赛报名截止' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
+      await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+      const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
+      const payload = JSON.parse(init.body as string)
+      expect(payload.mode).toBe(mode)
+      expect(payload.confirmed_claims).toBeUndefined()
+    },
+  )
 
   it('Shift+Enter 和中文输入法确认选字都不发送', async () => {
     const { fetch, input } = show()

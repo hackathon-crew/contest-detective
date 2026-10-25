@@ -1,0 +1,40 @@
+name: Screenshot OCR
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/screenshot-ocr.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/screenshot-ocr.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  screenshot-ocr:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:ocr-browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshot-ocr-evidence
+          path: frontend/test-results/screenshot-ocr/
+          if-no-files-found: error
