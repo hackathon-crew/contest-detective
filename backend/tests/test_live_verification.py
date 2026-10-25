@@ -88,7 +88,7 @@ def test_strict_plan_search_fetch_quote_assessment_produces_real_receipt(session
     assert report['queries'][0]['provider']=='yuanbao' and report['queries'][0]['query']==calls[0]
     assert report['claims'][0]['text']=='黑客松报名10月25日截止是真的吗？'
     assert report['evidence'][0]['excerpt']=='报名10月25日截止'
-    assert '不采用模型正文' not in events[-1].payload['content']
+    assert events[-1].payload['content'] == '不采用模型正文'
 
 
 def test_political_scope_never_calls_model_or_search(session_factory):

@@ -2,7 +2,6 @@ import asyncio
 import socket
 import httpx
 import pytest
-from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RunUsage, UsageLimits
 from contest_detective.server.agent.scope import classify_scope

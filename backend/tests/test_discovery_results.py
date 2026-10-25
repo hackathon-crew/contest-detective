@@ -8,8 +8,11 @@ from agent_responses import answer_part
 from contest_detective.server.agent.loop import Investigator
 
 
-@pytest.mark.parametrize('interrupted', [False, True])
-def test_deep_discovery_preserves_search_results_without_full_verification(session_factory, interrupted):
+@pytest.mark.parametrize('interrupted,assessments', [(False, []), (False, [{
+    'id': 'c1', 'text': '推荐线上AI黑客松', 'verdict': 'insufficient',
+    'source_level': 'not_found', 'comparison': '候选已找到，截止时刻尚未核实。',
+}]), (True, [])])
+def test_deep_discovery_preserves_search_results_without_full_verification(session_factory, interrupted, assessments):
     calls = 0
     answer = '可以先看 AI Builders 黑客松，支持线上；11点是否截止尚未核实。\nhttps://example.devpost.com/'
 
@@ -25,7 +28,9 @@ def test_deep_discovery_preserves_search_results_without_full_verification(sessi
             return ModelResponse([ToolCallPart('web_search', {'query': '线上AI黑客松 RAG agent', 'step_id': 's1'})])
         if interrupted:
             raise RuntimeError('provider-unavailable')
-        return ModelResponse([answer_part(answer)])
+        part = answer_part(answer)
+        part.args['assessments'] = assessments
+        return ModelResponse([part])
 
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory, mode='deep',
         search_provider='yuanbao', search=lambda *args, **kwargs: [{
