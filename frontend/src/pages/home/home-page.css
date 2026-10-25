@@ -205,6 +205,10 @@
   .hero .detective-composer {
     max-width: 600px;
   }
+  .hero #top-ask {
+    width: 100%;
+    max-width: 600px;
+  }
   .hero-actions,
   .feature-actions {
     display: flex;
@@ -212,16 +216,8 @@
     flex-wrap: wrap;
     gap: calc(var(--spacing) * 4);
   }
-  .hero-actions > a {
-    display: inline-flex;
-    align-items: center;
-    min-height: calc(var(--spacing) * 10);
-    font-size: var(--text-sm);
-    color: var(--ink-soft);
-    transition: color 140ms var(--ease);
-  }
-  .hero-actions > a:hover {
-    color: var(--accent);
+  .hero-actions {
+    gap: calc(var(--spacing) * 3);
   }
   .chips {
     display: flex;
@@ -492,12 +488,16 @@
     border-color: var(--rule-strong);
   }
   .research-tabs {
+    position: relative;
+    isolation: isolate;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--spacing);
     margin-block: calc(var(--spacing) * 4);
   }
   .research-tabs button {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -519,8 +519,17 @@
     color: var(--ink);
   }
   .research-tabs button[aria-pressed='true'] {
-    background: var(--accent-soft);
     color: var(--accent);
+  }
+  .research-active-surface {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: calc((100% - var(--spacing) * 3) / 4);
+    border-radius: var(--radius-xl);
+    background: var(--accent-soft);
+    transform: translateX(calc(var(--selected-step) * (100% + var(--spacing))));
+    transition: transform 420ms var(--ease);
   }
   .research-focus {
     min-height: calc(var(--spacing) * 20);
@@ -542,13 +551,32 @@
     cursor: default;
   }
   .mail-tabs.seg {
-    display: flex;
+    position: relative;
+    isolation: isolate;
+    display: inline-grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: fit-content;
     max-width: calc(100% - var(--spacing) * 8);
     margin: calc(var(--spacing) * 4);
   }
   .mail-tabs button {
+    position: relative;
+    z-index: 1;
     height: calc(var(--spacing) * 8);
+  }
+  .mail-tabs.seg button[aria-pressed='true'] {
+    background: transparent;
+    box-shadow: none;
+  }
+  .mail-active-surface {
+    position: absolute;
+    inset-block: calc(var(--spacing) * 0.75);
+    left: calc(var(--spacing) * 0.75);
+    width: calc((100% - var(--spacing) * 2.5) / 3);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    transform: translateX(calc(var(--selected-mail) * (100% + var(--spacing) * 0.5)));
+    transition: transform 420ms var(--ease);
   }
   .mail-preview {
     display: grid;
@@ -583,6 +611,52 @@
   .research-focus,
   .mail-preview {
     animation: home-preview-enter 240ms var(--ease);
+  }
+  .preview-replay {
+    display: grid;
+    place-items: center;
+    width: calc(var(--spacing) * 8);
+    height: calc(var(--spacing) * 8);
+    border: 0;
+    border-radius: var(--radius-lg);
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+    transition:
+      background-color 140ms var(--ease),
+      color 140ms var(--ease);
+  }
+  .preview-replay:hover {
+    background: var(--surface-muted);
+    color: var(--ink);
+  }
+  .preview-replay:active {
+    transform: scale(0.94);
+  }
+  .window-actions {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing) * 2);
+  }
+  :is(.personal-stage, .research-stage, .watch-stage)[data-revealed='true'] .win {
+    animation: home-window-enter 420ms var(--ease) both;
+  }
+  .personal-stage[data-revealed='true'] .profile-journey li {
+    position: relative;
+    animation: home-window-enter 420ms var(--ease) both;
+    animation-delay: calc(var(--preview-step) * 140ms);
+  }
+  .personal-stage[data-revealed='true'] .journey-icon {
+    animation: home-profile-icon 420ms var(--ease) both;
+    animation-delay: calc(var(--preview-step) * 240ms);
+  }
+  .watch-stage[data-revealed='true'] .mail-preview {
+    transform-origin: center top;
+    animation: home-mail-unfold 420ms var(--ease) both;
+  }
+  .watch-stage[data-revealed='true'] .mail-preview li {
+    animation: home-window-enter 420ms var(--ease) both;
+    animation-delay: calc(140ms + var(--preview-step) * 140ms);
   }
   .update-workflow {
     display: grid;
@@ -1342,6 +1416,10 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
+    :is(.personal-stage, .research-stage, .watch-stage) * {
+      animation: none !important;
+      transition-duration: 1ms !important;
+    }
     html {
       scroll-behavior: auto;
     }
@@ -1364,6 +1442,43 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes home-window-enter {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--spacing) * 2));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-profile-icon {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes home-mail-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-8deg) translateY(calc(var(--spacing) * 3));
+  }
+  to {
+    opacity: 1;
+    transform: perspective(600px) rotateX(0) translateY(0);
   }
 }
 

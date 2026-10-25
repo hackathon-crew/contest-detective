@@ -31,6 +31,7 @@ import searchFrame from '@/shared/assets/mascot/octo-search.png'
 import {
   ClosingCallout,
   DetectiveIntro,
+  DeepResearchIntro,
   FilterIntro,
   McpIntro,
   PersonalizedIntro,
@@ -40,13 +41,13 @@ import {
   WatchPreview,
 } from './home-content'
 import { HomeFilter } from './home-filter'
+import { DetectiveDemo } from './detective-demo'
 import { McpPanel } from './mcp-panel'
 import '@/features/detective/detective-composer.css'
 import './home-page.css'
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
 )
-const chips = ['这周截止的线上比赛', '上海的线下黑客松', '奖金过万的 AI 比赛']
 export function HomePage({ contestId }: { contestId?: string }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
@@ -122,18 +123,6 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 从 GitHub
                 项目或简历生成参赛画像，按技能、兴趣和时间推荐比赛。想查清规则，交给深度检索；想持续跟进，设置邮件盯梢。
               </p>
-              <div className="hero-actions">
-                <button
-                  className="btn btn-primary"
-                  type="button"
-                  onClick={() => setProfileSection('github')}
-                >
-                  按我的画像推荐
-                  <Icon name="arrow-right" />
-                </button>
-                <a href="#agent">深度检索</a>
-                <a href="#watch">邮件盯梢</a>
-              </div>
               <div id="top-ask">
                 <DetectiveComposer
                   value={question}
@@ -152,20 +141,18 @@ export function HomePage({ contestId }: { contestId?: string }) {
                   placeholder="比如：我做过 Python 项目，想找线上能参加的 AI 比赛"
                 />
               </div>
-              <div className="chips">
-                {chips.map((chip) => (
-                  <button
-                    type="button"
-                    className="chip"
-                    key={chip}
-                    onClick={() => {
-                      setQuestion(chip)
-                      input.current?.focus()
-                    }}
-                  >
-                    {chip}
-                  </button>
-                ))}
+              <div className="hero-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => setProfileSection('github')}
+                >
+                  按我的画像推荐
+                  <Icon name="arrow-right" />
+                </button>
+                <Link className="btn btn-outline" to="/detective">
+                  和侦探聊聊
+                </Link>
               </div>
             </div>
             <div className="hero-octo" ref={octopusHost} title="点一下它">
@@ -245,9 +232,9 @@ export function HomePage({ contestId }: { contestId?: string }) {
             />
           </div>
         </section>
-        <section className="feature" id="agent">
+        <section className="feature" id="research">
           <div className="wrap feature-grid flip">
-            <DetectiveIntro />
+            <DeepResearchIntro />
             <ResearchPreview onAsk={ask} />
           </div>
         </section>
@@ -265,6 +252,12 @@ export function HomePage({ contestId }: { contestId?: string }) {
               total={total}
               onAddProfile={() => setProfileSection('all')}
             />
+          </div>
+        </section>
+        <section className="feature" id="agent">
+          <div className="wrap feature-grid flip">
+            <DetectiveIntro />
+            <DetectiveDemo contests={contests} onAsk={ask} onAddProfile={setProfileSection} />
           </div>
         </section>
         <section className="feature" id="mcp">
@@ -307,7 +300,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
             )}
           </div>
         </section>
-        <ClosingCallout onAsk={focusAsk} onAddProfile={setProfileSection} />
+        <ClosingCallout onAsk={focusAsk} />
       </main>
       <SiteFooter appearance={<AppearanceControl segmented />} />
       <ProfileMatchDialog

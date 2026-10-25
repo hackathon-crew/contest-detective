@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
-import { Bell, Mail, RefreshCw } from 'lucide-react'
 import type { Profile } from '@/shared/api'
 import type { ProfileMatchSection } from '@/features/profile-match'
 import type { VerificationOptions } from '@/features/detective/verification-contracts'
@@ -11,6 +10,26 @@ import peer from '@/shared/assets/mascot/octo-peer.png'
 import read from '@/shared/assets/mascot/octo-read.png'
 
 type OpenProfile = (section: ProfileMatchSection) => void
+
+function usePreviewReveal() {
+  const host = useRef<HTMLDivElement>(null)
+  const [cycle, setCycle] = useState(0)
+  useEffect(() => {
+    if (!host.current || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setCycle((value) => value + 1)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.45 },
+    )
+    observer.observe(host.current)
+    return () => observer.disconnect()
+  }, [])
+  return { host, cycle, replay: () => setCycle((value) => value + 1) }
+}
 
 export function PersonalizedIntro({ onAddProfile }: { onAddProfile: OpenProfile }) {
   return (
@@ -60,8 +79,9 @@ export function PersonalizedPreview({
   onAddProfile: OpenProfile
 }) {
   const skills = [...new Set([...(profile?.skills ?? []), ...(profile?.topics ?? [])])].slice(0, 5)
+  const { host, cycle, replay } = usePreviewReveal()
   return (
-    <div className="stage personal-stage">
+    <div className="stage personal-stage" ref={host} data-revealed={cycle > 0}>
       <div className="win personal-window">
         <img className="perch px x2" src={peer} width={202} height={164} alt="" />
         <div className="win-bar">
@@ -69,6 +89,15 @@ export function PersonalizedPreview({
             <Icon name="user" />
             你的参赛画像
           </div>
+          <button
+            type="button"
+            className="preview-replay"
+            aria-label="重看画像生成过程"
+            title="重看画像生成过程"
+            onClick={replay}
+          >
+            <Icon name="refresh" />
+          </button>
         </div>
         <div className="personal-source">
           <Icon name="github" large />
@@ -82,8 +111,8 @@ export function PersonalizedPreview({
             {profile?.github ? '编辑' : '连接'}
           </button>
         </div>
-        <ol className="profile-journey">
-          <li>
+        <ol className="profile-journey" key={cycle}>
+          <li style={{ '--preview-step': 0 } as CSSProperties}>
             <span className="journey-icon">
               <Icon name="file" />
             </span>
@@ -102,7 +131,7 @@ export function PersonalizedPreview({
               )}
             </div>
           </li>
-          <li>
+          <li style={{ '--preview-step': 1 } as CSSProperties}>
             <span className="journey-icon">
               <Icon name="user" />
             </span>
@@ -111,7 +140,7 @@ export function PersonalizedPreview({
               <p>身份、城市、参赛形式与可投入时间</p>
             </div>
           </li>
-          <li>
+          <li style={{ '--preview-step': 2 } as CSSProperties}>
             <span className="journey-icon">
               <Icon name="check" />
             </span>
@@ -136,14 +165,10 @@ export function PersonalizedPreview({
 export function FilterIntro() {
   return (
     <div className="copy">
-      <h2>
-        赛事库先整理，
-        <br />
-        你再按条件细挑
-      </h2>
+      <h2>按条件筛比赛，也能按你的情况挑</h2>
       <p>
-        从 Devpost、ETHGlobal、HackerTrip、活动行、WaytoAGI
-        和主办方公开渠道整理信息。按形式、截止时间和关键词筛选，或切换到你的画像推荐。
+        选参赛形式和截止时间，或者连上
+        GitHub、传一份简历，让它照你的技能和年级挑。每场比赛写清主办方、奖金、截止时间，以及这个日期是从哪儿看到的。
       </p>
       <ul className="points">
         <li>
@@ -151,14 +176,17 @@ export function FilterIntro() {
           形式、截止时间、关键词随意组合，结果按截止先后排
         </li>
         <li>
-          <Icon name="check" />
-          赛事库与网页检索配合，保留每个字段的原文出处
+          <Icon name="check" />读 GitHub 和简历生成画像，每条推荐都写明理由
         </li>
         <li>
           <Icon name="check" />
           报名截止和提交截止分开写，标明出自官方原文还是转载
         </li>
       </ul>
+      <p>
+        赛事库从 Devpost、ETHGlobal、HackerTrip、活动行、WaytoAGI
+        和主办方公开渠道整理信息，与网页检索配合。
+      </p>
       <div className="update-workflow">
         <strong>后台支持按每日计划更新赛事库</strong>
         <ol aria-label="赛事更新流程">
@@ -170,7 +198,7 @@ export function FilterIntro() {
     </div>
   )
 }
-export function DetectiveIntro() {
+export function DeepResearchIntro() {
   return (
     <div className="copy">
       <h2>
@@ -223,6 +251,54 @@ export function DetectiveIntro() {
   )
 }
 
+export function DetectiveIntro() {
+  return (
+    <div className="copy">
+      <h2>问一句，侦探去翻原文</h2>
+      <p>
+        它先查比赛库，库里没有就联网搜，再打开主办方页面逐字核对截止时间。查了哪些地方、读了哪些页面，都列在回答上面，每个日期标明可信到什么程度。
+      </p>
+      <div className="legend">
+        <div>
+          <span className="lv lv-official">
+            <Icon name="check" />
+            官方原文
+          </span>
+          <span>在主办方官网或官方公众号上找到</span>
+        </div>
+        <div>
+          <span className="lv lv-reposted">
+            <Icon name="dot" />
+            转载
+          </span>
+          <span>只在转载文章里看到，还没追到官方</span>
+        </div>
+        <div>
+          <span className="lv lv-conflict">
+            <Icon name="alert" />
+            说法不一
+          </span>
+          <span>两个来源给的日期对不上，两个都列给你</span>
+        </div>
+        <div>
+          <span className="lv lv-not_found">
+            <Icon name="minus" />
+            未找到
+          </span>
+          <span>公开页面里没写，侦探不替主办方编</span>
+        </div>
+      </div>
+      <img
+        className="stk px x2"
+        src={note}
+        width="158"
+        height="134"
+        alt=""
+        style={{ right: '-8px', top: '-112px' }}
+      />
+    </div>
+  )
+}
 const researchSteps = [
   [
     'database',
@@ -256,12 +332,13 @@ export function ResearchPreview({
   onAsk: (question: string, verification?: VerificationOptions) => void
 }) {
   const [active, setActive] = useState(0)
+  const { host, cycle, replay } = usePreviewReveal()
   const [question, setQuestion] = useState(
     '帮我深度检索适合 Python 开发者的线上 AI 比赛，核对参赛条件、报名和作品提交截止时间，并附上原文出处。',
   )
   const step = researchSteps[active]
   return (
-    <div className="stage research-stage">
+    <div className="stage research-stage" ref={host} data-revealed={cycle > 0}>
       <div className="win">
         <img className="perch px x2" src={read} width={202} height={172} alt="" />
         <div className="win-bar">
@@ -269,7 +346,18 @@ export function ResearchPreview({
             <Icon name="search" />
             深度检索
           </div>
-          <span className="window-note">知识库 + 网页</span>
+          <div className="window-actions">
+            <span className="window-note">知识库 + 网页</span>
+            <button
+              type="button"
+              className="preview-replay"
+              aria-label="重看检索过程"
+              title="重看检索过程"
+              onClick={replay}
+            >
+              <Icon name="refresh" />
+            </button>
+          </div>
         </div>
         <div className="research-body">
           <label className="research-question">
@@ -281,7 +369,13 @@ export function ResearchPreview({
               rows={3}
             />
           </label>
-          <div className="research-tabs" role="group" aria-label="深度检索步骤">
+          <div
+            className="research-tabs"
+            role="group"
+            aria-label="深度检索步骤"
+            style={{ '--selected-step': active } as CSSProperties}
+          >
+            <span className="research-active-surface" aria-hidden="true" />
             {researchSteps.map(([icon, title], index) => (
               <button
                 type="button"
@@ -294,7 +388,7 @@ export function ResearchPreview({
               </button>
             ))}
           </div>
-          <div className="research-focus" key={active}>
+          <div className="research-focus" key={`${active}-${cycle}`}>
             <strong>{step[2]}</strong>
             <p>{step[3]}</p>
           </div>
@@ -329,15 +423,15 @@ export function WatchIntro() {
       </p>
       <ul className="points">
         <li>
-          <Mail className="ic" />
+          <Icon name="mail" />
           符合画像或追踪条件的新比赛，按你选择的频率推送
         </li>
         <li>
-          <Bell className="ic" />
+          <Icon name="bell" />
           关注的比赛，在截止前 7 天、3 天或 1 天提醒
         </li>
         <li>
-          <RefreshCw className="ic" />
+          <Icon name="refresh" />
           信息有变动，回到站内查看前后字段与来源
         </li>
       </ul>
@@ -357,21 +451,21 @@ export function WatchIntro() {
 const mailContents = [
   {
     title: '新比赛',
-    icon: Mail,
+    icon: 'mail',
     subject: '与你的参赛条件相符的新机会',
     description: '从新收录的赛事里，按你确认的画像或追踪条件筛选。',
     details: ['符合的比赛与推荐理由', '参赛形式、奖励与截止时间', '回到赛事详情查看原文'],
   },
   {
     title: '截止提醒',
-    icon: Bell,
+    icon: 'bell',
     subject: '关注的比赛，提前安排时间',
     description: '选择截止前 7 天、3 天或 1 天，提醒跟随你关注的比赛。',
     details: ['你关注的比赛', '报名或作品提交的截止节点', '赛事详情与来源查询入口'],
   },
   {
     title: '信息变动',
-    icon: RefreshCw,
+    icon: 'refresh',
     subject: '比赛信息变化，继续跟进',
     description: '邮件提醒你关注的比赛有变动，回到站内查看变化记录与出处。',
     details: ['比赛信息有变化的提醒', '当前的关键日期、地点与奖励', '回到站内对照前后记录与来源'],
@@ -381,17 +475,32 @@ const mailContents = [
 export function WatchPreview() {
   const [active, setActive] = useState(0)
   const content = mailContents[active]
-  const MailIcon = content.icon
+  const { host, cycle, replay } = usePreviewReveal()
   return (
-    <div className="stage watch-stage">
+    <div className="stage watch-stage" ref={host} data-revealed={cycle > 0}>
       <div className="win">
         <div className="win-bar">
           <div className="win-title">
-            <Mail className="ic" />
+            <Icon name="mail" />
             邮件里会有什么
           </div>
+          <button
+            type="button"
+            className="preview-replay"
+            aria-label="重看邮件展开"
+            title="重看邮件展开"
+            onClick={replay}
+          >
+            <Icon name="refresh" />
+          </button>
         </div>
-        <div className="mail-tabs seg" role="group" aria-label="邮件内容预览">
+        <div
+          className="mail-tabs seg"
+          role="group"
+          aria-label="邮件内容预览"
+          style={{ '--selected-mail': active } as CSSProperties}
+        >
+          <span className="mail-active-surface" aria-hidden="true" />
           {mailContents.map(({ title }, index) => (
             <button
               type="button"
@@ -403,15 +512,15 @@ export function WatchPreview() {
             </button>
           ))}
         </div>
-        <div className="mail-preview" key={active}>
+        <div className="mail-preview" key={`${active}-${cycle}`}>
           <span className="mail-preview-icon">
-            <MailIcon className="ic ic-20" />
+            <Icon name={content.icon} large />
           </span>
           <strong>{content.subject}</strong>
           <p>{content.description}</p>
           <ul>
-            {content.details.map((detail) => (
-              <li key={detail}>
+            {content.details.map((detail, index) => (
+              <li key={detail} style={{ '--preview-step': index } as CSSProperties}>
                 <Icon name="check" />
                 {detail}
               </li>
@@ -458,32 +567,22 @@ export function McpIntro() {
     </div>
   )
 }
-export function ClosingCallout({
-  onAsk,
-  onAddProfile,
-}: {
-  onAsk: () => void
-  onAddProfile: OpenProfile
-}) {
+export function ClosingCallout({ onAsk }: { onAsk: () => void }) {
   return (
     <section className="cta-sec">
       <div className="wrap">
         <div className="cta">
           <img className="px x2" src={happy} width="206" height="160" alt="" />
           <div>
-            <h2>从你的兴趣和优势开始</h2>
-            <p>建立参赛画像，找到合适的比赛，再让侦探替你查清条件。</p>
+            <h2>把你的条件告诉侦探</h2>
+            <p>线上还是线下、什么时候有空、会什么技能，说清楚它就去查。</p>
           </div>
           <div className="acts">
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={() => onAddProfile('github')}
-            >
-              建立我的画像
-            </button>
-            <a className="btn btn-outline" href="#top-ask" onClick={onAsk}>
+            <a className="btn btn-primary" href="#top-ask" onClick={onAsk}>
               问侦探
+            </a>
+            <a className="btn btn-outline" href="/contests">
+              浏览赛事库
             </a>
           </div>
         </div>
