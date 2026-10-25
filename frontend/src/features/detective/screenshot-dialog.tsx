@@ -28,7 +28,6 @@ export function ScreenshotDialog({
   const [result, setResult] = useState<ScreenshotExtraction | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [claims, setClaims] = useState<{ id: string; text: string; selected: boolean }[]>([])
-  const [mode, setMode] = useState<'realtime' | 'deep'>('realtime')
   useEffect(
     () => () => {
       epoch.current++
@@ -91,7 +90,7 @@ export function ScreenshotDialog({
     }
     submitting.current = true
     try {
-      onConfirm({ question, mode, confirmed_claims: confirmed })
+      onConfirm({ question, mode: 'deep', confirmed_claims: confirmed })
       close()
     } catch (failure) {
       submitting.current = false
@@ -230,18 +229,6 @@ export function ScreenshotDialog({
                 />
               </div>
             ))}
-            <label className="grid gap-2 text-sm">
-              查证方式
-              <select
-                aria-label="截图查证方式"
-                value={mode}
-                onChange={(event) => setMode(event.target.value as 'realtime' | 'deep')}
-                className="rounded-xl border border-rule bg-surface px-3 py-2 text-ink"
-              >
-                <option value="realtime">实时查证</option>
-                <option value="deep">深度调查</option>
-              </select>
-            </label>
           </>
         )}
       </div>

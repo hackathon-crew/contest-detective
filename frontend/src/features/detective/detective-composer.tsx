@@ -34,30 +34,14 @@ export function DetectiveComposer({
   profileGuide?: { onDismiss: () => void; onCreate: () => void }
 }) {
   const [screenshotOpen, setScreenshotOpen] = useState(false)
-  const [mode, setMode] = useState<NonNullable<VerificationOptions['mode']> | ''>('')
   const addButton = useRef<HTMLButtonElement>(null)
   return (
     <>
-      <label className="mb-2 flex items-center justify-end gap-2 text-sm text-muted">
-        查证方式
-        <select
-          aria-label="查证方式"
-          value={mode}
-          disabled={pending}
-          onChange={(event) => setMode(event.target.value as typeof mode)}
-          className="rounded-xl border border-rule bg-surface px-3 py-1.5 text-ink outline-none focus-visible:ring-2 focus-visible:ring-ink"
-        >
-          <option value="">普通推荐</option>
-          <option value="database">比赛库</option>
-          <option value="realtime">实时核验</option>
-          <option value="deep">深度调查</option>
-        </select>
-      </label>
       <form
         className="detective-composer"
         data-multiline={value.includes('\n') || value.length > 40}
         data-filled={value.length > 0}
-        onSubmit={(event) => onSubmit(event, mode ? { mode } : undefined)}
+        onSubmit={(event) => onSubmit(event, { mode: 'deep' })}
       >
         <Popover.Root
           open={!!profileGuide}
