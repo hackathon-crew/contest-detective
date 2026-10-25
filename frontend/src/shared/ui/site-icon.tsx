@@ -26,23 +26,23 @@ const solidPaths: Record<string, string> = {
 
 export function Icon({ name, large = false }: { name: string; large?: boolean }) {
   const className = large ? 'ic ic-20' : 'ic'
-  const solidStyle = { fill: 'currentColor', stroke: 'none' }
+  const solidClassName = `${className} ic-solid`
   if (name === 'github')
     return (
-      <svg className={className} viewBox="0 0 98 96" aria-hidden="true" style={solidStyle}>
+      <svg className={solidClassName} viewBox="0 0 98 96" aria-hidden="true">
         <path d={githubPath} />
       </svg>
     )
-  if (name === 'user') return <ProfileIcon className={className} style={solidStyle} />
-  if (name === 'filter') return <ContestFilterIcon className={className} style={solidStyle} />
+  if (name === 'user') return <ProfileIcon className={solidClassName} />
+  if (name === 'filter') return <ContestFilterIcon className={solidClassName} />
   if (solidPaths[name])
     return (
-      <svg className={className} viewBox="0 0 24 24" aria-hidden="true" style={solidStyle}>
+      <svg className={solidClassName} viewBox="0 0 24 24" aria-hidden="true">
         <path fillRule="evenodd" clipRule="evenodd" d={solidPaths[name]} />
       </svg>
     )
   return (
-    <svg className={className} aria-hidden="true" style={{ strokeWidth: 2.75 }}>
+    <svg className={className} aria-hidden="true">
       <use href={'#i-' + name} />
     </svg>
   )
