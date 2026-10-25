@@ -108,13 +108,13 @@ it('取消已发出但未返回的查询不显示完成，也不生成报告', a
   expect(loadSessions('guest')[0].turns[0].status).toBe('stopped')
 })
 
-it('无效报告拒绝作为终态答案且不提供导出', async () => {
+it('附加报告关联异常时仍显示正文，不提供报告导出', async () => {
   renderDetective({}, '/detective')
   send()
   const report = reportFixture()
   report.claims[0].evidence_ids = ['fabricated']
-  await emit('answer', { content: '伪造结论', sources: [], report })
-  expect(await log().findByRole('alert')).toBeTruthy()
-  expect(log().queryByText('伪造结论')).toBeNull()
+  await emit('answer', { content: '已查到的文字', sources: [], report })
+  expect(await log().findByText('已查到的文字')).toBeTruthy()
+  expect(log().queryByRole('alert')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
 })
