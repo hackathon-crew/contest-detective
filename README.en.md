@@ -7,7 +7,7 @@
   </a>
 </p>
 
-<h3 align="center">Find competitions with sources you can check.</h3>
+<h3 align="center">Discover competitions matched to your interests and strengths.</h3>
 
 <p align="center">
   <a href="https://github.com/hackathon-crew/contest-detective/releases/latest"><img src="https://img.shields.io/github/v/release/hackathon-crew/contest-detective?style=flat-square&amp;color=3f5fd6" alt="Latest release"></a>
@@ -16,43 +16,62 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://inkpaw.windup.xin">Try Inkpaw ↗</a></strong>
+  <strong><a href="https://inkpaw.windup.xin/account/profile">Build your profile ↗</a></strong>
   &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests">Browse competitions</a>
-  &nbsp; · &nbsp; <a href="#connect-via-mcp">MCP setup</a>
+  &nbsp; · &nbsp; <a href="#deep-research-and-source-verification">Deep research</a>
+  &nbsp; · &nbsp; <a href="#ongoing-watches-and-email-updates">Email updates</a>
   &nbsp; · &nbsp; <a href="README.md">简体中文</a>
   &nbsp; · &nbsp; <a href="https://github.com/hackathon-crew/contest-detective/issues/new/choose">Feedback</a>
 </p>
 
-**Inkpaw**, also known as 比赛侦探 (Contest Detective), helps students and independent developers discover competitions scattered across event platforms, organizers' websites, and public WeChat posts. Browse the catalog yourself, or tell the detective your skills, availability, and preferences so it can search, read source pages, and return recommendations with evidence.
+**Inkpaw** (比赛侦探, Contest Detective) is a **personalized competition discovery and tracking tool** for students and developers. Connect your public GitHub profile, review the skills and interests extracted from your projects, and find competitions that fit your confirmed identity, availability, location, and participation preferences—with reasons for each recommendation.
 
-Competition cards record **registration and submission deadlines separately**, alongside their sources, date precision, and verification status. When a repost is outdated, dates disagree, or a rule is missing, you can inspect the evidence before deciding to enter.
+Your participation profile carries through discovery, deep research, source verification, and ongoing watches and email updates. A structured competition knowledge base, multiple retrieval paths, and a scheduled update pipeline keep supplying the information behind those experiences.
 
-<p align="center"><a href="https://inkpaw.windup.xin"><img src="docs/assets/readme/home.png" width="100%" alt="Live Inkpaw homepage with natural-language search, the blue octopus mascot, and competition posters"></a></p>
+<p align="center"><a href="https://inkpaw.windup.xin"><img src="docs/assets/readme/home.png" width="100%" alt="Live Inkpaw homepage with natural-language questions, the blue octopus mascot, and competition posters"></a></p>
 
-<p align="center"><sub>Screenshots show the live v0.1.27 site on October 25, 2026. Competition counts, dates, and page content change over time.</sub></p>
+<p align="center"><sub>Product screenshots were captured from live v0.1.27 on October 25, 2026. Competition data and subsequent interfaces continue to change.</sub></p>
 
-## Get started
+## Three core capabilities
 
-1. **Explore the catalog.** Open [competitions](https://inkpaw.windup.xin/contests), combine format, city, deadline, and status filters, and switch between list and calendar views.
-2. **Describe what fits.** Ask the [detective](https://inkpaw.windup.xin/detective), for example: “I know Python. Find online AI hackathons with deadlines next month.” Inspect its tool steps, competition cards, and source links, then ask follow-up questions.
-3. **Keep track.** Sign in to your [account](https://inkpaw.windup.xin/account) to maintain a profile, sync followed competitions, control individual reminders, or generate a personal calendar subscription.
-
-The public catalog and anonymous MCP queries are available directly. Accounts store personal profiles, follows, tracking conditions, and settings. The web interface is currently primarily Chinese.
-
-## From discovery to follow-up
-
-| Capability | What you can do |
+| Capability | What you can accomplish |
 | :--- | :--- |
-| **Competition catalog** | Combine keyword, format, city, status, and deadline filters. Browse posters, organizers, summaries, prizes, and event dates. |
-| **Detective conversations** | Search in natural language, refine your criteria, and ask follow-ups. The conversation shows actual catalog queries, web searches, page reads, and other tool steps. |
-| **Evidence per field** | Inspect recorded sources, excerpts, and verification levels. Registration, submission, start, and end dates remain distinct. |
-| **Profile matching** | Build a profile from public GitHub information, a PDF / DOCX / TXT résumé, or manual input. Edit and confirm it, then match by skills, identity, location, and availability with reasons. |
-| **Follows and calendars** | Sync follows across devices after sign-in, control reminders per competition, export a calendar, or subscribe to a personal `.ics` feed. |
-| **Private updates** | Enable watching per followed competition and inspect personal updates with before-and-after values, sources, timestamps, and actual check status. |
-| **Account controls** | Manage profiles, competition email preferences, tracking conditions, search and model keys, email, passwords, data export, and account deletion. |
-| **MCP access** | Query the same catalog from a Streamable HTTP client. A personal token also grants read access to your own profile, follows, and tracking conditions. |
+| **Personalized profile matching** | Sign in, connect GitHub, automatically extract skills and project interests, confirm your profile, and receive competitions with project-backed reasons. |
+| **Deep research and verification** | Plan an investigation, run different queries across rounds, read original pages, compare sources, and obtain a report with evidence and completion status. |
+| **Ongoing watches and email updates** | Discover new matches, track followed competitions and deadline milestones, and receive digests and reminders according to your settings. |
 
-### Investigation modes
+## From GitHub to competitions that fit
+
+**Sign in → connect GitHub → extract a profile → review and confirm → match competitions → inspect the reasons.**
+
+1. **Read your public projects.** Enter a GitHub username in your [profile](https://inkpaw.windup.xin/account/profile). Inkpaw reads public repository languages, topics, descriptions, and activity to build editable skills and interests. You can also import a PDF / DOCX / TXT résumé or add information manually.
+2. **Add participation constraints.** Confirm your interests, identity, city, online or in-person preferences, availability windows, and maximum consecutive participation days. The profile is saved to your account and remains editable.
+3. **Match using your background.** Enable “按我的情况挑” in the catalog. Matching considers known eligibility, time, and location constraints, then ranks by topic and skill overlap. Ended competitions and passed deadline milestones are excluded.
+4. **Understand the recommendation.** When project topics match a competition, the reason can link to the relevant GitHub repositories. Skill overlap and known scheduling compatibility are explained. Results without topic or skill overlap explicitly say that they only meet your filters.
+
+Personalization is grounded in your confirmed profile and traceable project information. You can edit the inputs and inspect why a competition appears.
+
+<p align="center"><img src="docs/assets/readme/contests.png" width="100%" alt="Live public catalog showing competitions, organizers, dates, source links, and filters"></p>
+
+List and calendar views, city and format filters, deadline ranges, and follows help you compare the candidates.
+
+## Deep research and source verification
+
+For a promising competition, ask the detective whether you meet its entry rules, whether a deadline has changed, or where the prize and submission requirements were published. **Deep research plans the investigation, executes different Yuanbao queries across multiple rounds, reads original pages, and cross-checks each claim.**
+
+- **Visible research:** inspect the plan, actual queries, tool steps, and pages read in the research panel.
+- **Original evidence:** distinguish supported, contradicted, conflicting, and unverified claims. Search snippets and historical cards are leads; conclusions cite original pages read in the current run.
+- **Independent corroboration:** mirrors and reposts with unknown provenance do not count again as independent sources. Insufficiently supported targets remain incomplete.
+- **Portable reports:** export Markdown or JSON to review participation plans with teammates.
+
+You can also recognize competition screenshots locally in the browser, edit and confirm the text, select individual claims, and submit them for investigation. Recognition remains a lead; verification continues to seek public original sources.
+
+<p align="center"><img src="docs/assets/readme/evidence.png" width="100%" alt="Live competition details showing summaries, date precision, verification grades, and expandable original field evidence"></p>
+
+Registration, submission, start, and end dates are recorded separately. Day-only evidence keeps its precision. Official sources, reposts, conflicts, and missing-information states remain distinct so you can see what is supported and what needs further checking.
+
+<details>
+<summary>Four investigation modes and evidence boundaries</summary>
 
 - **Standard recommendations:** use the catalog and compatible available search providers. This does not mean Yuanbao performed live verification in the current run.
 - **Catalog only:** use existing competition and profile tools, without registering page-reading, search, or write-back tools.
@@ -63,39 +82,70 @@ Reports distinguish supported, contradicted, conflicting, and unverified claims 
 
 Investigation covers public competition information, excluding political or current-affairs claims and messages about individuals. Text recognized from screenshots must be confirmed by the user before submission as claims to investigate; recognition is not factual evidence. An event allowing individual participation is an ordinary eligibility rule and does not fall under personal messages.
 
-### Compare the competitions that fit
+</details>
 
-The catalog offers list and calendar views, plus filters for published prizes, deadlines checked against original sources, and your followed competitions. Events with unknown deadlines remain available so you can inspect their sources yourself.
+## Ongoing watches and email updates
 
-<p align="center"><img src="docs/assets/readme/contests.png" width="100%" alt="Live catalog with a calendar, filters, competition list, deadline labels, and source links"></p>
+Save your preferences in [Competition email](https://inkpaw.windup.xin/account/push) to keep discovering relevant opportunities and following competitions you already care about.
 
-### Understand where a date came from
-
-An aggregator may list registration dates while an organizer lists submission dates and later posts an extension on WeChat. Inkpaw stores evidence per field so these milestones are not collapsed into one ambiguous deadline.
-
-| Label or state | Meaning |
+| What you follow | What you receive |
 | :--- | :--- |
-| **Official source — 官方原文** | The field is traced to an organizer's website, official event page, or official WeChat post. |
-| **Repost — 转载** | Evidence currently comes from a repost or aggregator and has not been traced to an official original. |
-| **Conflicting sources — 说法不一** | Sources disagree; expand the evidence to compare their values. |
-| **Time unverified — 时刻未核实** | Only the day is verified. Hours and minutes are not invented. |
-| **Missing information** | Not yet fetched, fetch failed, extraction failed, checked but not found, and explicitly unpublished are distinct states. |
+| **New profile matches** | Newly collected competitions selected using your saved profile, with recommendation reasons and detail links. |
+| **Saved tracking conditions** | Natural-language preferences converted into checkable filters for topics, locations, formats, or deadline ranges. |
+| **Changes to followed competitions** | Notifications when deadlines, locations, prizes, or source-verification status change. |
+| **Approaching deadlines** | Advance reminders according to your settings, keeping registration and submission deadlines distinct. |
 
-Verification belongs to an individual field. Stored evidence has its own collection time; opening a detail view does not automatically fetch the organizer's website again. Follow the source links to check subsequent announcements.
+Choose daily, weekly, or newly collected digest modes; configure Beijing time and reminder lead times; preview the next email, send a test, and inspect delivery records. Newly collected digests still allow at most one per day. Competition changes and deadline reminders are scheduled separately.
 
-<p align="center"><img src="docs/assets/readme/evidence.png" width="100%" alt="Live McDonald's developer competition detail with its summary, date precision, repost status, and original field evidence"></p>
+Follows sync with your account and support a personal calendar feed. In-app watches also keep private records of before-and-after values, sources, and occurrence times. In-app read status is separate from email processing.
 
-### Maintain your participation preferences
+Email sending requires the operator to configure and enable Resend, plus the user's own email preferences. Automatic organizer-page checks have a separate watch setting; their activation and cadence are explained below.
 
-The [account area](https://inkpaw.windup.xin/account) has five pages: profile, competition email, follows, search and keys, and account settings. Skills retain their GitHub, résumé, or manual provenance and can be corrected before saving. Follows sync with your account, and the personal calendar feed updates as your follows change.
-
-Email preferences include frequency, Beijing time, natural-language tracking conditions, a preview of the next email, and delivery records. **Sending requires the operator to configure and enable Resend. The v0.1.27 production release keeps email sending disabled**, so saving preferences alone does not activate delivery.
-
-### Watch followed competitions
+<details>
+<summary>In-app watches, automatic checks, and check status</summary>
 
 After signing in, enable watching for individual followed competitions under Account → Follows. Private updates preserve the before-and-after field values, sources, and timestamps as they were when the change occurred. Historical records without a saved snapshot do not produce invented changes. Updates are visible only to their account owner; read status is independent of email processing. Pausing stops new updates, resuming starts from the current version, and unfollowing removes the watch subscription.
 
 The page distinguishes a paused subscription, globally paused automatic checks, actual last-check results, and an estimated next check. `DETECTIVE_WATCH_ENABLED` defaults to `false`: it does not start website checks or re-enable source synchronization or email. When an administrator explicitly enables it, checks rotate through never-checked and least-recently-checked items, with a default interval of 1,440 minutes per item and at most 30 items per batch. The estimate is the earliest eligible check time, not a promise that every followed competition is checked daily. Failed fetches preserve the last successful time; competitions sharing an official page fetch it only once per batch. Page access and model calls retain the existing budget and source-safety constraints.
+
+</details>
+
+## Knowledge base, web retrieval, and the daily pipeline
+
+Inkpaw combines a **structured competition knowledge base with web-enhanced retrieval**. The knowledge base preserves reusable competitions, date precision, and field sources. Web retrieval discovers opportunities, reads organizer announcements, and obtains original evidence for the current investigation. Profiles guide matching, while catalog additions and changes continue into personal notifications.
+
+```mermaid
+flowchart TD
+  A[Competition platforms and public pages] --> B[Multi-source collection and web retrieval]
+  B --> C[Read details, normalize, deduplicate and verify]
+  C --> D[Structured competition knowledge base]
+  E[GitHub, resumes and preferences] --> F[Confirmed participation profile]
+  D --> G[Personalized matches with reasons]
+  F --> G
+  G -->|On demand| H[Multi-round research and original-source comparison]
+  D --> I[New competitions, changes and deadlines]
+  F --> J[Profile, follows and tracking rules]
+  I --> J
+  J --> K[In-app updates, email and calendars]
+```
+
+| Technical mechanism | Product benefit |
+| :--- | :--- |
+| **Multiple discovery sources** | Structured adapters for Devpost, HackerTrip, and WaytoAGI combine with public pages, WeChat search, and other source adapters to address gaps in any one source. |
+| **Multiple retrieval paths and deduplication** | Standard search can combine Yuanbao and Tavily and deduplicate the merged results. Live and deep verification require actual Yuanbao execution records and continue through different queries, rounds, and original pages. |
+| **Scheduled update pipeline** | The backend supports a daily Beijing-time schedule or intervals for collection, detail enrichment, normalization, deduplication, verification, and persistence. Execution and failures are recorded; one failed competition does not discard other successful records. |
+| **Field evidence and deterministic processing** | Models interpret requests and extract content; code handles dates, eligibility and availability filters, ranking, deduplication, and report completion rules. Conclusions retain inspectable sources. |
+| **Change events and personal delivery** | Persisted additions and changes connect to profiles, tracking conditions, and follows, turning refreshed data into personal digests and reminders. |
+
+Implementation: [GitHub profiles](backend/src/contest_detective/server/user/github.py) · [Matching](backend/src/contest_detective/server/user/matching.py) · [Deep verification](backend/src/contest_detective/server/agent/verification.py) · [Update pipeline](backend/src/contest_detective/server/research_pipeline/pipeline/execute.py) · [Daily scheduling](backend/src/contest_detective/server/research_pipeline/scheduler.py) · [Email delivery](backend/src/contest_detective/server/notifications/service.py).
+
+## Get started
+
+1. [Sign in and build your profile](https://inkpaw.windup.xin/account/profile), connect GitHub, and confirm skills, interests, and participation preferences.
+2. Enable “按我的情况挑” in the [catalog](https://inkpaw.windup.xin/contests), inspect recommendation reasons, and use the [detective](https://inkpaw.windup.xin/detective) to investigate specific questions.
+3. Follow candidates, save your frequency and tracking conditions under [email preferences](https://inkpaw.windup.xin/account/push), and optionally subscribe to your personal calendar.
+
+The public catalog and anonymous MCP are available directly. Accounts save profiles, follows, tracking conditions, and settings. The web interface is currently primarily Chinese.
 
 ## Connect via MCP
 
