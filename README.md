@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://inkpaw.windup.xin/account/profile">建立参赛画像 ↗</a></strong>
+  <strong><a href="https://inkpaw.windup.xin/">在线体验：https://inkpaw.windup.xin/ ↗</a></strong>
   &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests">浏览赛事库</a>
   &nbsp; · &nbsp; <a href="#深度检索与原文核验">深度检索</a>
   &nbsp; · &nbsp; <a href="#持续盯梢与邮件推送">盯梢推送</a>
