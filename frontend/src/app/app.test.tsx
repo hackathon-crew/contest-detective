@@ -7,15 +7,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
 import { stubResizeObserver } from '@/features/detective/detective.test.utils'
+import { detectiveOnboardingKey } from '@/pages/detective/detective-onboarding'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.unstubAllGlobals()
 })
 
 function renderAt(path: string) {
   stubResizeObserver()
+  localStorage.setItem(detectiveOnboardingKey, '1')
   window.history.replaceState(null, '', path)
   vi.stubGlobal(
     'fetch',

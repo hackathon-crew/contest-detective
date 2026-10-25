@@ -7,14 +7,17 @@ import { Link, MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+import { detectiveOnboardingKey } from '@/pages/detective/detective-onboarding'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
   cleanup()
+  localStorage.clear()
   vi.unstubAllGlobals()
 })
 
 function renderAt(path: string) {
+  localStorage.setItem(detectiveOnboardingKey, '1')
   vi.stubGlobal(
     'fetch',
     async (input: RequestInfo | URL) =>
