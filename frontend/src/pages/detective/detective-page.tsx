@@ -44,7 +44,9 @@ export function DetectivePage() {
   const researchMode = researchState.mode
   const setResearchMode = (mode: 'open' | 'closed') => setResearchState({ conversationId, mode })
   const hasResearch =
-    session?.turns.some((turn) => turn.trace.length || turn.sources.length) ?? false
+    session?.turns.some(
+      (turn) => turn.trace.length || turn.sources.length || turn.plan || turn.report,
+    ) ?? false
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
   const { data: user, isPending: userPending } = useCurrentUser()

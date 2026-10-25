@@ -13,7 +13,8 @@ CONTENT = '0011_contest_content'
 NOTIFICATIONS = '0011_notification_events'
 MERGE = '0012_merge_content_notifications'
 MAIL = '0012_mail_delivery'
-HEAD = '0013_merge_account_mail'
+ACCOUNT_MERGE = '0013_merge_account_mail'
+HEAD = '0014_private_watch'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -143,7 +144,8 @@ def assert_integrity(engine):
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
-    assert scripts.get_revision(HEAD).down_revision == (MERGE, MAIL)
+    assert scripts.get_revision(HEAD).down_revision == ACCOUNT_MERGE
+    assert scripts.get_revision(ACCOUNT_MERGE).down_revision == (MERGE, MAIL)
     assert scripts.get_revision(MERGE).down_revision == (CONTENT, NOTIFICATIONS)
     assert scripts.get_revision(CONTENT).down_revision == PARENT
     assert scripts.get_revision(NOTIFICATIONS).down_revision == PARENT
@@ -167,7 +169,8 @@ def test_upgrade_head_preserves_each_preexisting_branch(migration_engine, starti
     assert rows(engine, before) == before
     tables = set(inspect(engine).get_table_names())
     assert {'content_refresh_runs', 'content_refresh_entries', 'contest_events',
-            'notification_pending', 'notification_seen', 'notification_cursors'} <= tables
+            'notification_pending', 'notification_seen', 'notification_cursors',
+            'watch_subscriptions', 'watch_cursors', 'watch_notifications', 'watch_checks'} <= tables
     assert inspect(engine).get_pk_constraint('contest_claims')['constrained_columns'] == [
         'contest_id', 'page_id', 'field', 'value']
     assert {'introduction', 'documents', 'coverage', 'themes', 'theme_sources'} <= {

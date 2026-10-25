@@ -6,6 +6,7 @@ import { contestCity, libraryDate, modeNames, normalizedPrize } from '@/entities
 import { apiClient } from '@/shared/api'
 import type { CalendarRead, FollowRead, PushRead } from '@/shared/api/generated'
 import { copy, failure, Ic, Row, useNotice } from './components'
+import { WatchPanel } from './watch-panel'
 
 export function FollowsPanel() {
   const { data: user } = useCurrentUser(),
@@ -210,6 +211,7 @@ export function FollowsPanel() {
           <ul hidden={!endedOpen}>{items(ended)}</ul>
         </div>
       )}
+      <WatchPanel followedIds={follows.rows.map((row) => row.contest.id)} />
       <div className="grp">
         <div className="grp-head">
           <h3>订阅到日历</h3>

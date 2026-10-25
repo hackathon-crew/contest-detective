@@ -1,4 +1,4 @@
-"""Verification data contracts only; execution is deliberately not implemented."""
+"""Verification request, plan and evidence-report data contracts."""
 from datetime import datetime
 from typing import Literal, Protocol
 

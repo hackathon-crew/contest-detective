@@ -11,7 +11,7 @@ from uuid import uuid4
 from pydantic_ai import Agent, ModelRetry, RunContext, ToolOutput
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
-from pydantic_ai.usage import UsageLimits
+from pydantic_ai.usage import UsageLimits, RunUsage
 
 from contest_detective.common.exceptions import BizException
 from contest_detective.framework.db import SessionLocal
@@ -22,10 +22,15 @@ from .models import Investigation, TraceRecord
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
 from .tools import ToolDeps, invoke, register_tools
+from .answer_grounding import check_answer_precision, check_evidence_precision
+from .verification import VerificationState, render_report, scope_check, export_text, public_payload
+from .verification_contracts import VerificationMode, ConfirmedClaim
+from .scope import classify_scope
 
 logger = logging.getLogger(__name__)
 
 RULES = '''你是比赛侦探，根据用户的问题自主选择查库、搜索和读取网页等工具。
+只调查公开赛事信息，不调查时政或涉及个人的消息；个人参赛资格规则不属于个人消息。
 优先参考主办方官网、公告和报名页，按需继续查证。
 分清报名截止、作品提交截止和未注明类型的截止；日期按原文精度表达，不猜测未知时刻。
 字段 precision=day 只有日期；value 的 UTC00 仅供排序，不代表具体时刻。
@@ -39,39 +44,72 @@ RULES = '''你是比赛侦探，根据用户的问题自主选择查库、搜索
 新发现的比赛先用 record_page 写入并取得真实 ID；卡片的封面、日期、奖金和出处由服务端读取，勿自行填造。
 '''
 LABELS = {'search_contests': '查询比赛库', 'get_contest': '读取赛事出处', 'web_search': '搜索主办方资料',
-          'fetch_page': '读取网页原文', 'record_page': '核实并保存赛事', 'match_contests': '按画像匹配赛事'}
+          'fetch_page': '读取网页原文', 'record_page': '核实并保存赛事', 'match_contests': '按画像匹配赛事',
+          'plan_investigation': '拆解调查步骤', 'cite_evidence': '关联原文证据'}
+
+LIVE_RULES = '''
+当前为严格实时/深度核验，必须实际使用元宝搜索，失败不得假装完成或改用其他搜索服务。
+先调用 plan_investigation，按已确认说法 ID 拆步骤，说明目的及查询，每条说法至少一个步骤。
+随后 web_search 必须附 step_id。深度调查必须在后续轮次据已有结果调整查询，完成至少两轮不同查询，执行所有计划步骤。
+搜索摘要和历史比赛库只能做线索；读取原文后使用 cite_evidence 登记真实摘录，再在最终 assessments 引用返回的证据 ID。
+逐条对照说法与原文，verdict 区分 supported/refuted/conflicting/insufficient，comparison 解释证据怎么支持或反驳，不能把官方来源等同于说法正确。
+深度调查为每条说法交叉比较独立原始来源，镜像或同文转载不算独立证据；证据缺失、冲突、失败必须坦诚说明，不能为了完成状态拼凑结论。
+来源与执行身份由服务端记账。截图是待核验说法，不是证明。不要输出任何个人隐私、时政消息或秘密链接。
+'''
 
 
 class Investigator:
-    def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None, profile_reader=None, preferences=None):
+    def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None,
+                 profile_reader=None, preferences=None, mode: VerificationMode | None = None,
+                 search_provider: str | None = None, scope_classifier=None):
         self.model = model
+        self.mode, self.search_provider = mode, search_provider
+        self.scope_classifier = scope_classifier or (classify_scope if mode in {'realtime', 'deep'} else None)
         self.session_factory = session_factory
         self.fetch, self.search, self.record = fetch, search, record
         self.profile_reader = profile_reader
         self.preferences = preferences
         self.agent = Agent(model, deps_type=ToolDeps,
                            output_type=ToolOutput(DetectiveReply, name='respond_to_user'),
-                           instructions=RULES, retries={'tools': 3},
+                           instructions=RULES + (LIVE_RULES if mode in {'realtime', 'deep'} else ''), retries={'tools': 3},
                            model_settings={'parallel_tool_calls': False})
-        register_tools(self.agent, web_enabled=search is not None)
+        register_tools(self.agent, web_enabled=search is not None, external_enabled=mode != 'database',
+                       verification_enabled=mode in {'realtime', 'deep'})
 
         @self.agent.output_validator
         def validate_reply(ctx: RunContext[ToolDeps], reply: DetectiveReply):
             missing = {item.contest_id for item in reply.recommendations} - ctx.deps.contest_ids
             if missing:
                 raise ModelRetry('请先用 get_contest 读取推荐的比赛，再使用工具返回的真实 contest_id：' + '、'.join(sorted(missing)))
+            errors = [] if ctx.deps.verification else check_answer_precision(reply.content, ctx.deps.observed_contests, ctx.deps.fetched_pages)
+            for item in reply.recommendations:
+                observed = {item.contest_id: ctx.deps.observed_contests[item.contest_id]} if item.contest_id in ctx.deps.observed_contests else {}
+                name = observed.get(item.contest_id, {}).get('name', '')
+                errors.extend(check_answer_precision(name + '\n' + item.introduction + '\n' + item.reason,
+                                                     observed, ctx.deps.fetched_pages))
+            if ctx.deps.verification:
+                errors.extend(ctx.deps.verification.validate_assessments(reply.assessments))
+                for item in reply.assessments:
+                    excerpts = [ctx.deps.verification.evidence[key].excerpt for key in item.evidence_ids
+                                if key in ctx.deps.verification.evidence and ctx.deps.verification.evidence[key].evidence_kind == 'fetched_page']
+                    errors.extend(check_evidence_precision(item.comparison, excerpts))
+            if errors:
+                raise ModelRetry('请按本轮实际原文修正，证据不足明确说未知，不补日期时刻：' + '；'.join(dict.fromkeys(errors)))
             return reply
 
     async def ask(self, question: str, user_id: str | None = None,
                   profile: Profile | None = None,
-                  history: list[ConversationMessage] | None = None) -> AsyncIterator[TraceEvent]:
-        body = AskRequest(question=question, profile=profile, history=history or [])
+                  history: list[ConversationMessage] | None = None, mode: VerificationMode | None = None,
+                  confirmed_claims: list[ConfirmedClaim] | None = None) -> AsyncIterator[TraceEvent]:
+        if mode is not None and mode != self.mode:
+            raise ValueError('请求核验模式与执行器不匹配')
+        body = AskRequest(question=question, profile=profile, history=history or [], mode=self.mode, confirmed_claims=confirmed_claims or [])
         question, profile = body.question, body.profile
         queue: asyncio.Queue = asyncio.Queue(maxsize=1)
 
         async def produce():
             try:
-                await self._execute(question, user_id, profile, body.history, queue)
+                await self._execute(question, user_id, profile, body.history, queue, body.confirmed_claims)
             finally:
                 if not asyncio.current_task().cancelling():
                     await queue.put(None)
@@ -87,12 +125,16 @@ class Investigator:
                 await task
 
     async def _execute(self, question: str, user_id: str | None, profile: Profile | None,
-                       history: list[ConversationMessage], queue: asyncio.Queue):
+                       history: list[ConversationMessage], queue: asyncio.Queue, confirmed_claims: list[ConfirmedClaim]):
         investigation_id = str(uuid4())
         with self.session_factory() as session:
             session.add(Investigation(id=investigation_id, question=question, user_id=user_id, status='running'))
             session.commit()
-        deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record, preferences=self.preferences)
+        state = VerificationState(self.mode, question, confirmed_claims) if self.mode in {'realtime', 'deep'} else None
+        deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record,
+                        preferences=self.preferences, verification=state, search_provider=self.search_provider,
+                        scope_classifier=self.scope_classifier, question=question)
+        usage, limits = RunUsage(), UsageLimits(request_limit=None, tool_calls_limit=None)
         seq, status, answer = 0, 'cancelled', None
         findings = []
 
@@ -105,8 +147,33 @@ class Investigator:
             return event
 
         try:
+            # Reject every edited/current payload before any model or external tool.
+            current_texts = [question, *(item.text for item in confirmed_claims)]
+            for text in current_texts:
+                decision = scope_check(text, require_contest=False)
+                if decision.outcome != 'allowed_contest':
+                    raise BizException(decision.message, code=400)
+            # Scope context is public contest context only, not an automatic profile dump.
+            previous = {}
+            for message in reversed(history):
+                if message.role not in previous and scope_check(message.content).outcome == 'allowed_contest':
+                    previous[message.role] = export_text(message.content)
+                if len(previous) == 2:
+                    break
+            scope_context = json.dumps({'current': current_texts, 'previous_public_contest_context': previous}, ensure_ascii=False)
+            deps.scope_context = scope_context
+            if self.scope_classifier:
+                for text in current_texts:
+                    decision = await self.scope_classifier(self.model, text, context_question=scope_context,
+                        usage=usage, usage_limits=limits)
+                    if decision.outcome != 'allowed_contest':
+                        raise BizException(decision.message, code=400)
+            if state and (self.search is None or self.search_provider != 'yuanbao'):
+                raise BizException('实时核验需要实际元宝搜索执行器，未开始核验。', code=503)
             today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
             instructions = f'当前北京时间日期：{today}。'
+            if state:
+                instructions += '\n当前核验模式：' + self.mode + '\n已确认待核验说法：' + json.dumps([item.model_dump() for item in state.claims], ensure_ascii=False)
             if history:
                 instructions += '\n结合完整前文延续对话，按当前问题需要复核过时或不明确的信息。'
             messages = [
@@ -122,38 +189,55 @@ class Investigator:
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
-            async with self.agent.iter(question, deps=deps, usage_limits=UsageLimits(request_limit=None, tool_calls_limit=None),
+            async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
                                        instructions=instructions, message_history=messages) as run:
                 async for node in run:
                     if Agent.is_call_tools_node(node):
+                        deps.round += 1
                         async with node.stream(run.ctx) as events:
                             async for event in events:
                                 if isinstance(event, FunctionToolCallEvent):
                                     tool = event.part.tool_name
                                     if tool == 'respond_to_user':
                                         continue
-                                    await queue.put(store(TraceEvent(type='step', payload={'tool': tool, 'label': LABELS.get(tool, tool)})))
+                                    await queue.put(store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)})))
                                 elif isinstance(event, FunctionToolResultEvent):
                                     if event.part.tool_name == 'respond_to_user':
                                         continue
                                     content = event.part.content if isinstance(event.part.content, dict) else {}
                                     if content.get('summary') and not content.get('error'):
                                         findings.append(content['summary'])
-                                    await queue.put(store(TraceEvent(type='observation', payload={'tool': event.part.tool_name,
-                                        'summary': content.get('summary', '工具未返回可用资料'), 'sources': content.get('sources', [])})))
+                                    if content.get('plan'):
+                                        await queue.put(store(TraceEvent(type='plan', payload=content['plan'])))
+                                    payload = {'tool': event.part.tool_name,
+                                        'summary': content.get('summary', '工具未返回可用资料'), 'sources': content.get('sources', [])}
+                                    if content.get('execution'):
+                                        payload['execution'] = content['execution']
+                                    await queue.put(store(TraceEvent(type='observation', payload=payload)))
                 result = run.result
             if result is None:
                 raise RuntimeError('查证没有完成结果')
-            answer, status = result.output.content, 'completed'
+            report = state.build(result.output.assessments) if state else None
+            answer = render_report(report) if report else result.output.content
+            status = report.status if report and report.status != 'complete' else 'completed'
             with self.session_factory() as session:
                 recommendations = materialize(session, result.output.recommendations)
             await queue.put(store(TraceEvent(type='answer', payload={
                 'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
-                'recommendations': [item.model_dump(mode='json') for item in recommendations],
+                'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
+                **({'report': report.model_dump(mode='json')} if report else {}),
             })))
         except Exception as exc:
             logger.warning('Investigation interrupted: %s', type(exc).__name__)
-            if deps.sources or findings:
+            if state:
+                report = state.build([], interrupted=True)
+                if isinstance(exc, BizException):
+                    report.limitations.append(exc.message)
+                answer, status = render_report(report), report.status
+                await queue.put(store(TraceEvent(type='answer', payload={'content': answer,
+                    'sources': [source.model_dump() for source in deps.sources.values()],
+                    'report': report.model_dump(mode='json')})))
+            elif deps.sources or findings:
                 lines = ['查证暂时未能继续，以下是已查到的资料，尚未完成全部核实：']
                 lines.extend(dict.fromkeys(findings))
                 lines.extend(f'- [{source.title}]({source.url})' for source in deps.sources.values())
@@ -173,8 +257,12 @@ class Investigator:
                 session.commit()
 
 
-def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None) -> Investigator:
+def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None, mode: VerificationMode | None = None) -> Investigator:
     from .llm import create_model
+    from contest_detective.server import research_pipeline
+    strict = mode in {'realtime', 'deep'}
+    if strict and not research_pipeline.yuanbao_available(search_settings):
+        raise BizException('实时核验需要完整的元宝搜索配置；可继续普通推荐或只查比赛库。', code=503)
     model = create_model(settings=model_settings, session_factory=session_factory) if model_settings is not None else create_model(session_factory=session_factory)
     from contest_detective.server import research_pipeline
     from contest_detective.server.user.service import get
@@ -184,9 +272,14 @@ def create_investigator(*, session_factory=SessionLocal, model_settings=None, se
             user = get(session, user_id)
             return user.profile.model_dump(mode='json') if user else None
 
-    return Investigator(model, session_factory=session_factory, fetch=research_pipeline.fetch_page,
-        search=partial(research_pipeline.search_web, config=search_settings) if research_pipeline.web_search_available(search_settings) else None,
-        record=research_pipeline.run, profile_reader=read_profile, preferences=preferences)
+    from .public_pages import fetch_public_evidence
+    return Investigator(model, session_factory=session_factory,
+        fetch=partial(fetch_public_evidence, preferences=preferences) if strict else research_pipeline.fetch_page,
+        search=partial(research_pipeline.search_web, config=search_settings, require_yuanbao=strict)
+            if mode != 'database' and research_pipeline.web_search_available(search_settings) else None,
+        record=research_pipeline.run, profile_reader=read_profile, preferences=preferences,
+        mode=mode, search_provider='yuanbao' if strict else None,
+        scope_classifier=classify_scope if mode != 'database' else None)
 
 
 async def ask(question: str, user_id: str | None = None, profile: Profile | None = None) -> AsyncIterator[TraceEvent]:

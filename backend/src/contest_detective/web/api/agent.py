@@ -37,14 +37,14 @@ async def get_investigator(body: AskRequest, session: Session = Depends(get_sess
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     investigator = create_investigator(session_factory=factory, model_settings=runtime.llm,
-                                      search_settings=runtime.search, preferences=runtime.preferences)
+                                      search_settings=runtime.search, preferences=runtime.preferences, mode=body.mode)
     async with investigator.agent:
         yield investigator
 
 
 async def question_stream(request: Request, body: AskRequest, investigator: Investigator, user_id: str | None):
     async def stream():
-        async for event in investigator.ask(body.question, user_id, profile=body.profile, history=body.history):
+        async for event in investigator.ask(body.question, user_id, profile=body.profile, history=body.history, mode=body.mode, confirmed_claims=body.confirmed_claims):
             yield {'event': event.type, 'data': json.dumps(event.payload, ensure_ascii=False)}
     return EventSourceResponse(stream(), headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 

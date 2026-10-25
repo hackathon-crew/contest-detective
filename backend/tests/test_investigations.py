@@ -321,6 +321,11 @@ def test_record_page_uses_registration_context_from_existing_contest(session_fac
         contest_id = save(session, ContestDraft(name='主办方活动', page={
             'url': 'https://directory.example/events/event', 'site': '活动汇总', 'title': '活动条目', 'is_official': False,
         }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '报名页面'}]))
+        # A directory link is only a lead; separately verified registration context
+        # establishes the organizer domain before a later page can inherit it.
+        save(session, ContestDraft(name='主办方活动', page={
+            'url': 'https://organizer.example/register', 'site': '主办方', 'title': '官方报名页', 'is_official': True,
+        }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '官方报名页面'}]), contest_id=contest_id)
         session.commit()
     recorded = []
     async def record(url, *, extractor, session_factory, registration_url=None, contest_id=None):
@@ -429,6 +434,11 @@ def test_existing_contest_is_verified_in_place_through_real_recording(session_fa
             {'field': 'start_at', 'value': '2026-11-10T01:00:00Z', 'excerpt': '11月10日开赛'},
             {'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '报名页面'},
         ]))
+        # Keep the stale directory evidence, but establish the registration URL
+        # through a separate verified organizer page before updating in place.
+        save(session, ContestDraft(name='转载中的旧活动名', page={
+            'url': 'https://organizer.example/register', 'site': '主办方', 'title': '官方报名页', 'is_official': True,
+        }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '官方报名页面'}]), contest_id=contest_id)
         session.commit()
     url = 'https://organizer.example/rules'
     recording = import_module('contest_detective.server.research_pipeline.record')
