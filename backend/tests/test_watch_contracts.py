@@ -21,7 +21,7 @@ def test_watch_defaults_to_paused_and_has_its_own_cursor():
     user_id = uuid4()
     assert not WatchSubscription(user_id=user_id, contest_id='c').enabled
     assert WatchCursor(user_id=user_id).event_id == 0
-    status = WatchStatus(contest_id='c', state='scheduler_paused')
+    status = WatchStatus(contest_id='c', enabled=True, state='scheduler_paused')
     assert status.last_check is None and status.next_check_at is None
 
 
@@ -52,3 +52,40 @@ def test_check_requires_observed_timezone_aware_time():
 def test_snapshot_rejects_unknown_fact_names():
     with pytest.raises(ValidationError):
         ContestSnapshot(name='比赛', fields={'invented_fact': {'value': 'yes', 'level': 'official'}})
+
+
+@pytest.mark.parametrize('state,enabled,next_at', [
+    ('paused', False, NOW), ('scheduled', False, NOW),
+    ('scheduled', True, None), ('scheduler_paused', True, NOW),
+])
+def test_watch_status_rejects_contradictory_scheduling(state, enabled, next_at):
+    with pytest.raises(ValidationError):
+        WatchStatus(contest_id='c', state=state, enabled=enabled, next_check_at=next_at)
+
+
+def test_success_requires_source_and_actual_completion():
+    with pytest.raises(ValidationError):
+        PageCheck(contest_id='c', checked_at=NOW, completed_at=NOW, outcome='unchanged')
+    with pytest.raises(ValidationError):
+        PageCheck(contest_id='c', checked_at=NOW, outcome='changed', source_url='https://example.org')
+    value = PageCheck(contest_id='c', checked_at=NOW, completed_at=NOW,
+        outcome='unchanged', source_url='https://example.org')
+    assert PageCheck.model_validate_json(value.model_dump_json()) == value
+
+
+def test_status_rejects_another_contests_check():
+    check = PageCheck(contest_id='other', checked_at=NOW, completed_at=NOW, outcome='no_source')
+    with pytest.raises(ValidationError):
+        WatchStatus(contest_id='c', state='paused', last_check=check)
+
+
+@pytest.mark.parametrize('outcome,source,error', [
+    ('changed', 'https://example.org', 'TimeoutError'),
+    ('failed', 'https://example.org', None),
+    ('no_source', 'https://example.org', None),
+    ('no_source', None, 'TimeoutError'),
+])
+def test_check_rejects_contradictory_outcomes(outcome, source, error):
+    with pytest.raises(ValidationError):
+        PageCheck(contest_id='c', checked_at=NOW, completed_at=NOW,
+            outcome=outcome, source_url=source, error_type=error)

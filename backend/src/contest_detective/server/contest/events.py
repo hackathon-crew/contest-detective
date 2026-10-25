@@ -1,4 +1,7 @@
-"""Immutable public facts captured when a contest event is written."""
+"""Serialized public facts captured when a contest event is written.
+
+Writers must materialize separate JSON copies before and after the mutation,
+within the same transaction. Readers never reconstruct snapshots from live data."""
 from pydantic import BaseModel, ConfigDict, Field
 
 from .schemas import ContestField, FieldValue
