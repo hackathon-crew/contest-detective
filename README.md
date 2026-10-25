@@ -28,12 +28,11 @@
 
 从建立画像、寻找机会，到深度检索、核对原文，再到关注后的变化提醒与邮件推送，Inkpaw 把个人参赛背景贯穿整个过程。底层的结构化赛事知识库、多源检索和每日更新 Pipeline，为推荐与追踪持续提供数据。
 
-## 宣传片与进阶报告
+## 视频演示
 
-| 材料 | 内容 | 链接 |
-| :--- | :--- | :--- |
-| **三章版宣传片 · 51 秒** | 展示个性化画像推荐、深度检索与邮件盯梢，保留最终原片。 | [下载 MP4 原片](docs/assets/submission/inkpaw-promo-three-chapters.mp4) |
-| **进阶调查报告 · 13 页** | 产品定位、真实画像与推荐依据、多路检索、每日 Pipeline、追踪记录及真实问答来源。 | [查看 PDF 报告](docs/assets/submission/inkpaw-advanced-report.pdf) |
+[**我把 GitHub 丢给 AI，让它帮我挑黑客松 · 哔哩哔哩在线观看 ↗**](https://www.bilibili.com/video/BV1MgHG66EDA/)
+
+51 秒演示：GitHub 画像推荐、深度检索与邮件盯梢。
 
 <p align="center"><a href="https://inkpaw.windup.xin"><img src="docs/assets/readme/home.png" width="100%" alt="Inkpaw 真实首页：自然语言提问、蓝色八爪鱼与赛事海报"></a></p>
 
