@@ -37,7 +37,7 @@ function show(path = '/') {
 }
 function send(text: string) {
   const input =
-    screen.queryByPlaceholderText('比如：我会 Python，想找 11 月截止、线上能参加的 AI 黑客松') ??
+    document.querySelector<HTMLTextAreaElement>('#top-ask textarea') ??
     screen.getByRole('textbox', { name: '问侦探' })
   fireEvent.change(input, { target: { value: text } })
   fireEvent.submit(input.closest('form')!)

@@ -192,7 +192,7 @@ try {
     .getByLabel('说法 1', { exact: true })
     .fill('海风创意编程赛报名截止是 2026 年 10 月 30 日')
   await dialog.getByLabel('查证这条说法 1', { exact: true }).check()
-  await dialog.getByLabel('截图查证方式').selectOption('deep')
+  await expect(dialog.getByRole('combobox')).toHaveCount(0)
   await dialog.getByRole('button', { name: '确认文字并查证' }).click()
   await expect.poll(() => asks.length).toBe(1)
   expect(asks[0]).toMatchObject({
