@@ -48,13 +48,14 @@ def test_database_registers_no_external_tools(session_factory):
     assert not {'web_search','fetch_page','record_page'} & set(seen)
 
 
-def test_strict_answer_without_search_is_blocked_and_saved(session_factory):
-    inv = Investigator(FunctionModel(lambda *_: ModelResponse([answer_part('已核验') ])),
+def test_partial_answer_without_search_keeps_content_and_blocked_report(session_factory):
+    answer = '尚未查到实时资料，可以先按线上AI应用方向找候选。'
+    inv = Investigator(FunctionModel(lambda *_: ModelResponse([answer_part(answer) ])),
         session_factory=session_factory, mode='realtime', search=lambda *_: [], search_provider='yuanbao', scope_classifier=allowed)
     events = consume(inv)
     assert events[-1].type == 'answer'
     assert events[-1].payload['report']['status'] == 'blocked'
-    assert '已核验' not in events[-1].payload['content']
+    assert events[-1].payload['content'] == answer
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'blocked'
 
