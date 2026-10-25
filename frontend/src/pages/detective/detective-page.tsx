@@ -15,6 +15,7 @@ import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import type { Profile } from '@/shared/api'
 import readingFrame from '@/shared/assets/mascot/octo-read.png'
+import { DetectiveOnboarding, useDetectiveOnboarding } from './detective-onboarding'
 import {
   DetectiveComposer,
   DetectiveMessage,
@@ -49,7 +50,8 @@ export function DetectivePage() {
     ) ?? false
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
-  const { data: user, isPending: userPending } = useCurrentUser()
+  const { data: user, isPending: userPending, isSuccess: userReady } = useCurrentUser()
+  const onboarding = useDetectiveOnboarding(user, userReady)
   const client = useQueryClient()
   const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
   const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
@@ -144,7 +146,9 @@ export function DetectivePage() {
             }}
             onStop={() => session && stop(session.id)}
             onAddProfile={setProfileSection}
-            showProfileGuide={!userPending && !hasProfile && !profileGuideDismissed}
+            showProfileGuide={
+              !onboarding.open && !userPending && !hasProfile && !profileGuideDismissed
+            }
             onDismissProfileGuide={() => setProfileGuideDismissed(true)}
           />
         </div>
@@ -227,6 +231,7 @@ export function DetectivePage() {
         onClose={() => setProfileSection(null)}
         onConfirmed={confirmed}
       />
+      <DetectiveOnboarding open={onboarding.open} onClose={onboarding.close} />
     </div>
   )
 }

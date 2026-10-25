@@ -1,0 +1,152 @@
+.detective-onboarding {
+  display: block;
+  width: min(calc(var(--spacing) * 120), calc(100% - var(--spacing) * 12));
+  max-width: none;
+  max-height: calc(100dvh - var(--spacing) * 12);
+  gap: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 0;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  box-shadow:
+    0 calc(var(--spacing) * 6) calc(var(--spacing) * 20)
+      color-mix(in srgb, var(--color-scrim) 50%, transparent),
+    0 calc(var(--spacing) / 2) calc(var(--spacing) * 2)
+      color-mix(in srgb, var(--color-scrim) 20%, transparent);
+}
+.detective-onboarding__close {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--spacing) * 3);
+  right: calc(var(--spacing) * 3);
+  border-radius: var(--radius-lg);
+  color: var(--color-muted);
+}
+.detective-onboarding__close:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-strong);
+}
+.detective-onboarding__artwork {
+  position: relative;
+  display: grid;
+  height: calc(var(--spacing) * 60);
+  place-items: center;
+  padding-bottom: calc(var(--spacing) * 5);
+  background: var(--color-surface-muted);
+}
+.detective-onboarding__art {
+  width: calc(var(--spacing) * 48);
+  height: calc(var(--spacing) * 48);
+  object-fit: contain;
+  image-rendering: pixelated;
+  animation: popup-fade-in var(--motion-surface) var(--ease-out);
+}
+.detective-onboarding__art[hidden] {
+  display: none;
+}
+.detective-onboarding__steps {
+  position: absolute;
+  bottom: var(--spacing);
+  left: 50%;
+  display: flex;
+  transform: translateX(-50%);
+}
+.detective-onboarding__steps button {
+  display: grid;
+  width: calc(var(--spacing) * 8);
+  height: calc(var(--spacing) * 8);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  cursor: pointer;
+}
+.detective-onboarding__steps button::after {
+  width: calc(var(--spacing) * 1.5);
+  height: calc(var(--spacing) * 1.5);
+  border-radius: 50%;
+  background: var(--color-rule-strong);
+  content: '';
+  transition: background var(--motion-fast);
+}
+.detective-onboarding__steps button[aria-current]::after,
+.detective-onboarding__steps button:active::after {
+  background: var(--color-ink);
+}
+.detective-onboarding__steps button:hover::after {
+  background: var(--color-muted);
+}
+.detective-onboarding__steps button:focus-visible {
+  outline: calc(var(--spacing) / 2) solid var(--color-accent);
+  outline-offset: var(--spacing);
+}
+.detective-onboarding__body {
+  padding: calc(var(--spacing) * 7) calc(var(--spacing) * 8) calc(var(--spacing) * 4);
+  text-align: center;
+}
+.detective-onboarding__copy {
+  animation: popup-fade-in var(--motion-surface) var(--ease-out);
+}
+.detective-onboarding__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: 1.5;
+  font-weight: 600;
+  outline: none;
+  text-wrap: balance;
+}
+.detective-onboarding__description {
+  min-height: calc(var(--spacing) * 13);
+  max-width: calc(var(--spacing) * 90);
+  margin: calc(var(--spacing) * 2) auto 0;
+  color: var(--color-muted);
+  line-height: 1.8;
+  text-wrap: balance;
+}
+.detective-onboarding__actions {
+  display: grid;
+  min-height: calc(var(--spacing) * 23);
+  align-content: start;
+  gap: var(--spacing);
+  margin-top: calc(var(--spacing) * 6);
+}
+.detective-onboarding__primary,
+.detective-onboarding__guest {
+  width: 100%;
+  height: auto;
+  min-height: calc(var(--spacing) * 11);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 5);
+}
+.detective-onboarding__primary {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.detective-onboarding__primary:hover {
+  background: var(--color-accent-hover);
+}
+.detective-onboarding__guest {
+  color: var(--color-muted);
+  background: transparent;
+}
+.detective-onboarding__guest:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-ink);
+}
+@media (max-width: 600px) {
+  .detective-onboarding__artwork {
+    height: calc(var(--spacing) * 56);
+  }
+  .detective-onboarding__art {
+    width: calc(var(--spacing) * 40);
+    height: calc(var(--spacing) * 40);
+  }
+  .detective-onboarding__body {
+    padding: calc(var(--spacing) * 6) calc(var(--spacing) * 6) calc(var(--spacing) * 3);
+  }
+  .detective-onboarding__actions {
+    margin-top: calc(var(--spacing) * 4);
+  }
+}
