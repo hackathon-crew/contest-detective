@@ -82,21 +82,24 @@ try {
     await page.getByRole('menuitem', { name: '截图查证' }).click()
     return page.getByRole('dialog', { name: '截图查证' })
   }
-  for (const fixture of [
-    'clean-light',
-    'clean-dark',
-    'small-text',
-    'mixed-language',
-    'blank',
-    'blurred',
+  for (const file of [
+    'clean-light.png',
+    'clean-light.jpg',
+    'clean-light.webp',
+    'clean-dark.png',
+    'small-text.png',
+    'mixed-language.png',
+    'blank.png',
+    'blurred.png',
   ]) {
+    const fixture = file.replace(/\.[^.]+$/, '')
     const dialog = await open()
     await dialog
       .getByLabel('选择截图', { exact: true })
-      .setInputFiles(resolve(`tests/fixtures/${fixture}.png`))
+      .setInputFiles(resolve(`tests/fixtures/${file}`))
     if (fixture === 'blank') {
       await expect(dialog.getByText(/没有识别到可查证的文字/)).toBeVisible({ timeout: 60_000 })
-      evidence.results.push({ fixture, text: '', no_text: true })
+      evidence.results.push({ fixture: file, text: '', no_text: true })
     } else {
       await expect(dialog.getByLabel('说法 1', { exact: true })).toBeVisible({ timeout: 60_000 })
       const text = await dialog
@@ -108,12 +111,14 @@ try {
       if (fixture === 'mixed-language') expect(compact).toContain('USD5,000')
       if (fixture === 'blurred') await expect(dialog.getByText(/部分文字辨识度较低/)).toBeVisible()
       if (fixture === 'small-text') await expect(dialog.getByText(/截图中的文字较小/)).toBeVisible()
-      evidence.results.push({ fixture, recognized_text: text })
+      evidence.results.push({ fixture: file, recognized_text: text })
     }
     expect(asks).toHaveLength(0)
     await expect(dialog.getByRole('button', { name: '确认文字并查证' })).toBeDisabled()
     if (fixture === 'clean-light') await page.screenshot({ path: `${output}/desktop-review.png` })
-    await dialog.getByRole('button', { name: '取消', exact: true }).click()
+    if (file === 'clean-light.webp') await page.keyboard.press('Escape')
+    else await dialog.getByRole('button', { name: '取消', exact: true }).click()
+    await expect(page.getByRole('button', { name: '添加简历或参赛资料' })).toBeFocused()
     await expect.poll(() => page.workers().length).toBe(0)
   }
   // Only selected and corrected claims may leave the browser.
@@ -178,7 +183,7 @@ try {
   const names = evidence.requests
     .filter((request) => request.url.includes('/ocr/'))
     .map((request) => new URL(request.url).pathname)
-  expect(names.some((name) => name.endsWith('.wasm'))).toBe(true)
+  expect(names.some((name) => name.endsWith('.wasm.js'))).toBe(true)
   expect(names.some((name) => name.endsWith('chi_sim.traineddata.gz'))).toBe(true)
   expect(names.some((name) => name.endsWith('eng.traineddata.gz'))).toBe(true)
   expect(evidence.errors).toEqual([])
