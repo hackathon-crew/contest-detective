@@ -3,7 +3,7 @@ import json
 from decimal import Decimal
 
 import pytest
-from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
@@ -126,3 +126,48 @@ def test_partial_answer_reaches_the_http_event_stream(client, session_factory):
     finally:
         client.app.dependency_overrides.pop(get_investigator)
         limiter.reset()
+
+
+@pytest.mark.parametrize('plain_text', [False, True])
+def test_date_validation_cannot_discard_a_complete_reply(session_factory, plain_text):
+    contest_id = seed(session_factory, day=True)
+    answer = f'推荐出处回归赛事。作品提交截止2026-10-27 23:59。\n[来源]({URL})'
+    calls = 0
+
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return response([ToolCallPart('get_contest', {'contest_id': contest_id})])
+        if plain_text:
+            return response([TextPart(answer)])
+        return response([answer_part(answer, [{
+            'contest_id': contest_id, 'introduction': '公开开发赛事', 'reason': '适合继续了解。',
+        }])])
+
+    events = run(session_factory, respond)
+
+    assert [event.type for event in events] == ['step', 'observation', 'answer']
+    assert events[-1].payload['content'] == answer
+    assert calls == 2
+    if not plain_text:
+        card = events[-1].payload['recommendations'][0]['contest']
+        assert card['id'] == contest_id
+        assert card['fields']['submission_deadline']['precision'] == 'day'
+    with session_factory() as session:
+        stored = session.scalars(select(Investigation)).one()
+        assert stored.answer == answer
+
+
+def test_unknown_card_id_cannot_discard_the_answer(session_factory):
+    answer = '先说明参赛条件，再继续找合适的公开比赛。'
+    def respond(_, info):
+        return response([answer_part(answer, [{
+            'contest_id': 'not-a-real-contest', 'introduction': '未取得数据', 'reason': '等待查询',
+        }])])
+
+    events = run(session_factory, respond)
+
+    assert events[-1].type == 'answer'
+    assert events[-1].payload['content'] == answer
+    assert events[-1].payload['recommendations'] == []

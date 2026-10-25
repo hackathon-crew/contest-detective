@@ -92,14 +92,12 @@ def test_old_answer_does_not_turn_unmentioned_sources_into_recommendations(clien
     assert response.json()['data'] == []
 
 
-def test_model_reads_an_unseen_contest_before_including_its_card(session_factory):
+def test_unobserved_card_cannot_block_the_reply(session_factory):
     chosen = seed(session_factory, '候选甲', 'first')
     calls = []
 
     def respond(messages, info):
         calls.append(info)
-        if len(calls) == 2:
-            return ModelResponse([ToolCallPart('get_contest', {'contest_id': chosen})])
         return ModelResponse([answer_part('推荐候选甲。', [{
             'contest_id': chosen, 'introduction': '面向应用开发。', 'reason': '适合现有项目。',
         }])])
@@ -110,8 +108,9 @@ def test_model_reads_an_unseen_contest_before_including_its_card(session_factory
 
     events = asyncio.run(consume())
     assert events[-1].type == 'answer', events[-1].payload
-    assert events[-1].payload['recommendations'][0]['contest']['id'] == chosen
-    assert len(calls) == 3
+    assert events[-1].payload['content'] == '推荐候选甲。'
+    assert events[-1].payload['recommendations'] == []
+    assert len(calls) == 1
 
 
 def test_shared_registration_page_does_not_recommend_every_linked_contest(client, session_factory):
