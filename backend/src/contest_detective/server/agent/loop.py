@@ -220,7 +220,7 @@ class Investigator:
             if result is None:
                 raise RuntimeError('查证没有完成结果')
             report = state.build(result.output.assessments) if state else None
-            answer = render_report(report) if report and (confirmed_claims or result.output.assessments) else result.output.content
+            answer = render_report(report) if report and confirmed_claims else result.output.content
             status = report.status if report and report.status != 'complete' else 'completed'
             with self.session_factory() as session:
                 recommendations = materialize(session, result.output.recommendations)
