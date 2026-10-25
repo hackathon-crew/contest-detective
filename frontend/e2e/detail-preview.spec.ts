@@ -271,7 +271,7 @@ test('preserves original actions and plain metadata without new warning or icon 
   await expect(registration).toHaveCSS('height', '40px')
   await expect(registration).toHaveCSS('font-size', '14px')
   await expect(registration.locator('svg.ic')).toHaveCSS('width', '16px')
-  await expect(registration.locator('svg use')).toHaveAttribute('href', '#i-arrow-right')
+  await expect(registration.locator('svg.ic')).toHaveAttribute('aria-hidden', 'true')
   const ask = actions.getByRole('button', { name: '问侦探这场比赛', exact: true })
   await expect(ask).toHaveClass('site-button site-button--outline')
   await expect(ask).toHaveCSS('height', '40px')

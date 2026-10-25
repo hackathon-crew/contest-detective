@@ -210,7 +210,7 @@ it.each(['default', 'library'] as const)(
     expect(link.getAttribute('href')).toBe('https://organizer.example/apply')
     expect(link.getAttribute('target')).toBe('_blank')
     expect(link.getAttribute('rel')).toBe('noopener noreferrer')
-    expect(link.querySelector('svg.ic use')?.getAttribute('href')).toBe('#i-arrow-right')
+    expect(link.querySelector('svg.ic')?.getAttribute('aria-hidden')).toBe('true')
     const ask = within(actions).getByRole('button', { name: '问侦探这场比赛' })
     expect(ask.className).toBe('site-button site-button--outline')
     expect(ask.querySelector('svg')).toBeNull()
