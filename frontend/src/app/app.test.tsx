@@ -57,7 +57,7 @@ function renderAt(path: string) {
 
 describe('路由', () => {
   it.each([
-    ['/', /说出你的条件/],
+    ['/', /按你的兴趣和优势/],
     ['/contests?q=AI', '赛事库'],
     ['/detective', '侦探'],
   ])('MCP 接入在当前页面打开并保留页面状态：%s', async (path, title) => {
@@ -84,7 +84,7 @@ describe('路由', () => {
     expect(await screen.findByRole('dialog', { name: '接入 MCP' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
   })
 
   it('首页可打开画像确认入口', async () => {
@@ -104,7 +104,7 @@ describe('路由', () => {
   })
   it('首页展示新入口，完整浏览保留在独立赛事库', () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
     expect(screen.getByRole('heading', { name: '两周内截止' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
@@ -120,22 +120,22 @@ describe('路由', () => {
     renderAt('/contests/tme-ai-hackathon')
 
     expect(screen.getByRole('dialog', { name: '赛事详情' })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: /说出你的条件/, hidden: true })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, hidden: true })).toBeTruthy()
   })
 
   it('关闭详情回到首页，首页区块不重新挂载', async () => {
     renderAt('/contests/tme-ai-hackathon')
-    const list = screen.getByRole('heading', { name: /说出你的条件/, hidden: true })
+    const list = screen.getByRole('heading', { level: 1, hidden: true })
 
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBe(list)
+    expect(screen.getByRole('heading', { level: 1 })).toBe(list)
   })
 
   it('未知地址回到首页', () => {
     renderAt('/no-such-page')
 
-    expect(screen.getByRole('heading', { name: /说出你的条件/ })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
   })
 })
