@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://inkpaw.windup.xin/account/profile">Build your profile ↗</a></strong>
+  <strong><a href="https://inkpaw.windup.xin/">Try online: https://inkpaw.windup.xin/ ↗</a></strong>
   &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests">Browse competitions</a>
   &nbsp; · &nbsp; <a href="#deep-research-and-source-verification">Deep research</a>
   &nbsp; · &nbsp; <a href="#ongoing-watches-and-email-updates">Email updates</a>
