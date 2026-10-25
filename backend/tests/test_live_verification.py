@@ -224,7 +224,8 @@ def test_all_edited_claims_checked_before_even_scope_model(session_factory):
     assert events[-1].payload['report']['status']=='blocked'
 
 
-def test_record_page_never_launders_unverified_registration_domain(session_factory):
+@pytest.mark.parametrize('mode',[None,'realtime'])
+def test_record_page_never_launders_unverified_registration_domain(session_factory,mode):
     from contest_detective.server.contest.schemas import ContestDraft
     from contest_detective.server.contest.service import save
     with session_factory() as session:
@@ -242,10 +243,11 @@ def test_record_page_never_launders_unverified_registration_domain(session_facto
         if step==2: return ModelResponse([ToolCallPart('fetch_page',{'url':'https://unverified.example/rules'})])
         if step==3: return ModelResponse([ToolCallPart('record_page',{'url':'https://unverified.example/rules','contest_id':contest_id})])
         return ModelResponse([answer_part('尚未核实')])
-    inv=Investigator(FunctionModel(reply),session_factory=session_factory,mode='realtime',search=lambda *args,**kwargs:[],search_provider='yuanbao',scope_classifier=allowed,fetch=lambda _: '公开规则',record=record)
+    inv=Investigator(FunctionModel(reply),session_factory=session_factory,mode=mode,search=lambda *args,**kwargs:[],search_provider='yuanbao',scope_classifier=allowed,fetch=lambda _: '公开规则',record=record)
     consume(inv)
     assert len(seen)==1 and 'registration_url' not in seen[0]
-    assert seen[0]['page_text'].strip()=='公开规则'
+    if mode:
+        assert seen[0]['page_text'].strip()=='公开规则'
 
 
 @pytest.mark.parametrize('site',['https://example.org/?token=secret','127.0.0.1'])
