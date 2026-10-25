@@ -124,6 +124,16 @@ export type ConnectionRead = {
 };
 
 /**
+ * ConsumeRead
+ */
+export type ConsumeRead = {
+    /**
+     * Processed
+     */
+    processed: number;
+};
+
+/**
  * ContentCitation
  */
 export type ContentCitation = {
@@ -158,6 +168,14 @@ export type ContentCoverage = {
     sources?: {
         [key: string]: CoverageObservation;
     };
+};
+
+/**
+ * ContestChange
+ */
+export type ContestChange = {
+    before?: ContestSnapshot | null;
+    after?: ContestSnapshot | null;
 };
 
 /**
@@ -241,6 +259,22 @@ export type ContestRecommendation = {
      * Reason
      */
     reason: string;
+};
+
+/**
+ * ContestSnapshot
+ */
+export type ContestSnapshot = {
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Fields
+     */
+    fields?: {
+        [key: string]: FieldValue;
+    };
 };
 
 /**
@@ -731,6 +765,59 @@ export type MatchItem = {
 };
 
 /**
+ * NotificationRead
+ */
+export type NotificationRead = {
+    /**
+     * Event Id
+     */
+    event_id: number;
+    /**
+     * Contest Id
+     */
+    contest_id: string;
+    /**
+     * Occurred At
+     */
+    occurred_at: string;
+    change: ContestChange;
+    /**
+     * Read At
+     */
+    read_at?: string | null;
+};
+
+/**
+ * PageCheck
+ */
+export type PageCheck = {
+    /**
+     * Contest Id
+     */
+    contest_id: string;
+    /**
+     * Checked At
+     */
+    checked_at: string;
+    /**
+     * Completed At
+     */
+    completed_at: string;
+    /**
+     * Outcome
+     */
+    outcome: 'changed' | 'unchanged' | 'failed' | 'no_source';
+    /**
+     * Source Url
+     */
+    source_url?: string | null;
+    /**
+     * Error Type
+     */
+    error_type?: string | null;
+};
+
+/**
  * PasswordInput
  */
 export type PasswordInput = {
@@ -1144,6 +1231,34 @@ export type ResponseConnectionRead = {
 };
 
 /**
+ * Response[ConsumeRead]
+ */
+export type ResponseConsumeRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: ConsumeRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[ContestDetail]
  */
 export type ResponseContestDetail = {
@@ -1482,6 +1597,34 @@ export type ResponseSearchPreferences = {
 };
 
 /**
+ * Response[StatusRead]
+ */
+export type ResponseStatusRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: StatusRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[TokenCreated]
  */
 export type ResponseTokenCreated = {
@@ -1641,6 +1784,34 @@ export type ResponseUnionTokenMetadataNoneType = {
      * 业务数据
      */
     data?: TokenMetadata | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[WatchRead]
+ */
+export type ResponseWatchRead = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: WatchRead | null;
     /**
      * Timestamp
      *
@@ -1952,6 +2123,37 @@ export type SourceCitation = {
 };
 
 /**
+ * StatusRead
+ */
+export type StatusRead = {
+    /**
+     * Contest Id
+     */
+    contest_id: string;
+    /**
+     * Enabled
+     */
+    enabled?: boolean;
+    /**
+     * State
+     */
+    state: 'paused' | 'scheduler_paused' | 'scheduled' | 'no_source';
+    last_check?: PageCheck | null;
+    /**
+     * Last Success At
+     */
+    last_success_at?: string | null;
+    /**
+     * Next Check At
+     */
+    next_check_at?: string | null;
+    /**
+     * Contest Name
+     */
+    contest_name: string;
+};
+
+/**
  * TokenCreated
  */
 export type TokenCreated = {
@@ -2160,6 +2362,144 @@ export type ValidationError = {
         [key: string]: unknown;
     };
 };
+
+/**
+ * WatchRead
+ */
+export type WatchRead = {
+    /**
+     * Items
+     */
+    items: Array<StatusRead>;
+    /**
+     * Notifications
+     */
+    notifications: Array<NotificationRead>;
+    /**
+     * Has More
+     */
+    has_more?: boolean;
+    /**
+     * Has More Notifications
+     */
+    has_more_notifications?: boolean;
+};
+
+/**
+ * WatchUpdate
+ */
+export type WatchUpdate = {
+    /**
+     * Enabled
+     */
+    enabled: boolean;
+};
+
+export type ReadWatchAccountWatchGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Before Event Id
+         */
+        before_event_id?: number | null;
+    };
+    url: '/account/watch';
+};
+
+export type ReadWatchAccountWatchGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadWatchAccountWatchGetError = ReadWatchAccountWatchGetErrors[keyof ReadWatchAccountWatchGetErrors];
+
+export type ReadWatchAccountWatchGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseWatchRead;
+};
+
+export type ReadWatchAccountWatchGetResponse = ReadWatchAccountWatchGetResponses[keyof ReadWatchAccountWatchGetResponses];
+
+export type SetWatchAccountWatchContestIdPutData = {
+    body: WatchUpdate;
+    path: {
+        /**
+         * Contest Id
+         */
+        contest_id: string;
+    };
+    query?: never;
+    url: '/account/watch/{contest_id}';
+};
+
+export type SetWatchAccountWatchContestIdPutErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type SetWatchAccountWatchContestIdPutError = SetWatchAccountWatchContestIdPutErrors[keyof SetWatchAccountWatchContestIdPutErrors];
+
+export type SetWatchAccountWatchContestIdPutResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseStatusRead;
+};
+
+export type SetWatchAccountWatchContestIdPutResponse = SetWatchAccountWatchContestIdPutResponses[keyof SetWatchAccountWatchContestIdPutResponses];
+
+export type ConsumeWatchAccountWatchConsumePostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/watch/consume';
+};
+
+export type ConsumeWatchAccountWatchConsumePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseConsumeRead;
+};
+
+export type ConsumeWatchAccountWatchConsumePostResponse = ConsumeWatchAccountWatchConsumePostResponses[keyof ConsumeWatchAccountWatchConsumePostResponses];
+
+export type MarkReadAccountWatchNotificationsEventIdReadPostData = {
+    body?: never;
+    path: {
+        /**
+         * Event Id
+         */
+        event_id: number;
+    };
+    query?: never;
+    url: '/account/watch/notifications/{event_id}/read';
+};
+
+export type MarkReadAccountWatchNotificationsEventIdReadPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type MarkReadAccountWatchNotificationsEventIdReadPostError = MarkReadAccountWatchNotificationsEventIdReadPostErrors[keyof MarkReadAccountWatchNotificationsEventIdReadPostErrors];
+
+export type MarkReadAccountWatchNotificationsEventIdReadPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type MarkReadAccountWatchNotificationsEventIdReadPostResponse = MarkReadAccountWatchNotificationsEventIdReadPostResponses[keyof MarkReadAccountWatchNotificationsEventIdReadPostResponses];
 
 export type ReadPushAccountPushGetData = {
     body?: never;

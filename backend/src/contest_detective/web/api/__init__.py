@@ -17,7 +17,10 @@ from .account_follows import router as account_follows_router
 from .account_keys import router as account_keys_router
 from .account_settings import router as account_settings_router
 
+from .account_watch import router as account_watch_router
+
 router = APIRouter()
+router.include_router(account_watch_router)
 router.include_router(account_push_router)
 router.include_router(account_follows_router)
 router.include_router(account_keys_router)

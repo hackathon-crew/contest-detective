@@ -20,6 +20,7 @@ from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
 from .verification import resolve
+from .events import ContestSnapshot
 from .content import ContentCoverage, ContestDocument, ContestIntroduction, CoverageObservation
 from .content_service import build_introduction, document_key, normalized_text, public_document, validate_document, validate_introduction
 
@@ -234,16 +235,29 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         validate_document(document)
     if draft.introduction is not None:
         validate_introduction(draft.introduction, draft.documents)
+    # Acquire SQLite's writer lock before observing the previous facts. A no-op
+    # write also works inside callers' existing transactions and commit=False.
+    session.flush()
+    if session.get_bind().dialect.name == 'sqlite':
+        session.connection().exec_driver_sql('UPDATE contests SET id = id WHERE 0')
+    # Expire only after flushing pending work. Reused sessions must not supply
+    # stale page authority or fact identities to the historical before image.
+    session.expire_all()
     page = session.scalar(select(ContestPage).where(ContestPage.url == draft.page.url))
     contest = session.get(Contest, contest_id) if contest_id else _match(session, draft, page)
     if contest_id and contest is None:
         raise ValueError('赛事不存在')
     created = contest is None
+    previous_page = (page.site, page.title, page.published_at, page.is_official) if page else None
+    previous_claims = {(row.field, row.value, row.excerpt, row.precision) for row in session.scalars(
+        select(ContestClaim).where(ContestClaim.contest_id == contest.id, ContestClaim.page_id == page.id))} if page and contest else set()
     if contest is None:
         contest = Contest(id=str(uuid4()), name=draft.name, normalized_name=_normalized_name(draft.name))
         session.add(contest)
     affected = set(session.scalars(select(ContestPageLink.contest_id).where(ContestPageLink.page_id == page.id))) if page else set()
     before = {key: _version(session, session.get(Contest, key)) for key in affected | {contest.id} if not (created and key == contest.id)}
+    before_snapshots = {key: ContestSnapshot(name=session.get(Contest, key).name,
+        fields=_fields(session, key)).model_dump(mode='json') for key in before}
     details = _details(session, contest)
     documents = {document_key(item): item for item in (details.documents or [])}
     for item in draft.documents:
@@ -280,8 +294,12 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     page.site, page.title, page.is_official = draft.page.site, draft.page.title, draft.page.is_official
     page.published_at = utc_iso(draft.page.published_at.isoformat()) if draft.page.published_at else None
     session.flush()
-    if session.get(ContestPageLink, (contest.id, page.id)) is None:
-        session.add(ContestPageLink(contest_id=contest.id, page_id=page.id))
+    link = session.get(ContestPageLink, (contest.id, page.id))
+    if link is None:
+        link = ContestPageLink(contest_id=contest.id, page_id=page.id)
+        session.add(link)
+    # Count every apply for concurrency protection, even when facts are equal.
+    link.revision = (link.revision or 0) + 1
     affected = set(session.scalars(select(ContestPageLink.contest_id).where(ContestPageLink.page_id == page.id)))
     session.execute(delete(ContestClaim).where(ContestClaim.contest_id == contest.id, ContestClaim.page_id == page.id))
     unique_claims = {}
@@ -297,6 +315,9 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         and any(other.field == claim.field and other.precision == 'datetime'
                 and calendar_date(other.value, other.precision) == calendar_date(claim.value, 'day')
                 for other in claims))]
+    current_page = (page.site, page.title, page.published_at, page.is_official)
+    if previous_page != current_page or previous_claims != {(item.field, item.value, item.excerpt, item.precision) for item in claims}:
+        link.verified_content_hash = link.verified_extractor_version = None
     for claim in claims:
         session.add(ContestClaim(contest_id=contest.id, page_id=page.id, **claim.model_dump()))
     session.flush()
@@ -305,7 +326,9 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         _refresh(session, current, _now())
         version = _version(session, current)
         if _publish_events.get() and version != before.get(contest_id):
-            session.add(ContestEvent(contest_id=contest_id, kind='created' if created and contest_id == contest.id else 'updated', version=version, occurred_at=_now()))
+            session.add(ContestEvent(contest_id=contest_id, kind='created' if created and contest_id == contest.id else 'updated', version=version, occurred_at=_now(),
+                before_snapshot=before_snapshots.get(contest_id),
+                after_snapshot=ContestSnapshot(name=current.name, fields=_fields(session, contest_id)).model_dump(mode='json')))
     if commit:
         session.commit()
     else:
