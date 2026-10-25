@@ -167,3 +167,16 @@ it('最终严格报告不复活已被后端拒绝的历史搜索链接', () => {
   expect(screen.queryByRole('link', { name: /随后拒绝/ })).toBeNull()
   expect(screen.getByRole('link', { name: 'Example 官方参赛规则' })).toBeTruthy()
 })
+
+it('严格模式最终来源白名单仍拒绝历史比赛库的敏感链接', () => {
+  const item = turn()
+  item.sources = [
+    {
+      title: '不应显示的历史私密来源',
+      url: 'https://example.org/rules?token=do-not-export',
+      site: 'example.org',
+    },
+  ]
+  render(<ResearchPanel turns={[item]} onClose={() => {}} />)
+  expect(screen.queryByRole('link', { name: /不应显示/ })).toBeNull()
+})

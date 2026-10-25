@@ -260,3 +260,35 @@ def test_model_site_argument_cannot_bypass_provider_boundary(session_factory,sit
     inv=Investigator(FunctionModel(reply),session_factory=session_factory,mode='realtime',search=lambda *args,**kwargs:calls.append(kwargs) or [],search_provider='yuanbao',scope_classifier=allowed)
     events=consume(inv)
     assert calls==[] and events[-1].payload['report']['queries']==[]
+
+
+def test_strict_unsafe_database_sources_never_reach_model_trace_or_final_sources(session_factory):
+    from contest_detective.server.contest.schemas import ContestDraft
+    from contest_detective.server.contest.service import save
+    with session_factory() as session:
+        contest_id=save(session,ContestDraft(name='公开黑客松',page={'url':'https://example.org/rules?token=do-not-export','site':'网站','title':'规则','is_official':False},claims=[{'field':'eligibility','value':'公开参赛','excerpt':'公开参赛'}]))
+        session.commit()
+    step=0
+    def reply(messages,info):
+        nonlocal step
+        step+=1
+        if step==1: return ModelResponse([ToolCallPart('get_contest',{'contest_id':contest_id})])
+        parts=[p for message in messages for p in message.parts if isinstance(p,ToolReturnPart)]
+        assert 'do-not-export' not in str(parts)
+        return ModelResponse([answer_part('尚未核实')])
+    inv=Investigator(FunctionModel(reply),session_factory=session_factory,mode='realtime',search_provider='yuanbao',scope_classifier=allowed,search=lambda *args,**kwargs:[])
+    events=consume(inv)
+    assert step==2
+    assert 'do-not-export' not in str([event.payload for event in events])
+    assert events[-1].payload['sources']==[]
+
+
+def test_strict_sanitizer_preserves_omitted_source_identity_semantics(session_factory):
+    from contest_detective.server.agent.tools import ToolDeps
+    from contest_detective.server.agent.verification import VerificationState
+    deps=ToolDeps(session_factory,FunctionModel(lambda *_:ModelResponse([answer_part('test')])),verification=VerificationState('realtime','比赛',[]))
+    url='https://event.devpost.com/rules'
+    deps.remember([{'title':'官方规则','url':url,'is_official':True}])
+    deps.remember([{'title':'读取网页','url':url}])
+    assert deps.sources[url].is_official is True
+    assert deps.sources[url].title=='官方规则'

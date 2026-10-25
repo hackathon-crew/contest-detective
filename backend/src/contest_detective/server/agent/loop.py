@@ -23,7 +23,7 @@ from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
 from .tools import ToolDeps, invoke, register_tools
 from .answer_grounding import check_answer_precision, check_evidence_precision
-from .verification import VerificationState, render_report, scope_check, export_text
+from .verification import VerificationState, render_report, scope_check, export_text, public_payload
 from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
 
@@ -224,7 +224,7 @@ class Investigator:
                 recommendations = materialize(session, result.output.recommendations)
             await queue.put(store(TraceEvent(type='answer', payload={
                 'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
-                'recommendations': [item.model_dump(mode='json') for item in recommendations],
+                'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
                 **({'report': report.model_dump(mode='json')} if report else {}),
             })))
         except Exception as exc:

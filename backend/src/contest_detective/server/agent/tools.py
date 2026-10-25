@@ -21,7 +21,7 @@ from contest_detective.server.user import matching
 
 from .extraction import create_page_extractor
 from .schemas import ToolSource
-from .verification import VerificationState, safe_evidence_url, scope_check, public_search_site
+from .verification import VerificationState, safe_evidence_url, scope_check, public_search_site, public_payload
 from .verification_contracts import InvestigationPlan
 from contest_detective.server.research_pipeline.contracts import SearchExecution
 
@@ -109,6 +109,10 @@ class ToolDeps:
     def remember(self, sources):
         for source in sources:
             item = ToolSource.model_validate(source)
+            if self.verification:
+                if not safe_evidence_url(item.url) or item.url in self.verification.rejected_urls:
+                    continue
+                item = ToolSource.model_validate(public_payload(item.model_dump(exclude_unset=True)))
             if urlsplit(item.url).scheme in {'http', 'https'}:
                 # 搜索与正文读取没有核实身份；不能覆盖比赛库已给出的来源等级。
                 if item.url in self.sources and 'is_official' not in item.model_fields_set:
@@ -121,7 +125,15 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         @wraps(function)
         async def call(*args, **kwargs):
             try:
-                return await function(*args, **kwargs)
+                result = await function(*args, **kwargs)
+                ctx = args[0] if args else kwargs.get('ctx')
+                if ctx and ctx.deps.verification:
+                    result = public_payload(result)
+                    if isinstance(result, dict) and 'sources' in result:
+                        result['sources'] = [source for source in result['sources']
+                            if safe_evidence_url(source.get('url', ''))
+                            and source['url'] not in ctx.deps.verification.rejected_urls]
+                return result
             except Exception as exc:
                 logger.warning('%s failed: %s', function.__name__, type(exc).__name__)
                 return {'error': type(exc).__name__, 'summary': '本次查询未完成，可尝试其他来源或方法。', 'sources': []}

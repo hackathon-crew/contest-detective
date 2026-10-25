@@ -94,6 +94,17 @@ def export_text(text):
     return _URL.sub(lambda match: match[0] if safe_evidence_url(match[0].rstrip('。，,;')) else '[非公开或敏感链接已移除]', text)
 
 
+def public_payload(value):
+    """Strip credential-bearing prose/URLs before strict tool data reaches a model or trace."""
+    if isinstance(value, str):
+        return export_text(value)
+    if isinstance(value, list):
+        return [public_payload(item) for item in value]
+    if isinstance(value, dict):
+        return {key: public_payload(item) for key, item in value.items()}
+    return value
+
+
 def markdown_text(text):
     return re.sub(r'([\\`*_{}\[\]()<>#!|])', r'\\\1', export_text(text))
 

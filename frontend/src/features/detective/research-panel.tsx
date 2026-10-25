@@ -24,8 +24,12 @@ function researchFor(turns: readonly DetectiveTurn[]) {
     const steps: Activity[] = []
     const finalSources = turn.report
       ? new Set([
-          ...turn.sources.map((source) => source.url),
-          ...turn.report.evidence.map((source) => source.url),
+          ...turn.sources
+            .filter((source) => publicReportUrl(source.url))
+            .map((source) => source.url),
+          ...turn.report.evidence
+            .filter((source) => publicReportUrl(source.url))
+            .map((source) => source.url),
         ])
       : undefined
     for (const [index, event] of turn.trace.entries()) {
@@ -55,7 +59,10 @@ function researchFor(turns: readonly DetectiveTurn[]) {
           })
         }
         for (const source of event.sources) {
-          if (!safeUrl(source.url) || (finalSources && !finalSources.has(source.url))) {
+          if (
+            !safeUrl(source.url) ||
+            (finalSources && (!publicReportUrl(source.url) || !finalSources.has(source.url)))
+          ) {
             if (finalSources) sources.delete(source.url)
             continue
           }
@@ -70,7 +77,9 @@ function researchFor(turns: readonly DetectiveTurn[]) {
       }
     }
     // 最终回答携带这一轮确定的来源等级，覆盖检索过程中同一 URL 的旧状态。
-    for (const source of turn.sources) if (safeUrl(source.url)) sources.set(source.url, source)
+    for (const source of turn.sources)
+      if (turn.report ? publicReportUrl(source.url) : safeUrl(source.url))
+        sources.set(source.url, source)
     return steps
   })
   const all = [...sources.values()]
