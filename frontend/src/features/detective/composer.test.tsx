@@ -62,26 +62,21 @@ describe('侦探输入口', () => {
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
     const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
     expect(JSON.parse(init.body as string).question).toBe(question)
-    expect(JSON.parse(init.body as string).mode).toBeUndefined()
+    expect(JSON.parse(init.body as string).mode).toBe('deep')
     expect(await screen.findByText('已整理参赛条件。')).toBeTruthy()
   })
 
-  it.each(['database', 'realtime', 'deep'])(
-    'typed %s selection is forwarded without screenshot claims',
-    async (mode) => {
-      const { fetch, input } = show()
-      fireEvent.change(screen.getByRole('combobox', { name: '查证方式' }), {
-        target: { value: mode },
-      })
-      fireEvent.change(input, { target: { value: '公开编程比赛报名截止' } })
-      fireEvent.keyDown(input, { key: 'Enter' })
-      await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
-      const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
-      const payload = JSON.parse(init.body as string)
-      expect(payload.mode).toBe(mode)
-      expect(payload.confirmed_claims).toBeUndefined()
-    },
-  )
+  it('直接使用深度调查，不再要求选择查证方式', async () => {
+    const { fetch, input } = show()
+    expect(screen.queryByRole('combobox', { name: '查证方式' })).toBeNull()
+    fireEvent.change(input, { target: { value: '公开编程比赛报名截止' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
+    const init = (fetch.mock.calls[0] as unknown as [string, RequestInit])[1]
+    const payload = JSON.parse(init.body as string)
+    expect(payload.mode).toBe('deep')
+    expect(payload.confirmed_claims).toBeUndefined()
+  })
 
   it('Shift+Enter 和中文输入法确认选字都不发送', async () => {
     const { fetch, input } = show()
