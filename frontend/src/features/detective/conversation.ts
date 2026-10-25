@@ -45,11 +45,9 @@ export function loadConversation(scope: string, value?: unknown): DetectiveTurn[
         (turn.error !== undefined && typeof turn.error !== 'string')
       )
         throw new Error('invalid conversation')
-      const trace = turn.trace.map((item: ToolEvent) => {
+      const trace = turn.trace.flatMap((item: ToolEvent) => {
         const event = parseTrace({ event: item.type, data: JSON.stringify(item), id: null })
-        if (event.type !== 'step' && event.type !== 'observation')
-          throw new Error('invalid tool event')
-        return event
+        return event?.type === 'step' || event?.type === 'observation' ? [event] : []
       })
       if (
         !turn.sources.every(

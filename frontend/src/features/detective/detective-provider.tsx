@@ -158,7 +158,11 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   ) {
     let terminal = false
     const fail = (message: string) =>
-      update(sessionId, turnId, (turn) => ({ ...turn, status: 'error', error: message }))
+      update(sessionId, turnId, (turn) =>
+        turn.content.trim()
+          ? { ...turn, status: 'stopped', error: undefined }
+          : { ...turn, status: 'error', error: message },
+      )
     try {
       for await (const raw of apiClient.stream('/agent/ask', {
         method: 'POST',
@@ -172,10 +176,11 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       })) {
         if (controller.signal.aborted) break
         const event = parseTrace(raw)
+        if (!event) continue
         if (event.type === 'answer') {
           update(sessionId, turnId, (turn) => ({
             ...turn,
-            content: event.content,
+            content: event.content || turn.content,
             sources: event.sources,
             recommendations: event.recommendations,
             report: event.report,
