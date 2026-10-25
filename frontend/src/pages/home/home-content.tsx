@@ -1,13 +1,149 @@
+import { useState } from 'react'
+import { Link } from 'react-router'
+import { Bell, Mail, RefreshCw } from 'lucide-react'
+import type { Profile } from '@/shared/api'
+import type { ProfileMatchSection } from '@/features/profile-match'
+import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { Icon } from '@/shared/ui/site-icon'
 import note from '@/shared/assets/stickers/note.png'
 import happy from '@/shared/assets/mascot/octo-happy.png'
+import peer from '@/shared/assets/mascot/octo-peer.png'
+import read from '@/shared/assets/mascot/octo-read.png'
+
+type OpenProfile = (section: ProfileMatchSection) => void
+
+export function PersonalizedIntro({ onAddProfile }: { onAddProfile: OpenProfile }) {
+  return (
+    <div className="copy">
+      <h2>
+        从你的项目经历，
+        <br />
+        找到合适的赛道
+      </h2>
+      <p>
+        连接
+        GitHub，或上传一份简历，把做过的项目变成参赛画像。再补充兴趣、身份和可投入时间，按你的情况挑比赛，每条推荐都说明理由。
+      </p>
+      <ul className="points">
+        <li>
+          <Icon name="github" />
+          读取公开仓库的语言与主题，提取技能和方向
+        </li>
+        <li>
+          <Icon name="user" />
+          画像由你编辑确认，时间、地点和参赛形式一起考虑
+        </li>
+        <li>
+          <Icon name="check" />
+          推荐理由关联你的技能与项目，帮你判断是否适合
+        </li>
+      </ul>
+      <div className="feature-actions">
+        <button className="btn btn-primary" type="button" onClick={() => onAddProfile('github')}>
+          <Icon name="github" />
+          读取我的 GitHub
+        </button>
+        <button className="btn btn-ghost" type="button" onClick={() => onAddProfile('all')}>
+          从简历开始
+          <Icon name="arrow-right" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export function PersonalizedPreview({
+  profile,
+  onAddProfile,
+}: {
+  profile: Profile | null
+  onAddProfile: OpenProfile
+}) {
+  const skills = [...new Set([...(profile?.skills ?? []), ...(profile?.topics ?? [])])].slice(0, 5)
+  return (
+    <div className="stage personal-stage">
+      <div className="win personal-window">
+        <img className="perch px x2" src={peer} width={202} height={164} alt="" />
+        <div className="win-bar">
+          <div className="win-title">
+            <Icon name="user" />
+            你的参赛画像
+          </div>
+        </div>
+        <div className="personal-source">
+          <Icon name="github" large />
+          <div>
+            <strong>
+              {profile?.github ? `github.com/${profile.github}` : '从你的公开项目开始'}
+            </strong>
+            <p>{profile?.github ? '已读取的 GitHub 公开资料' : '项目语言、仓库主题与近期活动'}</p>
+          </div>
+          <button type="button" className="btn btn-outline" onClick={() => onAddProfile('github')}>
+            {profile?.github ? '编辑' : '连接'}
+          </button>
+        </div>
+        <ol className="profile-journey">
+          <li>
+            <span className="journey-icon">
+              <Icon name="file" />
+            </span>
+            <div>
+              <strong>提取技能与兴趣方向</strong>
+              {skills.length ? (
+                <div className="profile-skills">
+                  {skills.map((skill) => (
+                    <span className="tag" key={skill}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p>结合公开项目与简历里的经历</p>
+              )}
+            </div>
+          </li>
+          <li>
+            <span className="journey-icon">
+              <Icon name="user" />
+            </span>
+            <div>
+              <strong>确认你的参赛条件</strong>
+              <p>身份、城市、参赛形式与可投入时间</p>
+            </div>
+          </li>
+          <li>
+            <span className="journey-icon">
+              <Icon name="check" />
+            </span>
+            <div>
+              <strong>查看比赛与推荐理由</strong>
+              <p>看技能和赛道的关联，也看时间是否合适</p>
+            </div>
+          </li>
+        </ol>
+        <div className="win-foot">
+          <span>登录账号，保存画像供下次使用</span>
+          <Link to="/account/profile">
+            管理画像
+            <Icon name="arrow-right" />
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function FilterIntro() {
   return (
     <div className="copy">
-      <h2>按条件筛比赛，也能按你的情况挑</h2>
+      <h2>
+        赛事库先整理，
+        <br />
+        你再按条件细挑
+      </h2>
       <p>
-        选参赛形式和截止时间，或者连上
-        GitHub、传一份简历，让它照你的技能和年级挑。每场比赛写清主办方、奖金、截止时间，以及这个日期是从哪儿看到的。
+        从 Devpost、ETHGlobal、HackerTrip、活动行、WaytoAGI
+        和主办方公开渠道整理信息。按形式、截止时间和关键词筛选，或切换到你的画像推荐。
       </p>
       <ul className="points">
         <li>
@@ -15,22 +151,35 @@ export function FilterIntro() {
           形式、截止时间、关键词随意组合，结果按截止先后排
         </li>
         <li>
-          <Icon name="check" />读 GitHub 和简历生成画像，每条推荐都写明理由
+          <Icon name="check" />
+          赛事库与网页检索配合，保留每个字段的原文出处
         </li>
         <li>
           <Icon name="check" />
           报名截止和提交截止分开写，标明出自官方原文还是转载
         </li>
       </ul>
+      <div className="update-workflow">
+        <strong>后台支持按每日计划更新赛事库</strong>
+        <ol aria-label="赛事更新流程">
+          {['多源采集', '抽取字段', '合并去重', '核实入库'].map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+      </div>
     </div>
   )
 }
 export function DetectiveIntro() {
   return (
     <div className="copy">
-      <h2>问一句，侦探去翻原文</h2>
+      <h2>
+        深度检索，
+        <br />
+        把参赛条件查清楚
+      </h2>
       <p>
-        它先查比赛库，库里没有就联网搜，再打开主办方页面逐字核对截止时间。查了哪些地方、读了哪些页面，都列在回答上面，每个日期标明可信到什么程度。
+        从赛事知识库找到线索，分轮检索官网、公众号和公开网页，再读取原文、交叉比对来源。查清资格要求、报名截止和作品提交截止，把依据和分歧一起列出来。
       </p>
       <div className="legend">
         <div>
@@ -59,7 +208,7 @@ export function DetectiveIntro() {
             <Icon name="minus" />
             未找到
           </span>
-          <span>公开页面里没写，侦探不替主办方编</span>
+          <span>保留尚未核实的项目，可以继续追查</span>
         </div>
       </div>
       <img
@@ -70,6 +219,213 @@ export function DetectiveIntro() {
         alt=""
         style={{ right: '-8px', top: '-112px' }}
       />
+    </div>
+  )
+}
+
+const researchSteps = [
+  [
+    'database',
+    '拆解问题',
+    '从赛事库和你的条件出发',
+    '把参赛资格、报名截止、作品提交截止拆开，制定要查的问题与查询计划。',
+  ],
+  [
+    'search',
+    '多轮检索',
+    '从不同查询继续找线索',
+    '结合赛事库与网页检索，分轮调整查询，追查官网、公众号和后续公告。',
+  ],
+  [
+    'file',
+    '读取原文',
+    '回到信息发布的页面',
+    '读取主办方原文，保存对应摘录与链接，分别核对报名和作品提交时间。',
+  ],
+  [
+    'link',
+    '交叉核对',
+    '比较来源，给出证据',
+    '比较独立原始来源，将证据支持、来源冲突与尚未核实的说法分别呈现。',
+  ],
+]
+
+export function ResearchPreview({
+  onAsk,
+}: {
+  onAsk: (question: string, verification?: VerificationOptions) => void
+}) {
+  const [active, setActive] = useState(0)
+  const [question, setQuestion] = useState(
+    '帮我深度检索适合 Python 开发者的线上 AI 比赛，核对参赛条件、报名和作品提交截止时间，并附上原文出处。',
+  )
+  const step = researchSteps[active]
+  return (
+    <div className="stage research-stage">
+      <div className="win">
+        <img className="perch px x2" src={read} width={202} height={172} alt="" />
+        <div className="win-bar">
+          <div className="win-title">
+            <Icon name="search" />
+            深度检索
+          </div>
+          <span className="window-note">知识库 + 网页</span>
+        </div>
+        <div className="research-body">
+          <label className="research-question">
+            想查清什么
+            <textarea
+              aria-label="深度检索问题"
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              rows={3}
+            />
+          </label>
+          <div className="research-tabs" role="group" aria-label="深度检索步骤">
+            {researchSteps.map(([icon, title], index) => (
+              <button
+                type="button"
+                key={title}
+                aria-pressed={active === index}
+                onClick={() => setActive(index)}
+              >
+                <Icon name={icon} />
+                {title}
+              </button>
+            ))}
+          </div>
+          <div className="research-focus" key={active}>
+            <strong>{step[2]}</strong>
+            <p>{step[3]}</p>
+          </div>
+        </div>
+        <div className="win-foot research-foot">
+          <span>执行后查看检索轨迹与原文证据</span>
+          <button
+            className="btn btn-primary"
+            type="button"
+            disabled={!question.trim()}
+            onClick={() => onAsk(question, { mode: 'deep' })}
+          >
+            开始深度检索
+            <Icon name="arrow-right" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function WatchIntro() {
+  return (
+    <div className="copy">
+      <h2>
+        适合你的新比赛，
+        <br />
+        让侦探继续盯
+      </h2>
+      <p>
+        保存画像和追踪条件，让符合条件的新比赛进入邮件推送。关注想参加的比赛，设置截止提醒，也跟进时间、地点和奖金的变化。
+      </p>
+      <ul className="points">
+        <li>
+          <Mail className="ic" />
+          符合画像或追踪条件的新比赛，按你选择的频率推送
+        </li>
+        <li>
+          <Bell className="ic" />
+          关注的比赛，在截止前 7 天、3 天或 1 天提醒
+        </li>
+        <li>
+          <RefreshCw className="ic" />
+          信息有变动，回到站内查看前后字段与来源
+        </li>
+      </ul>
+      <div className="feature-actions">
+        <Link className="btn btn-primary" to="/account/push">
+          设置邮件盯梢
+          <Icon name="arrow-right" />
+        </Link>
+        <Link className="btn btn-ghost" to="/account/follows">
+          查看我的关注
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+const mailContents = [
+  {
+    title: '新比赛',
+    icon: Mail,
+    subject: '与你的参赛条件相符的新机会',
+    description: '从新收录的赛事里，按你确认的画像或追踪条件筛选。',
+    details: ['符合的比赛与推荐理由', '参赛形式、奖励与截止时间', '回到赛事详情查看原文'],
+  },
+  {
+    title: '截止提醒',
+    icon: Bell,
+    subject: '关注的比赛，提前安排时间',
+    description: '选择截止前 7 天、3 天或 1 天，提醒跟随你关注的比赛。',
+    details: ['你关注的比赛', '报名或作品提交的截止节点', '赛事详情与来源查询入口'],
+  },
+  {
+    title: '信息变动',
+    icon: RefreshCw,
+    subject: '比赛信息变化，继续跟进',
+    description: '邮件提醒你关注的比赛有变动，回到站内查看变化记录与出处。',
+    details: ['比赛信息有变化的提醒', '当前的关键日期、地点与奖励', '回到站内对照前后记录与来源'],
+  },
+]
+
+export function WatchPreview() {
+  const [active, setActive] = useState(0)
+  const content = mailContents[active]
+  const MailIcon = content.icon
+  return (
+    <div className="stage watch-stage">
+      <div className="win">
+        <div className="win-bar">
+          <div className="win-title">
+            <Mail className="ic" />
+            邮件里会有什么
+          </div>
+        </div>
+        <div className="mail-tabs seg" role="group" aria-label="邮件内容预览">
+          {mailContents.map(({ title }, index) => (
+            <button
+              type="button"
+              key={title}
+              aria-pressed={active === index}
+              onClick={() => setActive(index)}
+            >
+              {title}
+            </button>
+          ))}
+        </div>
+        <div className="mail-preview" key={active}>
+          <span className="mail-preview-icon">
+            <MailIcon className="ic ic-20" />
+          </span>
+          <strong>{content.subject}</strong>
+          <p>{content.description}</p>
+          <ul>
+            {content.details.map((detail) => (
+              <li key={detail}>
+                <Icon name="check" />
+                {detail}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="win-foot">
+          <span>内容、频率与提醒时间，由你选择</span>
+          <Link to="/account/push">
+            推送设置
+            <Icon name="arrow-right" />
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
@@ -102,22 +458,32 @@ export function McpIntro() {
     </div>
   )
 }
-export function ClosingCallout({ onAsk }: { onAsk: () => void }) {
+export function ClosingCallout({
+  onAsk,
+  onAddProfile,
+}: {
+  onAsk: () => void
+  onAddProfile: OpenProfile
+}) {
   return (
     <section className="cta-sec">
       <div className="wrap">
         <div className="cta">
           <img className="px x2" src={happy} width="206" height="160" alt="" />
           <div>
-            <h2>把你的条件告诉侦探</h2>
-            <p>线上还是线下、什么时候有空、会什么技能，说清楚它就去查。</p>
+            <h2>从你的兴趣和优势开始</h2>
+            <p>建立参赛画像，找到合适的比赛，再让侦探替你查清条件。</p>
           </div>
           <div className="acts">
-            <a className="btn btn-primary" href="#top-ask" onClick={onAsk}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => onAddProfile('github')}
+            >
+              建立我的画像
+            </button>
+            <a className="btn btn-outline" href="#top-ask" onClick={onAsk}>
               问侦探
-            </a>
-            <a className="btn btn-outline" href="/contests">
-              浏览赛事库
             </a>
           </div>
         </div>

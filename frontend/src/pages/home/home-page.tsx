@@ -28,16 +28,25 @@ import { SiteFooter } from '@/shared/ui/site-footer'
 import { Icon } from '@/shared/ui/site-icon'
 import calendar from '@/shared/assets/stickers/calendar.png'
 import searchFrame from '@/shared/assets/mascot/octo-search.png'
-import { ClosingCallout, DetectiveIntro, FilterIntro, McpIntro } from './home-content'
+import {
+  ClosingCallout,
+  DetectiveIntro,
+  FilterIntro,
+  McpIntro,
+  PersonalizedIntro,
+  PersonalizedPreview,
+  ResearchPreview,
+  WatchIntro,
+  WatchPreview,
+} from './home-content'
 import { HomeFilter } from './home-filter'
-import { DetectiveDemo } from './detective-demo'
 import { McpPanel } from './mcp-panel'
 import '@/features/detective/detective-composer.css'
 import './home-page.css'
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
 )
-const chips = ['这周截止的线上比赛', '上海的线下黑客松', '奖金过万的 AI 比赛', '按我的 GitHub 推荐']
+const chips = ['这周截止的线上比赛', '上海的线下黑客松', '奖金过万的 AI 比赛']
 export function HomePage({ contestId }: { contestId?: string }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
@@ -105,14 +114,26 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 已收录 <b>{total ?? '—'}</b> 场比赛 <Icon name="arrow-right" />
               </Link>
               <h1>
-                说出你的条件，
+                按你的兴趣和优势，
                 <br />
-                侦探替你<span className="hl">找比赛</span>
+                找到<span className="hl">适合的比赛</span>
               </h1>
               <p className="hero-lead">
-                Inkpaw 检索
-                Devpost、ETHGlobal、WaytoAGI、主办方官网和公众号，每个报名截止和提交截止都追到原文核对，并告诉你出处。
+                从 GitHub
+                项目或简历生成参赛画像，按技能、兴趣和时间推荐比赛。想查清规则，交给深度检索；想持续跟进，设置邮件盯梢。
               </p>
+              <div className="hero-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={() => setProfileSection('github')}
+                >
+                  按我的画像推荐
+                  <Icon name="arrow-right" />
+                </button>
+                <a href="#agent">深度检索</a>
+                <a href="#watch">邮件盯梢</a>
+              </div>
               <div id="top-ask">
                 <DetectiveComposer
                   value={question}
@@ -128,7 +149,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
                     ask(question, verification)
                   }
                   inputRef={input}
-                  placeholder="比如：我会 Python，想找 11 月截止、线上能参加的 AI 黑客松"
+                  placeholder="比如：我做过 Python 项目，想找线上能参加的 AI 比赛"
                 />
               </div>
               <div className="chips">
@@ -215,20 +236,35 @@ export function HomePage({ contestId }: { contestId?: string }) {
             </div>
           </div>
         </section>
-        <section className="feature" id="filter">
+        <section className="feature" id="personalized">
           <div className="wrap feature-grid">
-            <FilterIntro />
-            <HomeFilter
+            <PersonalizedIntro onAddProfile={setProfileSection} />
+            <PersonalizedPreview
               profile={user?.profile ?? guestProfile}
-              total={total}
-              onAddProfile={() => setProfileSection('all')}
+              onAddProfile={setProfileSection}
             />
           </div>
         </section>
         <section className="feature" id="agent">
           <div className="wrap feature-grid flip">
             <DetectiveIntro />
-            <DetectiveDemo contests={contests} onAsk={ask} onAddProfile={setProfileSection} />
+            <ResearchPreview onAsk={ask} />
+          </div>
+        </section>
+        <section className="feature" id="watch">
+          <div className="wrap feature-grid">
+            <WatchIntro />
+            <WatchPreview />
+          </div>
+        </section>
+        <section className="feature" id="filter">
+          <div className="wrap feature-grid flip">
+            <FilterIntro />
+            <HomeFilter
+              profile={user?.profile ?? guestProfile}
+              total={total}
+              onAddProfile={() => setProfileSection('all')}
+            />
           </div>
         </section>
         <section className="feature" id="mcp">
@@ -271,7 +307,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
             )}
           </div>
         </section>
-        <ClosingCallout onAsk={focusAsk} />
+        <ClosingCallout onAsk={focusAsk} onAddProfile={setProfileSection} />
       </main>
       <SiteFooter appearance={<AppearanceControl segmented />} />
       <ProfileMatchDialog
