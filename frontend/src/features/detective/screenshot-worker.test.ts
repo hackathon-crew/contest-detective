@@ -7,7 +7,7 @@ let post: ReturnType<typeof vi.fn>
 let close: ReturnType<typeof vi.fn>
 const source = { width: 800, height: 400, content_type: 'image/png' }
 function send(type: string) {
-  globalThis.onmessage?.({
+  globalThis.onmessage?.call(window, {
     data: { type, bytes: new ArrayBuffer(0), source, assets: `${location.origin}/ocr/` },
   } as MessageEvent)
 }
