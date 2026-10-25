@@ -12,3 +12,6 @@ __pycache__/
 frontend/artifacts/
 frontend/playwright-report/
 frontend/test-results/
+
+# Reproducible self-hosted OCR assets are generated from pinned npm packages.
+/frontend/public/ocr/

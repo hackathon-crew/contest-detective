@@ -1,3 +1,4 @@
+import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { lazy, Suspense, useCallback, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, Link } from 'react-router'
@@ -72,10 +73,10 @@ export function HomePage({ contestId }: { contestId?: string }) {
     if (user) void client.invalidateQueries({ queryKey: currentUserKey })
     else setGuestProfile(profile)
   }
-  function ask(text: string) {
+  function ask(text: string, verification?: VerificationOptions) {
     const value = text.trim()
     if (!value) return
-    const id = send(value, user?.profile ?? guestProfile)
+    const id = send(value, user?.profile ?? guestProfile, undefined, verification)
     navigate(`/detective/${id}`)
   }
   function focusAsk() {
@@ -117,12 +118,15 @@ export function HomePage({ contestId }: { contestId?: string }) {
                   value={question}
                   pending={false}
                   onChange={setQuestion}
-                  onSubmit={(event) => {
+                  onSubmit={(event, verification) => {
                     event.preventDefault()
-                    ask(question)
+                    ask(question, verification)
                   }}
                   onStop={() => {}}
                   onAddProfile={setProfileSection}
+                  onVerifyScreenshot={({ question, ...verification }) =>
+                    ask(question, verification)
+                  }
                   inputRef={input}
                   placeholder="比如：我会 Python，想找 11 月截止、线上能参加的 AI 黑客松"
                 />

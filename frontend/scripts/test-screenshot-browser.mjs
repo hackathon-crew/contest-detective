@@ -1,0 +1,195 @@
+import { chromium, expect } from '@playwright/test'
+import { spawn } from 'node:child_process'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+const base = 'http://127.0.0.1:4175'
+const output = resolve('test-results/screenshot-ocr')
+await mkdir(output, { recursive: true })
+const server = spawn(
+  process.execPath,
+  [
+    'node_modules/vite/bin/vite.js',
+    'preview',
+    '--host',
+    '127.0.0.1',
+    '--port',
+    '4175',
+    '--strictPort',
+  ],
+  { stdio: 'pipe' },
+)
+let browser
+const evidence = {
+  runtime: 'Chromium, real self-hosted Tesseract WASM',
+  synthetic_fixtures: true,
+  provider_calls: 0,
+  requests: [],
+  results: [],
+  errors: [],
+}
+try {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      if ((await fetch(base)).ok) break
+    } catch {
+      /* Wait for the owned test server. */
+    }
+    if (attempt >= 60) throw new Error('Preview server failed to start')
+    await new Promise((done) => setTimeout(done, 250))
+  }
+  browser = await chromium.launch()
+  const context = await browser.newContext({
+    locale: 'zh-CN',
+    viewport: { width: 1440, height: 1000 },
+    serviceWorkers: 'block',
+  })
+  const asks = []
+  context.on('request', (request) =>
+    evidence.requests.push({
+      url: request.url(),
+      method: request.method(),
+      body: request.postData(),
+    }),
+  )
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    const url = new URL(request.url())
+    if (url.origin !== base) {
+      await route.abort('blockedbyclient')
+      throw new Error(`Unexpected external request: ${url.origin}`)
+    }
+    if (url.pathname === '/api/agent/ask') {
+      asks.push(JSON.parse(request.postData()))
+      await route.fulfill({
+        status: 200,
+        contentType: 'text/event-stream',
+        body: 'event: answer\ndata: {"content":"仅测试：收到确认后的文字，未调用真实搜索。","sources":[]}\n\n',
+      })
+    } else if (url.pathname.startsWith('/api/')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 200, message: 'ok', data: null }),
+      })
+    } else await route.continue()
+  })
+  const page = await context.newPage()
+  page.on('pageerror', (error) => evidence.errors.push(error.message))
+  await page.goto(`${base}/detective`)
+  const open = async () => {
+    await page.getByRole('button', { name: '添加简历或参赛资料' }).click()
+    await page.getByRole('menuitem', { name: '截图查证' }).click()
+    return page.getByRole('dialog', { name: '截图查证' })
+  }
+  for (const fixture of [
+    'clean-light',
+    'clean-dark',
+    'small-text',
+    'mixed-language',
+    'blank',
+    'blurred',
+  ]) {
+    const dialog = await open()
+    await dialog
+      .getByLabel('选择截图', { exact: true })
+      .setInputFiles(resolve(`tests/fixtures/${fixture}.png`))
+    if (fixture === 'blank') {
+      await expect(dialog.getByText(/没有识别到可查证的文字/)).toBeVisible({ timeout: 60_000 })
+      evidence.results.push({ fixture, text: '', no_text: true })
+    } else {
+      await expect(dialog.getByLabel('说法 1', { exact: true })).toBeVisible({ timeout: 60_000 })
+      const text = await dialog
+        .locator('textarea')
+        .evaluateAll((items) => items.map((item) => item.value))
+      const compact = text.join('').replace(/\s/g, '')
+      if (fixture === 'clean-light' || fixture === 'clean-dark')
+        expect(compact).toContain('2026年10月30日')
+      if (fixture === 'mixed-language') expect(compact).toContain('USD5,000')
+      if (fixture === 'blurred') await expect(dialog.getByText(/部分文字辨识度较低/)).toBeVisible()
+      if (fixture === 'small-text') await expect(dialog.getByText(/截图中的文字较小/)).toBeVisible()
+      evidence.results.push({ fixture, recognized_text: text })
+    }
+    expect(asks).toHaveLength(0)
+    await expect(dialog.getByRole('button', { name: '确认文字并查证' })).toBeDisabled()
+    if (fixture === 'clean-light') await page.screenshot({ path: `${output}/desktop-review.png` })
+    await dialog.getByRole('button', { name: '取消', exact: true }).click()
+    await expect.poll(() => page.workers().length).toBe(0)
+  }
+  // Only selected and corrected claims may leave the browser.
+  const dialog = await open()
+  await dialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await expect(dialog.getByLabel('说法 1', { exact: true })).toBeVisible({ timeout: 60_000 })
+  await dialog
+    .getByLabel('说法 1', { exact: true })
+    .fill('海风创意编程赛报名截止是 2026 年 10 月 30 日')
+  await dialog.getByLabel('查证这条说法 1', { exact: true }).check()
+  await dialog.getByLabel('截图查证方式').selectOption('deep')
+  await dialog.getByRole('button', { name: '确认文字并查证' }).click()
+  await expect.poll(() => asks.length).toBe(1)
+  expect(asks[0]).toMatchObject({
+    mode: 'deep',
+    question: '海风创意编程赛报名截止是 2026 年 10 月 30 日',
+    confirmed_claims: [
+      {
+        id: 'screenshot-1',
+        text: '海风创意编程赛报名截止是 2026 年 10 月 30 日',
+        origin: 'screenshot',
+      },
+    ],
+  })
+  expect(asks[0].confirmed_claims).toHaveLength(1)
+  expect(JSON.stringify(asks)).not.toContain('clean-light.png')
+  expect(JSON.stringify(asks)).not.toContain('团队')
+  expect(evidence.requests.filter((request) => request.method !== 'GET')).toHaveLength(1)
+  await expect(page.getByText('仅测试：收到确认后的文字，未调用真实搜索。')).toBeVisible()
+  // Close during model initialization, including the nested worker.
+  let releaseLanguage
+  const languageGate = new Promise((done) => {
+    releaseLanguage = done
+  })
+  await context.route('**/ocr/lang/*', async (route) => {
+    await languageGate
+    await route.continue().catch(() => {})
+  })
+  const cancelDialog = await open()
+  const loading = page.waitForRequest((request) => request.url().includes('/ocr/lang/'))
+  await cancelDialog
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await loading
+  await cancelDialog.getByRole('button', { name: '取消', exact: true }).click()
+  await expect.poll(() => page.workers().length).toBe(0)
+  releaseLanguage()
+  await context.unroute('**/ocr/lang/*')
+  // Narrow viewport: shared dialog scroll area must not hide confirmation/close.
+  await page.setViewportSize({ width: 390, height: 844 })
+  const mobile = await open()
+  await mobile
+    .getByLabel('选择截图', { exact: true })
+    .setInputFiles(resolve('tests/fixtures/clean-light.png'))
+  await expect(mobile.getByLabel('说法 1', { exact: true })).toBeVisible({ timeout: 60_000 })
+  await expect(mobile.getByRole('button', { name: '确认文字并查证' })).toBeInViewport()
+  await expect(mobile.getByRole('button', { name: '关闭', exact: true })).toBeInViewport()
+  await page.screenshot({ path: `${output}/mobile-review.png` })
+  await mobile.getByRole('button', { name: '取消', exact: true }).click()
+  const names = evidence.requests
+    .filter((request) => request.url.includes('/ocr/'))
+    .map((request) => new URL(request.url).pathname)
+  expect(names.some((name) => name.endsWith('.wasm'))).toBe(true)
+  expect(names.some((name) => name.endsWith('chi_sim.traineddata.gz'))).toBe(true)
+  expect(names.some((name) => name.endsWith('eng.traineddata.gz'))).toBe(true)
+  expect(evidence.errors).toEqual([])
+  evidence.confirmation_payload = asks[0]
+  evidence.status = 'passed'
+} catch (error) {
+  evidence.status = 'failed'
+  evidence.failure = String(error.stack ?? error)
+  throw error
+} finally {
+  await writeFile(`${output}/evidence.json`, JSON.stringify(evidence, null, 2) + '\n')
+  await browser?.close()
+  server.kill('SIGTERM')
+}

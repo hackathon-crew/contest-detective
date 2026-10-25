@@ -1,3 +1,4 @@
+import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } from 'lucide-react'
@@ -135,8 +136,8 @@ export function DetectivePage() {
             session={session}
             missing={!!conversationId && !session}
             storageError={storageError}
-            onSubmit={(text) => {
-              const id = send(text, user?.profile ?? guestProfile, session?.id)
+            onSubmit={(text, verification) => {
+              const id = send(text, user?.profile ?? guestProfile, session?.id, verification)
               if (id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
@@ -241,7 +242,7 @@ function Conversation({
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
   storageError: boolean
-  onSubmit: (question: string) => void
+  onSubmit: (question: string, verification?: VerificationOptions) => void
   onStop: () => void
   onAddProfile: (section: ProfileMatchSection) => void
   showProfileGuide: boolean
@@ -271,11 +272,11 @@ function Conversation({
     observer?.observe(node)
     return () => observer?.disconnect()
   }, [])
-  function submit(event: FormEvent) {
+  function submit(event: FormEvent, verification?: VerificationOptions) {
     event.preventDefault()
     if (!question.trim() || pending) return
     pinned.current = true
-    onSubmit(question.trim())
+    onSubmit(question.trim(), verification)
     setQuestion('')
   }
   return (
@@ -336,6 +337,7 @@ function Conversation({
             onStop={onStop}
             inputRef={input}
             onAddProfile={onAddProfile}
+            onVerifyScreenshot={({ question, ...verification }) => onSubmit(question, verification)}
             profileGuide={
               showProfileGuide && !missing && !turns.length
                 ? {
