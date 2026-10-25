@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
 import type { ContestDetail as Contest, FieldValue } from '@/entities/contest'
+import { FollowButton } from '@/features/follow'
 import { ContestDetail } from './contest-detail'
 
 const citation = {
@@ -36,6 +37,7 @@ function show(
   data: Partial<Contest>,
   variant: 'default' | 'library' = 'library',
   onAsk?: (question: string) => void,
+  toggle = vi.fn(),
 ) {
   vi.stubGlobal('fetch', async () =>
     Response.json({ code: 200, message: 'ok', data: { ...base, ...data } }),
@@ -44,7 +46,18 @@ function show(
   clients.push(client)
   return render(
     <QueryClientProvider client={client}>
-      <ContestDetail contestId="one" variant={variant} onClose={() => undefined} onAsk={onAsk} />
+      <ContestDetail
+        contestId="one"
+        variant={variant}
+        onClose={() => undefined}
+        onAsk={onAsk}
+        action={
+          <FollowButton
+            contestId="one"
+            follows={{ ids: [], pending: false, error: null, toggle }}
+          />
+        }
+      />
     </QueryClientProvider>,
   )
 }
@@ -151,7 +164,7 @@ it('keeps conflicting conditions close to the decision and does not pick one as 
     },
   })
   const section = await screen.findByRole('region', { name: '参赛条件' })
-  expect(screen.getByLabelText('来源冲突提醒').textContent).toContain('组队人数')
+  expect(document.querySelector('.contest-detail-notice')).toBeNull()
   expect(within(section).getByText('来源说法不一，待核实')).toBeTruthy()
   expect(within(section).getByText('可单人或最多4人')).toBeTruthy()
   expect(within(section).getByText('须2至4人')).toBeTruthy()
@@ -168,24 +181,47 @@ it('retains exact date precision, type and timezone in the overview', async () =
   expect(screen.getByLabelText('参赛前待确认').textContent).toContain('报名截止')
 })
 
-it('keeps actions outside the scroll container and asks about actual missing information', async () => {
-  const onAsk = vi.fn()
-  show(
-    {
-      fields: {
-        registration_url: field('https://organizer.example/apply'),
-        registration_deadline: field('2026-11-01T12:00:00Z'),
-        eligibility: field('18岁以上'),
+it.each(['default', 'library'] as const)(
+  'retains the original three actions in %s',
+  async (variant) => {
+    const onAsk = vi.fn()
+    const toggle = vi.fn()
+    show(
+      {
+        fields: {
+          registration_url: field('https://organizer.example/apply'),
+          registration_deadline: field('2026-11-01T12:00:00Z'),
+          eligibility: field('18岁以上'),
+        },
       },
-    },
-    'library',
-    onAsk,
-  )
-  const link = await screen.findByRole('link', { name: '查看报名页面' })
-  expect(link.closest('.contest-detail-scroll')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: '问侦探' }))
-  expect(onAsk).toHaveBeenCalledWith('帮我核实一下「城市服务挑战赛」的费用，并给出来源。')
-})
+      variant,
+      onAsk,
+      toggle,
+    )
+    const link = await screen.findByRole('link', { name: '去报名' })
+    const actions = screen.getByLabelText('赛事操作')
+    expect(actions.closest('.contest-detail-scroll')).toBeNull()
+    expect(Array.from(actions.children, (element) => element.textContent?.trim())).toEqual([
+      '去报名',
+      '问侦探这场比赛',
+      '关注',
+    ])
+    expect(link.className).toBe('site-button site-button--primary')
+    expect(link.getAttribute('href')).toBe('https://organizer.example/apply')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+    expect(link.querySelector('svg.ic use')?.getAttribute('href')).toBe('#i-arrow-right')
+    const ask = within(actions).getByRole('button', { name: '问侦探这场比赛' })
+    expect(ask.className).toBe('site-button site-button--outline')
+    expect(ask.querySelector('svg')).toBeNull()
+    fireEvent.click(ask)
+    expect(onAsk).toHaveBeenCalledWith('帮我核实一下「城市服务挑战赛」的截止时间')
+    const follow = within(actions).getByRole('button', { name: '关注' })
+    expect(follow.getAttribute('data-size')).toBe('sm')
+    fireEvent.click(follow)
+    expect(toggle).toHaveBeenCalledWith('one')
+  },
+)
 
 it('never renders unsafe links, ungrounded introductions or full source bodies', async () => {
   show({
@@ -264,3 +300,34 @@ it.each([true, false])(
     expect(within(overview).getByText(allReposted ? '仅见转载' : '部分信息仅见转载')).toBeTruthy()
   },
 )
+
+it.each([undefined, 'javascript:alert(1)'])(
+  'does not invent a replacement primary action for %s registration',
+  async (registration) => {
+    show(
+      {
+        fields: {
+          organizer: field('主办方'),
+          ...(registration ? { registration_url: field(registration) } : {}),
+        },
+      },
+      'library',
+      vi.fn(),
+    )
+    await screen.findByRole('heading', { name: base.name })
+    const actions = screen.getByLabelText('赛事操作')
+    expect(within(actions).queryByRole('link')).toBeNull()
+    expect(within(actions).getByRole('button', { name: '问侦探这场比赛' }).className).toBe(
+      'site-button site-button--outline',
+    )
+  },
+)
+
+it('presents pending facts as ordinary coverage text without a warning card or icon', async () => {
+  show({})
+  await screen.findByRole('heading', { name: base.name })
+  const pending = screen.getByLabelText('参赛前待确认')
+  expect(pending.className).toBe('contest-detail-coverage')
+  expect(pending.querySelector('svg')).toBeNull()
+  expect(document.querySelector('.contest-detail-notice')).toBeNull()
+})

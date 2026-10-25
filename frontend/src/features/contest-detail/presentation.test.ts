@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { ContestDetail, CoverageObservation, FieldValue } from '@/entities/contest'
 import {
   criticalUnknowns,
-  detailAction,
   hasConflict,
   nextDetailDate,
   pendingFact,
@@ -146,23 +145,5 @@ describe('traceability, conflicts and actions', () => {
     expect(nextDetailDate(contest)?.field).toBe('start_at')
     expect(nextDetailDate(contest)?.info.precision).toBe('day')
     expect(criticalUnknowns(contest)[0]?.label).toBe('截止时间')
-  })
-  it('does not label a reposted link official or imply registration is open', () => {
-    const contest = {
-      ...base,
-      fields: {
-        registration_url: { ...field('https://example.com/apply'), level: 'reposted' as const },
-      },
-    }
-    expect(detailAction(contest)).toEqual({
-      href: 'https://example.com/apply',
-      label: '查看报名页面',
-    })
-    expect(detailAction({ ...contest, status: 'ended' })?.label).toBe('查看赛事资料')
-  })
-  it('never follows an unsafe registration URL', () => {
-    const contest = { ...base, fields: { registration_url: field('javascript:alert(1)') } }
-    expect(detailAction(contest)).toEqual({ href: source.url, label: '查看赛事原文' })
-    expect(detailAction(base)).toBeNull()
   })
 })

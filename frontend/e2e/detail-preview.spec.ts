@@ -260,3 +260,37 @@ test('real follow action toggles locally without account requests', async ({ pag
   )
   await verifyLayout(page, dialog)
 })
+
+test('preserves original actions and plain metadata without new warning or icon controls', async ({
+  page,
+}) => {
+  const dialog = await openPreview(page, 'conflict')
+  const actions = dialog.locator('.contest-detail-actions')
+  await expect(actions.locator(':scope > *')).toHaveText(['去报名', '问侦探这场比赛', '关注'])
+  const registration = actions.getByRole('link', { name: '去报名', exact: true })
+  await expect(registration).toHaveCSS('height', '40px')
+  await expect(registration).toHaveCSS('font-size', '14px')
+  await expect(registration.locator('svg.ic')).toHaveCSS('width', '16px')
+  await expect(registration.locator('svg use')).toHaveAttribute('href', '#i-arrow-right')
+  const ask = actions.getByRole('button', { name: '问侦探这场比赛', exact: true })
+  await expect(ask).toHaveClass('site-button site-button--outline')
+  await expect(ask).toHaveCSS('height', '40px')
+  await expect(ask.locator('svg')).toHaveCount(0)
+  await expect(actions.getByRole('button', { name: '关注', exact: true })).toHaveCSS(
+    'height',
+    '32px',
+  )
+  await expect(dialog).toHaveCSS('font-family', /Inkpaw Contest Sans/)
+  await expect(dialog.locator('.contest-detail-notice')).toHaveCount(0)
+  await expect(
+    dialog.locator(
+      '.lucide-sparkles, .lucide-calendar-days, .lucide-map-pin, .lucide-circle-alert',
+    ),
+  ).toHaveCount(0)
+  const pending = dialog.getByLabel('参赛前待确认')
+  await expect(pending).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(pending).toHaveCSS('border-left-width', '0px')
+  await expect(pending).toHaveCSS('padding-left', '0px')
+  await expect(dialog.getByText('来源说法不一，待核实', { exact: true }).first()).toBeVisible()
+  await verifyLayout(page, dialog)
+})
