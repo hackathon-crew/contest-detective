@@ -120,11 +120,35 @@ it('sends the exact hero question into a real conversation route', async () => {
       calls.some(
         ({ url, init }) =>
           url.pathname.endsWith('/agent/ask') &&
-          JSON.parse(String(init?.body)).question === '帮我核对 Python 比赛的截止时间',
+          JSON.parse(String(init?.body)).question === '帮我核对 Python 比赛的截止时间' &&
+          JSON.parse(String(init?.body)).mode === 'deep',
       ),
     ).toBe(true),
   )
   expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
+})
+it('keeps the original detective demo composer alongside the added research preview', async () => {
+  const calls = show()
+  expect(screen.getByRole('button', { name: '再查一遍' })).toBeTruthy()
+  const originalComposer = screen.getAllByRole('textbox', { name: '问侦探' })[1]
+  fireEvent.change(originalComposer, { target: { value: '继续查这场比赛的参赛资格' } })
+  fireEvent.keyDown(originalComposer, { key: 'Enter' })
+  await waitFor(() =>
+    expect(
+      calls.some(
+        ({ url, init }) =>
+          url.pathname.endsWith('/agent/ask') &&
+          JSON.parse(String(init?.body)).question === '继续查这场比赛的参赛资格',
+      ),
+    ).toBe(true),
+  )
+  expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
+})
+it('opens the detective workspace from the secondary action without starting a search', async () => {
+  const calls = show()
+  fireEvent.click(screen.getByRole('link', { name: '和侦探聊聊' }))
+  expect(await screen.findByRole('button', { name: '打开会话列表' })).toBeTruthy()
+  expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
 })
 it('opens GitHub profile import from the primary personalized recommendation action', async () => {
   show()
