@@ -41,7 +41,7 @@ export function DetectiveComposer({
         className="detective-composer"
         data-multiline={value.includes('\n') || value.length > 40}
         data-filled={value.length > 0}
-        onSubmit={(event) => onSubmit(event, { mode: 'deep' })}
+        onSubmit={(event) => onSubmit(event)}
       >
         <Popover.Root
           open={!!profileGuide}
@@ -79,11 +79,12 @@ export function DetectiveComposer({
               >
                 {onVerifyScreenshot && (
                   <DropdownMenu.Item
+                    disabled
                     className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                     onSelect={() => setScreenshotOpen(true)}
                   >
                     <ImagePlus className="size-5" aria-hidden="true" strokeWidth={1.5} />
-                    截图查证
+                    截图查证（暂不可用）
                   </DropdownMenu.Item>
                 )}
                 {onAddProfile && (

@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sse_starlette.sse import EventSourceResponse
 
 from contest_detective.common.result import Response
+from contest_detective.common.exceptions import BizException
 from contest_detective.framework.db import get_session
 from contest_detective.framework.config.app import get_app_settings
 from contest_detective.server.account.providers import runtime_for
@@ -34,6 +35,8 @@ async def get_request_user_id(request: Request) -> str | None:
 
 async def get_investigator(body: AskRequest, session: Session = Depends(get_session),
                            user_id: str | None = Depends(get_request_user_id)) -> AsyncIterator[Investigator]:
+    if body.confirmed_claims:
+        raise BizException('截图与深度核验暂时停用，请使用普通文字推荐或查询比赛库。', code=503)
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     investigator = create_investigator(session_factory=factory, model_settings=runtime.llm,
@@ -44,7 +47,7 @@ async def get_investigator(body: AskRequest, session: Session = Depends(get_sess
 
 async def question_stream(request: Request, body: AskRequest, investigator: Investigator, user_id: str | None):
     async def stream():
-        async for event in investigator.ask(body.question, user_id, profile=body.profile, history=body.history, mode=body.mode, confirmed_claims=body.confirmed_claims):
+        async for event in investigator.ask(body.question, user_id, profile=body.profile, history=body.history, mode=investigator.mode):
             yield {'event': event.type, 'data': json.dumps(event.payload, ensure_ascii=False)}
     return EventSourceResponse(stream(), headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 

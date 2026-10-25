@@ -104,3 +104,48 @@ def test_campaign_switch_removes_query_count_cap(local_client, monkeypatch):
     monkeypatch.setattr(get_app_settings(), 'query_limits_enabled', False)
     for _ in range(7):
         assert 'event: answer' in local_client.post('/agent/ask', json={'question': '找比赛'}).text
+
+
+@pytest.mark.parametrize('mode', ['deep', 'realtime'])
+def test_legacy_strict_request_uses_normal_workflow_without_plans_or_claim_report(client, session_factory, monkeypatch, mode):
+    from pydantic_ai.messages import ToolCallPart, ToolReturnPart
+    from contest_detective.server.contest.service import save
+    from contest_detective.server.contest.schemas import ContestDraft
+    from contest_detective.server.agent.config import LLMSettings
+    from contest_detective.server.account.schemas import SearchPreferences
+    from contest_detective.framework.config.search import SearchSettings
+    with session_factory() as session:
+        contest_id = save(session, ContestDraft(name='公开开发挑战赛', page={
+            'url': 'https://organizer.example/rules', 'site': '主办方', 'title': '规则', 'is_official': True,
+        }, claims=[{'field': 'prize', 'value': '公开奖金', 'excerpt': '公开奖金'},
+                   {'field': 'submission_deadline', 'value': '2027-12-31', 'precision': 'day', 'excerpt': '2027年12月31日截止'}]))
+    def respond(messages, info):
+        assert not {'plan_investigation', 'cite_evidence'} & {tool.name for tool in info.function_tools}
+        assert '严格实时/深度核验' not in info.instructions
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        if not results:
+            return ModelResponse([ToolCallPart('search_contests', {})])
+        assert results[-1].content['items'][0]['id'] == contest_id
+        return ModelResponse([answer_part('可以先看公开开发挑战赛，含金量尚需按你的目标比较。', [{
+            'contest_id': contest_id, 'introduction': '公开赛事', 'reason': '请参考主办方规则',
+        }])])
+    monkeypatch.setattr('contest_detective.server.agent.llm.create_model', lambda **_: FunctionModel(respond))
+    monkeypatch.setattr('contest_detective.web.api.agent.runtime_for', lambda *_: SimpleNamespace(
+        llm=LLMSettings(_env_file=None), search=SearchSettings(_env_file=None), preferences=SearchPreferences()))
+    response = client.post('/agent/ask', json={'question': '帮我找找最近含金量最高的比赛', 'mode': mode})
+    assert response.headers['content-type'].startswith('text/event-stream')
+    assert 'event: answer' in response.text
+    assert 'plan_investigation' not in response.text
+    data = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+    answer = data[-1]
+    assert 'report' not in answer
+    assert answer['recommendations'][0]['contest']['id'] == contest_id
+
+
+def test_confirmed_screenshot_claims_are_paused_before_model_initialization(client, monkeypatch):
+    monkeypatch.setattr('contest_detective.server.agent.llm.create_model', lambda **_: pytest.fail('paused verification must not run model'))
+    response = client.post('/agent/ask', json={'question': '核实截图', 'mode': 'deep',
+        'confirmed_claims': [{'id': 'c1', 'text': '比赛报名今天截止', 'origin': 'screenshot'}]})
+    assert response.json()['code'] == 503
+    assert '暂时停用' in response.json()['message']
+    assert 'event:' not in response.text
