@@ -41,12 +41,14 @@ def test_snapshot_keeps_observed_values_sources_and_precision():
 @pytest.mark.parametrize('outcome', ['success', 'cached', 'complete'])
 def test_check_outcomes_do_not_mislabel_unobserved_work(outcome):
     with pytest.raises(ValidationError):
-        PageCheck(contest_id='c', checked_at=NOW, outcome=outcome)
+        PageCheck(contest_id='c', checked_at=NOW, completed_at=NOW,
+            source_url='https://example.org', outcome=outcome)
 
 
 def test_check_requires_observed_timezone_aware_time():
     with pytest.raises(ValidationError):
-        PageCheck(contest_id='c', checked_at=datetime(2026, 10, 25), outcome='unchanged')
+        PageCheck(contest_id='c', checked_at=datetime(2026, 10, 25), completed_at=NOW,
+            source_url='https://example.org', outcome='unchanged')
 
 
 def test_snapshot_rejects_unknown_fact_names():
