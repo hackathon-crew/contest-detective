@@ -8,7 +8,7 @@ test('private watch preserves paused status, evidence precision and working cont
   let enabled = false
   let readAt: string | null = null
   const errors: string[] = []
-  const mutations: string[] = []
+  const nonGetRequests: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   function field(value: string, precision = 'datetime') {
     return {
@@ -80,8 +80,9 @@ test('private watch preserves paused status, evidence precision and working cont
     const path = url.pathname.slice(4)
     const method = route.request().method()
     let data: unknown = null
-    if (method !== 'GET') mutations.push(method + ' ' + path)
+    if (method !== 'GET') nonGetRequests.push(method + ' ' + path)
     if (path === '/auth/me') data = { id: 'owner', username: 'demo@example.com', profile: {} }
+    else if (path === '/match' && method === 'POST') data = []
     else if (path === '/account/summary') data = { follows: 1, tracks: 0 }
     else if (path === '/account/follows')
       data = [{ contest, reminders: false, created_at: '2026-10-25T00:00:00Z' }]
@@ -127,7 +128,12 @@ test('private watch preserves paused status, evidence precision and working cont
   await expect(panel.getByText(/预计下次/)).toHaveCount(0)
   await expect(panel.getByRole('link', { name: '官方赛事规则' })).toHaveCount(4)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
-  expect(mutations).toEqual(['PUT /account/watch/demo', 'POST /account/watch/notifications/2/read'])
+  // The existing account profile tab requests recommendations on initial mount.
+  expect(nonGetRequests).toEqual([
+    'POST /match',
+    'PUT /account/watch/demo',
+    'POST /account/watch/notifications/2/read',
+  ])
   expect(errors).toEqual([])
   await mkdir(resolve('artifacts/detail-preview'), { recursive: true })
   await page.screenshot({
