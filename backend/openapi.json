@@ -5,6 +5,159 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/account/watch": {
+      "get": {
+        "summary": "Read Watch",
+        "operationId": "read_watch_account_watch_get",
+        "parameters": [
+          {
+            "name": "before_event_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_WatchRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/watch/{contest_id}": {
+      "put": {
+        "summary": "Set Watch",
+        "operationId": "set_watch_account_watch__contest_id__put",
+        "parameters": [
+          {
+            "name": "contest_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Contest Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WatchUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_StatusRead_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/watch/consume": {
+      "post": {
+        "summary": "Consume Watch",
+        "operationId": "consume_watch_account_watch_consume_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_ConsumeRead_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/watch/notifications/{event_id}/read": {
+      "post": {
+        "summary": "Mark Read",
+        "operationId": "mark_read_account_watch_notifications__event_id__read_post",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Event Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/push": {
       "get": {
         "summary": "Read Push",
@@ -1875,6 +2028,19 @@
         ],
         "title": "ConnectionRead"
       },
+      "ConsumeRead": {
+        "properties": {
+          "processed": {
+            "type": "integer",
+            "title": "Processed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed"
+        ],
+        "title": "ConsumeRead"
+      },
       "ContentCitation": {
         "properties": {
           "url": {
@@ -1925,6 +2091,32 @@
         "additionalProperties": false,
         "type": "object",
         "title": "ContentCoverage"
+      },
+      "ContestChange": {
+        "properties": {
+          "before": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "after": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ContestChange"
       },
       "ContestDetail": {
         "properties": {
@@ -2108,6 +2300,48 @@
           "reason"
         ],
         "title": "ContestRecommendation"
+      },
+      "ContestSnapshot": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FieldValue"
+            },
+            "propertyNames": {
+              "enum": [
+                "start_at",
+                "end_at",
+                "registration_deadline",
+                "submission_deadline",
+                "deadline_unspecified",
+                "city",
+                "mode",
+                "prize",
+                "registration_url",
+                "organizer",
+                "venue",
+                "eligibility",
+                "team_size",
+                "entry_fee",
+                "entry_requirements",
+                "judging_criteria",
+                "past_statistics"
+              ]
+            },
+            "type": "object",
+            "title": "Fields"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ContestSnapshot"
       },
       "ContestSummary": {
         "properties": {
@@ -2978,6 +3212,104 @@
         ],
         "title": "MatchItem"
       },
+      "NotificationRead": {
+        "properties": {
+          "event_id": {
+            "type": "integer",
+            "title": "Event Id"
+          },
+          "contest_id": {
+            "type": "string",
+            "title": "Contest Id"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "change": {
+            "$ref": "#/components/schemas/ContestChange"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "contest_id",
+          "occurred_at",
+          "change"
+        ],
+        "title": "NotificationRead"
+      },
+      "PageCheck": {
+        "properties": {
+          "contest_id": {
+            "type": "string",
+            "title": "Contest Id"
+          },
+          "checked_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Checked At"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Completed At"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "changed",
+              "unchanged",
+              "failed",
+              "no_source"
+            ],
+            "title": "Outcome"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contest_id",
+          "checked_at",
+          "completed_at",
+          "outcome"
+        ],
+        "title": "PageCheck"
+      },
       "PasswordInput": {
         "properties": {
           "current_password": {
@@ -3746,6 +4078,48 @@
         "type": "object",
         "title": "Response[ConnectionRead]"
       },
+      "Response_ConsumeRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConsumeRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[ConsumeRead]"
+      },
       "Response_ContestDetail_": {
         "properties": {
           "code": {
@@ -4244,6 +4618,48 @@
         "type": "object",
         "title": "Response[SearchPreferences]"
       },
+      "Response_StatusRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StatusRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[StatusRead]"
+      },
       "Response_TokenCreated_": {
         "properties": {
           "code": {
@@ -4495,6 +4911,48 @@
         },
         "type": "object",
         "title": "Response[Union[TokenMetadata, NoneType]]"
+      },
+      "Response_WatchRead_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WatchRead"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[WatchRead]"
       },
       "Response_dict_": {
         "properties": {
@@ -4954,6 +5412,74 @@
         ],
         "title": "SourceCitation"
       },
+      "StatusRead": {
+        "properties": {
+          "contest_id": {
+            "type": "string",
+            "title": "Contest Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": false
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "paused",
+              "scheduler_paused",
+              "scheduled",
+              "no_source"
+            ],
+            "title": "State"
+          },
+          "last_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PageCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_success_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Success At"
+          },
+          "next_check_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Check At"
+          },
+          "contest_name": {
+            "type": "string",
+            "title": "Contest Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "contest_id",
+          "state",
+          "contest_name"
+        ],
+        "title": "StatusRead"
+      },
       "TokenCreated": {
         "properties": {
           "token": {
@@ -5298,6 +5824,53 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "WatchRead": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StatusRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "notifications": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationRead"
+            },
+            "type": "array",
+            "title": "Notifications"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          },
+          "has_more_notifications": {
+            "type": "boolean",
+            "title": "Has More Notifications",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "notifications"
+        ],
+        "title": "WatchRead"
+      },
+      "WatchUpdate": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enabled"
+        ],
+        "title": "WatchUpdate"
       }
     }
   }
