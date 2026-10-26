@@ -45,6 +45,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Preserve incremental deployment tooling
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/deployment-tools"
+          cp deploy/bundle.py deploy/release.py "$RUNNER_TEMP/deployment-tools/"
       - name: Resolve published release
         id: release
         shell: bash
@@ -62,7 +68,7 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - name: Build release bundle
+      - name: Build release files
         shell: bash
         env:
           RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
@@ -70,14 +76,16 @@ jobs:
           set -euo pipefail
           npm ci --prefix frontend
           npm run build --prefix frontend
-          printf '%s\n' "$RELEASE_COMMIT" > RELEASE_COMMIT
-          printf '%s\n' "$RELEASE_TAG" > RELEASE_TAG
+          candidate="$RUNNER_TEMP/release"
+          mkdir -p "$candidate/frontend"
+          git archive --format=tar "$RELEASE_COMMIT" backend deploy/server.env.example \
+            | tar -xf - -C "$candidate"
+          cp -R frontend/dist "$candidate/frontend/dist"
+          printf '%s\n' "$RELEASE_COMMIT" > "$candidate/RELEASE_COMMIT"
+          printf '%s\n' "$RELEASE_TAG" > "$candidate/RELEASE_TAG"
           jq -n --arg tag "$RELEASE_TAG" --arg commit "$RELEASE_COMMIT" \
-            '{tag: $tag, commit: $commit}' > frontend/dist/version.json
-          git archive --format=tar "$RELEASE_COMMIT" backend deploy/server.env.example > "$RUNNER_TEMP/release.tar"
-          tar -rf "$RUNNER_TEMP/release.tar" frontend/dist RELEASE_COMMIT RELEASE_TAG
-          gzip "$RUNNER_TEMP/release.tar"
-      - name: Deploy through restricted SSH key
+            '{tag: $tag, commit: $commit}' > "$candidate/frontend/dist/version.json"
+      - name: Deploy changed files through restricted SSH key
         shell: bash
         env:
           DEPLOY_HOST: ${{ vars.PRODUCTION_HOST }}
@@ -93,6 +101,14 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/production" "$HOME/.ssh/known_hosts"
           trap 'rm -f "$HOME/.ssh/production"' EXIT
+          printf 'INKPAW_RELEASE_MANIFEST_V1\n' \
+            | ssh -T -i "$HOME/.ssh/production" -o IdentitiesOnly=yes \
+              -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
+              "$DEPLOY_USER@$DEPLOY_HOST" deploy > "$RUNNER_TEMP/base-manifest.json"
+          python3 "$RUNNER_TEMP/deployment-tools/bundle.py" \
+            --root "$RUNNER_TEMP/release" --base "$RUNNER_TEMP/base-manifest.json" \
+            --output "$RUNNER_TEMP/release.tar.gz"
           ssh -T -i "$HOME/.ssh/production" -o IdentitiesOnly=yes \
             -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 \
             -o ServerAliveInterval=15 -o ServerAliveCountMax=4 \
