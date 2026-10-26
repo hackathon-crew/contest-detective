@@ -48,6 +48,27 @@ import './home-page.css'
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
 )
+
+function WallCover({ url, name }: { url: string; name: string }) {
+  const [loaded, setLoaded] = useState(false)
+  const imageRef = useCallback((image: HTMLImageElement | null) => {
+    if (image?.complete && image.naturalWidth > 0) setLoaded(true)
+  }, [])
+  return (
+    <div className="wall-card" title={name}>
+      <img
+        ref={imageRef}
+        src={url}
+        alt=""
+        loading="lazy"
+        data-loaded={loaded}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(false)}
+      />
+    </div>
+  )
+}
+
 export function HomePage({ contestId }: { contestId?: string }) {
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
@@ -65,6 +86,9 @@ export function HomePage({ contestId }: { contestId?: string }) {
   const total = collection.data?.total
   const covers = contests.filter((contest) => safeUrl(contest.cover_url)).slice(0, 46)
   const half = Math.ceil(covers.length / 2)
+  const waitingForCovers =
+    !covers.length &&
+    (collection.isPending || (collection.isFetching && !collection.data?.complete))
   const soon = contests
     .flatMap((contest) => {
       const deadline = nextDeadline(contest)
@@ -175,17 +199,16 @@ export function HomePage({ contestId }: { contestId?: string }) {
             {[covers.slice(0, half), covers.slice(half)].map((row, index) => (
               <div className={'wall-row' + (index ? ' rev' : '')} key={index}>
                 {[...row, ...row].map((contest, index) => (
-                  <img
-                    key={contest.id + index}
-                    src={contest.cover_url!}
-                    alt=""
-                    title={contest.name}
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.style.visibility = 'hidden'
-                    }}
+                  <WallCover
+                    key={contest.id + contest.cover_url + index}
+                    url={contest.cover_url!}
+                    name={contest.name}
                   />
                 ))}
+                {waitingForCovers &&
+                  Array.from({ length: 16 }, (_, index) => (
+                    <div className="wall-card" key={index} />
+                  ))}
               </div>
             ))}
           </div>

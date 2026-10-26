@@ -272,12 +272,24 @@
   .wall:hover .wall-row {
     animation-play-state: paused;
   }
-  .wall img {
+  .wall-card {
     width: 192px;
     height: 144px;
+    flex: none;
     border-radius: 12px;
-    object-fit: cover;
+    overflow: hidden;
     background: var(--surface-strong);
+    box-shadow: inset 0 0 0 1px var(--rule);
+  }
+  .wall-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--motion-surface) var(--ease);
+  }
+  .wall-card img[data-loaded='true'] {
+    opacity: 1;
   }
 
   /* 数字条 */
@@ -1358,7 +1370,7 @@
       flex-wrap: wrap;
       gap: calc(var(--spacing) * 2);
     }
-    .wall img {
+    .wall-card {
       width: 144px;
       height: 108px;
     }
