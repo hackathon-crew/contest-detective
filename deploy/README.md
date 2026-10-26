@@ -114,7 +114,11 @@ restrict,command="sudo -n /usr/local/sbin/contest-detective-deploy" ssh-ed25519 
 | Secret | `PRODUCTION_SSH_KEY` | 专用部署私钥 |
 | Secret | `PRODUCTION_KNOWN_HOSTS` | 已核验的 SSH known_hosts 条目 |
 
-Action 通过 SSH 标准输入发送构建包，其中包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `server/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
+Action 先通过同一受限 SSH 入口读取当前发布的文件 SHA-256 清单，再只上传内容变化的文件和完整目标清单，日志显示变化文件数、复用文件数及压缩包字节数。未变的 OCR/WASM 等资源在服务器复制到新的候选目录；目标清单中已经删除的文件不会带入新版本。文件在复用前与复制后都核对哈希，当前文件缺失或变化时在停服前中止。清单请求失败时直接停止，不自动改传完整包。接收端仍支持旧格式完整包，以兼容既有发布工具。
+
+启用增量部署前，管理员须先用上述安装命令更新 `/usr/local/sbin/contest-detective-deploy`；SSH 公钥、sudoers 与授权范围保持原配置。清单接口只列出可发布文件，不包含运行环境、虚拟环境或密钥。Action 会保留自身版本的打包工具，因此手动重新部署旧 tag 时也使用当前增量协议。
+
+增量包包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `server/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
 
 后端、nginx、前端版本与 MCP 初始化检查通过后恢复访问。失败会恢复本次补配前的环境文件、旧代码与数据库，并按旧版本能力启动服务；模板检查失败时网站尚未停止。回退到尚无 HTTP 入口的版本时保持 MCP 停止。恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective -u contest-detective-mcp` 后处理。环境文件原件仅在补配时保存到备份目录的 `environment`，权限为 600。
 
