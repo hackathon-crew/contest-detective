@@ -238,7 +238,7 @@ export function PushPanel() {
           on={s.enabled ?? false}
           label="邮件推送"
           change={(enabled) => update({ enabled })}
-          disabled={save.isPending}
+          disabled={save.isPending || (!s.enabled && !state.email_verified)}
         />
       </div>
       {error && (
@@ -246,13 +246,32 @@ export function PushPanel() {
           {error}
         </p>
       )}
-      {!state.email_verified && <p className="grp-note">邮箱未验证，验证后才能开启邮件推送。</p>}
-      <div className="p-acts dep">
+      {!state.email_verified && (
+        <p className="grp-note">
+          邮箱未验证，验证后才能开启推送或发送测试邮件。{' '}
+          <Link to="/account/settings#email">去验证邮箱</Link>
+        </p>
+      )}
+      <div className="p-acts">
+        {!s.enabled && (
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={() => update({ enabled: true })}
+            disabled={save.isPending || !state.email_verified}
+          >
+            开启邮件推送
+          </button>
+        )}
         <button className="btn btn-outline" onClick={() => void preview()} disabled={!!busy}>
           <Ic name="mail" />
           预览下一封
         </button>
-        <button className="btn btn-ghost" onClick={() => void test()} disabled={!!busy}>
+        <button
+          className="btn btn-ghost"
+          onClick={() => void test()}
+          disabled={!!busy || !state.email_verified}
+        >
           <Ic name="send" />
           {busy === 'test' ? '正在发送…' : '发一封测试邮件'}
         </button>
@@ -552,7 +571,11 @@ export function PushPanel() {
           <button className="btn btn-ghost" onClick={() => setMailOpen(false)}>
             关闭
           </button>
-          <button className="btn btn-outline" disabled={!!busy} onClick={() => void test()}>
+          <button
+            className="btn btn-outline"
+            disabled={!!busy || !state.email_verified}
+            onClick={() => void test()}
+          >
             <Ic name="send" />
             发到我的邮箱
           </button>

@@ -2,6 +2,93 @@ import { mkdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { expect, test } from '@playwright/test'
 
+for (const verified of [true, false]) {
+  test(`email push onboarding for ${verified ? 'verified' : 'unverified'} addresses`, async ({
+    page,
+  }) => {
+    let settings = {
+      enabled: false,
+      new_matches: true,
+      deadline_reminders: true,
+      changes: true,
+      tracking: true,
+      frequency: 'weekly',
+      weekday: 0,
+      time: '08:00',
+      timezone: 'Asia/Shanghai',
+      reminder_days: [3, 1],
+    }
+    const writes: string[] = []
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.route('http://127.0.0.1:5186/api/**', async (route) => {
+      const path = new URL(route.request().url()).pathname.slice(4)
+      const method = route.request().method()
+      if (method !== 'GET' && path !== '/match') writes.push(method + ' ' + path)
+      if (path === '/account/push' && method === 'PUT') settings = route.request().postDataJSON()
+      const data =
+        path === '/account/watch'
+          ? { items: [], notifications: [], has_more: false, has_more_notifications: false }
+          : path === '/auth/me'
+            ? { id: 'owner', username: 'owner@example.com', profile: {} }
+            : path === '/account/push'
+              ? {
+                  settings,
+                  email: 'owner@example.com',
+                  email_verified: verified,
+                  next_send_at: null,
+                }
+              : path === '/account/push/preview'
+                ? {
+                    subject: '下一封比赛推送',
+                    html: '<p>目前没有新比赛。</p>',
+                    text: '目前没有新比赛。',
+                    sender: 'Inkpaw',
+                    recipient: 'owner@example.com',
+                  }
+                : null
+      await route.fulfill({
+        json: { code: 200, message: 'ok', data },
+      })
+    })
+    await page.goto('/account/push')
+    const preview = page.getByRole('button', { name: '预览下一封', exact: true })
+    const send = page.getByRole('button', { name: '发一封测试邮件', exact: true })
+    const enable = page.getByRole('button', { name: '开启邮件推送', exact: true })
+    await expect(preview).toHaveCSS('pointer-events', 'auto')
+    await preview.click()
+    const dialog = page.getByRole('dialog', { name: '下一封比赛推送' })
+    await expect(dialog).toBeVisible()
+    const previewSend = dialog.getByRole('button', { name: '发到我的邮箱' })
+    if (!verified) await expect(previewSend).toBeDisabled()
+    await dialog.getByRole('button', { name: '关闭', exact: true }).first().click()
+    await expect(dialog).toBeHidden()
+    if (verified) {
+      await expect(send).toHaveCSS('pointer-events', 'auto')
+      await send.click()
+      await expect(page.getByText('测试邮件已发到 owner@example.com')).toBeVisible()
+      await expect(page.getByRole('switch', { name: '邮件推送', exact: true })).not.toBeChecked()
+      expect(writes).toEqual(['POST /account/push/test'])
+      await enable.click()
+      await expect(page.getByRole('switch', { name: '邮件推送', exact: true })).toBeChecked()
+      await expect(enable).toHaveCount(0)
+      expect(settings).toMatchObject({ enabled: true, frequency: 'weekly', reminder_days: [3, 1] })
+      expect(writes).toEqual(['POST /account/push/test', 'PUT /account/push'])
+    } else {
+      await expect(enable).toBeDisabled()
+      await expect(send).toBeDisabled()
+      await expect(page.getByRole('switch', { name: '邮件推送', exact: true })).toBeDisabled()
+      await expect(page.getByRole('link', { name: '去验证邮箱' })).toHaveAttribute(
+        'href',
+        '/account/settings#email',
+      )
+      expect(writes).toEqual([])
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    expect(errors).toEqual([])
+  })
+}
+
 test('private watch preserves paused status, evidence precision and working controls', async ({
   page,
 }, info) => {
