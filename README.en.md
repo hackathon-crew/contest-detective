@@ -328,4 +328,10 @@ Found a wrong date, missing source, or product issue? [Open an issue](https://gi
 
 [Releases](https://github.com/hackathon-crew/contest-detective/releases) · [Milestones](https://github.com/hackathon-crew/contest-detective/milestones) · [Deployment](deploy/README.md) · [Frontend development](frontend/README.md) · [hackathon-crew](https://github.com/hackathon-crew)
 
-The repository does not currently declare an open-source license.
+## License
+
+This project's own code is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE), which permits noncommercial use, modification, and distribution as specified in the license. This is a source-available license, **not an open-source license**; the full [LICENSE](LICENSE) text governs the rights and restrictions.
+
+Commercial use outside the purposes permitted by this license requires a separate commercial license from the project maintainers.
+
+Third-party dependencies, fonts, icons, and competition source content remain subject to their respective licenses and rights notices, which this project's license does not change. Examples include the [Yuanbao icon (MIT)](frontend/public/brand/yuanbao-LICENSE.txt), [Figtree font (OFL 1.1)](frontend/public/fonts/Figtree-OFL.txt), and [Inter font (OFL 1.1)](frontend/src/shared/assets/inter-OFL.txt).

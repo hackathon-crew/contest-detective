@@ -334,4 +334,10 @@ uv run --directory backend contest-detective-refresh \
 
 [版本记录](https://github.com/hackathon-crew/contest-detective/releases) · [开发进度](https://github.com/hackathon-crew/contest-detective/milestones) · [部署说明](deploy/README.md) · [前端开发](frontend/README.md) · [hackathon-crew](https://github.com/hackathon-crew)
 
-当前仓库尚未声明开源许可证。
+## 许可证
+
+本项目自有代码采用 [PolyForm Noncommercial License 1.0.0](LICENSE)，允许许可证规定的非商业使用、修改与分发。这是源码可用许可证，**不是开源许可证**；具体权利与限制以 [LICENSE](LICENSE) 原文为准。
+
+不在本许可证允许范围内的商业使用，须向项目维护者另行取得商业授权。
+
+第三方依赖、字体、图标及赛事来源内容仍遵循各自的许可证和权利声明，不因本项目许可证而改变。例如：[元宝图标（MIT）](frontend/public/brand/yuanbao-LICENSE.txt)、[Figtree 字体（OFL 1.1）](frontend/public/fonts/Figtree-OFL.txt) 和 [Inter 字体（OFL 1.1）](frontend/src/shared/assets/inter-OFL.txt)。
