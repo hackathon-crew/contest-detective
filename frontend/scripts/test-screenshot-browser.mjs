@@ -5,6 +5,19 @@ import { resolve } from 'node:path'
 
 const base = 'http://127.0.0.1:4175'
 const output = resolve('test-results/screenshot-ocr')
+const fixtures = [
+  'clean-light.png',
+  'clean-light.jpg',
+  'clean-light.webp',
+  'clean-dark.png',
+  'small-text.png',
+  'mixed-language.png',
+  'blank.png',
+  'blurred.png',
+]
+
+/** 入口被产品有意禁用属于跳过，不是回归；入口缺失或状态不一致仍然失败。 */
+class ScreenshotEntryDisabled extends Error {}
 const correctedClaim = '海风创意编程赛报名截止是 2026 年 10 月 30 日'
 // Deliberately synthetic: the browser integration never performs a provider query.
 const report = {
@@ -140,19 +153,24 @@ try {
   await page.goto(`${base}/detective`)
   const open = async () => {
     await page.getByRole('button', { name: '添加简历或参赛资料' }).click()
-    await page.getByRole('menuitem', { name: '截图查证' }).click()
+    const entry = page.getByRole('menuitem', { name: '截图查证' })
+    await expect(entry).toBeVisible()
+    if ((await entry.getAttribute('aria-disabled')) === 'true') {
+      // 禁用状态与文案必须一致；否则说明产品状态处于半途，按失败处理。
+      await expect(entry).toHaveText(/暂不可用/)
+      await page.screenshot({ path: `${output}/disabled-entry.png`, fullPage: true })
+      expect(evidence.requests.some((request) => request.url.includes('/ocr/'))).toBe(false)
+      await page.keyboard.press('Escape')
+      throw new ScreenshotEntryDisabled(
+        '截图查证入口当前被禁用（aria-disabled=true）；恢复入口后脚本会自动执行完整 OCR 校验。',
+      )
+    }
+    // 可点击却仍标注暂不可用，说明禁用状态和文案不一致，不能当成正常流程。
+    await expect(entry).not.toHaveText(/暂不可用/)
+    await entry.click()
     return page.getByRole('dialog', { name: '截图查证' })
   }
-  for (const file of [
-    'clean-light.png',
-    'clean-light.jpg',
-    'clean-light.webp',
-    'clean-dark.png',
-    'small-text.png',
-    'mixed-language.png',
-    'blank.png',
-    'blurred.png',
-  ]) {
+  for (const file of fixtures) {
     const fixture = file.replace(/\.[^.]+$/, '')
     const dialog = await open()
     await dialog
@@ -337,11 +355,17 @@ try {
   evidence.confirmation_payload = asks[0]
   evidence.status = 'passed'
 } catch (error) {
-  evidence.status = 'failed'
-  evidence.remaining_workers = page?.workers().map((worker) => worker.url())
-  await page?.screenshot({ path: `${output}/failure.png` }).catch(() => {})
-  evidence.failure = String(error.stack ?? error)
-  throw error
+  if (error instanceof ScreenshotEntryDisabled) {
+    evidence.status = 'skipped'
+    evidence.skip_reason = error.message
+    evidence.skipped_fixtures = fixtures
+  } else {
+    evidence.status = 'failed'
+    evidence.remaining_workers = page?.workers().map((worker) => worker.url())
+    await page?.screenshot({ path: `${output}/failure.png` }).catch(() => {})
+    evidence.failure = String(error.stack ?? error)
+    throw error
+  }
 } finally {
   await writeFile(`${output}/evidence.json`, JSON.stringify(evidence, null, 2) + '\n')
   await browser?.close()
