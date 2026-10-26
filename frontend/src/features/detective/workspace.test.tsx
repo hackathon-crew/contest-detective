@@ -136,6 +136,7 @@ it('首页入口进入独立侦探页，发送后有独立会话记录', async (
   expect(screen.getByRole('heading', { name: '想找什么样的比赛？' })).toBeTruthy()
   send('大学生线上比赛')
   expect(await screen.findByText('可以继续挑比赛。')).toBeTruthy()
+  expect(screen.queryByRole('heading', { name: '大学生线上比赛' })).toBeNull()
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.queryByRole('img', { name: '捧书的 Inkpaw 八爪鱼' })).toBeNull()
   expect(within(history()).getByRole('link', { name: '大学生线上比赛' })).toBeTruthy()
