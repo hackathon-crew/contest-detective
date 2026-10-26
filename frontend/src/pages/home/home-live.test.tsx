@@ -115,7 +115,7 @@ it('reserves both gallery rows before the first page arrives, then replaces plac
   expect(document.querySelectorAll('.wall-card:not(:has(img))')).toHaveLength(0)
 })
 
-it('keeps each cover frame while its image loads or fails', async () => {
+it('keeps each cover frame while its image loads', async () => {
   show('/', async () => collectionEnvelope())
   await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
   const image = document.querySelector<HTMLImageElement>('.wall img')!
@@ -124,10 +124,26 @@ it('keeps each cover frame while its image loads or fails', async () => {
   expect(image.dataset.loaded).toBe('false')
   fireEvent.load(image)
   expect(image.dataset.loaded).toBe('true')
-  fireEvent.error(image)
-  expect(image.dataset.loaded).toBe('false')
-  expect(image.style.visibility).not.toBe('hidden')
   expect(frame?.isConnected).toBe(true)
+})
+
+it('removes failed cover frames while keeping healthy covers in the gallery', async () => {
+  show('/', async () => collectionEnvelope())
+  await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
+  const failedImages = document.querySelectorAll<HTMLImageElement>(
+    '.wall img[src="https://example.com/python.jpg"]',
+  )
+  expect(failedImages).toHaveLength(2)
+  for (const image of failedImages) {
+    const frame = image.closest('.wall-card')!
+    fireEvent.error(image)
+    expect(image.isConnected).toBe(false)
+    expect(frame.isConnected).toBe(false)
+  }
+  expect(document.querySelectorAll('.wall-card')).toHaveLength(2)
+  expect(
+    document.querySelectorAll('.wall img[src="https://example.com/offline.jpg"]'),
+  ).toHaveLength(2)
 })
 
 it('keeps cached gallery covers visible during a refresh and resets a replaced image', async () => {
