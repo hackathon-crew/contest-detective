@@ -3,8 +3,30 @@ name: Contest Detail Preview
 on:
   pull_request:
     paths:
-      - 'frontend/**'
       - '.github/workflows/detail-preview.yml'
+      - 'frontend/detail-preview.html'
+      - 'frontend/playwright.detail-preview.config.ts'
+      - 'frontend/e2e/detail-preview.spec.ts'
+      - 'frontend/e2e/watch.spec.ts'
+      - 'frontend/src/detail-preview*'
+      - 'frontend/preview/**'
+      - 'frontend/src/features/appearance/**'
+      - 'frontend/src/features/contest-browser/**'
+      - 'frontend/src/features/contest-detail/**'
+      - 'frontend/src/features/follow/**'
+      - 'frontend/src/entities/contest/**'
+      - 'frontend/src/entities/user/**'
+      - 'frontend/src/shared/ui/**'
+      - 'frontend/src/shared/api/**'
+      - 'frontend/src/app/**'
+      - 'frontend/src/pages/contests/**'
+      - 'frontend/src/pages/account/**'
+      - 'frontend/src/index.css'
+      - 'frontend/package.json'
+      - 'frontend/package-lock.json'
+      - 'frontend/vite.config.ts'
+      - 'frontend/index.html'
+      - 'frontend/tsconfig*.json'
 
 permissions:
   contents: read
