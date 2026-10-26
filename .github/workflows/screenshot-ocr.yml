@@ -70,7 +70,21 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+      - name: Install Playwright Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 5
+        run: npx playwright install chromium
+      - name: Install Playwright system dependencies
+        timeout-minutes: 10
+        run: |
+          printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\n' | sudo tee /etc/apt/apt.conf.d/99playwright-retries >/dev/null
+          npx playwright install-deps chromium
       - run: npm run test:ocr-browser
       - uses: actions/upload-artifact@v4
         if: always()
