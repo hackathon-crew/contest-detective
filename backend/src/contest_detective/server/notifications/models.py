@@ -32,3 +32,14 @@ class ConsumerCursor(Base):
     __tablename__ = 'notification_cursors'
     name: Mapped[str] = mapped_column(String(100), primary_key=True)
     event_id: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class RegistrationCodeSend(Base):
+    """注册验证码的发信记录。用户尚未创建，因此不能写入 account_mail。"""
+
+    __tablename__ = 'registration_code_sends'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String(320), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), index=True, default=lambda: datetime.now(timezone.utc)
+    )

@@ -14,7 +14,8 @@ NOTIFICATIONS = '0011_notification_events'
 MERGE = '0012_merge_content_notifications'
 MAIL = '0012_mail_delivery'
 ACCOUNT_MERGE = '0013_merge_account_mail'
-HEAD = '0014_private_watch'
+WATCH = '0014_private_watch'
+HEAD = '0015_registration_codes'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -144,7 +145,8 @@ def assert_integrity(engine):
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
-    assert scripts.get_revision(HEAD).down_revision == ACCOUNT_MERGE
+    assert scripts.get_revision(HEAD).down_revision == WATCH
+    assert scripts.get_revision(WATCH).down_revision == ACCOUNT_MERGE
     assert scripts.get_revision(ACCOUNT_MERGE).down_revision == (MERGE, MAIL)
     assert scripts.get_revision(MERGE).down_revision == (CONTENT, NOTIFICATIONS)
     assert scripts.get_revision(CONTENT).down_revision == PARENT

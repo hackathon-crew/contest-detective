@@ -12,8 +12,10 @@ from contest_detective.server.agent.models import LLMUsage
 from contest_detective.server.auth import service as auth
 from contest_detective.server.documents.schemas import MAX_QUESTION_BYTES
 from contest_detective.web.api.companion import limiter
+from contest_detective.web.api.mail import get_mailer
 from contest_detective.web.bootstrap.app import create_app
 
+from account_helpers import Mailbox, request_code
 from test_document_contracts import grounded_answer, question_data
 from test_document_lifecycle import provider
 
@@ -127,8 +129,12 @@ def test_authenticated_cookie_roundtrip_and_logout(tmp_path, monkeypatch):
         with factory() as session:
             yield session
     app.dependency_overrides[get_session] = session_override
+    mailbox = Mailbox()
+    app.state.mailbox = mailbox
+    app.dependency_overrides[get_mailer] = lambda: mailbox
     with TestClient(app) as browser:
-        assert browser.post('/auth/register', json={'email': 'reader@example.org', 'password': 'password123'}).json()['code'] == 200
+        code = request_code(browser, 'reader@example.org')
+        assert browser.post('/auth/register', json={'email': 'reader@example.org', 'password': 'password123', 'code': code}).json()['code'] == 200
         assert browser.post('/auth/login', json={'email': 'reader@example.org', 'password': 'password123'}).json()['code'] == 200
         assert 'cd_session' in browser.cookies
         assert browser.post('/companion/documents/ask', json=question_data()).json()['code'] == 200

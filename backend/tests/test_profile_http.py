@@ -65,12 +65,26 @@ def test_confirmed_profile_roundtrips_structured_preferences(tmp_path):
     from fastapi.testclient import TestClient
     from sqlalchemy import create_engine
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+    from sqlalchemy.orm import sessionmaker
+    from account_helpers import Mailbox, request_code
+    from contest_detective.framework.db import get_session
+    from contest_detective.web.api.mail import get_mailer
     from contest_detective.web.bootstrap.app import create_app
     path = tmp_path / 'profile.db'
     engine = create_engine('sqlite:///' + str(path), connect_args={'check_same_thread': False})
+    sessions = sessionmaker(bind=engine, expire_on_commit=False)
     async_factory = async_sessionmaker(create_async_engine('sqlite+aiosqlite:///' + str(path)), expire_on_commit=False)
-    with TestClient(create_app(db_engine=engine, async_session_factory=async_factory)) as browser:
-        browser.post('/auth/register', json={'email': 'student@example.org', 'password': 'password123'})
+    app = create_app(db_engine=engine, async_session_factory=async_factory)
+    def session_override():
+        with sessions() as session:
+            yield session
+    app.dependency_overrides[get_session] = session_override
+    mailbox = Mailbox()
+    app.state.mailbox = mailbox
+    app.dependency_overrides[get_mailer] = lambda: mailbox
+    with TestClient(app) as browser:
+        code = request_code(browser, 'student@example.org')
+        browser.post('/auth/register', json={'email': 'student@example.org', 'password': 'password123', 'code': code})
         browser.post('/auth/login', json={'email': 'student@example.org', 'password': 'password123'})
         response = browser.put('/user/profile', json={'skills': ['Python'], 'topics': ['agent'],
             'identity_kind': 'student', 'availability': {'weekdays': [5, 6], 'max_consecutive_days': 2}})

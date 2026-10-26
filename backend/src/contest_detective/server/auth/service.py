@@ -5,6 +5,7 @@ from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDataba
 
 from contest_detective.common.exceptions import BizException
 from contest_detective.server.user import service as users
+from . import registration
 from .models import AccessToken
 
 LIFETIME_SECONDS = 7 * 24 * 3600
@@ -18,8 +19,12 @@ def strategy(session):
 backend = AuthenticationBackend(name='cookie', transport=transport, get_strategy=strategy)
 
 
-async def register(session, username: str, password: str):
-    return users.public(await users.create(session, username, password))
+async def register(session, username: str, password: str, code: str):
+    email = registration.normalize(username)
+    await session.run_sync(lambda sync: registration.check_code(sync, email, code))
+    user = await users.create(session, email, password)
+    await session.run_sync(lambda sync: registration.clear_code(sync, email, code))
+    return users.public(user)
 
 
 async def login(session, username: str, password: str):

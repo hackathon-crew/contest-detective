@@ -91,6 +91,23 @@
 .auth-stage__password {
   position: relative;
 }
+.auth-stage__code {
+  display: flex;
+  align-items: center;
+  gap: var(--qx-space-2);
+}
+.auth-stage .auth-stage__code .auth-stage__input {
+  flex: 1;
+  min-width: 0;
+  letter-spacing: 0.18em;
+}
+.auth-stage .auth-stage__resend {
+  flex: none;
+  height: var(--qx-action-height);
+  padding: 0 var(--qx-space-3);
+  white-space: nowrap;
+  font-size: var(--qx-text-meta);
+}
 .auth-stage .auth-stage__password input {
   padding-right: var(--qx-space-12);
 }

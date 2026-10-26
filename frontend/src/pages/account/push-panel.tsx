@@ -246,6 +246,7 @@ export function PushPanel() {
           {error}
         </p>
       )}
+      {!state.email_verified && <p className="grp-note">邮箱未验证，验证后才能开启邮件推送。</p>}
       <div className="p-acts dep">
         <button className="btn btn-outline" onClick={() => void preview()} disabled={!!busy}>
           <Ic name="mail" />
@@ -372,6 +373,11 @@ export function PushPanel() {
             <div className="ctl-line">
               <span>{state.email}</span>
               <span className="muted">{state.email_verified ? '已验证' : '未验证'}</span>
+              {!state.email_verified && (
+                <Link className="linkbtn" to="/account/settings#email">
+                  去验证
+                </Link>
+              )}
               <Link className="linkbtn" to="/account/settings#email">
                 换一个
               </Link>

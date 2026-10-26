@@ -47,7 +47,7 @@ def test_local_free_budget_stops_before_another_network_request(tmp_path, monkey
     from contest_detective.server.notifications import service
     from contest_detective.server.notifications.config import NotificationSettings
     from contest_detective.web.api.account_push import get_mailer
-    monkeypatch.setattr(service, 'get_account_runtime_settings', lambda: NotificationSettings(mail_daily_limit=1))
+    monkeypatch.setattr(service, 'get_account_runtime_settings', lambda: NotificationSettings(mail_daily_limit=2))
     with account_client(tmp_path) as client:
         login(client)
         sent = []

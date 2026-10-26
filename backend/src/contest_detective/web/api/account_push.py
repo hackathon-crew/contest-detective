@@ -22,8 +22,8 @@ from contest_detective.server.account.models import MailDelivery, Track
 from contest_detective.server.account.schemas import MailPreview, MailRead, PushSettings, TrackInput, TrackRead, TrackingConditions, Text, LibraryConditions
 from contest_detective.server.account.store import owner, settings_for, verified
 from contest_detective.server.notifications.tracking import create_tracking_parser, matching_contests, meaningful
-from contest_detective.server.notifications.resend import ResendMailer
 from contest_detective.server.notifications.service import BEIJING, deliver, next_send, preview
+from .mail import get_mailer
 
 router = APIRouter()
 
@@ -44,10 +44,6 @@ def get_tracking_parser(session: Session = Depends(get_session), user_id: Annota
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     return create_tracking_parser(lambda: create_model(settings=runtime.llm, session_factory=factory))
-
-
-def get_mailer():
-    return ResendMailer()
 
 
 def push_read(session, user):
