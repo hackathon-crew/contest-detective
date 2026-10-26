@@ -171,3 +171,33 @@ def test_unknown_card_id_cannot_discard_the_answer(session_factory):
     assert events[-1].type == 'answer'
     assert events[-1].payload['content'] == answer
     assert events[-1].payload['recommendations'] == []
+
+
+@pytest.mark.parametrize('metadata,card_count', [
+    ({}, 0),
+    ({'recommendations': None}, 0),
+    ({'recommendations': 'invalid'}, 0),
+    ({'recommendations': [{'contest_id': 'selected'}]}, 1),
+    ({'recommendations': [{'id': 'broken'}, {'contest_id': 'selected'}]}, 1),
+    ({'assessments': None}, 0),
+    ({'assessments': [{'id': 'incomplete'}]}, 0),
+])
+def test_optional_metadata_cannot_retry_or_discard_the_reply(session_factory, metadata, card_count):
+    contest_id = seed(session_factory)
+    answer = '你好！这是已经生成的完整比赛介绍。'
+    calls = 0
+
+    def respond(_, info):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return response([ToolCallPart('get_contest', {'contest_id': contest_id})])
+        payload = json.loads(json.dumps({'content': answer, **metadata}).replace('selected', contest_id))
+        return response([ToolCallPart('respond_to_user', payload)])
+
+    events = run(session_factory, respond)
+
+    assert events[-1].type == 'answer'
+    assert events[-1].payload['content'] == answer
+    assert len(events[-1].payload['recommendations']) == card_count
+    assert calls == 2
