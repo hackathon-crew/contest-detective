@@ -2,6 +2,8 @@
 """Receive one release bundle on stdin and deploy the production service."""
 
 import fcntl
+import hashlib
+import io
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -26,6 +28,140 @@ SERVICE = 'contest-detective'
 MCP_SERVICE = 'contest-detective-mcp'
 MAINTENANCE = Path('/run/contest-detective-deploying')
 MAX_BUNDLE = 256 * 1024 * 1024
+MANIFEST_NAME = 'RELEASE_MANIFEST.json'
+MANIFEST_REQUEST = b'INKPAW_RELEASE_MANIFEST_V1\n'
+REQUIRED_FILES = {'backend/pyproject.toml', 'backend/uv.lock', 'backend/alembic.ini',
+                  'frontend/dist/index.html', 'frontend/dist/version.json',
+                  'RELEASE_COMMIT', 'RELEASE_TAG'}
+
+
+def allowed_file(name):
+    path = PurePosixPath(name)
+    parts = path.parts
+    return (bool(parts) and path.as_posix() == name and not path.is_absolute()
+            and '..' not in parts
+            and not any(part in ('.git', '.venv', '__pycache__')
+                        or (part.startswith('.env') and part != '.env.example') for part in parts)
+            and ((parts[0] == 'backend' and len(parts) > 1)
+                 or (parts[:2] == ('frontend', 'dist') and len(parts) > 2)
+                 or name in ('RELEASE_COMMIT', 'RELEASE_TAG', 'deploy/server.env.example')))
+
+
+def file_record(path):
+    digest = hashlib.sha256()
+    size = 0
+    with path.open('rb') as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b''):
+            size += len(chunk)
+            digest.update(chunk)
+    return {'sha256': digest.hexdigest(), 'size': size}
+
+
+def validate_manifest(document):
+    if (not isinstance(document, dict) or document.get('version') != 1
+            or not isinstance(document.get('files'), dict)):
+        raise ValueError('Invalid release manifest')
+    total = 0
+    for name, value in document['files'].items():
+        if (not isinstance(name, str) or not allowed_file(name)
+                or not isinstance(value, dict) or set(value) != {'sha256', 'size'}
+                or not isinstance(value['sha256'], str)
+                or not re.fullmatch(r'[0-9a-f]{64}', value['sha256'])
+                or type(value['size']) is not int or value['size'] < 0):
+            raise ValueError(f'Invalid manifest entry: {name}')
+        total += value['size']
+    names = set(document['files'])
+    if total > MAX_BUNDLE or any(str(parent) in names for name in names
+                                 for parent in PurePosixPath(name).parents):
+        raise ValueError('Invalid manifest size or overlapping paths')
+    return document
+
+
+def release_manifest(directory):
+    files = {}
+    for relative in ('backend', 'frontend/dist', 'deploy'):
+        for parent, directories, names in os.walk(directory / relative, followlinks=False):
+            directories[:] = [name for name in directories
+                              if name not in ('.git', '.venv', '__pycache__')
+                              and not (Path(parent) / name).is_symlink()]
+            for name in names:
+                path = Path(parent) / name
+                relative_name = path.relative_to(directory).as_posix()
+                if allowed_file(relative_name) and path.is_file() and not path.is_symlink():
+                    files[relative_name] = file_record(path)
+    for name in ('RELEASE_COMMIT', 'RELEASE_TAG'):
+        path = directory / name
+        if path.is_file() and not path.is_symlink():
+            files[name] = file_record(path)
+    return validate_manifest({'version': 1, 'files': files})
+
+
+def incremental_unpack(archive, destination):
+    control = archive.getmember(MANIFEST_NAME)
+    if control.size > 4 * 1024 * 1024:
+        raise ValueError('Release manifest exceeds 4 MiB')
+    document = validate_manifest(json.load(archive.extractfile(control)))
+    files = document['files']
+    uploaded = {member.name for member in archive.getmembers()
+                if member.isfile() and member.name != MANIFEST_NAME}
+    if not REQUIRED_FILES <= files.keys() or not uploaded <= files.keys():
+        raise ValueError('Incomplete incremental release or unexpected payload')
+    base = APP.resolve()
+    sources = {}
+    # Verify every byte source before extracting or stopping any production service.
+    for name, expected in files.items():
+        if name in uploaded:
+            member = archive.getmember(name)
+            with archive.extractfile(member) as source:
+                digest = hashlib.sha256()
+                for chunk in iter(lambda: source.read(1024 * 1024), b''):
+                    digest.update(chunk)
+            actual = {'sha256': digest.hexdigest(), 'size': member.size}
+        else:
+            source = base / name
+            if (not source.is_file() or source.is_symlink()
+                    or not source.resolve().is_relative_to(base)):
+                raise ValueError(f'Missing reusable file: {name}')
+            actual = file_record(source)
+            sources[name] = source
+        if actual != expected:
+            raise ValueError(f'Release file hash mismatch: {name}')
+
+    def read(name):
+        return archive.extractfile(name).read() if name in uploaded else sources[name].read_bytes()
+
+    tag, commit = read('RELEASE_TAG').decode().strip(), read('RELEASE_COMMIT').decode().strip()
+    if (not re.fullmatch(r'v\d+\.\d+\.\d+', tag)
+            or not re.fullmatch(r'[0-9a-f]{40}', commit)
+            or json.loads(read('frontend/dist/version.json')) != {'tag': tag, 'commit': commit}):
+        raise ValueError('Invalid release identity')
+    for name, expected in files.items():
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+        if name in uploaded:
+            with archive.extractfile(name) as source, target.open('wb') as output:
+                shutil.copyfileobj(source, output)
+        else:
+            shutil.copyfile(sources[name], target)
+        target.chmod(0o644)
+        if file_record(target) != expected:
+            raise ValueError(f'Release file changed while assembling: {name}')
+    log(f'Incremental files: changed={len(uploaded)} reused={len(files) - len(uploaded)}')
+    return tag, commit
+
+
+def dispatch(stream, output=None):
+    buffered = stream if hasattr(stream, 'peek') else io.BufferedReader(stream)
+    if buffered.peek(1)[:1] == b'\x1f':
+        return deploy(buffered)
+    if buffered.readline(128) != MANIFEST_REQUEST or buffered.read(1):
+        raise ValueError('Unknown deployment request')
+    document = release_manifest(APP)
+    if not REQUIRED_FILES <= document['files'].keys():
+        raise ValueError('No complete deployed release for incremental transfer')
+    output = sys.stdout if output is None else output
+    output.write(json.dumps(document, sort_keys=True) + '\n')
+    output.flush()
 
 
 def unpack(stream, destination):
@@ -40,6 +176,8 @@ def unpack(stream, destination):
             allowed = (parts and parts[0] == 'backend') or (
                 parts[:2] == ('frontend', 'dist')
             ) or member.name in ('frontend', 'RELEASE_COMMIT', 'RELEASE_TAG') or (
+                member.name == MANIFEST_NAME and member.isfile()
+            ) or (
                 member.name == 'deploy' and member.isdir()
             ) or (
                 member.name == 'deploy/server.env.example' and member.isfile()
@@ -55,9 +193,9 @@ def unpack(stream, destination):
                     or member.name in names or total > MAX_BUNDLE):
                 raise ValueError(f'Invalid release member: {member.name}')
             names.add(member.name)
-        required = {'backend/pyproject.toml', 'backend/uv.lock', 'backend/alembic.ini',
-                    'frontend/dist/index.html', 'frontend/dist/version.json',
-                    'RELEASE_COMMIT', 'RELEASE_TAG'}
+        if MANIFEST_NAME in names:
+            return incremental_unpack(archive, destination)
+        required = REQUIRED_FILES
         if not required <= names:
             raise ValueError('Incomplete release bundle')
         for name in required:
@@ -303,4 +441,4 @@ if __name__ == '__main__':
     signal.signal(signal.SIGHUP, interrupted)
     with open('/run/lock/contest-detective-deploy.lock', 'w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        deploy(sys.stdin.buffer)
+        dispatch(sys.stdin.buffer)
