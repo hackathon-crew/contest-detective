@@ -51,9 +51,11 @@ const Octopus = lazy(() =>
 
 function WallCover({ url, name }: { url: string; name: string }) {
   const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
   const imageRef = useCallback((image: HTMLImageElement | null) => {
     if (image?.complete && image.naturalWidth > 0) setLoaded(true)
   }, [])
+  if (failed) return null
   return (
     <div className="wall-card" title={name}>
       <img
@@ -63,7 +65,7 @@ function WallCover({ url, name }: { url: string; name: string }) {
         loading="lazy"
         data-loaded={loaded}
         onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(false)}
+        onError={() => setFailed(true)}
       />
     </div>
   )
