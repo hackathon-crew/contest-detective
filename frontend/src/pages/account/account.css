@@ -577,6 +577,10 @@
     color: var(--muted);
     overflow-wrap: anywhere;
   }
+  .arow-actions {
+    display: flex;
+    gap: 8px;
+  }
   .arow.danger b {
     color: var(--danger);
   }
@@ -2085,6 +2089,9 @@
       grid-template-columns: minmax(0, 1fr);
     }
     .arow > .btn {
+      justify-self: start;
+    }
+    .arow > .arow-actions {
       justify-self: start;
     }
     .copyrow {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCurrentUser } from '@/entities/user'
 import { apiClient } from '@/shared/api'
@@ -21,7 +21,9 @@ export function SettingsPanel() {
   const { data: user } = useCurrentUser(),
     client = useQueryClient(),
     notice = useNotice(),
-    navigate = useNavigate()
+    navigate = useNavigate(),
+    [searchParams, setSearchParams] = useSearchParams()
+  const verifiedFlag = searchParams.get('email_verified')
   const accountKey = ['account-settings', user?.id]
   const account = useQuery({
     queryKey: accountKey,
@@ -38,11 +40,52 @@ export function SettingsPanel() {
     [busy, setBusy] = useState('')
   const confirmInput = useRef<HTMLInputElement>(null)
   const loginEmail = account.data?.email ?? user?.username ?? ''
+  const handledVerification = useRef(false)
   useEffect(() => {
     if (!deleting) return
     const timer = setTimeout(() => confirmInput.current?.focus(), 240)
     return () => clearTimeout(timer)
   }, [deleting])
+  useEffect(() => {
+    if (!verifiedFlag || handledVerification.current) return
+    if (account.isPending || account.isFetching) return
+    handledVerification.current = true
+    if (verifiedFlag === '1' && account.data?.email_verified) {
+      notice('邮箱已验证')
+      void client.invalidateQueries({ queryKey: ['account-push', user?.id] })
+    } else {
+      notice('验证链接无效或已过期，请重新发送验证邮件')
+    }
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('email_verified')
+        return next
+      },
+      { replace: true },
+    )
+  }, [
+    verifiedFlag,
+    account.data?.email_verified,
+    account.isPending,
+    account.isFetching,
+    client,
+    notice,
+    setSearchParams,
+    user?.id,
+  ])
+  async function sendVerification() {
+    if (busy) return
+    setBusy('verify')
+    try {
+      await apiClient.request('/account/email/verification', { method: 'POST' })
+      notice('验证邮件已发到 ' + loginEmail + '，20 分钟内有效')
+    } catch (e) {
+      notice(failure(e))
+    } finally {
+      setBusy('')
+    }
+  }
   async function changeEmail(event: FormEvent) {
     event.preventDefault()
     if (busy) return
@@ -130,7 +173,7 @@ export function SettingsPanel() {
         </p>
       )}
       <div className="grp" style={{ marginTop: 24 }}>
-        <div className="arow">
+        <div className="arow" id="email">
           <div>
             <b>登录邮箱</b>
             <p>
@@ -138,13 +181,25 @@ export function SettingsPanel() {
               {account.data?.email_verified ? '已验证' : account.data ? '未验证' : '读取中'}
             </p>
           </div>
-          <button
-            className="btn btn-ghost btn-sm"
-            type="button"
-            onClick={() => setEmailOpen(!emailOpen)}
-          >
-            修改
-          </button>
+          <div className="arow-actions">
+            {account.data && !account.data.email_verified && (
+              <button
+                className="btn btn-ghost btn-sm"
+                type="button"
+                disabled={!!busy}
+                onClick={() => void sendVerification()}
+              >
+                {busy === 'verify' ? '正在发送…' : '发送验证邮件'}
+              </button>
+            )}
+            <button
+              className="btn btn-ghost btn-sm"
+              type="button"
+              onClick={() => setEmailOpen(!emailOpen)}
+            >
+              修改
+            </button>
+          </div>
           <div style={{ gridColumn: '1/-1' }}>
             <Expand open={emailOpen}>
               <form

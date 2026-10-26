@@ -96,6 +96,16 @@ export type CalendarRead = {
 };
 
 /**
+ * CodeRequest
+ */
+export type CodeRequest = {
+    /**
+     * Email
+     */
+    email: string;
+};
+
+/**
  * ConfirmedClaim
  */
 export type ConfirmedClaim = {
@@ -1130,6 +1140,24 @@ export type QuotaRead = {
      * Unlimited
      */
     unlimited: boolean;
+};
+
+/**
+ * RegisterCredentials
+ */
+export type RegisterCredentials = {
+    /**
+     * Email
+     */
+    email: string;
+    /**
+     * Password
+     */
+    password: string;
+    /**
+     * Code
+     */
+    code: string;
 };
 
 /**
@@ -3213,6 +3241,22 @@ export type RequestEmailAccountEmailPostResponses = {
 
 export type RequestEmailAccountEmailPostResponse = RequestEmailAccountEmailPostResponses[keyof RequestEmailAccountEmailPostResponses];
 
+export type RequestVerificationAccountEmailVerificationPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/email/verification';
+};
+
+export type RequestVerificationAccountEmailVerificationPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type RequestVerificationAccountEmailVerificationPostResponse = RequestVerificationAccountEmailVerificationPostResponses[keyof RequestVerificationAccountEmailVerificationPostResponses];
+
 export type VerifyEmailAccountEmailVerifyGetData = {
     body?: never;
     path?: never;
@@ -3307,8 +3351,33 @@ export type DeleteAccountAccountDeleteResponses = {
 
 export type DeleteAccountAccountDeleteResponse = DeleteAccountAccountDeleteResponses[keyof DeleteAccountAccountDeleteResponses];
 
+export type RequestRegisterCodeAuthRegisterCodePostData = {
+    body: CodeRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/register/code';
+};
+
+export type RequestRegisterCodeAuthRegisterCodePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RequestRegisterCodeAuthRegisterCodePostError = RequestRegisterCodeAuthRegisterCodePostErrors[keyof RequestRegisterCodeAuthRegisterCodePostErrors];
+
+export type RequestRegisterCodeAuthRegisterCodePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type RequestRegisterCodeAuthRegisterCodePostResponse = RequestRegisterCodeAuthRegisterCodePostResponses[keyof RequestRegisterCodeAuthRegisterCodePostResponses];
+
 export type RegisterAuthRegisterPostData = {
-    body: Credentials;
+    body: RegisterCredentials;
     path?: never;
     query?: never;
     url: '/auth/register';

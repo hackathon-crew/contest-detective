@@ -11,7 +11,7 @@ from contest_detective.server.account import lifecycle
 from contest_detective.server.account.schemas import Timestamp
 from contest_detective.server.auth.service import current
 from contest_detective.server.notifications.config import get_account_runtime_settings
-from contest_detective.server.notifications.resend import ResendMailer
+from .mail import get_mailer
 
 
 class SensitiveRoute(APIRoute):
@@ -48,10 +48,6 @@ class DeleteInput(BaseModel):
     email: str = Field(max_length=320)
 
 
-def get_mailer():
-    return ResendMailer()
-
-
 router = APIRouter(route_class=SensitiveRoute)
 
 
@@ -73,18 +69,36 @@ def request_email(
     return Response.success()
 
 
-@router.get("/account/email/verify")
-def verify_email(
-    token: str = Query(min_length=30, max_length=100),
+@router.post("/account/email/verification", response_model=Response[None])
+def request_verification(
+    user_id: str | None = Depends(current),
     session: Session = Depends(get_session),
+    mailer=Depends(get_mailer),
 ):
-    lifecycle.verify_email(session, token)
+    lifecycle.request_verification(session, user_id, mailer)
+    return Response.success()
+
+
+def _verified_redirect(flag: str) -> RedirectResponse:
     return RedirectResponse(
         get_account_runtime_settings().public_base_url.rstrip("/")
-        + "/account/settings?email_verified=1",
+        + "/account/settings?email_verified="
+        + flag,
         status_code=303,
         headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"},
     )
+
+
+@router.get("/account/email/verify")
+def verify_email(
+    token: str = Query(),
+    session: Session = Depends(get_session),
+):
+    try:
+        lifecycle.verify_email(session, token)
+    except BizException:
+        return _verified_redirect("0")
+    return _verified_redirect("1")
 
 
 @router.post("/account/password", response_model=Response[None])

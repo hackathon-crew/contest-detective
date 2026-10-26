@@ -23,6 +23,9 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
   const [step, setStep] = useState<'email' | 'password'>('email')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
+  const [resendIn, setResendIn] = useState(0)
+  const [sendingCode, setSendingCode] = useState(false)
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,17 +47,51 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
     }
   }, [])
 
+  useEffect(() => {
+    if (resendIn <= 0) return
+    const timer = setTimeout(() => setResendIn((value) => value - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendIn])
+
   function back() {
-    if (lock.current) return
+    if (lock.current || sendingCode) return
     if (step === 'email') {
       navigate(destination, { replace: true, state: returnTo?.state })
       return
     }
     setStep('email')
     setPassword('')
+    setCode('')
+    setResendIn(0)
     setPasswordVisible(false)
     setError(null)
     setAccountCreated(false)
+  }
+
+  async function sendCode(target = email.trim()) {
+    if (sendingCode) return
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(target) || target.length > 320) {
+      setError('请输入有效的邮箱地址。')
+      return
+    }
+    setSendingCode(true)
+    setError(null)
+    try {
+      await apiClient.request('/auth/register/code', {
+        method: 'POST',
+        json: { email: target },
+      })
+      if (!active.current) return
+      setEmail(target)
+      setStep('password')
+      setResendIn(60)
+    } catch (cause) {
+      if (active.current) {
+        setError(cause instanceof Error ? cause.message : '验证码发送失败，请重试。')
+      }
+    } finally {
+      if (active.current) setSendingCode(false)
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -68,6 +105,10 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
     if (step === 'email') {
       setEmail(normalizedEmail)
       setError(null)
+      if (registration) {
+        await sendCode(normalizedEmail)
+        return
+      }
       setStep('password')
       return
     }
@@ -75,18 +116,28 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
       setError(registration ? '密码需要 8–128 个字符。' : '请输入 1–128 个字符的密码。')
       return
     }
+    if (registration && !accountCreated && !/^\d{6}$/.test(code)) {
+      setError('请输入 6 位验证码。')
+      return
+    }
     lock.current = true
     setPending(true)
     setError(null)
     let created = accountCreated
     try {
-      const json = { email: normalizedEmail, password }
+      const credentials = { email: normalizedEmail, password }
       if (registration && !created) {
-        await apiClient.request('/auth/register', { method: 'POST', json })
+        await apiClient.request('/auth/register', {
+          method: 'POST',
+          json: { ...credentials, code },
+        })
         created = true
         if (active.current) setAccountCreated(true)
       }
-      const current = await apiClient.request<PublicUser>('/auth/login', { method: 'POST', json })
+      const current = await apiClient.request<PublicUser>('/auth/login', {
+        method: 'POST',
+        json: credentials,
+      })
       await client.cancelQueries({ queryKey: currentUserKey })
       if (active.current) setPassword('')
       client.setQueryData(currentUserKey, current)
@@ -112,7 +163,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
         type="button"
         aria-label={step === 'email' ? '返回原页面' : '返回邮箱'}
         onClick={back}
-        disabled={pending}
+        disabled={pending || sendingCode}
       >
         <ArrowLeft aria-hidden="true" />
       </Button>
@@ -153,7 +204,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
         <form
           className="auth-stage__form"
           aria-label={registration ? '创建 Inkpaw 账号' : '登录到 Inkpaw'}
-          aria-busy={pending}
+          aria-busy={pending || sendingCode}
           onSubmit={(event) => void submit(event)}
           noValidate
         >
@@ -175,6 +226,36 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
           ) : (
             <>
               <input type="hidden" name="email" autoComplete="username" value={email} />
+              {registration && !accountCreated && (
+                <div className="auth-stage__code">
+                  <Input
+                    key="code"
+                    className="auth-stage__input"
+                    aria-label="验证码"
+                    name="code"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    placeholder="6 位验证码"
+                    autoComplete="one-time-code"
+                    required
+                    autoFocus
+                    disabled={pending}
+                    value={code}
+                    onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+                  />
+                  <Button
+                    className="auth-stage__resend"
+                    variant="ghost"
+                    type="button"
+                    disabled={pending || sendingCode || resendIn > 0}
+                    onClick={() => void sendCode()}
+                  >
+                    {resendIn > 0 ? `${resendIn} 秒后重发` : sendingCode ? '正在发送…' : '重新发送'}
+                  </Button>
+                </div>
+              )}
               <div className="auth-stage__password">
                 <Input
                   key="password"
@@ -187,7 +268,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
                   minLength={registration ? 8 : 1}
                   maxLength={128}
                   required
-                  autoFocus
+                  autoFocus={!registration}
                   disabled={pending}
                   value={password}
                   aria-describedby={registration ? 'password-help' : undefined}
@@ -214,9 +295,11 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
               {error}
             </p>
           )}
-          <Button className="auth-stage__primary" type="submit" disabled={pending}>
+          <Button className="auth-stage__primary" type="submit" disabled={pending || sendingCode}>
             {step === 'email'
-              ? '继续'
+              ? sendingCode
+                ? '正在发送验证码…'
+                : '继续'
               : pending
                 ? registration && !accountCreated
                   ? '正在创建…'
@@ -233,7 +316,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
           <Link
             to={registration ? '/login' : '/register'}
             state={location.state}
-            aria-disabled={pending}
+            aria-disabled={pending || sendingCode}
             onClick={(event) => {
               if (lock.current) event.preventDefault()
             }}
@@ -244,7 +327,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
         <Link
           className="auth-stage__home"
           to="/"
-          aria-disabled={pending}
+          aria-disabled={pending || sendingCode}
           onClick={(event) => {
             if (lock.current) event.preventDefault()
           }}

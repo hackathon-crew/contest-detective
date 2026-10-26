@@ -74,7 +74,7 @@ systemctl is-active contest-detective
 
 配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY` 后才能保存个人模型与搜索密钥。使用独立的 Fernet 主密钥，生成方式见根目录 `.env.example`，生产环境单独生成并保管，不复用开发密钥。`DETECTIVE_PUBLIC_BASE_URL` 设为网站的 HTTPS 地址，供日历订阅和验证邮件使用。`DETECTIVE_QUERY_LIMITS_ENABLED=false` 为活动期间不限提问次数。
 
-邮件默认关闭。启用 Resend 前配置 API key、已验证的发信域名和发件地址；默认限制 100 封/天、3000 封/月，超出免费预算前先确认费用。配置回执时填写 `DETECTIVE_RESEND_WEBHOOK_SECRET`。日常部署保留这些环境配置，不会自动生成主密钥或启用发信。
+邮件默认关闭。启用 Resend 前配置 API key、已验证的发信域名和发件地址；默认限制 100 封/天、3000 封/月，超出免费预算前先确认费用。配置回执时填写 `DETECTIVE_RESEND_WEBHOOK_SECRET`。注册验证码和账户邮箱验证共用这项邮件服务与额度；邮件未启用或发送失败时，新用户无法完成注册。日常部署保留这些环境配置，不会自动生成主密钥或启用发信。
 
 ## 自动部署
 

@@ -54,7 +54,18 @@ def read_account(session, user_id):
 
 def request_email(session, user_id, email, mailer):
     user = owner(session, user_id)
-    email = str(email).lower()
+    _send_verification(session, user, str(email), mailer, changing=True)
+
+
+def request_verification(session, user_id, mailer):
+    user = owner(session, user_id)
+    if user.is_verified:
+        raise BizException("邮箱已验证", code=400)
+    _send_verification(session, user, user.email, mailer, changing=False)
+
+
+def _send_verification(session, user, email, mailer, *, changing):
+    email = email.lower()
     exists = session.scalar(
         select(User).where(func.lower(User.email) == email, User.id != user.id)
     )
@@ -78,16 +89,22 @@ def request_email(session, user_id, email, mailer):
     link = (
         config.public_base_url.rstrip("/") + "/api/account/email/verify?token=" + token
     )
+    intro = (
+        "确认将 Inkpaw 登录邮箱设为 " + escape(email) + "。"
+        if changing
+        else "确认这是你的 Inkpaw 登录邮箱：" + escape(email) + "。"
+    )
     message = MailPreview(
         subject="验证你的 Inkpaw 登录邮箱",
         sender=config.mail_sender or "Inkpaw",
         recipient=email,
-        html="<p>确认将 Inkpaw 登录邮箱设为 "
-        + escape(email)
-        + '。</p><p><a href="'
+        html="<p>"
+        + intro
+        + '</p><p><a href="'
         + escape(link, quote=True)
         + '">验证邮箱</a></p><p>链接 20 分钟内有效。如果不是你发起的，请忽略这封邮件。</p>',
-        text="确认你的 Inkpaw 登录邮箱："
+        text=intro
+        + "\n验证邮箱："
         + link
         + "\n链接 20 分钟内有效。如果不是你发起的，请忽略这封邮件。",
     )

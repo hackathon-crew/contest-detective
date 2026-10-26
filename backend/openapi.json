@@ -1116,6 +1116,24 @@
         }
       }
     },
+    "/account/email/verification": {
+      "post": {
+        "summary": "Request Verification",
+        "operationId": "request_verification_account_email_verification_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/email/verify": {
       "get": {
         "summary": "Verify Email",
@@ -1127,8 +1145,6 @@
             "required": true,
             "schema": {
               "type": "string",
-              "minLength": 30,
-              "maxLength": 100,
               "title": "Token"
             }
           }
@@ -1249,6 +1265,44 @@
         }
       }
     },
+    "/auth/register/code": {
+      "post": {
+        "summary": "Request Register Code",
+        "operationId": "request_register_code_auth_register_code_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/register": {
       "post": {
         "summary": "Register",
@@ -1257,7 +1311,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Credentials"
+                "$ref": "#/components/schemas/RegisterCredentials"
               }
             }
           },
@@ -2037,6 +2091,20 @@
           "url"
         ],
         "title": "CalendarRead"
+      },
+      "CodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "CodeRequest"
       },
       "ConfirmedClaim": {
         "properties": {
@@ -3984,6 +4052,33 @@
           "unlimited"
         ],
         "title": "QuotaRead"
+      },
+      "RegisterCredentials": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Password"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "code"
+        ],
+        "title": "RegisterCredentials"
       },
       "ResolveRecommendations": {
         "properties": {

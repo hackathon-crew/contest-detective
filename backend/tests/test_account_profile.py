@@ -1,10 +1,10 @@
-from test_accounts import app_client
+from account_helpers import account_client as app_client, register
 
 
 def test_profile_preserves_each_skill_source(tmp_path):
     with app_client(tmp_path) as client:
         credentials = {'email': 'profile@example.com', 'password': 'long-password-123'}
-        client.post('/auth/register', json=credentials)
+        register(client, credentials['email'], credentials['password'])
         client.post('/auth/login', json=credentials)
         profile = {'skills': ['Python', 'Figma', 'React'],
                    'skill_sources': {'Python': ['github'], 'Figma': ['resume'], 'React': ['manual']}}
@@ -16,7 +16,7 @@ def test_profile_preserves_each_skill_source(tmp_path):
 def test_profile_rejects_an_unknown_source(tmp_path):
     with app_client(tmp_path) as client:
         credentials = {'email': 'profile@example.com', 'password': 'long-password-123'}
-        client.post('/auth/register', json=credentials)
+        register(client, credentials['email'], credentials['password'])
         client.post('/auth/login', json=credentials)
         result = client.put('/user/profile', json={'skills': ['Python'], 'skill_sources': {'Python': ['made-up']}})
         assert result.json()['code'] == 400

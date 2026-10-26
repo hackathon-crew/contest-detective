@@ -4,7 +4,7 @@ from html import escape
 import json
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select, func, text
+from sqlalchemy import select, text
 
 from contest_detective.common.exceptions import BizException
 from contest_detective.server.user.models import User
@@ -20,6 +20,7 @@ from contest_detective.server.account.store import settings_for
 from .tracking import matching_contests, deadline
 from .models import PendingNotification, SeenNotification
 from .ports import OutgoingMail
+from .quota import mail_used
 
 BEIJING = ZoneInfo('Asia/Shanghai')
 
@@ -146,9 +147,7 @@ def deliver(session, user, mailer, message, *, key, kind, now, sensitive=False):
             session.rollback()
             return False
     else:
-        daily = session.scalar(select(func.count()).select_from(MailDelivery).where(MailDelivery.created_at >= now-timedelta(days=1)))
-        month = now.astimezone(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        monthly = session.scalar(select(func.count()).select_from(MailDelivery).where(MailDelivery.created_at >= month))
+        daily, monthly = mail_used(session, now)
         if daily >= config.mail_daily_limit or monthly >= config.mail_monthly_limit:
             session.rollback()
             raise BizException('邮件免费额度已到上限，请稍后再试', code=429)

@@ -77,6 +77,10 @@ function enterPassword(value = 'local-test-password') {
   fireEvent.change(screen.getByLabelText('密码'), { target: { value } })
 }
 
+function enterCode(value = '123456') {
+  fireEvent.change(screen.getByLabelText('验证码'), { target: { value } })
+}
+
 function submit(name: string) {
   fireEvent.submit(screen.getByRole('button', { name }).closest('form')!)
 }
@@ -109,13 +113,15 @@ describe('全屏账户流程', () => {
     expect(calls.map((call) => call.path)).toContain('/api/auth/logout')
   })
 
-  it('注册跳过验证码，只用邮箱和密码创建账户并自动登录', async () => {
+  it('注册先发送验证码，再用邮箱、密码和验证码创建账户并自动登录', async () => {
     const calls = setup('/register')
     expect(screen.getByRole('heading', { name: '注册 Inkpaw' })).toBeTruthy()
     continueWithEmail('  night@example.com  ')
-    expect(screen.getByRole('heading', { name: '创建密码' })).toBeTruthy()
-    expect(screen.queryByLabelText('验证码')).toBeNull()
+    expect(await screen.findByRole('heading', { name: '创建密码' })).toBeTruthy()
+    expect(screen.getByLabelText('验证码')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /秒后重发/ }).hasAttribute('disabled')).toBe(true)
     expect(screen.getByLabelText('密码').getAttribute('autocomplete')).toBe('new-password')
+    enterCode()
     enterPassword()
     submit('创建账号')
     await screen.findByRole('navigation', { name: '主导航' })
@@ -123,8 +129,16 @@ describe('全屏账户流程', () => {
       calls.filter((call) => call.path.includes('/auth/') && !call.path.endsWith('/me')),
     ).toEqual([
       {
+        path: '/api/auth/register/code',
+        body: { email: 'night@example.com' },
+      },
+      {
         path: '/api/auth/register',
-        body: { email: 'night@example.com', password: 'local-test-password' },
+        body: {
+          email: 'night@example.com',
+          password: 'local-test-password',
+          code: '123456',
+        },
       },
       {
         path: '/api/auth/login',
@@ -150,6 +164,8 @@ describe('全屏账户流程', () => {
   it('账户创建后自动登录失败，重试只登录已有账户', async () => {
     const calls = setup('/register', { failLoginOnce: true })
     continueWithEmail()
+    await screen.findByLabelText('验证码')
+    enterCode()
     enterPassword()
     submit('创建账号')
     expect(await screen.findByRole('alert')).toHaveProperty(
@@ -179,17 +195,20 @@ describe('全屏账户流程', () => {
     fireEvent.click(screen.getByRole('link', { name: '登录' }))
     fireEvent.click(screen.getByRole('link', { name: '创建账号' }))
     continueWithEmail()
+    await screen.findByLabelText('验证码')
+    enterCode()
     enterPassword()
     submit('创建账号')
     await screen.findByRole('navigation', { name: '主导航' })
     expect(screen.getByLabelText('当前地址').textContent).toBe('/contests?mode=online')
   })
 
-  it('校验邮箱和注册密码，不发送无效凭据', () => {
+  it('校验邮箱和注册密码，不发送无效凭据', async () => {
     const calls = setup('/register')
     continueWithEmail('invalid')
     expect(screen.getByRole('alert').textContent).toBe('请输入有效的邮箱地址。')
     continueWithEmail()
+    await screen.findByLabelText('验证码')
     enterPassword('short')
     submit('创建账号')
     expect(screen.getByRole('alert').textContent).toBe('密码需要 8–128 个字符。')

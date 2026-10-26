@@ -3,14 +3,17 @@ from pydantic_ai.messages import ModelResponse
 from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
+from account_helpers import Mailbox, request_code
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+from contest_detective.framework.db import get_session
 from contest_detective.server.agent.loop import Investigator
 from contest_detective.server.agent.models import Investigation
 from contest_detective.server.user import service as users
 from contest_detective.web.api.agent import get_investigator, limiter
+from contest_detective.web.api.mail import get_mailer
 from contest_detective.web.bootstrap.app import create_app
 
 
@@ -30,11 +33,19 @@ def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path)
             return user.profile.model_dump(mode='json') if user else None
     app.dependency_overrides[get_investigator] = lambda: Investigator(
         FunctionModel(respond), session_factory=sessions, profile_reader=profile_reader)
+    def session_override():
+        with sessions() as session:
+            yield session
+    app.dependency_overrides[get_session] = session_override
+    mailbox = Mailbox()
+    app.state.mailbox = mailbox
+    app.dependency_overrides[get_mailer] = lambda: mailbox
     limiter.reset()
     try:
         with TestClient(app) as client:
             credentials = {'email': 'researcher@example.com', 'password': 'long-password-123'}
-            user_id = client.post('/auth/register', json=credentials).json()['data']['id']
+            code = request_code(client, credentials['email'])
+            user_id = client.post('/auth/register', json={**credentials, 'code': code}).json()['data']['id']
             assert client.post('/auth/login', json=credentials).json()['code'] == 200
             assert client.put('/user/profile', json={'skills': ['Python'], 'city': '杭州'}).json()['code'] == 200
             assert 'event: answer' in client.post('/agent/ask', json={'question': '哪些比赛适合我'}).text
