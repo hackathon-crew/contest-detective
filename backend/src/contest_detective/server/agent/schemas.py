@@ -5,7 +5,7 @@ from datetime import datetime
 from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan
 from contest_detective.server.research_pipeline.contracts import SearchExecution
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from contest_detective.server.user.schemas import Profile
 from contest_detective.server.contest.schemas import ContestDetail
@@ -67,16 +67,32 @@ class Observation(BaseModel):
 
 class RecommendationChoice(BaseModel):
     contest_id: str = Field(description='本轮比赛工具已返回的真实比赛 ID')
-    introduction: str = Field(description='对这场比赛的简短介绍')
-    reason: str = Field(description='结合用户本轮条件给出的推荐理由')
+    introduction: str = Field(default='', description='对这场比赛的简短介绍')
+    reason: str = Field(default='', description='结合用户本轮条件给出的推荐理由')
 
 
 class DetectiveReply(BaseModel):
     assessments: list[ClaimAssessment] = Field(default_factory=list, description="实时/深度模式逐条引用 cite_evidence 返回的证据 ID；证据不足必须标 insufficient")
     content: str = Field(min_length=1, description='给用户的完整 Markdown 文字答复，保留介绍、比较和来源链接')
     recommendations: list[RecommendationChoice] = Field(
-        description='最终推荐的比赛，按推荐顺序排列；未推荐任何比赛时返回空数组',
+        default_factory=list, description='最终推荐的比赛，按推荐顺序排列；未推荐任何比赛时返回空数组',
     )
+
+
+    @field_validator('recommendations', 'assessments', mode='before')
+    @classmethod
+    def optional_metadata(cls, value, info: ValidationInfo):
+        # 附加信息不完整时只放弃该项，不能让已经生成的正文再次请求模型后丢失。
+        if not isinstance(value, list):
+            return []
+        model = RecommendationChoice if info.field_name == 'recommendations' else ClaimAssessment
+        items = []
+        for item in value:
+            try:
+                items.append(model.model_validate(item))
+            except (ValueError, TypeError):
+                continue
+        return items
 
 
 class ContestRecommendation(BaseModel):

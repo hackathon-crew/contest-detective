@@ -142,7 +142,7 @@ def test_edited_screenshot_personal_claim_is_rechecked_before_provider(session_f
     assert events[-1].payload['report']['status']=='blocked'
 
 
-def test_unverified_day_anchor_cannot_turn_into_answer_or_recommendation_clock(session_factory):
+def test_day_precision_metadata_cannot_block_the_final_reply(session_factory):
     from contest_detective.server.contest.service import save
     from contest_detective.server.contest.schemas import ContestDraft
     with session_factory() as session:
@@ -157,10 +157,11 @@ def test_unverified_day_anchor_cannot_turn_into_answer_or_recommendation_clock(s
             return ModelResponse([ToolCallPart('get_contest',{'contest_id':contest_id})])
         return ModelResponse([ToolCallPart('respond_to_user',{'content':'Codex Buildathon 作品提交截止是2026年11月2日14:00 PST。','recommendations':[{'contest_id':contest_id,'introduction':'作品提交截止14:00 PST。','reason':'适合Python开发者'}]})])
     events=consume(Investigator(FunctionModel(reply),session_factory=session_factory))
-    assert calls>2
+    assert calls == 2
     assert events[-1].type=='answer'
-    assert '14:00' not in events[-1].payload['content']
-    assert not events[-1].payload.get('recommendations')
+    assert events[-1].payload['content'] == 'Codex Buildathon 作品提交截止是2026年11月2日14:00 PST。'
+    card = events[-1].payload['recommendations'][0]['contest']
+    assert card['fields']['submission_deadline']['precision'] == 'day'
 
 
 def test_http_uses_the_effective_executor_mode(client):
