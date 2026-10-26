@@ -59,7 +59,7 @@ describe('路由', () => {
   it.each([
     ['/', /按你的兴趣和优势/],
     ['/contests?q=AI', '赛事库'],
-    ['/detective', '侦探'],
+    ['/detective', '想找什么样的比赛？'],
   ])('MCP 接入在当前页面打开并保留页面状态：%s', async (path, title) => {
     renderAt(path)
     const heading = screen.getByRole('heading', { name: title })
