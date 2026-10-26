@@ -212,7 +212,8 @@ class Investigator:
                 **({'report': report.model_dump(mode='json')} if report else {}),
             })))
         except Exception as exc:
-            logger.warning('Investigation interrupted: %s', type(exc).__name__)
+            logger.warning('Investigation interrupted: %s: %s; cause: %s',
+                           type(exc).__name__, str(exc), str(exc.__cause__))
             if state:
                 report = state.build([], interrupted=True)
                 if isinstance(exc, BizException):
