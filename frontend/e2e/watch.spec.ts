@@ -75,14 +75,16 @@ for (const verified of [true, false]) {
       expect(settings).toMatchObject({ enabled: true, frequency: 'weekly', reminder_days: [3, 1] })
       expect(writes).toEqual(['POST /account/push/test', 'PUT /account/push'])
     } else {
-      await expect(enable).toBeDisabled()
+      const verify = page.getByRole('button', { name: '发送验证邮件', exact: true })
+      await expect(verify).toBeVisible()
+      await expect(enable).toHaveCount(0)
       await expect(send).toBeDisabled()
       await expect(page.getByRole('switch', { name: '邮件推送', exact: true })).toBeDisabled()
-      await expect(page.getByRole('link', { name: '去验证邮箱' })).toHaveAttribute(
-        'href',
-        '/account/settings#email',
-      )
-      expect(writes).toEqual([])
+      await verify.click()
+      await expect(page.getByText('验证邮件已发到 owner@example.com，20 分钟内有效')).toBeVisible()
+      await expect(page).toHaveURL('http://127.0.0.1:5186/account/push')
+      await expect(page.getByRole('switch', { name: '邮件推送', exact: true })).not.toBeChecked()
+      expect(writes).toEqual(['POST /account/email/verification'])
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     expect(errors).toEqual([])
