@@ -72,13 +72,6 @@
   :is(button, a) {
   pointer-events: auto;
 }
-.detective-workspace__main:has(.detective-conversation[data-empty='false'])
-  .detective-workspace__header
-  h1 {
-  flex: 0 1 auto;
-  margin-right: auto;
-  background: var(--color-canvas);
-}
 .detective-workspace__header .detective-icon {
   background: var(--color-canvas);
 }
@@ -91,15 +84,8 @@
   min-height: var(--chat-header);
   padding: 0.75rem var(--chat-padding);
 }
-.detective-workspace__header h1 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--color-ink);
-  font: 500 var(--chat-reading-size)/1.5 var(--chat-reading-font);
+.detective-workspace__header > button:first-child {
+  margin-right: auto;
 }
 .detective-sidebar {
   position: absolute;

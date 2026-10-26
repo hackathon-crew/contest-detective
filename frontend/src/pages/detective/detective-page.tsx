@@ -116,7 +116,6 @@ export function DetectivePage() {
             >
               <PanelLeftOpen aria-hidden="true" strokeWidth={1.5} />
             </button>
-            <h1>{session?.title ?? '侦探'}</h1>
             <Link to="/detective" className="detective-icon" aria-label="新对话">
               <SquarePen aria-hidden="true" strokeWidth={1.5} />
             </Link>
