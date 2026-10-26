@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { MemoryRouter } from 'react-router'
@@ -32,7 +32,11 @@ afterEach(() => {
   localStorage.clear()
   vi.unstubAllGlobals()
 })
-function show(path = '/', collectionResponse?: (url: URL) => Promise<Response>) {
+function show(
+  path = '/',
+  collectionResponse?: (url: URL) => Promise<Response>,
+  client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   window.history.replaceState(null, '', path)
   const calls: { url: URL; init?: RequestInit }[] = []
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -69,9 +73,7 @@ function show(path = '/', collectionResponse?: (url: URL) => Promise<Response>) 
   render(
     <MemoryRouter initialEntries={[path]}>
       <NuqsAdapter>
-        <QueryClientProvider
-          client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-        >
+        <QueryClientProvider client={client}>
           <AppRoutes />
         </QueryClientProvider>
       </NuqsAdapter>
@@ -79,6 +81,87 @@ function show(path = '/', collectionResponse?: (url: URL) => Promise<Response>) 
   )
   return calls
 }
+
+const coveredContests = contests.map((contest) => ({
+  ...contest,
+  cover_url: `https://example.com/${contest.id}.jpg`,
+}))
+function collectionEnvelope(data = coveredContests) {
+  return Response.json({
+    code: 200,
+    message: 'ok',
+    data,
+    total: data.length,
+    page: 1,
+    page_size: 100,
+  })
+}
+
+it('reserves both gallery rows before the first page arrives, then replaces placeholders with covers', async () => {
+  let finish!: (response: Response) => void
+  const firstPage = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  show('/', () => firstPage)
+  try {
+    const rows = document.querySelectorAll('.wall-row')
+    expect(rows).toHaveLength(2)
+    for (const row of rows) expect(row.querySelectorAll('.wall-card').length).toBeGreaterThan(0)
+    expect(document.querySelector('.wall img')).toBeNull()
+  } finally {
+    await act(async () => finish(collectionEnvelope()))
+  }
+  await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
+  expect(document.querySelectorAll('.wall-card:not(:has(img))')).toHaveLength(0)
+})
+
+it('keeps each cover frame while its image loads or fails', async () => {
+  show('/', async () => collectionEnvelope())
+  await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
+  const image = document.querySelector<HTMLImageElement>('.wall img')!
+  const frame = image.closest('.wall-card')
+  expect(frame).not.toBeNull()
+  expect(image.dataset.loaded).toBe('false')
+  fireEvent.load(image)
+  expect(image.dataset.loaded).toBe('true')
+  fireEvent.error(image)
+  expect(image.dataset.loaded).toBe('false')
+  expect(image.style.visibility).not.toBe('hidden')
+  expect(frame?.isConnected).toBe(true)
+})
+
+it('keeps cached gallery covers visible during a refresh and resets a replaced image', async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(
+    ['contests', 'collection'],
+    { items: coveredContests, total: 2, complete: true },
+    { updatedAt: Date.now() - 120_000 },
+  )
+  let finish!: (response: Response) => void
+  const refresh = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  show('/', () => refresh, client)
+  const image = document.querySelector<HTMLImageElement>('.wall img')!
+  try {
+    expect(image.src).toBe('https://example.com/python.jpg')
+    expect(document.querySelectorAll('.wall-card:not(:has(img))')).toHaveLength(0)
+    fireEvent.load(image)
+    expect(image.dataset.loaded).toBe('true')
+  } finally {
+    await act(async () =>
+      finish(
+        collectionEnvelope([{ ...coveredContests[0]!, cover_url: 'https://example.com/new.jpg' }]),
+      ),
+    )
+  }
+  await waitFor(() =>
+    expect(document.querySelector<HTMLImageElement>('.wall img')?.src).toBe(
+      'https://example.com/new.jpg',
+    ),
+  )
+  expect(document.querySelector<HTMLImageElement>('.wall img')?.dataset.loaded).toBe('false')
+})
 it('reads live totals and passes mode, deadline range and keyword to the list API', async () => {
   const calls = show()
   await waitFor(() =>
