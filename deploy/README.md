@@ -94,6 +94,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 首次启用 MCP 时，在发布包含 HTTP 入口的版本前安装上述 unit、代理配置与部署脚本；部署脚本在切换代码后启动 MCP。首次发布成功后执行 `sudo systemctl enable contest-detective-mcp`，使其开机启动。不要在仍运行旧版本代码时启动该 unit。
 
+部署脚本在每次切换后按目标版本实际存在的入口重写 `/etc/systemd/system/<unit>.service.d/release.conf`（网站与 MCP 分别处理），并执行 `systemctl daemon-reload`。因此升级、重新部署和回退到旧包结构的版本都不需要手工修改 unit；但 unit 文件本身仍需按上述命令在首次安装时放入。
+
 MCP 不执行迁移或采集，赛事与个人资料查询使用 SQLite `mode=ro`；缺库或缺表时启动失败。个人令牌鉴权另用连接更新最近使用时间，因此 systemd 允许服务写入同一数据目录；工具不提供业务数据写入操作。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
 
 为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
