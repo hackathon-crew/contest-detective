@@ -27,7 +27,7 @@ def test_final_sources_keep_read_contests_and_exclude_unopened_search_leads(sess
         if not results:
             return ModelResponse([ToolCallPart('web_search', {'query': '周末黑客松'})])
         if len(results) == 1:
-            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id})])
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id, 'fields': ['eligibility']})])
         if len(results) == 2:
             return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://organizer.example/rules'})])
         return ModelResponse([answer_part('大学生可以参加：[参赛规则](https://organizer.example/rules)。')])

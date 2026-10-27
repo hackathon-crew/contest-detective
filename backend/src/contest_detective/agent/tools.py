@@ -14,7 +14,7 @@ from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
-from contest_detective.contest.schemas import ContestQuery, DEADLINE_FIELDS, date_bounds
+from contest_detective.contest.schemas import ContestQuery, EvidenceField, DEADLINE_FIELDS, date_bounds
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user import matching
@@ -162,17 +162,24 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 'summary': f'找到 {total} 场比赛，本页 {len(items)} 场'}
 
     @research_tool
-    async def get_contest(ctx: RunContext[ToolDeps], contest_id: str) -> dict:
-        """读取字段、精度和出处；precision=day 只公布日期，不得把排序锚点说成小时。"""
+    async def get_contest(ctx: RunContext[ToolDeps], contest_id: str,
+                          fields: Annotated[list[EvidenceField], Field(min_length=1, max_length=6)] | None = None) -> dict:
+        """按需读取最多 6 个字段的值、精度、等级和出处；省略 fields 时给五个日期字段和 city。
+
+        summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。precision=day 只有日期。
+        """
         with ctx.deps.session_factory() as session:
             item = contests.get(session, contest_id)
         if item is None or not ctx.deps.allows_contest(item):
             return {'contest': None, 'summary': '比赛未找到', 'sources': []}
         ctx.deps.observe_contest(item)
-        sources = contest_sources(item)
+        selected = contests.evidence(item, fields)
+        sources = contest_sources(selected)
         ctx.deps.contest_ids.add(item.id)
         ctx.deps.remember(sources)
-        return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
+        payload = selected.model_dump(mode='json',
+            exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
+        return {'contest': payload, 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
     @research_tool
     async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None,

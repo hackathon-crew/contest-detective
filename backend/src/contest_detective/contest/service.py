@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
 from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink, ContestEvent
-from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, BriefDate, BriefDeadline, ContestBrief, ContestDetail, ContestDraft,
+from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, DEFAULT_EVIDENCE_FIELDS, EvidenceField, BriefDate, BriefDeadline, ContestBrief, ContestDetail, ContestDraft, ContestEvidence,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
 from .verification import resolve
@@ -106,6 +106,13 @@ def brief(item: ContestSummary, *, now: datetime | None = None) -> ContestBrief:
         mode=fields['mode'].value,
         prize=fields['prize'].value[:160] if fields['prize'].value is not None else None,
         themes=[theme[:40] for theme in item.themes[:6]])
+
+
+def evidence(item: ContestDetail, fields: list[EvidenceField] | None = None) -> ContestEvidence:
+    names = DEFAULT_EVIDENCE_FIELDS if fields is None else fields
+    selected = {name: item.fields[name] for name in names if name != 'summary'}
+    return ContestEvidence(id=item.id, name=item.name, status=item.status, fields=selected,
+        **({'summary': item.summary} if 'summary' in names else {}))
 
 
 def _details(session, contest):

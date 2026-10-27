@@ -75,7 +75,7 @@ def test_ten_contest_query_can_read_every_source_before_answering(session_factor
         items = results[0].content['items']
         details = [part.content for part in results if part.tool_name == 'get_contest']
         if len(details) < len(items):
-            return ModelResponse([ToolCallPart('get_contest', {'contest_id': items[len(details)]['id']},
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': items[len(details)]['id'], 'fields': ['eligibility']},
                                                tool_call_id=f'detail-{len(details)}')])
         return ModelResponse([answer_part('\n'.join(
             f"{detail['contest']['name']}：[参赛规则]({detail['sources'][0]['url']})" for detail in details
