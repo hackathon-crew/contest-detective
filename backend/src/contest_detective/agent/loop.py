@@ -215,6 +215,10 @@ class Investigator:
         except Exception as exc:
             logger.warning('Investigation interrupted: %s: %s; cause: %s',
                            type(exc).__name__, str(exc), str(exc.__cause__))
+            unread = [f'- [{source["title"]}]({url})（未读取原文）'
+                      for url, source in deps.search_results.items()
+                      if url not in deps.opened_urls and url not in deps.sources
+                      and (not state or url not in state.rejected_urls)]
             if state:
                 report = state.build([], interrupted=True)
                 if isinstance(exc, BizException):
@@ -222,16 +226,18 @@ class Investigator:
                 answer = '\n\n'.join([
                     *dict.fromkeys(findings),
                     *(f'- [{source.title}]({source.url})' for source in deps.sources.values()),
+                    *unread,
                     render_report(report),
                 ])
                 status = report.status
                 await queue.put(store(TraceEvent(type='answer', payload={'content': answer,
                     'sources': [source.model_dump() for source in deps.sources.values()],
                     'report': report.model_dump(mode='json')})))
-            elif deps.sources or findings:
+            elif deps.sources or findings or unread:
                 lines = ['查证暂时未能继续，以下是已查到的资料，尚未完成全部核实：']
                 lines.extend(dict.fromkeys(findings))
                 lines.extend(f'- [{source.title}]({source.url})' for source in deps.sources.values())
+                lines.extend(unread)
                 answer, status = '\n\n'.join(lines), 'completed'
                 await queue.put(store(TraceEvent(type='answer', payload={
                     'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],

@@ -66,6 +66,8 @@ class ToolDeps:
     preferences: SearchPreferences | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
     search_results: dict[str, dict] = field(default_factory=dict)
+    # 重定向前的地址也算已打开，不能在中断答复里又列为未读线索。
+    opened_urls: set[str] = field(default_factory=set)
     contest_ids: set[str] = field(default_factory=set)
     verification: VerificationState | None = None
     observed_contests: dict = field(default_factory=dict)
@@ -247,9 +249,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                         'provider': item.get('provider'), 'query': query,
                         'retrieved_at': datetime.now(timezone.utc).isoformat()} for item in items]
             ctx.deps.search_results.update({source['url']: source for source in sources})
-            summary = '\n'.join([f'{"元宝" if state else ""}搜索到 {len(items)} 条线索（尚未读取原文）',
-                                 *(f'- [{item["title"]}]({item["url"]})' for item in items)])
-            return {'items': items, 'summary': summary,
+            return {'items': items, 'summary': f'{"元宝" if state else ""}搜索到 {len(items)} 条线索',
                     **({'execution': receipt.model_dump(mode='json')} if receipt else {})}
 
     if not external_enabled:
@@ -284,6 +284,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         if ctx.deps.verification and url != requested_url:
             ctx.deps.verification.remember_redirect(requested_url, url)
         text = full_text[offset:] if length is None else full_text[offset:offset + length]
+        ctx.deps.opened_urls.update((requested_url, url))
         ctx.deps.fetched_pages[url] = ctx.deps.fetched_pages.get(url, '') + '\n' + text
         if ctx.deps.verification:
             ctx.deps.verification.remember_page(url, text, full_text=full_text)
