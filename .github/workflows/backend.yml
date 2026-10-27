@@ -22,3 +22,34 @@ jobs:
       - run: uv run alembic upgrade head
       - run: uv run pytest
       - run: uv run lint-imports
+  backend-postgres:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: contest_detective
+          POSTGRES_USER: contest_detective
+          POSTGRES_PASSWORD: contest_detective
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U contest_detective -d contest_detective"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DETECTIVE_DB_URL: postgresql+psycopg://contest_detective:contest_detective@localhost:5432/contest_detective
+      DETECTIVE_TEST_DB_URL: postgresql+psycopg://contest_detective:contest_detective@localhost:5432/contest_detective
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.28
+      - run: uv sync --locked
+      - run: uv run alembic upgrade head
+      - run: uv run pytest tests/integration/test_pg_smoke.py
+      - run: uv run lint-imports

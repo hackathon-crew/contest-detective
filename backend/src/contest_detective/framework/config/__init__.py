@@ -1,6 +1,6 @@
 """framework 配置。
 
-数据库用 ``DETECTIVE_DB_`` 前缀，只接受 SQLite。
+数据库用 ``DETECTIVE_DB_`` 前缀，支持 SQLite 与 PostgreSQL。
 进程级配置用 ``DETECTIVE_`` 前缀。
 """
 

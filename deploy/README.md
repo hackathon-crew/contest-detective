@@ -70,6 +70,21 @@ systemctl is-active contest-detective
 
 查看日志用 `journalctl -u contest-detective`。更新先保留旧发布目录与数据库副本，再换到新发布文件并重启服务。已有的其他服务不参与此流程。
 
+## PostgreSQL 迁移准备
+
+当前生产仍使用 SQLite。引入 PostgreSQL 时：
+
+- 需要 PostgreSQL 16 与 pgvector >= 0.8；本地可用 `docker compose -f docker-compose.dev.yml up -d`。
+- 数据库角色需要 `CREATE EXTENSION vector` 权限；扩展由 Alembic revision `0016_pgvector_extension` 创建并校验版本，低于 0.8 会直接失败。
+- 在 `/etc/contest-detective.env` 设置 `DETECTIVE_DB_URL=postgresql+psycopg://...`，按需调整 `DETECTIVE_DB_POOL_*`，然后运行：
+
+```sh
+cd /srv/contest-detective/backend
+uv run alembic upgrade head
+```
+
+- 本阶段的发布备份仍使用 SQLite 快照；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
+
 ## 个人中心配置
 
 配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY` 后才能保存个人模型与搜索密钥。使用独立的 Fernet 主密钥，生成方式见根目录 `.env.example`，生产环境单独生成并保管，不复用开发密钥。`DETECTIVE_PUBLIC_BASE_URL` 设为网站的 HTTPS 地址，供日历订阅和验证邮件使用。`DETECTIVE_QUERY_LIMITS_ENABLED=false` 为活动期间不限提问次数。

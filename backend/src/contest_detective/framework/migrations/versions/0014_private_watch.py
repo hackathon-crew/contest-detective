@@ -1,6 +1,7 @@
 """Private watch state and nullable historical event snapshots."""
 from alembic import op
 import sqlalchemy as sa
+from fastapi_users_db_sqlalchemy import GUID
 
 revision = '0014_private_watch'
 down_revision = '0013_merge_account_mail'
@@ -15,15 +16,15 @@ def upgrade():
     op.add_column('contest_events', sa.Column('before_snapshot', sa.JSON(), nullable=True))
     op.add_column('contest_events', sa.Column('after_snapshot', sa.JSON(), nullable=True))
     op.create_table('watch_subscriptions',
-        sa.Column('user_id', sa.CHAR(36), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+        sa.Column('user_id', GUID(), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('contest_id', sa.String(36), sa.ForeignKey('contests.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('enabled', sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column('activated_event_id', sa.Integer(), nullable=False, server_default='0'))
     op.create_table('watch_cursors',
-        sa.Column('user_id', sa.CHAR(36), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+        sa.Column('user_id', GUID(), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('event_id', sa.Integer(), nullable=False, server_default='0'))
     op.create_table('watch_notifications',
-        sa.Column('user_id', sa.CHAR(36), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+        sa.Column('user_id', GUID(), sa.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('event_id', sa.Integer(), sa.ForeignKey('contest_events.id', ondelete='CASCADE'), primary_key=True),
         sa.Column('read_at', sa.DateTime(timezone=True), nullable=True))
     op.create_table('watch_checks',

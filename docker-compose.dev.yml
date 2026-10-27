@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: contest_detective
+      POSTGRES_USER: contest_detective
+      POSTGRES_PASSWORD: contest_detective
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contest_detective -d contest_detective"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - contest-detective-pg:/var/lib/postgresql/data
+
+volumes:
+  contest-detective-pg:
