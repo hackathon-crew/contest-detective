@@ -31,11 +31,11 @@ def seed(session_factory, *, day=False):
                     'precision': 'day' if day else 'datetime', 'excerpt': '10月27日提交截止'}]))
 
 
-def run(session_factory, respond):
-    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='external')
+def run(session_factory, respond, **limits):
+    settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='external', **limits)
     model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings))
     async def consume():
-        return [event async for event in Investigator(model, session_factory=session_factory).ask('何时提交，16:00是否报名截止？')]
+        return [event async for event in Investigator(model, session_factory=session_factory, settings=settings).ask('何时提交，16:00是否报名截止？')]
     return asyncio.run(consume())
 
 
@@ -81,17 +81,17 @@ def test_final_answer_on_last_request_completes_without_a_format_retry(session_f
         nonlocal calls
         calls += 1
         return response([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
-                        if calls <= 63 else [answer_part(answer)])
+                        if calls <= 3 else [answer_part(answer)])
 
-    events = run(session_factory, respond)
+    events = run(session_factory, respond, request_limit=4)
 
     assert events[-1].type == 'answer' and events[-1].payload['content'] == answer
-    assert sum(event.type == 'observation' for event in events) == 63
+    assert sum(event.type == 'observation' for event in events) == 3
     with session_factory() as session:
         record = session.scalars(select(Investigation)).one()
         assert record.status == 'completed' and record.answer == answer
         usage = session.scalars(select(LLMUsage)).all()
-        assert len(usage) == 64 and all(row.status == 'settled' for row in usage)
+        assert len(usage) == 4 and all(row.status == 'settled' for row in usage)
 
 
 def test_partial_answer_reaches_the_http_event_stream(client, session_factory):

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from pydantic_ai import Agent, ToolOutput
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits, RunUsage
@@ -25,6 +26,8 @@ from .tools import ToolDeps, invoke, register_tools
 from .verification import VerificationState, render_report, scope_check, export_text, public_payload
 from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
+from .config import LLMSettings, get_llm_settings
+from .limits import WrapUpNearRequestLimit
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +66,9 @@ LIVE_RULES = '''
 class Investigator:
     def __init__(self, model: Model, *, session_factory=SessionLocal, fetch=None, search=None, record=None,
                  profile_reader=None, preferences=None, mode: VerificationMode | None = None,
-                 search_provider: str | None = None, scope_classifier=None):
+                 search_provider: str | None = None, scope_classifier=None, settings: LLMSettings | None = None):
         self.model = model
+        self.settings = settings or get_llm_settings()
         self.mode, self.search_provider = mode, search_provider
         self.scope_classifier = scope_classifier or (classify_scope if mode in {'realtime', 'deep'} else None)
         self.session_factory = session_factory
@@ -72,6 +76,7 @@ class Investigator:
         self.profile_reader = profile_reader
         self.preferences = preferences
         self.agent = Agent(model, deps_type=ToolDeps,
+                           capabilities=[WrapUpNearRequestLimit()],
                            output_type=[str, ToolOutput(DetectiveReply, name='respond_to_user')],
                            instructions=RULES + (LIVE_RULES if mode in {'realtime', 'deep'} else ''), retries={'tools': 3},
                            model_settings={'parallel_tool_calls': False})
@@ -115,7 +120,8 @@ class Investigator:
         deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record,
                         preferences=self.preferences, verification=state, search_provider=self.search_provider,
                         scope_classifier=self.scope_classifier, question=question)
-        usage, limits = RunUsage(), UsageLimits(request_limit=None, tool_calls_limit=None)
+        usage, limits = RunUsage(), UsageLimits(request_limit=self.settings.request_limit,
+                                               tool_calls_limit=self.settings.tool_calls_limit)
         seq, status, answer = 0, 'cancelled', None
         findings = []
 
@@ -202,7 +208,7 @@ class Investigator:
             reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
                 content=result.output, recommendations=[])
             report = state.build(reply.assessments) if state else None
-            answer = render_report(report) if report and confirmed_claims else reply.content
+            answer = render_report(report) if report and confirmed_claims and not deps.wrapping_up else reply.content
             status = report.status if report and report.status != 'complete' else 'completed'
             with self.session_factory() as session:
                 recommendations = materialize(session, [item for item in reply.recommendations
@@ -244,7 +250,10 @@ class Investigator:
                 })))
             else:
                 status = 'failed'
-                message = exc.message if isinstance(exc, BizException) else '本次查证未取得结果，请稍后重试'
+                if isinstance(exc, UsageLimitExceeded):
+                    message = '这轮查证已用完可用步数，还没有取得可核实的资料。'
+                else:
+                    message = exc.message if isinstance(exc, BizException) else '本次查证未取得结果，请稍后重试'
                 await queue.put(store(TraceEvent(type='error', payload={'message': message})))
         finally:
             with self.session_factory() as session:
@@ -274,7 +283,7 @@ def create_investigator(*, session_factory=SessionLocal, model_settings=None, se
             return user.profile.model_dump(mode='json') if user else None
 
     from .public_pages import fetch_public_evidence
-    return Investigator(model, session_factory=session_factory,
+    return Investigator(model, session_factory=session_factory, settings=model_settings,
         fetch=partial(fetch_public_evidence, preferences=preferences) if strict else research_pipeline.fetch_page,
         search=partial(research_pipeline.search_web, config=search_settings, require_yuanbao=strict)
             if mode != 'database' and research_pipeline.web_search_available(search_settings) else None,

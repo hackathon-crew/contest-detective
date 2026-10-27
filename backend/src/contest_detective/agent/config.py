@@ -20,6 +20,8 @@ class LLMSettings(BaseSettings):
     balance_floor_cny: Decimal = Field(default=Decimal('90'), ge=0)
     max_tokens: int = Field(default=8192, ge=2000, le=32768)
     max_input_tokens: int = Field(default=65536, ge=8192, le=131072)
+    request_limit: int = Field(default=48, ge=1)
+    tool_calls_limit: int = Field(default=64, ge=1)
     normalization_prompt_path: str = 'templates/contest_normalization.jinja2'
 
 

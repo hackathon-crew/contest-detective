@@ -3,7 +3,7 @@ import asyncio
 import inspect
 import logging
 from functools import wraps
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
 from typing import Annotated, Callable, Literal
 from urllib.parse import urlsplit
@@ -11,6 +11,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
@@ -77,6 +78,7 @@ class ToolDeps:
     scope_classifier: Callable | None = None
     question: str = ''
     scope_context: str = ''
+    wrapping_up: bool = False
 
     def observe_contest(self, item):
         self.observed_contests[item.id] = plain(item)
@@ -127,9 +129,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     def research_tool(function):
         @wraps(function)
         async def call(*args, **kwargs):
+            ctx = args[0] if args else kwargs.get('ctx')
             try:
                 result = await function(*args, **kwargs)
-                ctx = args[0] if args else kwargs.get('ctx')
                 if ctx and ctx.deps.verification:
                     result = public_payload(result)
                     if isinstance(result, dict) and 'sources' in result:
@@ -137,6 +139,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                             if safe_evidence_url(source.get('url', ''))
                             and source['url'] not in ctx.deps.verification.rejected_urls]
                 return result
+            except UsageLimitExceeded:
+                limit = ctx.usage_limits.request_limit
+                if limit is not None and ctx.usage.requests == limit - 1:
+                    return {'summary': '本轮已停止新增查证，保留已读取的资料。', 'sources': []}
+                raise
             except Exception as exc:
                 logger.warning('%s failed: %s', function.__name__, type(exc).__name__)
                 return {'error': type(exc).__name__, 'summary': '本次查询未完成，可尝试其他来源或方法。', 'sources': []}
@@ -313,9 +320,12 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         if ctx.deps.record is None:
             return {'contest_id': None, 'summary': '页面保存暂未配置', 'sources': []}
 
-        # 网页抽取属于同一轮查证，必须共用计数和上限，不能另领一份请求预算。
+        # 抽取共用本轮计数，但不能花掉最终成文的那一次请求。
+        limits = ctx.usage_limits
+        if limits.request_limit is not None:
+            limits = replace(limits, request_limit=limits.request_limit - 1)
         extract = create_page_extractor(model=ctx.deps.model, session_factory=ctx.deps.session_factory,
-                                        usage=ctx.usage, usage_limits=ctx.usage_limits)
+                                        usage=ctx.usage, usage_limits=limits)
 
         context = {}
         if ctx.deps.verification:

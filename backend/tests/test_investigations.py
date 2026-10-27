@@ -8,6 +8,7 @@ from pydantic_ai.models.function import FunctionModel
 from agent_responses import answer_part
 from sqlalchemy import select
 
+from contest_detective.agent.config import LLMSettings
 from contest_detective.agent.loop import Investigator
 from contest_detective.agent.models import Investigation, TraceRecord
 from contest_detective.contest.schemas import ContestDraft
@@ -117,7 +118,8 @@ def test_investigation_can_continue_beyond_sixty_four_requests(session_factory):
         calls += 1
         return ModelResponse([ToolCallPart('search_contests', {}, tool_call_id=f'call-{calls}')]
                              if calls <= 65 else [answer_part('已完成查证。')])
-    events = run(Investigator(FunctionModel(respond), session_factory=session_factory))
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory,
+        settings=LLMSettings(_env_file=None, request_limit=96, tool_calls_limit=96)))
     assert calls == 66
     assert events[-1].type == 'answer'
     with session_factory() as session:
@@ -312,7 +314,8 @@ def test_page_extraction_and_investigation_can_continue_beyond_the_old_shared_li
         if calls > 65:
             return ModelResponse([answer_part('已完成查证，截止日期尚未核实。')])
         return ModelResponse([ToolCallPart('record_page', {'url': 'https://organizer.example/rules'})])
-    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, record=record))
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory,
+        settings=LLMSettings(_env_file=None, request_limit=96, tool_calls_limit=96), record=record))
     assert calls == 67 and events[-1].type == 'answer'
 
 
@@ -358,7 +361,8 @@ def test_a_single_response_can_dispatch_more_than_sixty_four_tools(session_facto
             return ModelResponse([ToolCallPart('fetch_page', {'url': f'https://organizer.example/{i}'}, tool_call_id=str(i))
                                   for i in range(65)])
         return ModelResponse([answer_part('未找到明确资料。')])
-    events = run(Investigator(FunctionModel(respond), session_factory=session_factory, fetch=fetch))
+    events = run(Investigator(FunctionModel(respond), session_factory=session_factory,
+        settings=LLMSettings(_env_file=None, request_limit=96, tool_calls_limit=96), fetch=fetch))
     assert events[-1].type == 'answer'
     assert len(fetched) == 65
 
