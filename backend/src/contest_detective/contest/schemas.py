@@ -1,5 +1,5 @@
 from datetime import date, datetime, time, timedelta, timezone
-from typing import Annotated, Literal
+from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -142,7 +142,7 @@ class FieldValue(BaseModel):
 
 
 class BriefDate(BaseModel):
-    value: str = Field(max_length=20)
+    value: str
     precision: DatePrecision
 
 
@@ -152,16 +152,16 @@ class BriefDeadline(BriefDate):
 
 class ContestBrief(BaseModel):
     """供挑选候选的有界名片；完整字段与出处仍从详情读取。"""
-    id: str = Field(max_length=36)
-    name: str = Field(max_length=160)
+    id: str
+    name: str
     status: ContestStatus
     start_at: BriefDate | None
     end_at: BriefDate | None
     next_deadline: BriefDeadline | None
-    city: str | None = Field(max_length=80)
+    city: str | None
     mode: Literal['online', 'offline', 'hybrid'] | None
-    prize: str | None = Field(max_length=160)
-    themes: list[Annotated[str, Field(max_length=40)]] = Field(max_length=6)
+    prize: str | None
+    themes: list[str]
 
 
 class ContestSummary(BaseModel):
