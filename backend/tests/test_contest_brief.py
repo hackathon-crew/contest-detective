@@ -80,6 +80,15 @@ def test_brief_preserves_exact_deadlines_and_missing_values():
     assert card.next_deadline is None and card.start_at is None and card.end_at is None
 
 
+def test_brief_preserves_long_identifiers_and_exact_date_representations():
+    item = summary()
+    item.id = 'imported-contest-' + 'a' * 40
+    item.fields['end_at'].value = '2026-10-29T08:30:00.123456+00:00'
+    card = service.brief(item, now=NOW)
+    assert card.id == item.id
+    assert card.end_at.value == '2026-10-29T08:30:00.123456+00:00'
+
+
 def test_brief_size_does_not_grow_with_sources_excerpts_introduction_or_coverage():
     item = summary()
     before = service.brief(item, now=NOW).model_dump_json()
