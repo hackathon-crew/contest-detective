@@ -65,6 +65,7 @@ class ToolDeps:
     profile: Profile | None = None
     preferences: SearchPreferences | None = None
     sources: dict[str, ToolSource] = field(default_factory=dict)
+    search_results: dict[str, dict] = field(default_factory=dict)
     contest_ids: set[str] = field(default_factory=set)
     verification: VerificationState | None = None
     observed_contests: dict = field(default_factory=dict)
@@ -114,7 +115,7 @@ class ToolDeps:
                     continue
                 item = ToolSource.model_validate(public_payload(item.model_dump(exclude_unset=True)))
             if urlsplit(item.url).scheme in {'http', 'https'}:
-                # 搜索与正文读取没有核实身份；不能覆盖比赛库已给出的来源等级。
+                # 正文读取没有核实身份；不能覆盖比赛库已给出的来源等级。
                 if item.url in self.sources and 'is_official' not in item.model_fields_set:
                     continue
                 self.sources[item.url] = item
@@ -245,9 +246,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             sources = [{**{key: item.get(key, '') for key in ('title', 'url', 'site')},
                         'provider': item.get('provider'), 'query': query,
                         'retrieved_at': datetime.now(timezone.utc).isoformat()} for item in items]
-            ctx.deps.remember(sources)
-            return {'items': items, 'summary': f'{"元宝" if state else ""}搜索到 {len(items)} 条线索',
-                    'sources': sources, **({'execution': receipt.model_dump(mode='json')} if receipt else {})}
+            ctx.deps.search_results.update({source['url']: source for source in sources})
+            summary = '\n'.join([f'{"元宝" if state else ""}搜索到 {len(items)} 条线索（尚未读取原文）',
+                                 *(f'- [{item["title"]}]({item["url"]})' for item in items)])
+            return {'items': items, 'summary': summary,
+                    **({'execution': receipt.model_dump(mode='json')} if receipt else {})}
 
     if not external_enabled:
         return
@@ -284,7 +287,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         ctx.deps.fetched_pages[url] = ctx.deps.fetched_pages.get(url, '') + '\n' + text
         if ctx.deps.verification:
             ctx.deps.verification.remember_page(url, text, full_text=full_text)
-        source = {'title': urlsplit(url).hostname or url, 'url': url, 'site': urlsplit(url).hostname or ''}
+        lead = ctx.deps.search_results.get(requested_url, ctx.deps.search_results.get(url, {}))
+        source = {'title': urlsplit(url).hostname or url, 'site': urlsplit(url).hostname or '', **lead, 'url': url}
         ctx.deps.remember([source])
         return {'url': url, 'text': text, 'total_chars': len(full_text), 'offset': offset,
                 'next_offset': offset + len(text) if offset + len(text) < len(full_text) else None,
