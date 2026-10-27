@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 
 from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
 from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink, ContestEvent
-from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, ContestDetail, ContestDraft,
+from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, BriefDate, BriefDeadline, ContestBrief, ContestDetail, ContestDraft,
                       ContestField, ContestQuery, ContestSummary, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
 from .verification import resolve
@@ -84,6 +84,28 @@ def _deadline_available(value, now):
     if value.get('precision') == 'day':
         return now < date_bounds(value['value'], 'day')[1]
     return datetime.fromisoformat(value['value']) >= now
+
+
+def _brief_date(value: FieldValue) -> BriefDate | None:
+    if value.value is None:
+        return None
+    return BriefDate(value=calendar_date(value.value, 'day').isoformat() if value.precision == 'day' else value.value,
+                     precision=value.precision)
+
+
+def brief(item: ContestSummary, *, now: datetime | None = None) -> ContestBrief:
+    now = _now() if now is None else now
+    fields = item.fields
+    deadline = min((name for name in DEADLINE_FIELDS if _deadline_available(
+        {'value': fields[name].value, 'precision': fields[name].precision}, now)),
+        key=lambda name: fields[name].value, default=None)
+    return ContestBrief(id=item.id, name=item.name[:160], status=item.status,
+        start_at=_brief_date(fields['start_at']), end_at=_brief_date(fields['end_at']),
+        next_deadline=BriefDeadline(field=deadline, **_brief_date(fields[deadline]).model_dump()) if deadline else None,
+        city=fields['city'].value[:80] if fields['city'].value is not None else None,
+        mode=fields['mode'].value,
+        prize=fields['prize'].value[:160] if fields['prize'].value is not None else None,
+        themes=[theme[:40] for theme in item.themes[:6]])
 
 
 def _details(session, contest):
