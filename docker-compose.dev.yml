@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${DETECTIVE_DB_NAME:-contest_detective}
+      POSTGRES_USER: ${DETECTIVE_DB_USER:-contest_detective}
+      POSTGRES_PASSWORD: ${DETECTIVE_DB_PASSWORD:?set DETECTIVE_DB_PASSWORD in .env}
+    ports:
+      - "${DETECTIVE_DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ${DETECTIVE_PG_DATA_DIR:-./.data/postgres}:/var/lib/postgresql/data

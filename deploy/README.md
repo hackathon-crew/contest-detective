@@ -70,6 +70,63 @@ systemctl is-active contest-detective
 
 查看日志用 `journalctl -u contest-detective`。更新先保留旧发布目录与数据库副本，再换到新发布文件并重启服务。已有的其他服务不参与此流程。
 
+## PostgreSQL 迁移准备
+
+当前生产仍使用 SQLite；本地可以用 compose 起 PostgreSQL。
+
+### 配置
+
+数据库配置二选一，同时设置 `DETECTIVE_DB_URL` 与组件会启动失败：
+
+- 完整 URL：`DETECTIVE_DB_URL=postgresql+psycopg://...`
+- 组件（推荐，密码不需要手工转义）：
+
+```env
+DETECTIVE_DB_HOST=127.0.0.1
+DETECTIVE_DB_PORT=5432
+DETECTIVE_DB_NAME=contest_detective
+DETECTIVE_DB_USER=contest_detective
+DETECTIVE_DB_PASSWORD=CHANGE_ME
+DETECTIVE_DB_POOL_SIZE=5
+DETECTIVE_DB_MAX_OVERFLOW=10
+DETECTIVE_DB_POOL_TIMEOUT=30
+DETECTIVE_DB_POOL_RECYCLE=1800
+```
+
+后端在容器内运行时，`DETECTIVE_DB_HOST` 用 compose 服务名 `postgres`；后端在宿主机运行时用 `127.0.0.1`。
+
+### 本地 compose
+
+```sh
+cp .env.example .env
+# 编辑 .env：注释 DETECTIVE_DB_URL，启用 DETECTIVE_DB_* 组件
+docker compose --env-file .env -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml config   # 检查变量插值
+```
+
+`docker-compose.dev.yml` 使用同一组变量初始化容器：
+
+- `DETECTIVE_DB_NAME` → `POSTGRES_DB`
+- `DETECTIVE_DB_USER` → `POSTGRES_USER`
+- `DETECTIVE_DB_PASSWORD` → `POSTGRES_PASSWORD`（必填）
+- `DETECTIVE_DB_PORT` → 宿主机映射端口
+- `DETECTIVE_PG_DATA_DIR` → 宿主机数据目录，默认 `./.data/postgres`，已被 `.gitignore` 忽略
+
+数据目录是 bind mount，可以直接备份或迁移；切换目录前先停容器。`POSTGRES_*` 只在数据目录为空时初始化，修改密码后复用旧目录不会生效，需要 `ALTER ROLE` 或重建数据目录。
+
+### 生产
+
+- 需要 PostgreSQL 16 与 pgvector >= 0.8；数据库角色需要 `CREATE EXTENSION vector` 权限。
+- 扩展由 Alembic revision `0016_pgvector_extension` 创建并校验版本，低于 0.8 会直接失败。
+- 在 `/etc/contest-detective.env` 设置组件或完整 URL，按需调整 `DETECTIVE_DB_POOL_*`，然后运行：
+
+```sh
+cd /srv/contest-detective/backend
+uv run alembic upgrade head
+```
+
+- 当前发布脚本仍使用 SQLite 快照；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
+
 ## 个人中心配置
 
 配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY` 后才能保存个人模型与搜索密钥。使用独立的 Fernet 主密钥，生成方式见根目录 `.env.example`，生产环境单独生成并保管，不复用开发密钥。`DETECTIVE_PUBLIC_BASE_URL` 设为网站的 HTTPS 地址，供日历订阅和验证邮件使用。`DETECTIVE_QUERY_LIMITS_ENABLED=false` 为活动期间不限提问次数。
