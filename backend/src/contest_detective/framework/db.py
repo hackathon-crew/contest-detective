@@ -9,6 +9,8 @@ from pkgutil import walk_packages
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
+import contest_detective
+
 from contest_detective.framework.config import get_database_settings
 
 
@@ -26,11 +28,10 @@ def get_session():
 
 
 def load_models():
-    for package in ('agent', 'contest', 'research', 'system'):
-        module = import_module(f'contest_detective.{package}')
-        for found in walk_packages(module.__path__, module.__name__ + '.'):
-            if found.name.endswith('.models'):
-                import_module(found.name)
+    # Walk the package tree so a new domain package registers its tables without being listed here.
+    for found in walk_packages(contest_detective.__path__, contest_detective.__name__ + '.'):
+        if found.name.endswith('.models'):
+            import_module(found.name)
 
 
 def init_db(bind=None):
