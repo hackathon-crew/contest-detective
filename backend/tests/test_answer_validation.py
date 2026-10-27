@@ -10,14 +10,14 @@ from agent_responses import answer_part
 from pydantic_ai.usage import RequestUsage
 from sqlalchemy import select
 
-from contest_detective.server.agent.budget import Budget
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.llm import GuardedModel
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.models import Investigation, LLMUsage, TraceRecord
-from contest_detective.server.contest import service
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.web.api.agent import get_investigator, limiter
+from contest_detective.agent.budget import Budget
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.llm import GuardedModel
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.models import Investigation, LLMUsage, TraceRecord
+from contest_detective.contest import service
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
 URL = 'https://organizer.example/output-rules'
 CITED = f'作品提交截止为[2026-10-27 16:00]({URL})，报名截止未找到。'

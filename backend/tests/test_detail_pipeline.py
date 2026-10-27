@@ -5,15 +5,15 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from contest_detective.server.contest.content import CoverageObservation
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
-from contest_detective.server.research_pipeline.detail import BoundedPublicDetailFetcher, detail_targets, document_for
-from contest_detective.server.research_pipeline.detail_contracts import DetailFetchResult, DetailTarget
-from contest_detective.server.research_pipeline.normalization import merge_normalized
-from contest_detective.server.research_pipeline.pipeline.models import ContestSyncContext, ContestSyncInput
-from contest_detective.server.research_pipeline.pipeline.stages import DraftVerify, StructuredDeduplicate, StructuredDetail, StructuredNormalize
-from contest_detective.server.research_pipeline.search.base import SearchHit
-from contest_detective.server.research_pipeline.structured import StructuredCandidate, StructuredDescriptionEnrich
+from contest_detective.contest.content import CoverageObservation
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.research.detail import BoundedPublicDetailFetcher, detail_targets, document_for
+from contest_detective.research.detail_contracts import DetailFetchResult, DetailTarget
+from contest_detective.research.normalization import merge_normalized
+from contest_detective.research.pipeline.models import ContestSyncContext, ContestSyncInput
+from contest_detective.research.pipeline.stages import DraftVerify, StructuredDeduplicate, StructuredDetail, StructuredNormalize
+from contest_detective.research.search.base import SearchHit
+from contest_detective.research.structured import StructuredCandidate, StructuredDescriptionEnrich
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 DESCRIPTION = 'This hackathon invites student developers to build practical projects together.'
@@ -206,7 +206,7 @@ def test_existing_api_routes_are_not_reached_by_the_new_public_fetcher():
 
 
 def test_detail_fetcher_assembly_does_not_read_model_or_search_settings(monkeypatch):
-    from contest_detective.web.bootstrap import source_sync
+    from contest_detective.bootstrap import source_sync
 
     monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: pytest.fail('model configuration accessed'))
     monkeypatch.setattr(source_sync, 'get_search_settings', lambda: pytest.fail('search configuration accessed'))
@@ -214,8 +214,8 @@ def test_detail_fetcher_assembly_does_not_read_model_or_search_settings(monkeypa
 
 
 def test_supported_same_page_contradiction_survives_a_partial_refresh(session_factory):
-    from contest_detective.server.contest import service
-    from contest_detective.server.research_pipeline.record import run
+    from contest_detective.contest import service
+    from contest_detective.research.record import run
 
     url = 'https://organizer.example/rules'
     initial = 'City: Shanghai. City: Beijing.'
@@ -237,8 +237,8 @@ def test_supported_same_page_contradiction_survives_a_partial_refresh(session_fa
 
 
 def test_same_hash_with_new_extractor_version_is_reprocessed_after_success(session_factory):
-    from contest_detective.server.contest import service
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.contest import service
+    from contest_detective.research.verification import verify_recent
 
     url = 'https://organizer.example/rules'
     with session_factory() as session:
@@ -265,9 +265,9 @@ def test_same_hash_with_new_extractor_version_is_reprocessed_after_success(sessi
 
 def test_failed_persistence_never_marks_hash_or_extractor_version_as_processed(session_factory):
     from sqlalchemy import select
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.models import ContestPage
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.contest import service
+    from contest_detective.contest.models import ContestPage
+    from contest_detective.research.verification import verify_recent
 
     url = 'https://organizer.example/rules'
     with session_factory() as session:
@@ -351,7 +351,7 @@ def test_grouped_aggregator_pages_do_not_crowd_out_known_registration_and_rules(
 
 
 def test_text_only_port_rejects_cross_host_redirect_instead_of_borrowing_official_identity():
-    from contest_detective.server.research_pipeline.detail import safe_page_reader
+    from contest_detective.research.detail import safe_page_reader
 
     async def redirected(_target):
         page = PageIn(url='https://news.example/mirror', site='News', title='Mirror', is_official=False)
@@ -390,5 +390,5 @@ def test_omitted_fields_require_complete_page_evidence_before_claiming_checked_a
         assert missing.reason == 'only_partial_evidence_available'
         assert set(missing.urls) == {candidate.draft.page.url, snippet_page.url}
 
-    from contest_detective.server.contest.content_service import EXTRACTOR_VERSION
+    from contest_detective.contest.content_service import EXTRACTOR_VERSION
     assert all(document.extractor_version == EXTRACTOR_VERSION == 'content-v1' for document in documents)

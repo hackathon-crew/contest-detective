@@ -1,7 +1,7 @@
 import pytest
 from contest_detective.framework.config.search import SearchSettings
-from contest_detective.server import research_pipeline
-from contest_detective.server.research_pipeline.search.base import SearchHit
+from contest_detective import research as research_pipeline
+from contest_detective.research.search.base import SearchHit
 
 
 def config(**kwargs):

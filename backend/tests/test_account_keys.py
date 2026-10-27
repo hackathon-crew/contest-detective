@@ -8,8 +8,8 @@ from account_helpers import account_client, login
 
 
 def test_personal_token_is_hashed_masked_and_invalidated_by_rotation(tmp_path):
-    from contest_detective.server.account.models import PersonalToken
-    from contest_detective.server.account.tokens import resolve_token
+    from contest_detective.system.account.models import PersonalToken
+    from contest_detective.system.account.tokens import resolve_token
 
     with account_client(tmp_path) as client:
         user_id = login(client)
@@ -30,8 +30,8 @@ def test_personal_token_is_hashed_masked_and_invalidated_by_rotation(tmp_path):
 
 
 def test_provider_keys_are_encrypted_and_used_only_for_the_owner(tmp_path, monkeypatch):
-    from contest_detective.server.account.models import AccountSettings
-    from contest_detective.server.account.providers import runtime_for
+    from contest_detective.system.account.models import AccountSettings
+    from contest_detective.system.account.providers import runtime_for
 
     monkeypatch.setenv(
         "DETECTIVE_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode()
@@ -69,7 +69,7 @@ def test_provider_keys_are_encrypted_and_used_only_for_the_owner(tmp_path, monke
 def test_provider_validation_does_not_echo_secrets_or_retarget_platform_keys(
     tmp_path, monkeypatch
 ):
-    from contest_detective.server.account.providers import runtime_for
+    from contest_detective.system.account.providers import runtime_for
 
     monkeypatch.setenv(
         "DETECTIVE_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode()

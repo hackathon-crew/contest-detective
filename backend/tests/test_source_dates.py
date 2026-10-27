@@ -14,13 +14,13 @@ import pytest
     ],
 )
 def test_source_dates_are_complete_utc_values(raw, expected):
-    from contest_detective.server.research_pipeline.sources.dates import parse_datetime
+    from contest_detective.research.sources.dates import parse_datetime
 
     assert parse_datetime(raw, default_timezone='Asia/Shanghai') == expected
 
 
 def test_english_date_range_keeps_the_shared_year():
-    from contest_detective.server.research_pipeline.sources.dates import parse_date_range
+    from contest_detective.research.sources.dates import parse_date_range
 
     assert parse_date_range('Aug 31 - Oct 23, 2026') == (
         '2026-08-31T00:00:00Z', '2026-10-23T00:00:00Z',
@@ -28,7 +28,7 @@ def test_english_date_range_keeps_the_shared_year():
 
 
 def test_english_date_range_inherits_the_shared_month():
-    from contest_detective.server.research_pipeline.sources.dates import parse_date_range
+    from contest_detective.research.sources.dates import parse_date_range
 
     assert parse_date_range('Oct 05 - 27, 2026') == (
         '2026-10-05T00:00:00Z', '2026-10-27T00:00:00Z',

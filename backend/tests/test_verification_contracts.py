@@ -1,10 +1,10 @@
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.agent.verification_contracts import (
+from contest_detective.agent.verification_contracts import (
     ClaimAssessment, ConfirmedClaim, InvestigationReport, VerificationRequestFields,
 )
-from contest_detective.server.research_pipeline.contracts import SearchExecution
+from contest_detective.research.contracts import SearchExecution
 
 
 def test_omitted_mode_preserves_legacy_selection_without_enabling_new_behavior():
@@ -60,5 +60,5 @@ def test_execution_receipt_rejects_invalid_state(override):
 
 def test_report_builder_accepts_only_reportable_modes():
     from typing import get_type_hints
-    from contest_detective.server.agent.verification_contracts import EvidenceReportBuilder, LiveVerificationMode
+    from contest_detective.agent.verification_contracts import EvidenceReportBuilder, LiveVerificationMode
     assert get_type_hints(EvidenceReportBuilder.build)["mode"] == LiveVerificationMode

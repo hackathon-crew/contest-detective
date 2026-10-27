@@ -1,6 +1,6 @@
 import httpx
 
-from contest_detective.server.research_pipeline.sources.devpost import fetch
+from contest_detective.research.sources.devpost import fetch
 
 
 def item(number):

@@ -5,7 +5,7 @@ from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
-from contest_detective.server.agent.loop import Investigator
+from contest_detective.agent.loop import Investigator
 
 
 @pytest.mark.parametrize('interrupted,assessments', [(False, []), (False, [{

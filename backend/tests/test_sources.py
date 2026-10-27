@@ -17,7 +17,7 @@ def values(draft):
 
 
 def test_one_waytoagi_detail_failure_does_not_discard_other_events():
-    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+    from contest_detective.research.sources.waytoagi import fetch
 
     listing = load('waytoagi.json')
     healthy = next(item for item in listing['items']
@@ -43,7 +43,7 @@ def test_one_waytoagi_detail_failure_does_not_discard_other_events():
 
 
 def test_one_invalid_hackertrip_event_does_not_discard_other_events():
-    from contest_detective.server.research_pipeline.sources.hackertrip import fetch
+    from contest_detective.research.sources.hackertrip import fetch
 
     healthy = load('hackertrip.json')[0]
     broken = {key: value for key, value in healthy.items() if key != 'name'}
@@ -55,7 +55,7 @@ def test_one_invalid_hackertrip_event_does_not_discard_other_events():
 
 
 def test_hackertrip_replays_public_snapshot_and_skips_past_events():
-    from contest_detective.server.research_pipeline.sources.hackertrip import fetch
+    from contest_detective.research.sources.hackertrip import fetch
 
     def handle(request):
         assert str(request.url) == 'https://hackertrip.space/api/hackathons'
@@ -79,7 +79,7 @@ def test_hackertrip_replays_public_snapshot_and_skips_past_events():
 
 
 def test_hackertrip_uses_website_when_registration_url_is_missing():
-    from contest_detective.server.research_pipeline.sources.hackertrip import fetch
+    from contest_detective.research.sources.hackertrip import fetch
 
     item = copy.deepcopy(load('hackertrip.json')[0])
     item['registration'] = None
@@ -94,7 +94,7 @@ def test_hackertrip_uses_website_when_registration_url_is_missing():
 
 
 def test_waytoagi_replays_snapshot_and_fetches_only_active_hackathon_details():
-    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+    from contest_detective.research.sources.waytoagi import fetch
 
     details = load('waytoagi_details.json')
 
@@ -118,7 +118,7 @@ def test_waytoagi_replays_snapshot_and_fetches_only_active_hackathon_details():
 
 
 def test_waytoagi_does_not_guess_the_deadline_type():
-    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+    from contest_detective.research.sources.waytoagi import fetch
 
     item = {'id': 'one', 'title': '测试赛事', 'eventKind': 'hackathon',
             'timeStatus': 'upcoming', 'date': '2026-11-01', 'eventMode': 'online'}
@@ -143,7 +143,7 @@ def test_waytoagi_does_not_guess_the_deadline_type():
     ('hosted', 'https://elsewhere.example/register', False), ('unknown', None, False),
 ])
 def test_waytoagi_self_hosted_registration_is_official_only_with_trusted_metadata(origin, external, official):
-    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+    from contest_detective.research.sources.waytoagi import fetch
 
     item = {'id': 'hosted-one', 'title': '主办活动', 'eventKind': 'hackathon',
             'timeStatus': 'upcoming', 'date': '2026-11-01', 'origin': origin, 'externalRegUrl': external}
@@ -165,7 +165,7 @@ def test_waytoagi_self_hosted_registration_is_official_only_with_trusted_metadat
     ({'location': 'Online'}, None, 'online'),
 ])
 def test_devpost_generic_location_is_not_guessed_to_be_a_city(location, city, mode):
-    from contest_detective.server.research_pipeline.sources.devpost import _draft
+    from contest_detective.research.sources.devpost import _draft
     result = _draft({'title': 'Builder Cup', 'url': 'https://builder-cup.devpost.com/',
         'open_state': 'open', 'displayed_location': location})
     assert values(result).get('city') == city
@@ -175,10 +175,10 @@ def test_devpost_generic_location_is_not_guessed_to_be_a_city(location, city, mo
 
 def test_later_devpost_sync_does_not_revive_corrected_venue_as_city(session_factory):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.schemas import ContestDraft, ClaimIn, PageIn
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-    from contest_detective.server.research_pipeline.sources.devpost import _draft
+    from contest_detective.contest import service
+    from contest_detective.contest.schemas import ContestDraft, ClaimIn, PageIn
+    from contest_detective.research.pipeline.execute import run_pipeline
+    from contest_detective.research.sources.devpost import _draft
     incoming = _draft({'title': 'Builder Cup', 'url': 'https://builder-cup.devpost.com/',
         'open_state': 'open', 'displayed_location': {'location': 'Harbor Hall'}})
     with session_factory() as session:

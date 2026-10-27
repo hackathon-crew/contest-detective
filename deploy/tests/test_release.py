@@ -19,24 +19,32 @@ TAG = 'v0.1.2'
 
 
 class ReleaseTests(unittest.TestCase):
+    def systemd(self, root, *services):
+        directory = root / 'systemd'
+        directory.mkdir()
+        for service in services or (release.SERVICE,):
+            (directory / f'{service}.service').write_text('[Service]\n')
+        return directory
+
     def bundle(self, entries=None, *, mcp=False, configuration=False):
         files = {
             'backend/pyproject.toml': b'[project]',
             'backend/uv.lock': b'version = 1',
             'backend/alembic.ini': b'[alembic]',
+            'backend/src/contest_detective/bootstrap/app.py': b'# FastAPI app',
             'frontend/dist/index.html': b'<html></html>',
             'frontend/dist/version.json': json.dumps({'commit': SHA, 'tag': TAG}).encode(),
             'RELEASE_COMMIT': SHA.encode(),
             'RELEASE_TAG': TAG.encode(),
         }
         if mcp:
-            files['backend/src/contest_detective/web/bootstrap/mcp_http.py'] = b'# HTTP transport'
+            files['backend/src/contest_detective/bootstrap/mcp_http.py'] = b'# HTTP transport'
         if configuration:
             files['deploy/server.env.example'] = (
                 b'DETECTIVE_LLM_MODEL=must-not-overwrite\n'
                 b'DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH=templates/contest_normalization.jinja2\n'
             )
-            files['backend/src/contest_detective/server/agent/normalization_prompts.py'] = b'# Prompt loader'
+            files['backend/src/contest_detective/agent/normalization_prompts.py'] = b'# Prompt loader'
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w:gz') as archive:
             if configuration:
@@ -134,6 +142,7 @@ class ReleaseTests(unittest.TestCase):
                         'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
                         'DATABASE': database, 'MAINTENANCE': maintenance,
                         'run': command, 'healthy': readiness, 'ENVIRONMENT_FILE': environment,
+                        'SYSTEMD': self.systemd(root),
                     }.items():
                         patches.enter_context(patch.object(release, name, value, create=True))
                     if scenario in ('preflight', 'migration', 'readiness'):
@@ -228,6 +237,7 @@ class ReleaseTests(unittest.TestCase):
                         'APP': app, 'RELEASES': root / 'releases',
                         'BACKUPS': root / 'backups', 'DATABASE': database,
                         'MAINTENANCE': maintenance, 'run': command, 'healthy': readiness,
+                        'SYSTEMD': self.systemd(root),
                     }.items():
                         patches.enter_context(patch.object(release, name, value))
                     with self.assertRaisesRegex(RuntimeError, 'failed'):
@@ -243,14 +253,14 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(calls[-1], ('systemctl', 'start', release.SERVICE))
 
     def test_http_service_follows_release_switch_and_rollback(self):
-        for previous_mcp, fail in [(False, False), (False, True), (True, True)]:
-            with self.subTest(previous_mcp=previous_mcp, fail=fail), tempfile.TemporaryDirectory() as folder:
+        for previous_layout, fail in [(None, False), (None, True), ('bootstrap', True), ('web/bootstrap', True)]:
+            with self.subTest(previous_layout=previous_layout, fail=fail), tempfile.TemporaryDirectory() as folder:
                 root = Path(folder)
                 app = root / 'app'
                 app.mkdir()
                 (app / 'old-code').touch()
-                if previous_mcp:
-                    module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+                if previous_layout:
+                    module = app / 'backend/src/contest_detective' / previous_layout / 'mcp_http.py'
                     module.parent.mkdir(parents=True)
                     module.touch()
                 database = root / 'contest.db'
@@ -270,6 +280,7 @@ class ReleaseTests(unittest.TestCase):
                         'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
                         'DATABASE': database, 'MAINTENANCE': root / 'maintenance',
                         'run': command, 'healthy': readiness,
+                        'SYSTEMD': self.systemd(root, release.SERVICE, release.MCP_SERVICE),
                     }.items():
                         patches.enter_context(patch.object(release, name, value))
                     if fail:
@@ -277,39 +288,91 @@ class ReleaseTests(unittest.TestCase):
                             release.deploy(self.bundle(mcp=True))
                     else:
                         release.deploy(self.bundle(mcp=True))
-                service_calls = [call for call in calls if call[:1] == ('systemctl',)]
-                self.assertEqual(service_calls[0], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
-                self.assertEqual(service_calls[1], ('systemctl', 'start', release.SERVICE, 'contest-detective-mcp'))
+                transitions = [call for call in calls
+                               if call[:2] in (('systemctl', 'start'), ('systemctl', 'stop'))]
+                self.assertEqual(transitions[0], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
+                self.assertEqual(transitions[1], ('systemctl', 'start', release.SERVICE, 'contest-detective-mcp'))
                 if fail:
-                    self.assertEqual(service_calls[2], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
-                    expected = (release.SERVICE, 'contest-detective-mcp') if previous_mcp else (release.SERVICE,)
-                    self.assertEqual(service_calls[-1], ('systemctl', 'start', *expected))
+                    self.assertEqual(transitions[2], ('systemctl', 'stop', release.SERVICE, 'contest-detective-mcp'))
+                    expected = (release.SERVICE, 'contest-detective-mcp') if previous_layout else (release.SERVICE,)
+                    self.assertEqual(transitions[-1], ('systemctl', 'start', *expected))
                     self.assertTrue((app / 'old-code').exists())
                 else:
                     self.assertEqual((app / 'RELEASE_COMMIT').read_text(), SHA)
 
-    def test_readiness_requires_mcp_initialization_when_transport_is_present(self):
-        for mcp_reply, succeeds in [({'result': {'serverInfo': {'name': '比赛侦探'}}}, True),
-                                    ({'error': {'message': 'unavailable'}}, False)]:
-            with self.subTest(succeeds=succeeds), tempfile.TemporaryDirectory() as folder:
-                app = Path(folder)
-                module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+    def test_release_services_recognizes_the_pre_split_entrypoint(self):
+        for relative in ('bootstrap/mcp_http.py', 'web/bootstrap/mcp_http.py'):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as folder:
+                directory = Path(folder)
+                module = directory / 'backend/src/contest_detective' / relative
                 module.parent.mkdir(parents=True)
                 module.touch()
+                self.assertEqual(release.release_services(directory),
+                                 (release.SERVICE, release.MCP_SERVICE))
 
-                def response(request, timeout):
-                    content = mcp_reply if isinstance(request, release.Request) else {}
-                    result = io.BytesIO(json.dumps(content).encode())
-                    result.status = 200
-                    return result
+    def test_service_command_covers_both_package_layouts(self):
+        expected = {
+            'bootstrap/app.py': ('contest_detective.bootstrap.app:app', 8000, ()),
+            'web/bootstrap/app.py': ('contest_detective.web.bootstrap.app:app', 8000, ()),
+            'bootstrap/mcp_http.py': ('contest_detective.bootstrap.mcp_http:create_app', 8001, ('--factory',)),
+            'web/bootstrap/mcp_http.py': ('contest_detective.web.bootstrap.mcp_http:create_app', 8001, ('--factory',)),
+        }
+        for relative, (module, port, flags) in expected.items():
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as folder:
+                directory = Path(folder)
+                source = directory / 'backend/src/contest_detective' / relative
+                source.parent.mkdir(parents=True)
+                source.touch()
+                service = release.MCP_SERVICE if 'mcp_http' in relative else release.SERVICE
+                self.assertEqual(
+                    release.service_command(directory, service),
+                    ' '.join((release.UVICORN, module, *flags, '--host', '127.0.0.1',
+                              '--port', str(port), '--workers', '1', '--proxy-headers',
+                              '--forwarded-allow-ips=127.0.0.1')))
 
-                with patch.object(release, 'APP', app), patch.object(release, 'urlopen', response), \
-                        patch.object(release.time, 'sleep'):
-                    if succeeds:
-                        release.healthy()
-                    else:
-                        with self.assertRaisesRegex(RuntimeError, 'MCP initialization failed'):
+    def test_installed_units_get_the_release_entrypoint(self):
+        for relative, unit in [('bootstrap/app.py', 'contest-detective.service'),
+                               ('bootstrap/mcp_http.py', 'contest-detective-mcp.service')]:
+            with self.subTest(unit=unit), tempfile.TemporaryDirectory() as folder:
+                root = Path(folder)
+                directory = root / 'release'
+                source = directory / 'backend/src/contest_detective' / relative
+                source.parent.mkdir(parents=True)
+                source.touch()
+                systemd = self.systemd(root, unit.removesuffix('.service'))
+                calls = []
+                with patch.object(release, 'SYSTEMD', systemd), \
+                        patch.object(release, 'run', lambda *args: calls.append(args)):
+                    release.configure_services(directory, release.release_services(directory))
+                exec_start = next(line for line in (SCRIPT.parent / unit).read_text().splitlines()
+                                  if line.startswith('ExecStart='))
+                self.assertEqual((systemd / (unit + '.d') / 'release.conf').read_text(),
+                                 f'[Service]\nExecStart=\n{exec_start}\n')
+                self.assertEqual(calls, [('systemctl', 'daemon-reload')])
+
+    def test_readiness_requires_mcp_initialization_when_transport_is_present(self):
+        for relative in ('bootstrap/mcp_http.py', 'web/bootstrap/mcp_http.py'):
+            for mcp_reply, succeeds in [({'result': {'serverInfo': {'name': '比赛侦探'}}}, True),
+                                        ({'error': {'message': 'unavailable'}}, False)]:
+                with self.subTest(layout=relative, succeeds=succeeds), tempfile.TemporaryDirectory() as folder:
+                    app = Path(folder)
+                    module = app / 'backend/src/contest_detective' / relative
+                    module.parent.mkdir(parents=True)
+                    module.touch()
+
+                    def response(request, timeout):
+                        content = mcp_reply if isinstance(request, release.Request) else {}
+                        result = io.BytesIO(json.dumps(content).encode())
+                        result.status = 200
+                        return result
+
+                    with patch.object(release, 'APP', app), patch.object(release, 'urlopen', response), \
+                            patch.object(release.time, 'sleep'):
+                        if succeeds:
                             release.healthy()
+                        else:
+                            with self.assertRaisesRegex(RuntimeError, 'MCP initialization failed'):
+                                release.healthy()
 
 
 if __name__ == '__main__':

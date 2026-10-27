@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 import pytest
 from sqlalchemy import inspect, text
 
-from contest_detective.server.contest import service
-from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
+from contest_detective.contest import service
+from contest_detective.contest.schemas import ContestDraft, ContestQuery
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 

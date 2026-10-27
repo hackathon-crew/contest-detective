@@ -4,9 +4,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
-from contest_detective.server.contest import service
-from contest_detective.server.contest.models import ContestPage
-from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
+from contest_detective.contest import service
+from contest_detective.contest.models import ContestPage
+from contest_detective.contest.schemas import ContestDraft, ContestQuery
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 
@@ -24,7 +24,7 @@ def seed(session, number, *, deadline=None, start=None, url=None, date_claims=()
 
 
 def test_official_only_contests_are_still_checked_for_missing_facts(session):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     url = 'https://organizer.example/official-only'
     contest_id = service.save(session, ContestDraft(name='官方赛事', page={
@@ -35,7 +35,7 @@ def test_official_only_contests_are_still_checked_for_missing_facts(session):
 
 
 def test_passed_registration_does_not_hide_an_ongoing_contest(session):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     contest_id = seed(session, 1, deadline=NOW - timedelta(days=1), start=NOW - timedelta(days=2),
                       date_claims=[{'field': 'end_at', 'value': (NOW + timedelta(days=1)).isoformat(),
@@ -45,7 +45,7 @@ def test_passed_registration_does_not_hide_an_ongoing_contest(session):
 
 
 def test_missing_dates_do_not_prevent_their_own_verification(session):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     contest_id = seed(session, 1)
 
@@ -53,7 +53,7 @@ def test_missing_dates_do_not_prevent_their_own_verification(session):
 
 
 def test_a_future_contest_is_not_rejected_by_an_arbitrary_thirty_day_window(session):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     contest_id = seed(session, 1, start=NOW + timedelta(days=45))
 
@@ -62,7 +62,7 @@ def test_a_future_contest_is_not_rejected_by_an_arbitrary_thirty_day_window(sess
 
 @pytest.mark.parametrize('field', ['start_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified'])
 def test_today_day_nodes_remain_verification_targets_after_their_anchor(session, field):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     contest_id = seed(session, 1, date_claims=[{
         'field': field, 'value': '2026-10-27', 'precision': 'day', 'excerpt': '10月27日',
@@ -82,7 +82,7 @@ def test_today_day_nodes_remain_verification_targets_after_their_anchor(session,
     ('2026-11-26', 'day', '2026-10-26T18:00:00Z', True),
 ])
 def test_verification_skips_only_confirmed_end_dates(session, value, precision, clock, expected):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     seed(session, 1, date_claims=[{
         'field': 'end_at', 'value': value, 'precision': precision, 'excerpt': value,
@@ -91,7 +91,7 @@ def test_verification_skips_only_confirmed_end_dates(session, value, precision, 
 
 
 def test_day_deadline_order_uses_the_calendar_interval_start(session):
-    from contest_detective.server.research_pipeline.verification import _targets
+    from contest_detective.research.verification import _targets
 
     day = seed(session, 1, date_claims=[{
         'field': 'registration_deadline', 'value': '2026-11-01', 'precision': 'day', 'excerpt': '11月1日',
@@ -102,7 +102,7 @@ def test_day_deadline_order_uses_the_calendar_interval_start(session):
 
 
 def test_selection_prioritizes_future_deadlines_without_rejecting_other_dates(session_factory):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     with session_factory() as session:
         late = seed(session, 1, deadline=NOW + timedelta(days=9))
         early = seed(session, 2, deadline=NOW + timedelta(days=1))
@@ -132,7 +132,7 @@ def test_selection_prioritizes_future_deadlines_without_rejecting_other_dates(se
 
 @pytest.mark.parametrize(('limit', 'expected'), [(30, 30), (100, 35)])
 def test_verification_respects_the_requested_batch_and_isolates_fetch_errors(session_factory, limit, expected):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     with session_factory() as session:
         for number in range(35):
             seed(session, number, deadline=NOW + timedelta(hours=number + 1))
@@ -155,7 +155,7 @@ def test_verification_respects_the_requested_batch_and_isolates_fetch_errors(ses
 
 
 def test_unchanged_text_skips_extraction_and_changed_text_updates_official_claim(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     monkeypatch.setattr(service, '_now', lambda: NOW)
     with session_factory() as session:
         contest_id = seed(session, 1, deadline=NOW + timedelta(days=2), start=NOW + timedelta(days=3))
@@ -195,7 +195,7 @@ def test_unchanged_text_skips_extraction_and_changed_text_updates_official_claim
 
 
 def test_a_failed_extraction_does_not_cache_the_page_hash(session_factory):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     with session_factory() as session:
         seed(session, 1, deadline=NOW + timedelta(days=1))
     calls = []
@@ -221,7 +221,7 @@ def test_explicit_contest_target_requires_an_existing_record(session):
 
 
 def test_sync_page_reader_is_supported_without_blocking_the_event_loop(session_factory):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     with session_factory() as session:
         seed(session, 1, deadline=NOW + timedelta(days=1))
     visited = []
@@ -241,7 +241,7 @@ def test_sync_page_reader_is_supported_without_blocking_the_event_loop(session_f
 
 
 def test_real_single_page_pipeline_writes_postponement_back_to_selected_contest(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
     monkeypatch.setattr(service, '_now', lambda: NOW)
     with session_factory() as session:
         contest_id = seed(session, 1, deadline=NOW + timedelta(days=2), start=NOW + timedelta(days=3))

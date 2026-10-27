@@ -5,8 +5,8 @@ from pathlib import Path
 
 import httpx
 
-from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.schemas import ContestQuery
+from contest_detective.contest import service as contests
+from contest_detective.contest.schemas import ContestQuery
 
 
 def snapshots():
@@ -18,7 +18,7 @@ def values(draft):
 
 
 def test_devpost_replays_twenty_public_pages_without_confusing_submission_and_schedule():
-    from contest_detective.server.research_pipeline.sources.devpost import fetch
+    from contest_detective.research.sources.devpost import fetch
 
     pages = snapshots()
     calls = []
@@ -55,7 +55,7 @@ def test_devpost_replays_twenty_public_pages_without_confusing_submission_and_sc
 
 
 def test_devpost_stops_on_empty_page_and_does_not_invent_missing_fields():
-    from contest_detective.server.research_pipeline.sources.devpost import fetch
+    from contest_detective.research.sources.devpost import fetch
 
     event = copy.deepcopy(snapshots()['1']['hackathons'][0])
     event.update(displayed_location={}, submission_period_dates='not supplied',
@@ -76,7 +76,7 @@ def test_devpost_stops_on_empty_page_and_does_not_invent_missing_fields():
 
 
 def test_devpost_ignores_closed_events_and_untrusted_registration_hosts():
-    from contest_detective.server.research_pipeline.sources.devpost import fetch
+    from contest_detective.research.sources.devpost import fetch
 
     valid = copy.deepcopy(snapshots()['1']['hackathons'][0])
     closed = {**valid, 'open_state': 'closed'}
@@ -88,7 +88,7 @@ def test_devpost_ignores_closed_events_and_untrusted_registration_hosts():
 
 
 def test_devpost_fixture_saves_official_evidence_and_future_deadlines_remain_upcoming(session, monkeypatch):
-    from contest_detective.server.research_pipeline.sources.devpost import fetch
+    from contest_detective.research.sources.devpost import fetch
 
     monkeypatch.setattr(contests, '_now', lambda: datetime(2026, 10, 24, tzinfo=timezone.utc))
     with httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(

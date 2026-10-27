@@ -8,14 +8,14 @@ import httpx
 import pytest
 
 from contest_detective.framework.config.app import AppSettings
-from contest_detective.server.agent.normalization import LangChainNormalizer, NormalizedContest
-from contest_detective.server.contest import service
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
-from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-from contest_detective.server.research_pipeline.pipeline.models import ContestSyncContext, ContestSyncInput
-from contest_detective.server.research_pipeline.pipeline.stages import DraftVerify, PageExtract
-from contest_detective.server.research_pipeline.search.base import SearchHit
-from contest_detective.server.research_pipeline.structured import StructuredCandidate
+from contest_detective.agent.normalization import LangChainNormalizer, NormalizedContest
+from contest_detective.contest import service
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
+from contest_detective.research.pipeline.execute import run_pipeline
+from contest_detective.research.pipeline.models import ContestSyncContext, ContestSyncInput
+from contest_detective.research.pipeline.stages import DraftVerify, PageExtract
+from contest_detective.research.search.base import SearchHit
+from contest_detective.research.structured import StructuredCandidate
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 FIXTURES = Path(__file__).parent / 'fixtures'
@@ -28,7 +28,7 @@ def draft(url, *, official=False, summary=None, name='公开字段测试赛', cl
 
 
 def test_default_sync_reads_search_and_listing_detail_bodies(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline import pages
+    from contest_detective.research import pages
 
     search_url = 'https://events.example/search-result'
     listing_url = 'https://www.huodongxing.com/event/123'
@@ -80,7 +80,7 @@ def test_default_sync_reads_search_and_listing_detail_bodies(session_factory, mo
 
 @pytest.mark.parametrize('pin_contest', [False, True])
 def test_partial_page_refresh_keeps_only_still_supported_omitted_fields(session_factory, pin_contest):
-    from contest_detective.server.research_pipeline.record import run
+    from contest_detective.research.record import run
 
     url = 'https://organizer.example/rules'
     first_body = '地点：上海。奖金池价值 150w。报名费 20 元。'
@@ -113,7 +113,7 @@ def test_partial_page_refresh_keeps_only_still_supported_omitted_fields(session_
 
 
 def test_partial_official_refresh_does_not_cache_an_omission_as_fact_removal(session_factory, caplog):
-    from contest_detective.server.research_pipeline.verification import verify_recent
+    from contest_detective.research.verification import verify_recent
 
     url = 'https://organizer.example/rules'
     with session_factory() as session:
@@ -290,8 +290,8 @@ def test_combined_verification_keeps_unstructured_official_evidence():
 
 
 def test_whitespace_excerpt_is_not_evidence_in_either_extraction_path():
-    from contest_detective.server.research_pipeline.normalization import supported_claims
-    from contest_detective.server.research_pipeline.pipeline.models import RetrievedPage
+    from contest_detective.research.normalization import supported_claims
+    from contest_detective.research.pipeline.models import RetrievedPage
 
     unsupported = ClaimIn(field='entry_fee', value='免费', excerpt=' \n\t ')
     assert supported_claims('原文没有费用信息', [unsupported]) == []
@@ -307,7 +307,7 @@ def test_whitespace_excerpt_is_not_evidence_in_either_extraction_path():
 
 
 def test_partial_recording_does_not_attribute_other_page_evidence_to_the_current_page(session_factory):
-    from contest_detective.server.research_pipeline.record import run
+    from contest_detective.research.record import run
 
     old_url = 'https://news.example/old'
     current_url = 'https://organizer.example/current'
@@ -359,7 +359,7 @@ def test_sync_reports_normalization_outcome_without_logging_page_text(session_fa
 
 @pytest.mark.parametrize(('enabled', 'reason'), [(False, 'llm_disabled'), (True, 'missing_api_key')])
 def test_bootstrap_logs_why_normalization_is_unavailable(monkeypatch, caplog, enabled, reason):
-    from contest_detective.web.bootstrap import source_sync
+    from contest_detective.bootstrap import source_sync
 
     caplog.set_level('INFO')
     monkeypatch.setattr(source_sync, 'get_llm_settings', lambda: SimpleNamespace(enabled=enabled, api_key=None))
@@ -369,7 +369,7 @@ def test_bootstrap_logs_why_normalization_is_unavailable(monkeypatch, caplog, en
 
 
 def test_clawhunt_description_fields_reach_detail_api_without_inventing_unknowns(session_factory, client, caplog):
-    from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+    from contest_detective.research.sources.waytoagi import fetch
 
     event_id = 'e_68f515d808'
     listing = json.loads((FIXTURES / 'waytoagi.json').read_text())

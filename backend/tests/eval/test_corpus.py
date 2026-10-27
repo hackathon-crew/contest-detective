@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from contest_detective.server.contest import service
-from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
+from contest_detective.contest import service
+from contest_detective.contest.schemas import ContestDraft, ContestQuery
 
 ROOT = Path(__file__).parent
 

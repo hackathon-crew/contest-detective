@@ -9,11 +9,11 @@ from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RequestUsage
 from sqlalchemy import select
 
-from contest_detective.common.exceptions import BizException
-from contest_detective.server.agent.budget import Budget
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.llm import GuardedModel
-from contest_detective.server.agent.models import LLMUsage
+from contest_detective.framework.exceptions import BizException
+from contest_detective.agent.budget import Budget
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.llm import GuardedModel
+from contest_detective.agent.models import LLMUsage
 
 
 def config(**overrides):
@@ -66,7 +66,7 @@ def test_external_context_uses_provider_capacity_and_still_records_usage(session
 def test_external_wire_request_leaves_output_capacity_to_the_provider(session_factory, monkeypatch):
     import json
     import httpx
-    from contest_detective.server.agent import llm
+    from contest_detective.agent import llm
     real_client, sent = llm.AsyncOpenAI, []
     def handle(request):
         sent.append(json.loads(request.content))

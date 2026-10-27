@@ -26,6 +26,21 @@ DATABASE = Path('/var/lib/contest-detective/contest.db')
 ENVIRONMENT_FILE = Path('/etc/contest-detective.env')
 SERVICE = 'contest-detective'
 MCP_SERVICE = 'contest-detective-mcp'
+SYSTEMD = Path('/etc/systemd/system')
+UVICORN = '/srv/contest-detective/backend/.venv/bin/uvicorn'
+# Unit files are installed by hand during first setup, so every release writes the ExecStart it
+# needs. The current layout comes first; the pre-refactor layout stays usable for rollbacks.
+ENTRYPOINTS = {
+    SERVICE: (
+        ('bootstrap/app.py', 'contest_detective.bootstrap.app:app', ()),
+        ('web/bootstrap/app.py', 'contest_detective.web.bootstrap.app:app', ()),
+    ),
+    MCP_SERVICE: (
+        ('bootstrap/mcp_http.py', 'contest_detective.bootstrap.mcp_http:create_app', ('--factory',)),
+        ('web/bootstrap/mcp_http.py', 'contest_detective.web.bootstrap.mcp_http:create_app', ('--factory',)),
+    ),
+}
+PORTS = {SERVICE: 8000, MCP_SERVICE: 8001}
 MAINTENANCE = Path('/run/contest-detective-deploying')
 MAX_BUNDLE = 256 * 1024 * 1024
 MANIFEST_NAME = 'RELEASE_MANIFEST.json'
@@ -263,9 +278,40 @@ def point_to(directory):
     os.replace(link, APP)
 
 
+def service_command(directory, service):
+    package = directory / 'backend/src/contest_detective'
+    for relative, module, flags in ENTRYPOINTS[service]:
+        if (package / relative).is_file():
+            return ' '.join((UVICORN, module, *flags, '--host', '127.0.0.1',
+                             '--port', str(PORTS[service]), '--workers', '1',
+                             '--proxy-headers', '--forwarded-allow-ips=127.0.0.1'))
+    return None
+
+
 def release_services(directory):
-    module = directory / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
-    return (SERVICE, MCP_SERVICE) if module.is_file() else (SERVICE,)
+    return (SERVICE, MCP_SERVICE) if service_command(directory, MCP_SERVICE) else (SERVICE,)
+
+
+def configure_services(directory, services):
+    """Point the installed units at the entrypoints this release provides.
+
+    Rewriting the drop-in before every start also covers a rollback to a release with the older
+    package layout, whose ExecStart differs from what is installed on the host.
+    """
+    changed = False
+    for service in services:
+        command = service_command(directory, service)
+        if command is None or not (SYSTEMD / (service + '.service')).is_file():
+            continue
+        drop_in = SYSTEMD / (service + '.service.d') / 'release.conf'
+        drop_in.parent.mkdir(parents=True, exist_ok=True, mode=0o755)
+        content = f'[Service]\nExecStart=\nExecStart={command}\n'
+        if not drop_in.is_file() or drop_in.read_text() != content:
+            drop_in.write_text(content)
+            drop_in.chmod(0o644)
+            changed = True
+    if changed:
+        run('systemctl', 'daemon-reload')
 
 
 def replace_environment(content):
@@ -303,13 +349,13 @@ def configure_environment(directory, snapshot):
 
 
 def validate_configuration(directory, unit):
-    module = directory / 'backend/src/contest_detective/server/agent/normalization_prompts.py'
+    module = directory / 'backend/src/contest_detective/agent/normalization_prompts.py'
     if not module.is_file():
         return
     # Load settings and render the template without constructing a model or starting the application.
     check = (
-        'from contest_detective.server.agent.config import get_llm_settings; '
-        'from contest_detective.server.agent.normalization_prompts import load_prompt; '
+        'from contest_detective.agent.config import get_llm_settings; '
+        'from contest_detective.agent.normalization_prompts import load_prompt; '
         'assert load_prompt(get_llm_settings().normalization_prompt_path).render().strip(); '
         'print("Normalization prompt configuration validated")'
     )
@@ -406,6 +452,7 @@ def deploy(stream):
             f'--property=WorkingDirectory={stage / "backend"}',
             str(stage / 'backend/.venv/bin/alembic'), 'upgrade', 'head')
         point_to(stage)
+        configure_services(stage, target_services)
         run('systemctl', 'start', *target_services)
         healthy(commit)
         MAINTENANCE.unlink()
@@ -425,6 +472,7 @@ def deploy(stream):
             if snapshot is not None:
                 restore_database(snapshot, DATABASE)
             point_to(previous)
+            configure_services(previous, previous_services)
             run('systemctl', 'start', *previous_services)
             healthy()
             MAINTENANCE.unlink(missing_ok=True)

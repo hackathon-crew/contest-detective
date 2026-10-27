@@ -4,8 +4,8 @@ import pytest
 from pydantic import ValidationError
 
 from contest_detective.framework.config.app import AppSettings
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, FieldValue, PageIn
-from contest_detective.server.research_pipeline.pipeline import (
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, FieldValue, PageIn
+from contest_detective.research.pipeline import (
     ContestRecord,
     ContestSyncContext,
     ContestSyncInput,
@@ -13,13 +13,13 @@ from contest_detective.server.research_pipeline.pipeline import (
     RetrievedPage,
     SequentialContestSync,
 )
-from contest_detective.server.research_pipeline.pipeline.stages import (
+from contest_detective.research.pipeline.stages import (
     DraftVerify,
     PageExtract,
     PageRetrieve,
     StructuredCollect,
 )
-from contest_detective.server.research_pipeline.search.base import SearchHit
+from contest_detective.research.search.base import SearchHit
 
 
 class Stage:
@@ -117,7 +117,7 @@ def test_retrieve_defaults_to_the_configured_yuanbao_and_tavily_search(monkeypat
         return [SearchHit(title='公开活动', url='https://example.org/one', site='example.org',
                           snippet='报名截止周五', provider='tavily')]
 
-    monkeypatch.setattr('contest_detective.server.research_pipeline.search_web', search)
+    monkeypatch.setattr('contest_detective.research.search_web', search)
     ctx = ContestSyncContext(request=ContestSyncInput(keywords=('黑客松',)))
 
     asyncio.run(PageRetrieve(listings=[]).run(ctx))

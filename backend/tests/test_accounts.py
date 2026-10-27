@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import create_engine
 
-from contest_detective.common.exceptions import BizException
-from contest_detective.web.api.mail import get_mailer
+from contest_detective.framework.exceptions import BizException
+from contest_detective.bootstrap.api.mail import get_mailer
 
 from account_helpers import account_client as app_client, login, register, request_code
 
@@ -42,7 +42,7 @@ def test_registration_requires_a_single_use_code(tmp_path):
 
 
 def test_registration_code_cooldown_expiry_and_attempt_limit(tmp_path):
-    from contest_detective.server.auth.models import RegistrationCode
+    from contest_detective.system.auth.models import RegistrationCode
 
     with app_client(tmp_path) as client:
         email='bounded@example.com'
@@ -62,7 +62,7 @@ def test_registration_code_cooldown_expiry_and_attempt_limit(tmp_path):
 
 
 def test_registration_is_blocked_when_the_code_cannot_be_sent(tmp_path):
-    from contest_detective.server.auth.models import RegistrationCode
+    from contest_detective.system.auth.models import RegistrationCode
 
     class Broken:
         def send(self, message):
@@ -76,8 +76,8 @@ def test_registration_is_blocked_when_the_code_cannot_be_sent(tmp_path):
 
 
 def test_registration_code_respects_the_shared_mail_quota(tmp_path, monkeypatch):
-    from contest_detective.server.auth import registration
-    from contest_detective.server.notifications.config import NotificationSettings
+    from contest_detective.system.auth import registration
+    from contest_detective.system.notifications.config import NotificationSettings
 
     monkeypatch.setattr(
         registration,
@@ -97,7 +97,7 @@ def test_short_password_is_rejected(tmp_path):
 
 def test_expired_and_revoked_sessions_stop_authenticating(tmp_path):
     from sqlalchemy import update
-    from contest_detective.server.auth.models import AccessToken
+    from contest_detective.system.auth.models import AccessToken
     with app_client(tmp_path) as client:
         login(client)
         engine=create_engine(f'sqlite:///{tmp_path / "account-center.db"}')

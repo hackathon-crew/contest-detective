@@ -2,13 +2,13 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from contest_detective.common.exceptions import BizException
-from contest_detective.server.notifications.ports import OutgoingMail
+from contest_detective.framework.exceptions import BizException
+from contest_detective.system.notifications.ports import OutgoingMail
 
 
 def test_resend_uses_the_api_and_reuses_the_delivery_key():
-    from contest_detective.server.notifications.config import NotificationSettings
-    from contest_detective.server.notifications.resend import ResendMailer
+    from contest_detective.system.notifications.config import NotificationSettings
+    from contest_detective.system.notifications.resend import ResendMailer
     requests = []
     def handle(request):
         requests.append(request)
@@ -27,8 +27,8 @@ def test_resend_uses_the_api_and_reuses_the_delivery_key():
 
 
 def test_resend_disabled_never_calls_the_network():
-    from contest_detective.server.notifications.config import NotificationSettings
-    from contest_detective.server.notifications.resend import ResendMailer
+    from contest_detective.system.notifications.config import NotificationSettings
+    from contest_detective.system.notifications.resend import ResendMailer
     with httpx.Client(transport=httpx.MockTransport(lambda _: pytest.fail('mail was disabled'))) as client:
         with pytest.raises(BizException):
             ResendMailer(NotificationSettings(), client=client).send(OutgoingMail(key='test', sender='x', recipient='y', subject='s', html='h', text='t'))

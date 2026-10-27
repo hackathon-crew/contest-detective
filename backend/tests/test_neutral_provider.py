@@ -5,9 +5,9 @@ import httpx
 from pydantic_ai import Agent
 from sqlalchemy import select
 
-from contest_detective.server.agent import llm
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.models import LLMUsage
+from contest_detective.agent import llm
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.models import LLMUsage
 
 
 def test_neutral_provider_sends_no_vendor_options_or_local_output_caps(session_factory, monkeypatch):

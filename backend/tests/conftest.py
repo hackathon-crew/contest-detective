@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from contest_detective.framework.db import Base, get_session, init_db
-from contest_detective.web.bootstrap.app import create_app
+from contest_detective.bootstrap.app import create_app
 
 
 @pytest.fixture

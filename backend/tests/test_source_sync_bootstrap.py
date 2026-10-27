@@ -6,9 +6,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from contest_detective.framework.config.app import AppSettings
-from contest_detective.server.contest.schemas import ContestQuery
-from contest_detective.server.contest.service import query
-from contest_detective.web.bootstrap import source_sync
+from contest_detective.contest.schemas import ContestQuery
+from contest_detective.contest.service import query
+from contest_detective.bootstrap import source_sync
 
 
 @pytest.mark.parametrize(('collect', 'llm_enabled', 'expected'), [
@@ -21,7 +21,7 @@ from contest_detective.web.bootstrap import source_sync
 def test_extractor_requires_unstructured_collection_and_a_model(
     session_factory, monkeypatch, collect, llm_enabled, expected,
 ):
-    from contest_detective.server.agent import extraction
+    from contest_detective.agent import extraction
 
     monkeypatch.delenv('DETECTIVE_SYNC_COLLECT', raising=False)
     settings = AppSettings(_env_file=None, **(
@@ -53,7 +53,7 @@ def test_environment_switch_stops_before_reading_model_configuration(monkeypatch
 
 
 def test_configured_normalizer_passes_production_session_factory(monkeypatch):
-    from contest_detective.server.agent import normalization
+    from contest_detective.agent import normalization
 
     settings = normalization.LLMSettings(_env_file=None, enabled=True, api_key='test-only')
     marker = object()
@@ -76,10 +76,10 @@ def test_configured_normalizer_passes_production_session_factory(monkeypatch):
 def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verification(
     session_factory, monkeypatch, capsys, entrypoint,
 ):
-    from contest_detective.server.agent import extraction
-    from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-    from contest_detective.web.bootstrap import app as bootstrap
+    from contest_detective.agent import extraction
+    from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
+    from contest_detective.research.pipeline.execute import run_pipeline
+    from contest_detective.bootstrap import app as bootstrap
 
     settings = AppSettings(_env_file=None, sync_collect='structured', sync_interval_minutes=360)
     monkeypatch.setattr(source_sync, 'get_app_settings', lambda: settings)

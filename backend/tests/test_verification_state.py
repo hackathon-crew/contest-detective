@@ -1,7 +1,7 @@
 import pytest
-from contest_detective.server.agent.verification import VerificationState, safe_evidence_url, scope_check
-from contest_detective.server.agent.verification_contracts import ClaimAssessment, InvestigationPlan
-from contest_detective.server.research_pipeline.contracts import SearchExecution
+from contest_detective.agent.verification import VerificationState, safe_evidence_url, scope_check
+from contest_detective.agent.verification_contracts import ClaimAssessment, InvestigationPlan
+from contest_detective.research.contracts import SearchExecution
 
 
 def receipt(n=1, query='黑客松官方规则', step='s1', status='success'):
@@ -109,7 +109,7 @@ def test_mirror_hash_uses_whole_fetched_page_not_selected_offsets():
 
 
 def test_model_markdown_and_sensitive_links_are_not_exported_as_active_markup():
-    from contest_detective.server.agent.verification import render_report
+    from contest_detective.agent.verification import render_report
     state=VerificationState('realtime','比赛 **[点这里](javascript:alert(1))** https://example.org/?token=secret',[])
     text=render_report(state.build([]))
     assert 'secret' not in text

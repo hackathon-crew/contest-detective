@@ -8,13 +8,13 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from contest_detective.common.exceptions import BizException
+from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.db import Base
-from contest_detective.server.agent import llm
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.models import LLMUsage
-from contest_detective.server.documents.schemas import DocumentQuestion
-from contest_detective.web.api.companion import get_document_answerer
+from contest_detective.agent import llm
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.models import LLMUsage
+from contest_detective.system.documents.schemas import DocumentQuestion
+from contest_detective.bootstrap.api.companion import get_document_answerer
 
 from test_document_contracts import grounded_answer, question_data
 
@@ -101,7 +101,7 @@ def test_document_instructions_stay_untrusted_and_cannot_enable_tools(session, m
 
 def test_global_instrumentation_does_not_enable_document_tracing(session, monkeypatch):
     from pydantic_ai import Agent
-    from contest_detective.server.documents import service
+    from contest_detective.system.documents import service
 
     clients, _ = provider(monkeypatch)
     created = []

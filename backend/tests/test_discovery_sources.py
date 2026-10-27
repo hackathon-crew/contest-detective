@@ -3,12 +3,12 @@ from pathlib import Path
 
 import httpx
 
-from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
-from contest_detective.server.contest.service import get, query
+from contest_detective.contest.schemas import ContestDraft, ContestQuery
+from contest_detective.contest.service import get, query
 
 
 def test_registration_search_extracts_bounded_same_site_urls():
-    from contest_detective.server.research_pipeline.sources.huodongxing import discover_urls
+    from contest_detective.research.sources.huodongxing import discover_urls
 
     snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text(encoding='utf-8')
     urls = discover_urls(snapshot)
@@ -22,8 +22,8 @@ def test_registration_search_extracts_bounded_same_site_urls():
 
 def test_registration_discovery_throttles_requests_and_saves_supported_pages(session_factory, monkeypatch):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pages import fetch_page
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pages import fetch_page
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     snapshot = (Path(__file__).parent / 'fixtures/huodongxing.html').read_text(encoding='utf-8')
     waits = []
@@ -64,9 +64,9 @@ def test_announcement_search_uses_fixed_site_deduplication_and_the_real_record_p
     from types import SimpleNamespace
 
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pages import fetch_page
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-    from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
+    from contest_detective.research.pages import fetch_page
+    from contest_detective.research.pipeline.execute import run_pipeline
+    from contest_detective.research.search.yuanbao import YuanbaoSearch
 
     queries = []
 

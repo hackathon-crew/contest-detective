@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
-from contest_detective.server.user.schemas import Profile
+from contest_detective.system.user.schemas import Profile
 
 
 def test_match_endpoint_returns_reasons_and_empty_profile_is_empty(client, session, monkeypatch):
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.schemas import ContestDraft
-    from contest_detective.server.user import matching
+    from contest_detective.contest import service
+    from contest_detective.contest.schemas import ContestDraft
+    from contest_detective.system.user import matching
     monkeypatch.setattr(matching, '_now', lambda: datetime(2026, 10, 24, tzinfo=timezone.utc))
     service.save(session, ContestDraft(name='Python周末', summary='Python应用',
         page={'url': 'https://event.example', 'site': '报名页', 'title': 'Python周末', 'is_official': True},
@@ -23,7 +23,7 @@ def test_match_endpoint_returns_reasons_and_empty_profile_is_empty(client, sessi
 
 
 def test_github_draft_and_raw_resume_draft_do_not_require_login(client):
-    from contest_detective.web.api.profile import get_github_builder, get_resume_extractor
+    from contest_detective.bootstrap.api.profile import get_github_builder, get_resume_extractor
 
     async def github(username):
         assert username == 'octocat'
@@ -46,7 +46,7 @@ def test_github_draft_and_raw_resume_draft_do_not_require_login(client):
 
 
 def test_resume_stream_has_size_limit_and_does_not_expose_extractor_errors(client, caplog):
-    from contest_detective.web.api.profile import get_resume_extractor
+    from contest_detective.bootstrap.api.profile import get_resume_extractor
 
     async def extract(text):
         raise ValueError('private-contact@example.com')
@@ -68,8 +68,8 @@ def test_confirmed_profile_roundtrips_structured_preferences(tmp_path):
     from sqlalchemy.orm import sessionmaker
     from account_helpers import Mailbox, request_code
     from contest_detective.framework.db import get_session
-    from contest_detective.web.api.mail import get_mailer
-    from contest_detective.web.bootstrap.app import create_app
+    from contest_detective.bootstrap.api.mail import get_mailer
+    from contest_detective.bootstrap.app import create_app
     path = tmp_path / 'profile.db'
     engine = create_engine('sqlite:///' + str(path), connect_args={'check_same_thread': False})
     sessions = sessionmaker(bind=engine, expire_on_commit=False)

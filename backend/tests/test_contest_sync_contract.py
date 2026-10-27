@@ -1,8 +1,8 @@
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.contest.schemas import FieldValue
-from contest_detective.server.research_pipeline.pipeline import ContestRecord, ContestSyncContext, ContestSyncInput, ContestSyncOutput
+from contest_detective.contest.schemas import FieldValue
+from contest_detective.research.pipeline import ContestRecord, ContestSyncContext, ContestSyncInput, ContestSyncOutput
 
 
 def test_sync_input_is_the_contest_query_and_its_limits():

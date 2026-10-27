@@ -10,10 +10,10 @@ from pydantic_ai.models.function import FunctionModel
 from agent_responses import answer_part
 
 from contest_detective.framework.db import SessionLocal
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.user import service as users
-from contest_detective.web.api.agent import get_investigator
-from contest_detective.web.bootstrap.app import create_app
+from contest_detective.agent.loop import Investigator
+from contest_detective.system.user import service as users
+from contest_detective.bootstrap.api.agent import get_investigator
+from contest_detective.bootstrap.app import create_app
 
 
 TZ = timezone(timedelta(hours=8))

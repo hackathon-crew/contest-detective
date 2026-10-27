@@ -5,11 +5,11 @@ from pydantic_ai.models.function import FunctionModel
 from sqlalchemy import select
 
 from agent_responses import answer_part
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.models import TraceRecord
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.contest.service import save
-from contest_detective.server.user.schemas import Profile
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.models import TraceRecord
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.contest.service import save
+from contest_detective.system.user.schemas import Profile
 
 
 def seed(factory, name, slug):
@@ -114,7 +114,7 @@ def test_unobserved_card_cannot_block_the_reply(session_factory):
 
 
 def test_shared_registration_page_does_not_recommend_every_linked_contest(client, session_factory):
-    from contest_detective.server.contest import service
+    from contest_detective.contest import service
     first = seed(session_factory, '候选甲', 'first')
     second = seed(session_factory, '候选乙', 'second')
     for contest_id, name in [(first, '候选甲'), (second, '候选乙')]:

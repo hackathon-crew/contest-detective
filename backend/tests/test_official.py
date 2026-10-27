@@ -18,7 +18,7 @@ import pytest
     ('file:///event', 'file:///register', None, False, False),
 ])
 def test_source_rules_determine_official_status(url, registration_url, origin, external, expected):
-    from contest_detective.server.research_pipeline.official import is_official_page
+    from contest_detective.research.official import is_official_page
 
     assert is_official_page(url, registration_url=registration_url, origin=origin,
                            external_registration=external) is expected
@@ -26,7 +26,7 @@ def test_source_rules_determine_official_status(url, registration_url, origin, e
 
 @pytest.mark.parametrize('url', ['https://sample.devpost.com/', 'https://events.waytoagi.com/events/one'])
 def test_trusted_registration_classification_survives_schema_roundtrip(url):
-    from contest_detective.server.contest.schemas import PageIn, Source
+    from contest_detective.contest.schemas import PageIn, Source
 
     page = PageIn(url=url, site='报名页', title='活动', is_official=True)
     assert page.is_official is True

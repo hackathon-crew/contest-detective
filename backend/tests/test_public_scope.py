@@ -4,10 +4,10 @@ import httpx
 import pytest
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RunUsage, UsageLimits
-from contest_detective.server.agent.scope import classify_scope
-from contest_detective.server.agent.public_pages import fetch_public_evidence
-from contest_detective.server.agent.verification import scope_check, export_text, safe_evidence_url
-from contest_detective.server.account.schemas import SearchPreferences
+from contest_detective.agent.scope import classify_scope
+from contest_detective.agent.public_pages import fetch_public_evidence
+from contest_detective.agent.verification import scope_check, export_text, safe_evidence_url
+from contest_detective.system.account.schemas import SearchPreferences
 
 
 @pytest.mark.parametrize('text', [
@@ -83,11 +83,11 @@ def test_all_frontend_sensitive_parameter_spellings_are_blocked_before_provider(
 
 @pytest.mark.parametrize('site',['https://example.org/?token=secret','127.0.0.1','internal.local','https://user:pass@example.org','example.org/private/path'])
 def test_site_filter_rejects_private_and_credential_targets(site):
-    from contest_detective.server.agent.verification import public_search_site
+    from contest_detective.agent.verification import public_search_site
     with pytest.raises(ValueError): public_search_site(site)
 
 
 def test_site_filter_only_returns_public_hostname():
-    from contest_detective.server.agent.verification import public_search_site
+    from contest_detective.agent.verification import public_search_site
     assert public_search_site('https://www.example.org/')=='www.example.org'
     assert public_search_site('example.org')=='example.org'

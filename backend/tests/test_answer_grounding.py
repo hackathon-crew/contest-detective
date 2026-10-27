@@ -3,8 +3,8 @@ import copy
 
 import pytest
 
-from contest_detective.server.agent.answer_grounding import check_answer_precision
-from contest_detective.server.contest.schemas import ContestSummary
+from contest_detective.agent.answer_grounding import check_answer_precision
+from contest_detective.contest.schemas import ContestSummary
 
 
 def contest(key, name, value, *, precision='day', field='submission_deadline'):
@@ -206,7 +206,7 @@ def test_as_of_prefix_does_not_invent_an_event_deadline():
 
 
 def test_quote_comparison_accepts_literal_dates_without_database_records():
-    from contest_detective.server.agent.answer_grounding import check_evidence_precision
+    from contest_detective.agent.answer_grounding import check_evidence_precision
     assert check_evidence_precision('报名截止是10月25日。', ['报名10月25日截止']) == []
     assert check_evidence_precision('报名截止是10月25日14:00。', ['报名10月25日截止'])
     assert check_evidence_precision('报名截止是10月25日14:00 PST。', ['报名10月25日14:00截止'])
@@ -215,7 +215,7 @@ def test_quote_comparison_accepts_literal_dates_without_database_records():
 
 
 def test_refuted_comparison_distinguishes_disputed_date_from_replacement():
-    from contest_detective.server.agent.answer_grounding import check_evidence_precision
+    from contest_detective.agent.answer_grounding import check_evidence_precision
     source=['报名截止10月26日']
     assert check_evidence_precision('报名截止不是10月25日，而是10月26日。',source)==[]
     assert check_evidence_precision('报名截止不是10月25日而是10月26日。',source)==[]

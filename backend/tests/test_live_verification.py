@@ -2,10 +2,10 @@ import asyncio
 from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
 from sqlalchemy import select
-from contest_detective.server.agent.loop import Investigator, create_investigator
-from contest_detective.server.agent.models import Investigation
-from contest_detective.server.agent.schemas import AskRequest
-from contest_detective.server.agent.verification_contracts import ScopeDecision
+from contest_detective.agent.loop import Investigator, create_investigator
+from contest_detective.agent.models import Investigation
+from contest_detective.agent.schemas import AskRequest
+from contest_detective.agent.verification_contracts import ScopeDecision
 from contest_detective.framework.config.search import SearchSettings
 from agent_responses import answer_part
 import pytest
@@ -31,7 +31,7 @@ def test_request_preserves_legacy_and_accepts_confirmed_claims():
 
 @pytest.mark.parametrize('mode', ['realtime', 'deep'])
 def test_factory_disables_strict_modes_without_requiring_yuanbao(monkeypatch, mode):
-    monkeypatch.setattr('contest_detective.server.agent.llm.create_model',
+    monkeypatch.setattr('contest_detective.agent.llm.create_model',
         lambda **_: FunctionModel(lambda *_: ModelResponse([answer_part('普通推荐') ])))
     investigator = create_investigator(mode=mode, search_settings=SearchSettings(_env_file=None))
     assert investigator.mode is None
@@ -143,8 +143,8 @@ def test_edited_screenshot_personal_claim_is_rechecked_before_provider(session_f
 
 
 def test_day_precision_metadata_cannot_block_the_final_reply(session_factory):
-    from contest_detective.server.contest.service import save
-    from contest_detective.server.contest.schemas import ContestDraft
+    from contest_detective.contest.service import save
+    from contest_detective.contest.schemas import ContestDraft
     with session_factory() as session:
         contest_id=save(session,ContestDraft(name='Codex Buildathon',page={'url':'https://codex.devpost.com/rules','title':'规则','site':'Devpost','is_official':True},claims=[
             {'field':'submission_deadline','value':'2026-11-02T00:00:00Z','precision':'day','excerpt':'Submission deadline November 2, 2026'}]))
@@ -165,8 +165,8 @@ def test_day_precision_metadata_cannot_block_the_final_reply(session_factory):
 
 
 def test_http_uses_the_effective_executor_mode(client):
-    from contest_detective.web.api.agent import get_investigator
-    from contest_detective.server.agent.schemas import TraceEvent
+    from contest_detective.bootstrap.api.agent import get_investigator
+    from contest_detective.agent.schemas import TraceEvent
     received={}
     class FakeInvestigator:
         mode = None
@@ -229,8 +229,8 @@ def test_all_edited_claims_checked_before_even_scope_model(session_factory):
 
 @pytest.mark.parametrize('mode',[None,'realtime'])
 def test_record_page_never_launders_unverified_registration_domain(session_factory,mode):
-    from contest_detective.server.contest.schemas import ContestDraft
-    from contest_detective.server.contest.service import save
+    from contest_detective.contest.schemas import ContestDraft
+    from contest_detective.contest.service import save
     with session_factory() as session:
         contest_id=save(session,ContestDraft(name='测试黑客松',page={'url':'https://reposted.example/event','site':'转载','title':'赛事转载','is_official':False},claims=[{'field':'registration_url','value':'https://unverified.example/register','excerpt':'报名页面'}]))
         session.commit()
@@ -268,8 +268,8 @@ def test_model_site_argument_cannot_bypass_provider_boundary(session_factory,sit
 
 
 def test_strict_unsafe_database_sources_never_reach_model_trace_or_final_sources(session_factory):
-    from contest_detective.server.contest.schemas import ContestDraft
-    from contest_detective.server.contest.service import save
+    from contest_detective.contest.schemas import ContestDraft
+    from contest_detective.contest.service import save
     with session_factory() as session:
         contest_id=save(session,ContestDraft(name='公开黑客松',page={'url':'https://example.org/rules?token=do-not-export','site':'网站','title':'规则','is_official':False},claims=[{'field':'eligibility','value':'公开参赛','excerpt':'公开参赛'}]))
         session.commit()
@@ -289,8 +289,8 @@ def test_strict_unsafe_database_sources_never_reach_model_trace_or_final_sources
 
 
 def test_strict_sanitizer_preserves_omitted_source_identity_semantics(session_factory):
-    from contest_detective.server.agent.tools import ToolDeps
-    from contest_detective.server.agent.verification import VerificationState
+    from contest_detective.agent.tools import ToolDeps
+    from contest_detective.agent.verification import VerificationState
     deps=ToolDeps(session_factory,FunctionModel(lambda *_:ModelResponse([answer_part('test')])),verification=VerificationState('realtime','比赛',[]))
     url='https://event.devpost.com/rules'
     deps.remember([{'title':'官方规则','url':url,'is_official':True}])

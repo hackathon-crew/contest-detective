@@ -12,10 +12,10 @@ from pydantic_ai.models.function import FunctionModel
 from sqlalchemy import MetaData, create_engine, select
 
 from contest_detective.framework import db
-from contest_detective.server.agent.extraction import create_page_extractor
-from contest_detective.server.contest import service
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, Source
-from contest_detective.server.contest.verification import resolve
+from contest_detective.agent.extraction import create_page_extractor
+from contest_detective.contest import service
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery, Source
+from contest_detective.contest.verification import resolve
 
 
 def draft(*claims, url='https://calendar.devpost.com/', official=True):
@@ -121,7 +121,7 @@ def test_extraction_instructions_and_output_preserve_day_precision():
 
 
 def test_structured_adapters_preserve_date_only_without_downgrading_exact_deadlines():
-    from contest_detective.server.research_pipeline.sources import devpost, waytoagi
+    from contest_detective.research.sources import devpost, waytoagi
     event = {'id': 'one', 'title': '日期活动', 'eventKind': 'hackathon', 'timeStatus': 'upcoming',
              'date': '2026-10-27', 'endDate': '2026-10-28', 'deadline': '2026-10-26T23:59'}
     def handle(request):

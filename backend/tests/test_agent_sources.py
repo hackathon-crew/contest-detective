@@ -5,9 +5,9 @@ from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
 
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.contest.service import save
+from contest_detective.agent.loop import Investigator
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.contest.service import save
 
 
 def test_final_sources_distinguish_verified_official_pages_from_search_leads(session_factory):

@@ -12,7 +12,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.db import get_session, init_db
-from contest_detective.web.bootstrap.mcp import create_server
+from contest_detective.bootstrap.mcp import create_server
 from test_mcp import counts, seed
 
 
@@ -28,9 +28,9 @@ def database(tmp_path):
 
 
 def test_http_sdk_reads_the_same_evidence_as_stdio_and_web_without_side_effects(database, monkeypatch):
-    from contest_detective.server.agent import llm
-    from contest_detective.web.bootstrap.app import create_app as create_web_app
-    from contest_detective.web.bootstrap.mcp_http import create_app
+    from contest_detective.agent import llm
+    from contest_detective.bootstrap.app import create_app as create_web_app
+    from contest_detective.bootstrap.mcp_http import create_app
 
     url, bind, factory, contest_id = database
     before = counts(bind)
@@ -125,14 +125,14 @@ def initialize(client, headers=None):
     ({'Origin': 'null'}, 403),
 ])
 def test_http_enforces_public_host_and_origin_allowlists(database, headers, status):
-    from contest_detective.web.bootstrap.mcp_http import create_app
+    from contest_detective.bootstrap.mcp_http import create_app
 
     with TestClient(create_app(database_url=database[0]), base_url='http://127.0.0.1') as client:
         assert initialize(client, headers).status_code == status
 
 
 def test_http_bounds_request_size_and_does_not_keep_browser_sessions(database):
-    from contest_detective.web.bootstrap.mcp_http import create_app
+    from contest_detective.bootstrap.mcp_http import create_app
 
     with TestClient(create_app(database_url=database[0]), base_url='http://127.0.0.1') as client:
         initialized = initialize(client)
@@ -146,7 +146,7 @@ def test_http_bounds_request_size_and_does_not_keep_browser_sessions(database):
 
 
 def test_missing_database_fails_startup_without_creating_a_file(tmp_path):
-    from contest_detective.web.bootstrap.mcp_http import create_app
+    from contest_detective.bootstrap.mcp_http import create_app
 
     path = tmp_path / 'absent.db'
     with pytest.raises(OperationalError), TestClient(create_app(database_url=f'sqlite:///{path}')):

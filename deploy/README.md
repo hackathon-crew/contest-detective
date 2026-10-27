@@ -94,6 +94,8 @@ sudo nginx -t && sudo systemctl reload nginx
 
 首次启用 MCP 时，在发布包含 HTTP 入口的版本前安装上述 unit、代理配置与部署脚本；部署脚本在切换代码后启动 MCP。首次发布成功后执行 `sudo systemctl enable contest-detective-mcp`，使其开机启动。不要在仍运行旧版本代码时启动该 unit。
 
+部署脚本在每次切换后按目标版本实际存在的入口重写 `/etc/systemd/system/<unit>.service.d/release.conf`（网站与 MCP 分别处理），并执行 `systemctl daemon-reload`。因此升级、重新部署和回退到旧包结构的版本都不需要手工修改 unit；但 unit 文件本身仍需按上述命令在首次安装时放入。
+
 MCP 不执行迁移或采集，赛事与个人资料查询使用 SQLite `mode=ro`；缺库或缺表时启动失败。个人令牌鉴权另用连接更新最近使用时间，因此 systemd 允许服务写入同一数据目录；工具不提供业务数据写入操作。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
 
 为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
@@ -118,7 +120,7 @@ Action 先通过同一受限 SSH 入口读取当前发布的文件 SHA-256 清�
 
 启用增量部署前，管理员须先用上述安装命令更新 `/usr/local/sbin/contest-detective-deploy`；SSH 公钥、sudoers 与授权范围保持原配置。清单接口只列出可发布文件，不包含运行环境、虚拟环境或密钥。Action 会保留自身版本的打包工具，因此手动重新部署旧 tag 时也使用当前增量协议。
 
-增量包包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `server/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
+增量包包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `backend/src/contest_detective/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
 
 后端、nginx、前端版本与 MCP 初始化检查通过后恢复访问。失败会恢复本次补配前的环境文件、旧代码与数据库，并按旧版本能力启动服务；模板检查失败时网站尚未停止。回退到尚无 HTTP 入口的版本时保持 MCP 停止。恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective -u contest-detective-mcp` 后处理。环境文件原件仅在补配时保存到备份目录的 `environment`，权限为 600。
 

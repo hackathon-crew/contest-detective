@@ -5,10 +5,10 @@ from pydantic import ValidationError
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 
-from contest_detective.server.agent.extraction import create_page_extractor
-from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery
-from contest_detective.server.research_pipeline import run
+from contest_detective.agent.extraction import create_page_extractor
+from contest_detective.contest import service as contests
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery
+from contest_detective.research import run
 
 CASES = [
     ('venue', '上海市徐汇区示例会场'),

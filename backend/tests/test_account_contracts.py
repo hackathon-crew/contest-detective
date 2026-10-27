@@ -23,7 +23,7 @@ def test_account_storage_is_migrated_with_owner_constraints(tmp_path):
 
 
 def test_push_and_tracking_contracts_reject_ambiguous_values():
-    schemas = importlib.import_module('contest_detective.server.account.schemas')
+    schemas = importlib.import_module('contest_detective.system.account.schemas')
     with pytest.raises(ValidationError):
         schemas.PushSettings(time='25:00')
     with pytest.raises(ValidationError):

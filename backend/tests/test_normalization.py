@@ -6,18 +6,18 @@ from langchain_core.messages import AIMessage
 from sqlalchemy import select
 from pydantic import ValidationError
 
-from contest_detective.server.agent.budget import Budget
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.models import LLMUsage
-from contest_detective.server.agent.normalization import (
+from contest_detective.agent.budget import Budget
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.models import LLMUsage
+from contest_detective.agent.normalization import (
     LangChainNormalizer,
     NormalizedContest,
     create_normalizer,
 )
-from contest_detective.server.agent.normalization_parser import parse_normalized, usage_from_response
-from contest_detective.server.agent.normalization_prompts import build_messages, load_prompt
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
-from contest_detective.server.research_pipeline.normalization import NormalizationInput
+from contest_detective.agent.normalization_parser import parse_normalized, usage_from_response
+from contest_detective.agent.normalization_prompts import build_messages, load_prompt
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.research.normalization import NormalizationInput
 
 
 def item(context='赛事正文包含：地点：上海'):
@@ -191,7 +191,7 @@ def test_budget_governance_settles_usage(session_factory):
         return raw
 
     async def run():
-        from contest_detective.server.agent.normalization_governance import (
+        from contest_detective.agent.normalization_governance import (
             LangChainBudgetGovernance,
         )
 
@@ -218,7 +218,7 @@ def test_budget_governance_cancels_reservation_before_provider_request(session_f
         raise AssertionError('provider request must be blocked')
 
     async def run():
-        from contest_detective.server.agent.normalization_governance import (
+        from contest_detective.agent.normalization_governance import (
             LangChainBudgetGovernance,
         )
 
@@ -244,7 +244,7 @@ def test_budget_governance_keeps_reservation_after_provider_error(session_factor
         raise RuntimeError('provider failed')
 
     async def run():
-        from contest_detective.server.agent.normalization_governance import (
+        from contest_detective.agent.normalization_governance import (
             LangChainBudgetGovernance,
         )
 

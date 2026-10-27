@@ -5,8 +5,8 @@ from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RequestUsage
 
-from contest_detective.server.agent.extraction import ExtractedContest, create_page_extractor
-from contest_detective.server.agent.normalization import NormalizedContest
+from contest_detective.agent.extraction import ExtractedContest, create_page_extractor
+from contest_detective.agent.normalization import NormalizedContest
 
 FACTS = {
     'name': '公开赛事',

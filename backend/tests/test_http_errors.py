@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from contest_detective.web.bootstrap.app import create_app
+from contest_detective.bootstrap.app import create_app
 
 
 def test_missing_route_uses_response_envelope():
