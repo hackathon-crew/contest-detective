@@ -79,12 +79,12 @@ def test_retrieval_rejects_page_size_above_twenty_before_observing_contests(deps
     assert deps.contest_ids == set() and deps.observed_contests == {} and deps.sources == {}
 
 
-def test_search_does_not_filter_out_past_deadlines(deps):
+def test_explicit_history_search_keeps_past_deadlines(deps):
     with deps.session_factory() as session:
         service.save(session, ContestDraft(name='已过截止比赛', page={
             'url': 'https://organizer.example/old', 'site': '主办方', 'title': '往期规则', 'is_official': True,
         }, claims=[{'field': 'submission_deadline', 'value': '2026-10-20', 'precision': 'day', 'excerpt': '已过截止'}]))
-    result = call_tool(deps, 'search_contests', {'keyword': '已过截止'})[-1].content
+    result = call_tool(deps, 'search_contests', {'keyword': '已过截止', 'status': 'ended'})[-1].content
     assert len(result['items']) == 1
     assert result['items'][0]['status'] == 'ended'
     assert result['items'][0]['next_deadline'] is None

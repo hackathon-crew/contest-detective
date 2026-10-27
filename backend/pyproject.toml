@@ -55,6 +55,7 @@ packages = ["src/contest_detective"]
 dev = [
     "import-linter>=2.15",
     "pytest>=9.1.1",
+    "time-machine>=3.1",
 ]
 
 [tool.importlinter]

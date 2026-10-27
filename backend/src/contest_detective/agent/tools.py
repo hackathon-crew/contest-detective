@@ -15,7 +15,7 @@ from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
-from contest_detective.contest.schemas import ContestQuery, EvidenceField, DEADLINE_FIELDS, date_bounds
+from contest_detective.contest.schemas import ContestQuery, EvidenceField
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user import matching
@@ -102,13 +102,6 @@ class ToolDeps:
             for domain in self.preferences.blocked_domains)
 
     def allows_contest(self, item):
-        if self.preferences is None:
-            return True
-        if self.preferences.exclude_ended:
-            deadlines = [v for name, v in item.fields.items() if name in DEADLINE_FIELDS and v.value]
-            now = datetime.now(timezone.utc)
-            if item.status == 'ended' or (deadlines and all(date_bounds(v.value, v.precision)[1] <= now for v in deadlines)):
-                return False
         return not any(not self.allows_url(source.url) for value in item.fields.values() for source in value.sources)
 
     def remember(self, sources):
@@ -156,10 +149,14 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                               date_from: datetime | None = None, date_to: datetime | None = None,
                               sort: Literal['deadline', 'start'] = 'deadline', page: Annotated[int, Field(ge=1)] = 1,
                               page_size: Annotated[int, Field(ge=1, le=20)] = 20) -> dict:
-        """查询候选名片；page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。"""
+        """查询候选名片；未传 status 时遵循账户默认截止过滤开关，无账户时启用。显式 status 可查历史。
+
+        page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。
+        """
         with ctx.deps.session_factory() as session:
             items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
                 date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
+                attendable=status is None and (ctx.deps.preferences is None or ctx.deps.preferences.exclude_ended),
                 accept=ctx.deps.allows_contest if ctx.deps.preferences else None)
         for item in items:
             ctx.deps.observe_contest(item)

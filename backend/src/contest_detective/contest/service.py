@@ -147,8 +147,10 @@ def _refresh(session, contest, now):
 
 def _status(contest, details, now):
     if details.start_at is None:
-        return 'upcoming' if any(_deadline_available(details.fields.get(field, {}), now)
-                                 for field in DEADLINE_FIELDS) else 'ended'
+        if details.end_at and now >= date_bounds(details.end_at, details.fields.get('end_at', {}).get('precision', 'datetime'))[1]:
+            return 'ended'
+        deadlines = [details.fields[field] for field in DEADLINE_FIELDS if details.fields.get(field, {}).get('value')]
+        return 'upcoming' if not deadlines or any(_deadline_available(value, now) for value in deadlines) else 'ended'
     start = date_bounds(details.start_at, details.fields.get('start_at', {}).get('precision', 'datetime'))[0]
     end = date_bounds(details.end_at, details.fields.get('end_at', {}).get('precision', 'datetime'))[1] if details.end_at else start + timedelta(days=1)
     if now < start:
@@ -365,7 +367,7 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     return contest.id
 
 
-def query(session: Session, q: ContestQuery, *, accept=None) -> tuple[list[ContestSummary], int]:
+def query(session: Session, q: ContestQuery, *, attendable=False, accept=None) -> tuple[list[ContestSummary], int]:
     statement = select(Contest)
     if q.ids is not None:
         statement = statement.where(Contest.id.in_(q.ids))
@@ -387,6 +389,10 @@ def query(session: Session, q: ContestQuery, *, accept=None) -> tuple[list[Conte
     results = []
     for contest in session.scalars(statement):
         summary = _summary(session, contest, now)
+        if attendable and (summary.status == 'ended' or any(
+                value.value is not None and not _deadline_available(value.model_dump(), now)
+                for name, value in summary.fields.items() if name in DEADLINE_FIELDS)):
+            continue
         if accept is not None and not accept(get(session, contest.id)):
             continue
         if q.status and summary.status != q.status:
