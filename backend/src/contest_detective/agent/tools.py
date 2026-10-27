@@ -5,11 +5,11 @@ import logging
 from functools import wraps
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime, timezone
-from typing import Callable, Literal
+from typing import Annotated, Callable, Literal
 from urllib.parse import urlsplit
 from uuid import uuid4
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models import Model
 
@@ -144,20 +144,19 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                               status: Literal['upcoming', 'ongoing', 'ended'] | None = None,
                               mode: Literal['online', 'offline', 'hybrid'] | None = None,
                               date_from: datetime | None = None, date_to: datetime | None = None,
-                              sort: Literal['deadline', 'start'] = 'deadline', page: int = 1, page_size: int = 20) -> dict:
-        """查询比赛库；用 page 和 page_size 翻页，has_more 表示还有结果，get_contest 可读具体出处。"""
+                              sort: Literal['deadline', 'start'] = 'deadline', page: Annotated[int, Field(ge=1)] = 1,
+                              page_size: Annotated[int, Field(ge=1, le=20)] = 20) -> dict:
+        """查询候选名片；page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。"""
         with ctx.deps.session_factory() as session:
             items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
                 date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
                 accept=ctx.deps.allows_contest if ctx.deps.preferences else None)
         for item in items:
             ctx.deps.observe_contest(item)
-        sources = [source for item in items for source in contest_sources(item)]
         ctx.deps.contest_ids.update(item.id for item in items)
-        ctx.deps.remember(sources)
-        return {'items': [plain(item) for item in items], 'total': total,
+        return {'items': [plain(contests.brief(item)) for item in items], 'total': total,
                 'page': page, 'page_size': page_size, 'has_more': page * page_size < total,
-                'summary': f'找到 {total} 场比赛，本页 {len(items)} 场', 'sources': sources}
+                'summary': f'找到 {total} 场比赛，本页 {len(items)} 场'}
 
     @research_tool
     async def get_contest(ctx: RunContext[ToolDeps], contest_id: str) -> dict:
@@ -173,21 +172,29 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
     @research_tool
-    async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None) -> dict:
-        """按已确认画像筛选比赛并生成证据理由；不编造画像，赛事日期需再读 get_contest 出处。"""
+    async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None,
+                             page: Annotated[int, Field(ge=1)] = 1,
+                             page_size: Annotated[int, Field(ge=1, le=20)] = 20) -> dict:
+        """按已确认画像返回候选名片和匹配理由，每页最多 20 场；答复具体字段前先读 get_contest 出处。"""
         selected = profile if profile is not None else ctx.deps.profile
         if selected is None or not matching.has_preferences(selected):
-            return {'items': [], 'summary': '请先确认画像，再按你的情况挑比赛', 'sources': []}
+            return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'has_more': False,
+                    'summary': '请先确认画像，再按你的情况挑比赛', 'sources': []}
         with ctx.deps.session_factory() as session:
             items = matching.match(session, selected, limit=None)
-            items = [item for item in items if ctx.deps.allows_contest(item.contest)][:20]
+            items = [item for item in items if ctx.deps.allows_contest(item.contest)]
+        total = len(items)
+        offset = (page - 1) * page_size
+        items = items[offset:offset + page_size]
         for item in items:
             ctx.deps.observe_contest(item.contest)
         ctx.deps.contest_ids.update(item.contest.id for item in items)
         sources = [{'title': repo.name, 'url': repo.url, 'site': 'GitHub'}
                    for repo in selected.github_evidence if any(repo.url in item.reason for item in items)]
         ctx.deps.remember(sources)
-        return {'items': [plain(item) for item in items], 'summary': f'按已确认画像找到 {len(items)} 场比赛',
+        return {'items': [{'contest': plain(contests.brief(item.contest)), 'score': item.score, 'reason': item.reason}
+                          for item in items], 'total': total, 'page': page, 'page_size': page_size,
+                'has_more': page * page_size < total, 'summary': f'按已确认画像找到 {total} 场比赛，本页 {len(items)} 场',
                 'sources': sources}
 
     if verification_enabled:
