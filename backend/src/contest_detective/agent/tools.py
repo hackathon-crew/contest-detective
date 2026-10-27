@@ -157,7 +157,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
                 date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
                 attendable=status is None and (ctx.deps.preferences is None or ctx.deps.preferences.exclude_ended),
-                accept=ctx.deps.allows_contest if ctx.deps.preferences else None)
+                blocked_domains=ctx.deps.preferences.blocked_domains if ctx.deps.preferences else ())
         for item in items:
             ctx.deps.observe_contest(item)
         ctx.deps.contest_ids.update(item.id for item in items)

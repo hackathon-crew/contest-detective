@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from contest_detective.framework.db import Base
@@ -28,6 +28,18 @@ class Contest(Base):
 class ContestDetails(Base):
     __tablename__ = 'contest_details'
 
+    # UTC 微秒窗口用于 SQL 比较；原始 value 与 precision 仍是公开字段的真值。
+    start_at_lower: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    start_at_upper: Mapped[int | None] = mapped_column(BigInteger)
+    end_at_lower: Mapped[int | None] = mapped_column(BigInteger)
+    end_at_upper: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    registration_deadline_lower: Mapped[int | None] = mapped_column(BigInteger)
+    registration_deadline_upper: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    submission_deadline_lower: Mapped[int | None] = mapped_column(BigInteger)
+    submission_deadline_upper: Mapped[int | None] = mapped_column(BigInteger, index=True)
+    deadline_unspecified_lower: Mapped[int | None] = mapped_column(BigInteger)
+    deadline_unspecified_upper: Mapped[int | None] = mapped_column(BigInteger, index=True)
+
     introduction: Mapped[dict | None] = mapped_column(JSON)
     documents: Mapped[list] = mapped_column(JSON, default=list, server_default='[]')
     coverage: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
@@ -52,6 +64,7 @@ class ContestPage(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     url: Mapped[str] = mapped_column(Text, unique=True)
+    host: Mapped[str | None] = mapped_column(Text, index=True)
     site: Mapped[str] = mapped_column(Text)
     title: Mapped[str] = mapped_column(Text)
     published_at: Mapped[str | None] = mapped_column(String(20))

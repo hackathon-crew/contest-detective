@@ -11,7 +11,7 @@ import unicodedata
 from uuid import uuid4
 
 from rapidfuzz.fuzz import token_set_ratio
-from sqlalchemy import delete, or_, select
+from sqlalchemy import and_, case, delete, exists, func, or_, select, union_all
 from sqlalchemy.orm import Session
 
 from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
@@ -27,6 +27,21 @@ from .content_service import build_introduction, document_key, normalized_text, 
 
 def _now():
     return datetime.now(timezone.utc)
+
+
+def _instant(value):
+    delta = value - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    return (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
+
+
+def _date_projection(fields):
+    projection = {}
+    for field in DATE_FIELDS:
+        value = fields.get(field, {})
+        bounds = date_bounds(value['value'], value.get('precision', 'datetime')) if value.get('value') else (None, None)
+        for bound, instant in zip(('lower', 'upper'), bounds):
+            projection[f'{field}_{bound}'] = _instant(instant) if instant is not None else None
+    return projection
 
 
 def _name_tokens(name: str) -> str:
@@ -129,6 +144,8 @@ def _refresh(session, contest, now):
     details = _details(session, contest)
     details.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision}
                       for field, result in fields.items()}
+    for column, value in _date_projection(details.fields).items():
+        setattr(details, column, value)
     details.start_at = fields['start_at'].value
     contest.start_date = _start_date(details.start_at, fields['start_at'].precision) if details.start_at else None
     contest.cover_url = details.cover_url
@@ -323,6 +340,7 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
         page = ContestPage(id=str(uuid4()), url=draft.page.url)
         session.add(page)
     page.site, page.title, page.is_official = draft.page.site, draft.page.title, draft.page.is_official
+    page.host = (urlsplit(page.url).hostname or '').lower().rstrip('.')
     page.published_at = utc_iso(draft.page.published_at.isoformat()) if draft.page.published_at else None
     session.flush()
     link = session.get(ContestPageLink, (contest.id, page.id))
@@ -367,50 +385,73 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     return contest.id
 
 
-def query(session: Session, q: ContestQuery, *, attendable=False, accept=None) -> tuple[list[ContestSummary], int]:
-    statement = select(Contest)
+def _sql_deadline_available(field, now):
+    upper = getattr(ContestDetails, f'{field}_upper')
+    precision = ContestDetails.fields[field]['precision'].as_string()
+    return or_(upper > now, and_(upper == now, func.coalesce(precision, 'datetime') != 'day'))
+
+
+def query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()) -> tuple[list[ContestSummary], int]:
+    now = _now()
+    instant = _instant(now)
+    details = ContestDetails
+    # 合并三个仍开放的截止，再按原始 value 取最小值，保持既有名片和 HTTP 排序。
+    candidates = union_all(*(select(details.contest_id, details.fields[field]['value'].as_string().label('value'))
+        .where(_sql_deadline_available(field, instant)) for field in DEADLINE_FIELDS)).subquery()
+    deadlines = select(candidates.c.contest_id, func.min(candidates.c.value).label('value')).group_by(
+        candidates.c.contest_id).subquery()
+    statement = select(Contest).outerjoin(details, details.contest_id == Contest.id).outerjoin(
+        deadlines, deadlines.c.contest_id == Contest.id)
+    known_deadlines = or_(*(getattr(details, f'{field}_upper').is_not(None) for field in DEADLINE_FIELDS))
+    status = case(
+        (details.start_at_lower.is_(None), case(
+            (details.end_at_upper <= instant, 'ended'),
+            (and_(known_deadlines, deadlines.c.value.is_(None)), 'ended'), else_='upcoming')),
+        (details.start_at_lower > instant, 'upcoming'),
+        (func.coalesce(details.end_at_upper, details.start_at_lower + 86_400_000_000) > instant, 'ongoing'),
+        else_='ended')
     if q.ids is not None:
         statement = statement.where(Contest.id.in_(q.ids))
-    details_joined = False
     if q.keyword:
         keyword = q.keyword.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-        details = ContestDetails
-        statement = statement.join(details, details.contest_id == Contest.id).where(or_(
+        statement = statement.where(details.contest_id.is_not(None), or_(
             Contest.name.ilike(f'%{keyword}%', escape='\\'),
             details.summary.ilike(f'%{keyword}%', escape='\\'),
-            details.city.ilike(f'%{keyword}%', escape='\\'),
-        ))
-        details_joined = True
+            details.city.ilike(f'%{keyword}%', escape='\\')))
     if q.mode:
-        if not details_joined:
-            statement = statement.join(ContestDetails, ContestDetails.contest_id == Contest.id)
-        statement = statement.where(ContestDetails.mode == q.mode)
-    now = _now()
-    results = []
-    for contest in session.scalars(statement):
-        summary = _summary(session, contest, now)
-        if attendable and (summary.status == 'ended' or any(
-                value.value is not None and not _deadline_available(value.model_dump(), now)
-                for name, value in summary.fields.items() if name in DEADLINE_FIELDS)):
-            continue
-        if accept is not None and not accept(get(session, contest.id)):
-            continue
-        if q.status and summary.status != q.status:
-            continue
-        if q.date_from or q.date_to:
-            def inside(value):
-                start, end = date_bounds(value.value, value.precision)
-                after = q.date_from is None or (end > q.date_from if value.precision == 'day' else end >= q.date_from)
-                return after and (q.date_to is None or start <= q.date_to)
-            if not any(inside(summary.fields[field]) for field in DATE_FIELDS
-                       if summary.fields[field].value is not None):
-                continue
-        details = _read_details(session, contest)
-        value = details.start_at if q.sort == 'start' else _next_deadline(summary.fields, now)
-        results.append(((value is None, value or '', details.start_at or '', contest.name, contest.id), summary))
-    results.sort(key=lambda item: item[0])
-    offset = (q.page - 1) * q.page_size
-    return [summary for _, summary in results[offset:offset + q.page_size]], len(results)
+        statement = statement.where(details.mode == q.mode)
+    if q.status:
+        statement = statement.where(status == q.status)
+    if attendable:
+        statement = statement.where(status != 'ended', *(or_(getattr(details, f'{field}_upper').is_(None),
+            _sql_deadline_available(field, instant)) for field in DEADLINE_FIELDS))
+    if blocked_domains:
+        blocked = or_(*(or_(ContestPage.host == domain, ContestPage.host.endswith('.' + domain, autoescape=True))
+                        for domain in blocked_domains))
+        statement = statement.where(~exists(select(1).select_from(ContestClaim).join(ContestPage).where(
+            ContestClaim.contest_id == Contest.id, blocked)))
+    if q.date_from or q.date_to:
+        windows = []
+        for field in DATE_FIELDS:
+            lower, upper = getattr(details, f'{field}_lower'), getattr(details, f'{field}_upper')
+            conditions = [lower.is_not(None)]
+            if q.date_from:
+                boundary = _instant(q.date_from)
+                conditions.append(or_(upper > boundary, and_(upper == boundary,
+                    func.coalesce(details.fields[field]['precision'].as_string(), 'datetime') != 'day')))
+            if q.date_to:
+                conditions.append(lower <= _instant(q.date_to))
+            windows.append(and_(*conditions))
+        statement = statement.where(or_(*windows))
+    total = session.scalar(select(func.count()).select_from(statement.subquery()))
+    start = case((details.contest_id.is_not(None), details.start_at), else_=Contest.start_at)
+    value = start if q.sort == 'start' else deadlines.c.value
+    # Python 原先按 Unicode 码点比较；PG 的语言排序规则不能改变同时间赛事的先后。
+    collation = 'C' if session.get_bind().dialect.name == 'postgresql' else 'BINARY'
+    page = statement.order_by(value.is_(None), func.coalesce(value, '').collate(collation),
+        func.coalesce(start, '').collate(collation), Contest.name.collate(collation), Contest.id.collate(collation)
+        ).limit(q.page_size).offset((q.page - 1) * q.page_size)
+    return [_summary(session, contest, now) for contest in session.scalars(page)], total
 
 
 def get(session: Session, contest_id: str) -> ContestDetail | None:
