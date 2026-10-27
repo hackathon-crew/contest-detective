@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.documents.schemas import DocumentAnswer, DocumentQuestion
+from contest_detective.system.documents.schemas import DocumentAnswer, DocumentQuestion
 
 
 def question_data():

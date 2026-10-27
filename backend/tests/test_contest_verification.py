@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.contest.schemas import ClaimIn, PageIn, Source
+from contest_detective.contest.schemas import ClaimIn, PageIn, Source
 
 
 def source(value, *, url='https://organizer.example/rules', official=False, published=None):
@@ -12,7 +12,7 @@ def source(value, *, url='https://organizer.example/rules', official=False, publ
 
 
 def test_postponement_uses_official_date_and_marks_old_reposts():
-    from contest_detective.server.contest.verification import resolve
+    from contest_detective.contest.verification import resolve
 
     old = source('2026-11-10T15:59:59Z', url='https://news.example/old')
     official = source('2026-12-06T15:59:59Z', official=True)
@@ -24,7 +24,7 @@ def test_postponement_uses_official_date_and_marks_old_reposts():
 
 
 def test_reposted_dates_conflict_at_the_earliest_without_stale_sources():
-    from contest_detective.server.contest.verification import resolve
+    from contest_detective.contest.verification import resolve
 
     result = resolve('registration_deadline', [
         source('2026-12-06T15:59:59Z'), source('2026-11-10T15:59:59Z')])
@@ -33,7 +33,7 @@ def test_reposted_dates_conflict_at_the_earliest_without_stale_sources():
 
 
 def test_conflicting_text_uses_latest_publication_and_official_sources_win():
-    from contest_detective.server.contest.verification import resolve
+    from contest_detective.contest.verification import resolve
 
     old = source('上海', published=datetime(2026, 10, 1, tzinfo=timezone.utc))
     latest = source('北京', url='https://news.example/latest',
@@ -46,7 +46,7 @@ def test_conflicting_text_uses_latest_publication_and_official_sources_win():
 
 
 def test_missing_and_consistent_claims_have_distinct_levels():
-    from contest_detective.server.contest.verification import resolve
+    from contest_detective.contest.verification import resolve
 
     assert resolve('prize', []).model_dump() == {'value': None, 'level': 'not_found', 'sources': [], 'precision': 'datetime'}
     result = resolve('mode', [source('online'), source('online', url='https://news.example')])
@@ -58,7 +58,7 @@ def test_missing_and_consistent_claims_have_distinct_levels():
     'https://hackathonradar.com/events/1',
 ])
 def test_aggregator_cannot_be_marked_official(url):
-    from contest_detective.server.contest.verification import resolve
+    from contest_detective.contest.verification import resolve
 
     page = PageIn(url=url, site='平台', title='收录页', is_official=True)
     result = resolve('city', [Source(**page.model_dump(), value='上海', excerpt='上海')])

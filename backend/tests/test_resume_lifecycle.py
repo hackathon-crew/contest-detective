@@ -4,11 +4,11 @@ import json
 import httpx
 import pytest
 
-from contest_detective.common.exceptions import BizException
-from contest_detective.server.agent import llm
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.user.resume import create_profile_extractor, parse_resume
-from contest_detective.web.api.profile import get_resume_extractor
+from contest_detective.framework.exceptions import BizException
+from contest_detective.agent import llm
+from contest_detective.agent.config import LLMSettings
+from contest_detective.system.user.resume import create_profile_extractor, parse_resume
+from contest_detective.bootstrap.api.profile import get_resume_extractor
 
 
 def provider(monkeypatch, *, failure=False, pause=None):

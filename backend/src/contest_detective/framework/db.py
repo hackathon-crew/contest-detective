@@ -26,11 +26,11 @@ def get_session():
 
 
 def load_models():
-    from contest_detective import server
-
-    for module in walk_packages(server.__path__, server.__name__ + "."):
-        if module.name.endswith(".models"):
-            import_module(module.name)
+    for package in ('agent', 'contest', 'research', 'system'):
+        module = import_module(f'contest_detective.{package}')
+        for found in walk_packages(module.__path__, module.__name__ + '.'):
+            if found.name.endswith('.models'):
+                import_module(found.name)
 
 
 def init_db(bind=None):

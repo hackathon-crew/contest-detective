@@ -30,13 +30,13 @@ class ReleaseTests(unittest.TestCase):
             'RELEASE_TAG': TAG.encode(),
         }
         if mcp:
-            files['backend/src/contest_detective/web/bootstrap/mcp_http.py'] = b'# HTTP transport'
+            files['backend/src/contest_detective/bootstrap/mcp_http.py'] = b'# HTTP transport'
         if configuration:
             files['deploy/server.env.example'] = (
                 b'DETECTIVE_LLM_MODEL=must-not-overwrite\n'
                 b'DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH=templates/contest_normalization.jinja2\n'
             )
-            files['backend/src/contest_detective/server/agent/normalization_prompts.py'] = b'# Prompt loader'
+            files['backend/src/contest_detective/agent/normalization_prompts.py'] = b'# Prompt loader'
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w:gz') as archive:
             if configuration:
@@ -250,7 +250,7 @@ class ReleaseTests(unittest.TestCase):
                 app.mkdir()
                 (app / 'old-code').touch()
                 if previous_mcp:
-                    module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+                    module = app / 'backend/src/contest_detective/bootstrap/mcp_http.py'
                     module.parent.mkdir(parents=True)
                     module.touch()
                 database = root / 'contest.db'
@@ -293,7 +293,7 @@ class ReleaseTests(unittest.TestCase):
                                     ({'error': {'message': 'unavailable'}}, False)]:
             with self.subTest(succeeds=succeeds), tempfile.TemporaryDirectory() as folder:
                 app = Path(folder)
-                module = app / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+                module = app / 'backend/src/contest_detective/bootstrap/mcp_http.py'
                 module.parent.mkdir(parents=True)
                 module.touch()
 

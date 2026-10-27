@@ -6,13 +6,13 @@ import pytest
 from sqlalchemy import func, select
 
 from account_helpers import account_client, login
-from contest_detective.server.account.models import Follow
-from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.models import ContestEvent
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.notifications.models import ConsumerCursor, PendingNotification
-from contest_detective.server.notifications.watch import service
-from contest_detective.server.notifications.watch.models import Cursor, Notification, Subscription
+from contest_detective.system.account.models import Follow
+from contest_detective.contest import service as contests
+from contest_detective.contest.models import ContestEvent
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.system.notifications.models import ConsumerCursor, PendingNotification
+from contest_detective.system.notifications.watch import service
+from contest_detective.system.notifications.watch.models import Cursor, Notification, Subscription
 
 
 def draft(city='上海', *, url='https://organizer.example/watch', name='持续盯梢赛'):
@@ -134,7 +134,7 @@ def test_concurrent_consumers_are_idempotent(tmp_path):
 
 
 def test_bounded_consumption_and_notification_pagination(session_factory):
-    from contest_detective.server.user.models import User
+    from contest_detective.system.user.models import User
     user_id = UUID('11111111-1111-1111-1111-111111111111')
     with session_factory() as session:
         session.add(User(id=user_id, email='pages@example.com', hashed_password='not-used', is_active=True))
@@ -159,7 +159,7 @@ def test_bounded_consumption_and_notification_pagination(session_factory):
 
 
 def test_account_export_and_delete_cover_watch_data(tmp_path):
-    from contest_detective.server.account.lifecycle import delete_account, export_account
+    from contest_detective.system.account.lifecycle import delete_account, export_account
     with account_client(tmp_path) as client:
         user = UUID(login(client))
         factory = client.app.state.test_session_factory
@@ -219,7 +219,7 @@ def test_shared_page_updates_keep_each_contests_own_before_snapshot(session):
 
 
 def test_reused_session_snapshots_refresh_stale_page_authority(tmp_path):
-    from contest_detective.server.contest.models import ContestPage
+    from contest_detective.contest.models import ContestPage
     with account_client(tmp_path) as client:
         factory = client.app.state.test_session_factory
         cid = save(factory, '上海')
@@ -239,7 +239,7 @@ def test_reused_session_snapshots_refresh_stale_page_authority(tmp_path):
 def test_concurrent_writers_capture_real_serial_before_state(tmp_path, monkeypatch):
     from threading import Event, current_thread
     from time import sleep
-    from contest_detective.server.contest.events import ContestSnapshot
+    from contest_detective.contest.events import ContestSnapshot
     with account_client(tmp_path) as client:
         factory = client.app.state.test_session_factory
         cid = save(factory, '上海')

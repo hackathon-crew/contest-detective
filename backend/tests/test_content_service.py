@@ -3,8 +3,8 @@ from hashlib import sha256
 
 import pytest
 
-from contest_detective.server.contest.content import ContestDocument, ContestIntroduction, ContentCitation
-from contest_detective.server.contest.content_service import (
+from contest_detective.contest.content import ContestDocument, ContestIntroduction, ContentCitation
+from contest_detective.contest.content_service import (
     build_introduction, public_document, validate_document, validate_introduction, validate_public_url,
 )
 
@@ -61,8 +61,8 @@ def test_full_text_publication_needs_an_explicit_license_and_snippets_are_partia
 
 
 def test_partial_or_new_version_capture_does_not_replace_complete_evidence(session_factory):
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.schemas import ContestDraft, PageIn
+    from contest_detective.contest import service
+    from contest_detective.contest.schemas import ContestDraft, PageIn
     doc = document('Student developers collaborate to build useful projects for the community.')
     draft = ContestDraft(name='Builder event', page=PageIn(url=doc.url, site=doc.site,
         title=doc.title, is_official=True), documents=[doc], claims=[])

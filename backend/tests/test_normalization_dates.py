@@ -6,12 +6,12 @@ import httpx
 import pytest
 
 from contest_detective.framework.config.app import AppSettings
-from contest_detective.server.agent.normalization import LangChainNormalizer, NormalizedContest
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
-from contest_detective.server.contest.service import get, query
-from contest_detective.server.research_pipeline.normalization import NormalizationInput, merge_normalized
-from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-from contest_detective.server.research_pipeline.sources.waytoagi import fetch
+from contest_detective.agent.normalization import LangChainNormalizer, NormalizedContest
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
+from contest_detective.contest.service import get, query
+from contest_detective.research.normalization import NormalizationInput, merge_normalized
+from contest_detective.research.pipeline.execute import run_pipeline
+from contest_detective.research.sources.waytoagi import fetch
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 EXCERPT = '日期：2026 年 10 月 25 日。活动时间：10:30—19:02'

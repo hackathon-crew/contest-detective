@@ -3,8 +3,8 @@ from time import monotonic as time_monotonic
 
 import httpx
 
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
-from contest_detective.server.contest.service import query
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
+from contest_detective.contest.service import query
 
 
 def draft():
@@ -15,7 +15,7 @@ def draft():
 
 def test_sync_keeps_other_sources_running_and_does_not_log_credentials(session_factory, caplog):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     def broken(_client):
         raise ValueError('Bearer do-not-log-this')
@@ -37,7 +37,7 @@ def test_sync_keeps_other_sources_running_and_does_not_log_credentials(session_f
 
 def test_sync_updates_existing_source_claims_without_duplicate_events(session_factory):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     settings = AppSettings(_env_file=None, sync_collect='structured')
     with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
@@ -52,7 +52,7 @@ def test_sync_updates_existing_source_claims_without_duplicate_events(session_fa
 def test_daily_window_bounds_include_the_start_and_stop_at_the_end():
     from datetime import datetime, timedelta
     from zoneinfo import ZoneInfo
-    from contest_detective.server.research_pipeline.scheduler import within_daily_window
+    from contest_detective.research.scheduler import within_daily_window
 
     shanghai = ZoneInfo('Asia/Shanghai')
     start = datetime(2026, 10, 24, 3, 0, tzinfo=shanghai)
@@ -63,7 +63,7 @@ def test_daily_window_bounds_include_the_start_and_stop_at_the_end():
     after_midnight = datetime(2026, 10, 24, 0, 10, tzinfo=shanghai)
     assert within_daily_window(after_midnight, '23:30', 90)
     assert not within_daily_window(after_midnight, '23:30', 30)
-    from contest_detective.server.research_pipeline.scheduler import window_key
+    from contest_detective.research.scheduler import window_key
     assert window_key(after_midnight, '23:30', 90) == '2026-10-23'
     assert window_key(start + timedelta(minutes=60), '03:00', 60) is None
 
@@ -81,7 +81,7 @@ def test_daily_clock_rejects_values_that_are_not_hours_and_minutes():
 
 def test_daily_window_runs_once_when_the_process_starts_inside_it(session_factory, monkeypatch):
     from datetime import datetime, timedelta
-    from contest_detective.server.research_pipeline import scheduler as scheduling
+    from contest_detective.research import scheduler as scheduling
 
     completed = threading.Event()
     calls = []
@@ -112,7 +112,7 @@ def test_daily_window_runs_once_when_the_process_starts_inside_it(session_factor
 
 def test_restart_inside_the_same_window_does_not_run_again(session_factory, monkeypatch):
     from datetime import datetime, timedelta
-    from contest_detective.server.research_pipeline import scheduler as scheduling
+    from contest_detective.research import scheduler as scheduling
 
     completed = threading.Event()
     calls = []
@@ -146,7 +146,7 @@ def test_restart_inside_the_same_window_does_not_run_again(session_factory, monk
 def test_daily_window_waits_when_the_process_starts_outside_it(session_factory, monkeypatch):
     from datetime import datetime, timedelta
     from apscheduler.triggers.cron import CronTrigger
-    from contest_detective.server.research_pipeline import scheduler as scheduling
+    from contest_detective.research import scheduler as scheduling
 
     def forbidden(*_args, **_kwargs):
         raise AssertionError('窗口外不得补跑同步')
@@ -169,9 +169,9 @@ def test_daily_schedule_arms_page_extraction_in_the_same_run(session_factory, mo
     from types import SimpleNamespace
     from fastapi.testclient import TestClient
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.agent import extraction
-    from contest_detective.web.bootstrap import app as bootstrap
-    from contest_detective.web.bootstrap import source_sync
+    from contest_detective.agent import extraction
+    from contest_detective.bootstrap import app as bootstrap
+    from contest_detective.bootstrap import source_sync
 
     settings = AppSettings(
         _env_file=None, sync_collect='both', sync_daily_at='03:00', sync_interval_minutes=360,
@@ -201,7 +201,7 @@ def test_daily_schedule_arms_page_extraction_in_the_same_run(session_factory, mo
 
 
 def test_disabled_interval_does_not_start_a_scheduler(session_factory):
-    from contest_detective.server.research_pipeline.scheduler import start_scheduler
+    from contest_detective.research.scheduler import start_scheduler
 
     assert start_scheduler(session_factory, 0) is None
     with session_factory() as session:
@@ -210,12 +210,12 @@ def test_disabled_interval_does_not_start_a_scheduler(session_factory):
 
 def test_interval_scheduler_runs_a_sync_immediately_and_can_stop(session_factory, monkeypatch):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline import scheduler as scheduling
+    from contest_detective.research import scheduler as scheduling
 
     completed = threading.Event()
 
     def one_round(factory, *, extractor=None):
-        from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+        from contest_detective.research.pipeline.execute import run_pipeline
         with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200))) as client:
             report = run_pipeline(factory, client=client, extractor=extractor,
                                   settings=AppSettings(_env_file=None, sync_collect='structured'),
@@ -236,7 +236,7 @@ def test_interval_scheduler_runs_a_sync_immediately_and_can_stop(session_factory
 
 def test_application_stops_its_scheduler_when_lifespan_ends(session_factory, monkeypatch):
     from fastapi.testclient import TestClient
-    from contest_detective.web.bootstrap import app as bootstrap
+    from contest_detective.bootstrap import app as bootstrap
 
     stopped = threading.Event()
 
@@ -257,10 +257,10 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
     import json
     from pathlib import Path
     from sqlalchemy import func, select
-    from contest_detective.server.contest.models import ContestPage
-    from contest_detective.server.contest.service import get
+    from contest_detective.contest.models import ContestPage
+    from contest_detective.contest.service import get
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     fixtures = Path(__file__).parent / 'fixtures'
     snapshots = {name: json.loads((fixtures / f'{name}.json').read_text(encoding='utf-8'))
@@ -299,9 +299,9 @@ def test_default_public_source_fixtures_reach_the_real_contest_store(session_fac
 def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes(session_factory):
     from datetime import datetime, timezone
     from functools import partial
-    from contest_detective.server.contest.service import get
+    from contest_detective.contest.service import get
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     initial = draft()
     initial.claims.append(ClaimIn(field='registration_url', value='https://organizer.example/register',
@@ -335,7 +335,7 @@ def test_sync_checks_organizer_evidence_after_saving_and_reuses_unchanged_hashes
 
 def test_sync_with_no_extractor_does_not_start_discovery(session_factory):
     from contest_detective.framework.config.app import AppSettings
-    from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
+    from contest_detective.research.pipeline.execute import run_pipeline
 
     def forbidden(*_args, **_kwargs):
         raise AssertionError('未配置抽取器时不得读取详情或调用模型')
@@ -348,7 +348,7 @@ def test_sync_with_no_extractor_does_not_start_discovery(session_factory):
 
 def test_application_passes_an_injected_extractor_to_background_sync(session_factory, monkeypatch):
     from fastapi.testclient import TestClient
-    from contest_detective.web.bootstrap import app as bootstrap
+    from contest_detective.bootstrap import app as bootstrap
 
     received = []
 

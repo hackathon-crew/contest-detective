@@ -7,7 +7,7 @@
 import json
 from pathlib import Path
 
-from contest_detective.web.bootstrap.app import app
+from contest_detective.bootstrap.app import app
 
 OUTPUT = Path(__file__).resolve().parents[1] / "openapi.json"
 

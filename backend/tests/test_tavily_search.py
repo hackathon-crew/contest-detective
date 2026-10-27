@@ -12,7 +12,7 @@ class FakeTavilyClient:
 
 
 def test_tavily_maps_basic_search_and_site_restrictions_without_answer_generation():
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
+    from contest_detective.research.search.tavily import TavilySearch
 
     def handler(kwargs):
         assert kwargs == {
@@ -41,7 +41,7 @@ def test_tavily_maps_basic_search_and_site_restrictions_without_answer_generatio
 
 
 def test_tavily_limits_results_to_twenty_and_maps_exclusions():
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
+    from contest_detective.research.search.tavily import TavilySearch
 
     def handler(kwargs):
         assert kwargs['max_results'] == 20
@@ -58,14 +58,14 @@ def test_tavily_limits_results_to_twenty_and_maps_exclusions():
 
 @pytest.mark.parametrize('count', [0, 51])
 def test_tavily_rejects_invalid_result_counts(count):
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
+    from contest_detective.research.search.tavily import TavilySearch
 
     with pytest.raises(ValueError):
         TavilySearch(api_key='test-key').search('黑客松', count=count)
 
 
 def test_tavily_sanitizes_error_payloads():
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
+    from contest_detective.research.search.tavily import TavilySearch
 
     client = FakeTavilyClient(lambda _: {'detail': {'error': 'private provider response'}})
     with pytest.raises(ValueError, match='搜索服务暂时不可用') as caught:
@@ -78,9 +78,9 @@ def test_configured_search_uses_tavily_and_preserves_yuanbao_priority(monkeypatc
     from types import SimpleNamespace
 
     from contest_detective.framework.config.search import SearchSettings
-    from contest_detective.server import research_pipeline
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
-    from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
+    from contest_detective import research as research_pipeline
+    from contest_detective.research.search.tavily import TavilySearch
+    from contest_detective.research.search.yuanbao import YuanbaoSearch
 
     tavily = FakeTavilyClient(lambda _: {'results': [
         {'url': 'https://common.example/one', 'content': '共同来源'},
@@ -122,7 +122,7 @@ def test_configured_search_uses_tavily_and_preserves_yuanbao_priority(monkeypatc
 
 
 def test_tavily_without_a_key_does_not_request_a_provider():
-    from contest_detective.server.research_pipeline.search.tavily import TavilySearch
+    from contest_detective.research.search.tavily import TavilySearch
 
     class ForbiddenClient:
         def search(self, **_kwargs):

@@ -16,8 +16,8 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.db import Base, init_db
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.contest.service import save
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.contest.service import save
 
 
 def seed(factory):
@@ -37,7 +37,7 @@ def counts(bind):
 
 
 def test_tools_have_read_only_annotations_and_exact_input_boundaries(session_factory):
-    from contest_detective.web.bootstrap.mcp import create_server
+    from contest_detective.bootstrap.mcp import create_server
 
     tools = {tool.name: tool for tool in asyncio.run(create_server(session_factory=session_factory).list_tools())}
     assert set(tools) == {'search_contests', 'get_contest', 'match_contests'}
@@ -53,8 +53,8 @@ def test_tools_have_read_only_annotations_and_exact_input_boundaries(session_fac
 
 
 def test_tools_reuse_local_data_without_writes_network_models_or_login_queries(session_factory, monkeypatch):
-    from contest_detective.web.bootstrap.mcp import create_server
-    from contest_detective.server.agent import llm
+    from contest_detective.bootstrap.mcp import create_server
+    from contest_detective.agent import llm
 
     contest_id = seed(session_factory)
     bind = session_factory.kw['bind']
@@ -90,7 +90,7 @@ def test_tools_reuse_local_data_without_writes_network_models_or_login_queries(s
     ('match_contests', {'profile': {'skills': ['']}}),
 ])
 def test_invalid_arguments_and_missing_contests_are_tool_errors(session_factory, name, arguments):
-    from contest_detective.web.bootstrap.mcp import create_server
+    from contest_detective.bootstrap.mcp import create_server
 
     before = counts(session_factory.kw['bind'])
     with pytest.raises(ToolError):
@@ -99,7 +99,7 @@ def test_invalid_arguments_and_missing_contests_are_tool_errors(session_factory,
 
 
 def test_configured_engine_uses_an_existing_sqlite_file_in_read_only_mode(tmp_path):
-    from contest_detective.web.bootstrap.mcp import readonly_engine
+    from contest_detective.bootstrap.mcp import readonly_engine
 
     path = tmp_path / 'event store.db'
     bind = create_engine(f'sqlite:///{path}')

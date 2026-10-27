@@ -8,7 +8,7 @@ from account_helpers import account_client, login
 
 
 def test_remote_mcp_token_scopes_private_tools_and_rotation(tmp_path):
-    from contest_detective.web.bootstrap.mcp_http import create_app
+    from contest_detective.bootstrap.mcp_http import create_app
 
     with account_client(tmp_path) as web:
         login(web)

@@ -6,11 +6,11 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelHTTPError
 
-from contest_detective.server.agent import llm, loop
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.extraction import create_page_extractor
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.web.api import agent as web_agent
+from contest_detective.agent import llm, loop
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.extraction import create_page_extractor
+from contest_detective.agent.loop import Investigator
+from contest_detective.bootstrap.api import agent as web_agent
 
 
 def local_provider(session_factory, monkeypatch, *, failure=False, pause=None):

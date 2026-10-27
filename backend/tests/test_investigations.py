@@ -8,10 +8,10 @@ from pydantic_ai.models.function import FunctionModel
 from agent_responses import answer_part
 from sqlalchemy import select
 
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.models import Investigation, TraceRecord
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.contest.service import save
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.models import Investigation, TraceRecord
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.contest.service import save
 
 
 def seed(session_factory):
@@ -209,7 +209,7 @@ def test_local_server_factory_uses_database_and_stream_for_both_questions(sessio
     seed(session_factory)
     app = create_fake_app(db_engine=session_factory.kw['bind'], session_factory=session_factory)
     # The library-backed limiter is shared by routes, so fixtures reset only in tests.
-    from contest_detective.web.api.agent import limiter
+    from contest_detective.bootstrap.api.agent import limiter
     limiter.reset()
     with TestClient(app) as client:
         for question in ['这周末能线上参加的黑客松', '某场比赛的16:00是不是报名截止']:
@@ -223,10 +223,10 @@ def test_local_server_factory_uses_database_and_stream_for_both_questions(sessio
 
 def test_record_page_extracts_through_the_same_guarded_model(session_factory):
     from decimal import Decimal
-    from contest_detective.server.agent.budget import Budget
-    from contest_detective.server.agent.config import LLMSettings
-    from contest_detective.server.agent.llm import GuardedModel
-    from contest_detective.server.agent.models import LLMUsage
+    from contest_detective.agent.budget import Budget
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.agent.llm import GuardedModel
+    from contest_detective.agent.models import LLMUsage
     from pydantic_ai.usage import RequestUsage
     calls = 0
     url = 'https://organizer.example/new'
@@ -379,14 +379,14 @@ def test_research_tool_uses_real_page_validation_and_storage(session_factory, mo
     from decimal import Decimal
     from importlib import import_module
     from pydantic_ai.usage import RequestUsage
-    from contest_detective.server.agent.budget import Budget
-    from contest_detective.server.agent.config import LLMSettings
-    from contest_detective.server.agent.llm import GuardedModel
-    from contest_detective.server.agent.models import LLMUsage
-    from contest_detective.server.contest.schemas import ContestQuery
-    from contest_detective.server.contest import service as contests
-    from contest_detective.server.research_pipeline import run as record_page
-    recording = import_module('contest_detective.server.research_pipeline.record')
+    from contest_detective.agent.budget import Budget
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.agent.llm import GuardedModel
+    from contest_detective.agent.models import LLMUsage
+    from contest_detective.contest.schemas import ContestQuery
+    from contest_detective.contest import service as contests
+    from contest_detective.research import run as record_page
+    recording = import_module('contest_detective.research.record')
     url = 'https://weekend.devpost.com/'
     monkeypatch.setattr(recording, 'fetch_page', lambda _: '网页活动，作品提交截止 11月1日16:00，线上举行。')
     draft = {'name': '网页活动', 'page': {'url': 'https://untrusted.example/', 'site': '错误页面', 'title': '页面', 'is_official': False},
@@ -424,9 +424,9 @@ def test_research_tool_uses_real_page_validation_and_storage(session_factory, mo
 
 def test_existing_contest_is_verified_in_place_through_real_recording(session_factory, monkeypatch):
     from importlib import import_module
-    from contest_detective.server.contest import service as contests
-    from contest_detective.server.contest.schemas import ContestQuery
-    from contest_detective.server.research_pipeline import run as record_page
+    from contest_detective.contest import service as contests
+    from contest_detective.contest.schemas import ContestQuery
+    from contest_detective.research import run as record_page
     with session_factory() as session:
         contest_id = save(session, ContestDraft(name='转载中的旧活动名', page={
             'url': 'https://directory.example/event', 'site': '活动汇总', 'title': '转载活动', 'is_official': False,
@@ -441,7 +441,7 @@ def test_existing_contest_is_verified_in_place_through_real_recording(session_fa
         }, claims=[{'field': 'registration_url', 'value': 'https://organizer.example/register', 'excerpt': '官方报名页面'}]), contest_id=contest_id)
         session.commit()
     url = 'https://organizer.example/rules'
-    recording = import_module('contest_detective.server.research_pipeline.record')
+    recording = import_module('contest_detective.research.record')
     monkeypatch.setattr(recording, 'fetch_page', lambda _: '官方活动完整名称，开赛延期至12月6日9:00。')
     draft = {'name': '官方活动完整名称', 'page': {'url': url, 'site': '主办方', 'title': '活动', 'is_official': False},
              'claims': [{'field': 'start_at', 'value': '2026-12-06T01:00:00Z', 'excerpt': '开赛延期至12月6日9:00'}]}

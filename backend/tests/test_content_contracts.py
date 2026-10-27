@@ -4,11 +4,11 @@ from hashlib import sha256
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.contest.content import (
+from contest_detective.contest.content import (
     ContentCitation, ContentCoverage, ContestDocument, ContestIntroduction, CoverageObservation,
 )
-from contest_detective.server.contest.schemas import ContestDetail, ContestDraft, ContestSummary
-from contest_detective.server.research_pipeline.refresh.contracts import (
+from contest_detective.contest.schemas import ContestDetail, ContestDraft, ContestSummary
+from contest_detective.research.refresh.contracts import (
     RefreshDocument, RefreshEntry, RefreshManifest, RefreshReport, SourceInventory,
 )
 
@@ -87,12 +87,12 @@ def test_contract_imports_do_not_initialize_default_database_or_providers():
 
     code = """
 import sys
-from contest_detective.server.research_pipeline import detail_contracts
-from contest_detective.server.research_pipeline.refresh import contracts
+from contest_detective.research import detail_contracts
+from contest_detective.research.refresh import contracts
 assert 'contest_detective.framework.db' not in sys.modules
-assert 'contest_detective.server.agent.config' not in sys.modules
-assert 'contest_detective.server.agent.normalization' not in sys.modules
-assert 'contest_detective.server.research_pipeline.scheduler' not in sys.modules
+assert 'contest_detective.agent.config' not in sys.modules
+assert 'contest_detective.agent.normalization' not in sys.modules
+assert 'contest_detective.research.scheduler' not in sys.modules
 """
     subprocess.run([sys.executable, '-c', code], check=True)
 

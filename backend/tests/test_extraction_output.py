@@ -10,12 +10,12 @@ from pydantic_ai.usage import RequestUsage, RunUsage
 import pytest
 from sqlalchemy import select
 
-from contest_detective.server.agent import llm
-from contest_detective.server.agent.budget import Budget
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.extraction import create_page_extractor
-from contest_detective.server.agent.llm import GuardedModel
-from contest_detective.server.agent.models import LLMUsage
+from contest_detective.agent import llm
+from contest_detective.agent.budget import Budget
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.extraction import create_page_extractor
+from contest_detective.agent.llm import GuardedModel
+from contest_detective.agent.models import LLMUsage
 
 URL = 'https://amazonappdev2026.devpost.com/'
 FACTS = {'name': '正文赛事', 'summary': '在上海参赛', 'cover_url': None,

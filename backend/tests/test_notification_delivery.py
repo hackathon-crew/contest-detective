@@ -9,11 +9,11 @@ from test_profile_matching import contest
 
 
 def test_queue_survives_a_failed_send_and_retries_the_same_message(tmp_path, monkeypatch):
-    from contest_detective.server.notifications.service import dispatch_due
-    from contest_detective.server.notifications.models import ConsumerCursor, PendingNotification, SeenNotification
-    from contest_detective.server.account.models import MailDelivery
-    from contest_detective.server.contest import service
-    from contest_detective.server.user import matching
+    from contest_detective.system.notifications.service import dispatch_due
+    from contest_detective.system.notifications.models import ConsumerCursor, PendingNotification, SeenNotification
+    from contest_detective.system.account.models import MailDelivery
+    from contest_detective.contest import service
+    from contest_detective.system.user import matching
     now = datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(service, '_now', lambda: now)
     monkeypatch.setattr(matching, '_now', lambda: now)
@@ -44,9 +44,9 @@ def test_queue_survives_a_failed_send_and_retries_the_same_message(tmp_path, mon
 
 
 def test_local_free_budget_stops_before_another_network_request(tmp_path, monkeypatch):
-    from contest_detective.server.notifications import service
-    from contest_detective.server.notifications.config import NotificationSettings
-    from contest_detective.web.api.account_push import get_mailer
+    from contest_detective.system.notifications import service
+    from contest_detective.system.notifications.config import NotificationSettings
+    from contest_detective.bootstrap.api.account_push import get_mailer
     monkeypatch.setattr(service, 'get_account_runtime_settings', lambda: NotificationSettings(mail_daily_limit=2))
     with account_client(tmp_path) as client:
         login(client)
@@ -60,8 +60,8 @@ def test_local_free_budget_stops_before_another_network_request(tmp_path, monkey
 
 
 def test_resend_webhook_verifies_original_payload_and_timestamp():
-    from contest_detective.server.notifications.resend import verify_webhook
-    from contest_detective.common.exceptions import BizException
+    from contest_detective.system.notifications.resend import verify_webhook
+    from contest_detective.framework.exceptions import BizException
     body = b'{"event_type":"ping","data":{"success":true}}'
     headers = {'svix-id': 'msg_loFOjxBNrRLzqYUf', 'svix-timestamp': '1731705121',
                'svix-signature': 'v1,rAvfW3dJ/X/qxhsaXPOyyCGmRKsaKWcsNccKXlIktD0='}
@@ -72,10 +72,10 @@ def test_resend_webhook_verifies_original_payload_and_timestamp():
 
 
 def test_follow_changes_send_before_the_digest_time_and_do_not_repeat(tmp_path, monkeypatch):
-    from contest_detective.server.notifications.service import dispatch_due, fingerprint
-    from contest_detective.server.account.models import Follow
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.schemas import ContestDraft, PageIn, ClaimIn
+    from contest_detective.system.notifications.service import dispatch_due, fingerprint
+    from contest_detective.system.account.models import Follow
+    from contest_detective.contest import service
+    from contest_detective.contest.schemas import ContestDraft, PageIn, ClaimIn
     now = datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(service, '_now', lambda: now)
     with account_client(tmp_path) as client:
@@ -97,8 +97,8 @@ def test_follow_changes_send_before_the_digest_time_and_do_not_repeat(tmp_path, 
 
 
 def test_background_matching_can_exceed_the_interactive_preview_limit(session, monkeypatch):
-    from contest_detective.server.user import matching
-    from contest_detective.server.user.schemas import Profile
+    from contest_detective.system.user import matching
+    from contest_detective.system.user.schemas import Profile
     monkeypatch.setattr(matching, '_now', lambda: datetime(2026, 10, 25, tzinfo=timezone.utc))
     for i in range(21):
         contest(session, f'AI比赛{i}', start=f'2026-11-{i+1:02d}T01:00:00Z', end=f'2026-11-{i+1:02d}T10:00:00Z')

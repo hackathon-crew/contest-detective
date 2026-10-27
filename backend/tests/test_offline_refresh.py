@@ -11,13 +11,13 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from contest_detective.framework.db import init_db
-from contest_detective.server.contest import service
-from contest_detective.server.contest.content import ContestDocument
-from contest_detective.server.contest.content_service import build_introduction
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
-from contest_detective.server.research_pipeline.refresh.contracts import RefreshDocument, RefreshEntry, RefreshManifest
-from contest_detective.server.research_pipeline.refresh.importer import OfflineImporter, public_fingerprint
-from contest_detective.server.research_pipeline.refresh.journal import restore
+from contest_detective.contest import service
+from contest_detective.contest.content import ContestDocument
+from contest_detective.contest.content_service import build_introduction
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.research.refresh.contracts import RefreshDocument, RefreshEntry, RefreshManifest
+from contest_detective.research.refresh.importer import OfflineImporter, public_fingerprint
+from contest_detective.research.refresh.journal import restore
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 
@@ -173,10 +173,10 @@ def test_cli_never_reads_dotenv_or_instantiates_a_model(database, tmp_path):
 import pathlib, socket, sys
 class ForbiddenProviders:
     def find_spec(self, fullname, path=None, target=None):
-        if fullname.startswith(('contest_detective.server.agent',
-                'contest_detective.server.research_pipeline.search',
-                'contest_detective.server.research_pipeline.scheduler',
-                'contest_detective.web.bootstrap.app')):
+        if fullname.startswith(('contest_detective.agent',
+                'contest_detective.research.search',
+                'contest_detective.research.scheduler',
+                'contest_detective.bootstrap.app')):
             raise AssertionError('provider/application import forbidden: ' + fullname)
 sys.meta_path.insert(0, ForbiddenProviders())
 from pydantic_settings.sources.providers.dotenv import DotEnvSettingsSource
@@ -186,10 +186,10 @@ def guard(self):
     return old(self)
 DotEnvSettingsSource._read_env_files = guard
 socket.socket.connect = lambda *a, **k: (_ for _ in ()).throw(AssertionError('network forbidden'))
-from contest_detective.web.bootstrap.offline_refresh import main
+from contest_detective.bootstrap.offline_refresh import main
 main()
-assert 'contest_detective.server.agent.normalization' not in sys.modules
-assert 'contest_detective.server.research_pipeline.scheduler' not in sys.modules
+assert 'contest_detective.agent.normalization' not in sys.modules
+assert 'contest_detective.research.scheduler' not in sys.modules
 '''
     result = subprocess.run([sys.executable, '-c', code, '--manifest', str(package), '--database', str(database),
         '--output-directory', str(tmp_path / 'reports')], capture_output=True, text=True)
@@ -221,8 +221,8 @@ def test_auto_match_enforces_baseline_and_later_edition_dates(database, tmp_path
 
 
 def test_exact_mapping_correction_is_audited_and_reversible(database, tmp_path):
-    from contest_detective.server.contest.content import ContentCitation
-    from contest_detective.server.research_pipeline.refresh.contracts import ClaimRetirement
+    from contest_detective.contest.content import ContentCitation
+    from contest_detective.research.refresh.contracts import ClaimRetirement
     contest_id = seed(database)
     engine = create_engine('sqlite:///' + str(database))
     with Session(engine) as session:
@@ -266,7 +266,7 @@ def test_rollback_new_contest_never_cascades_into_later_private_data(database, t
 
 
 def test_partial_evidence_cannot_claim_absence_or_reuse_changed_manifest_id(database, tmp_path):
-    from contest_detective.server.contest.content import CoverageObservation
+    from contest_detective.contest.content import CoverageObservation
     package = manifest()
     doc = package.entries[0].documents[0].document
     doc.completeness = 'partial'
@@ -310,8 +310,8 @@ def test_additive_refresh_cannot_reclassify_shared_historical_source(database, t
     contest_id = seed(database)
     engine = create_engine('sqlite:///' + str(database))
     with Session(engine) as session:
-        from contest_detective.server.contest.models import Contest
-        from contest_detective.server.contest.identity import normalized_name
+        from contest_detective.contest.models import Contest
+        from contest_detective.contest.identity import normalized_name
         other = Contest(id='other-edition', name='Earlier builder event', normalized_name=normalized_name('Earlier builder event'))
         session.add(other)
         session.flush()

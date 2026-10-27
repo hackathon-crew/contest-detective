@@ -15,7 +15,7 @@ class FakeWsaClient:
 
 
 def test_yuanbao_decodes_string_pages_and_rounds_the_requested_count():
-    from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
+    from contest_detective.research.search.yuanbao import YuanbaoSearch
 
     def handle(request):
         assert request.Query == '黑客松'
@@ -41,14 +41,14 @@ def test_yuanbao_decodes_string_pages_and_rounds_the_requested_count():
 
 @pytest.mark.parametrize('count', [0, 51])
 def test_yuanbao_rejects_invalid_counts_before_any_request(count):
-    from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
+    from contest_detective.research.search.yuanbao import YuanbaoSearch
 
     with pytest.raises(ValueError):
         YuanbaoSearch(secret_id='id', secret_key='key').search('黑客松', count=count)
 
 
 def test_yuanbao_rejects_provider_errors_without_exposing_the_payload():
-    from contest_detective.server.research_pipeline.search.yuanbao import YuanbaoSearch
+    from contest_detective.research.search.yuanbao import YuanbaoSearch
 
     def handle(_request):
         raise TencentCloudSDKException('UnauthorizedOperation', 'sensitive provider details')
@@ -59,8 +59,8 @@ def test_yuanbao_rejects_provider_errors_without_exposing_the_payload():
 
 
 def test_mixed_search_interleaves_providers_and_deduplicates_urls():
-    from contest_detective.server.research_pipeline.search.base import SearchHit
-    from contest_detective.server.research_pipeline.search.mixed import MixedSearch
+    from contest_detective.research.search.base import SearchHit
+    from contest_detective.research.search.mixed import MixedSearch
 
     class Provider:
         def __init__(self, name, urls):
@@ -81,7 +81,7 @@ def test_mixed_search_interleaves_providers_and_deduplicates_urls():
 
 
 def test_no_key_disables_search_without_network(monkeypatch):
-    from contest_detective.server import research_pipeline
+    from contest_detective import research as research_pipeline
     from contest_detective.framework.config.search import SearchSettings
 
     monkeypatch.setattr(research_pipeline, 'get_search_settings', lambda: SearchSettings(
@@ -93,7 +93,7 @@ def test_no_key_disables_search_without_network(monkeypatch):
 
 def test_mixed_search_distinguishes_total_provider_failure_from_empty_results():
     import httpx
-    from contest_detective.server.research_pipeline.search.mixed import MixedSearch
+    from contest_detective.research.search.mixed import MixedSearch
     class Unavailable:
         def search(self, *args, **kwargs):
             raise httpx.ReadTimeout('offline')

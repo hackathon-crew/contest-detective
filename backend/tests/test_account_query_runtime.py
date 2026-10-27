@@ -9,8 +9,8 @@ from account_helpers import account_client, login
 def test_interactive_query_builds_only_the_current_users_provider_settings(
     tmp_path, monkeypatch
 ):
-    from contest_detective.web.api import agent
-    from contest_detective.server.agent.schemas import TraceEvent
+    from contest_detective.bootstrap.api import agent
+    from contest_detective.agent.schemas import TraceEvent
 
     monkeypatch.setenv(
         "DETECTIVE_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode()
@@ -60,8 +60,8 @@ def test_interactive_query_builds_only_the_current_users_provider_settings(
 
 def test_query_preferences_filter_deadlines_and_blocked_subdomains():
     from types import SimpleNamespace
-    from contest_detective.server.agent.tools import ToolDeps
-    from contest_detective.server.account.schemas import SearchPreferences
+    from contest_detective.agent.tools import ToolDeps
+    from contest_detective.system.account.schemas import SearchPreferences
 
     deps = ToolDeps(
         None, None, preferences=SearchPreferences(blocked_domains=["csdn.net"])

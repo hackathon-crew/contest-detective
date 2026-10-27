@@ -32,10 +32,10 @@ dependencies = [
 ]
 
 [project.scripts]
-contest-detective = "contest_detective.web.bootstrap.app:main"
-contest-detective-sync = "contest_detective.web.bootstrap.source_sync:main"
-contest-detective-mcp = "contest_detective.web.bootstrap.mcp:main"
-contest-detective-refresh = "contest_detective.web.bootstrap.offline_refresh:main"
+contest-detective = "contest_detective.bootstrap.app:main"
+contest-detective-sync = "contest_detective.bootstrap.source_sync:main"
+contest-detective-mcp = "contest_detective.bootstrap.mcp:main"
+contest-detective-refresh = "contest_detective.bootstrap.offline_refresh:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -61,29 +61,29 @@ root_package = "contest_detective"
 [[tool.importlinter.contracts]]
 name = "Domain code does not depend on HTTP"
 type = "forbidden"
-source_modules = ["contest_detective.server"]
-forbidden_modules = ["contest_detective.web"]
+source_modules = ["contest_detective.contest", "contest_detective.research", "contest_detective.agent", "contest_detective.system"]
+forbidden_modules = ["contest_detective.bootstrap"]
 
 [[tool.importlinter.contracts]]
 name = 'Contest owns its data'
 type = "forbidden"
-source_modules = ["contest_detective.server.contest"]
-forbidden_modules = ['contest_detective.server.research_pipeline', 'contest_detective.server.agent', 'contest_detective.server.auth', 'contest_detective.server.user']
+source_modules = ["contest_detective.contest"]
+forbidden_modules = ['contest_detective.research', 'contest_detective.agent', 'contest_detective.system.auth', 'contest_detective.system.user']
 
 [[tool.importlinter.contracts]]
 name = 'Research is independent of accounts and investigation'
 type = "forbidden"
-source_modules = ["contest_detective.server.research_pipeline"]
-forbidden_modules = ['contest_detective.server.agent', 'contest_detective.server.auth', 'contest_detective.server.user']
+source_modules = ["contest_detective.research"]
+forbidden_modules = ['contest_detective.agent', 'contest_detective.system.auth', 'contest_detective.system.user']
 
 [[tool.importlinter.contracts]]
 name = 'Investigation does not authenticate'
 type = "forbidden"
-source_modules = ["contest_detective.server.agent"]
-forbidden_modules = ['contest_detective.server.auth']
+source_modules = ["contest_detective.agent"]
+forbidden_modules = ['contest_detective.system.auth']
 
 [[tool.importlinter.contracts]]
 name = 'Ingestion does not deliver notifications'
 type = 'forbidden'
-source_modules = ['contest_detective.server.contest', 'contest_detective.server.research_pipeline', 'contest_detective.server.agent']
-forbidden_modules = ['contest_detective.server.notifications']
+source_modules = ['contest_detective.contest', 'contest_detective.research', 'contest_detective.agent']
+forbidden_modules = ['contest_detective.system.notifications']

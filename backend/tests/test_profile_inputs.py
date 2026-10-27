@@ -7,11 +7,11 @@ import pytest
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models.function import FunctionModel
 
-from contest_detective.common.exceptions import BizException
+from contest_detective.framework.exceptions import BizException
 
 
 def test_github_profile_uses_two_public_requests_and_repository_count_shares():
-    from contest_detective.server.user.github import build_github_profile
+    from contest_detective.system.user.github import build_github_profile
     seen = []
 
     def handler(request):
@@ -43,7 +43,7 @@ def test_github_profile_uses_two_public_requests_and_repository_count_shares():
 
 
 def test_github_missing_and_rate_limited_users_return_business_errors():
-    from contest_detective.server.user.github import build_github_profile
+    from contest_detective.system.user.github import build_github_profile
 
     async def run(status):
         async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(status))) as client:
@@ -65,7 +65,7 @@ def docx(text):
 
 
 def test_plaintext_and_docx_convert_in_memory_then_extract_only_profile_fields(tmp_path, monkeypatch):
-    from contest_detective.server.user.resume import create_profile_extractor, parse_resume
+    from contest_detective.system.user.resume import create_profile_extractor, parse_resume
     monkeypatch.chdir(tmp_path)
     seen = []
 
@@ -87,7 +87,7 @@ def test_plaintext_and_docx_convert_in_memory_then_extract_only_profile_fields(t
 
 
 def test_resume_rejects_large_unsupported_and_expanding_archives_before_extraction():
-    from contest_detective.server.user.resume import parse_resume
+    from contest_detective.system.user.resume import parse_resume
 
     async def extractor(text):
         pytest.fail('不应调用抽取')
@@ -99,8 +99,8 @@ def test_resume_rejects_large_unsupported_and_expanding_archives_before_extracti
 
 
 def test_resume_text_sent_to_extractor_is_bounded():
-    from contest_detective.server.user.resume import parse_resume
-    from contest_detective.server.user.schemas import Profile
+    from contest_detective.system.user.resume import parse_resume
+    from contest_detective.system.user.schemas import Profile
     seen = []
 
     async def extractor(text):
@@ -131,8 +131,8 @@ def pdf():
 
 
 def test_pdf_uses_the_local_converter_and_does_not_write_raw_files(tmp_path, monkeypatch):
-    from contest_detective.server.user.resume import parse_resume
-    from contest_detective.server.user.schemas import Profile
+    from contest_detective.system.user.resume import parse_resume
+    from contest_detective.system.user.schemas import Profile
     monkeypatch.chdir(tmp_path)
     seen = []
 

@@ -6,9 +6,9 @@ import pytest
 from sqlalchemy import inspect, select
 
 from contest_detective.framework import db
-from contest_detective.server.contest import service
-from contest_detective.server.contest.models import Contest, ContestDetails
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.contest import service
+from contest_detective.contest.models import Contest, ContestDetails
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
 
 
 def migrate(engine, revision, *, downgrade=False):

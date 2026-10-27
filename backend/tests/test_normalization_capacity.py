@@ -5,10 +5,10 @@ from decimal import Decimal
 import httpx
 import pytest
 
-from contest_detective.server.agent import normalization
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.contest.schemas import ContestDraft, PageIn
-from contest_detective.server.research_pipeline.normalization import NormalizationInput
+from contest_detective.agent import normalization
+from contest_detective.agent.config import LLMSettings
+from contest_detective.contest.schemas import ContestDraft, PageIn
+from contest_detective.research.normalization import NormalizationInput
 
 
 @pytest.mark.parametrize(('mode', 'expected_limit'), [('external', None), ('local', 2048)])

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.contest.schemas import ContestDraft, ContestQuery
+from contest_detective.contest.schemas import ContestDraft, ContestQuery
 
 
 def test_draft_preserves_deadline_kind():
@@ -33,7 +33,7 @@ def test_contracts_are_exported(client):
 
 
 def test_event_payload_matches_event_type():
-    from contest_detective.server.agent.schemas import TraceEvent
+    from contest_detective.agent.schemas import TraceEvent
     event=TraceEvent(type='answer',payload={'content':'[日期](https://example.com)'})
     assert event.payload['sources'] == []
     with pytest.raises(ValidationError):

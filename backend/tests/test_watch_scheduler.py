@@ -4,16 +4,16 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from contest_detective.server.account.models import Follow
-from contest_detective.server.contest import service as contests
-from contest_detective.server.contest.models import ContestEvent, ContestPage
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.notifications.watch.config import WatchSettings
-from contest_detective.server.notifications.watch.models import Check, Subscription
-from contest_detective.server.notifications.watch.scheduler import due_contests, run_due, start_watch_scheduler
-from contest_detective.server.notifications.watch.service import statuses
-from contest_detective.server.research_pipeline.verification import verify_recent
-from contest_detective.server.user.models import User
+from contest_detective.system.account.models import Follow
+from contest_detective.contest import service as contests
+from contest_detective.contest.models import ContestEvent, ContestPage
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.system.notifications.watch.config import WatchSettings
+from contest_detective.system.notifications.watch.models import Check, Subscription
+from contest_detective.system.notifications.watch.scheduler import due_contests, run_due, start_watch_scheduler
+from contest_detective.system.notifications.watch.service import statuses
+from contest_detective.research.verification import verify_recent
+from contest_detective.system.user.models import User
 
 NOW = datetime(2026, 10, 25, tzinfo=timezone.utc)
 USER = UUID('22222222-2222-2222-2222-222222222222')
@@ -36,7 +36,7 @@ def setup(session, number, url=None):
 
 
 def test_disabled_scheduler_does_not_construct_provider_or_query(session_factory, monkeypatch):
-    from contest_detective.server.notifications.watch import scheduler
+    from contest_detective.system.notifications.watch import scheduler
     def denied(*args, **kwargs):
         raise AssertionError('disabled scheduler must not call dependencies')
     monkeypatch.setattr(scheduler, 'get_watch_settings', lambda: WatchSettings(watch_enabled=False))
@@ -202,7 +202,7 @@ def test_concurrent_ingestion_cannot_stamp_a_stale_applied_hash(session_factory)
     result=asyncio.run(verify_recent(session_factory=session_factory,extractor=None,
         contest_ids=[cid],fetcher=fetch,runner=runner,now=NOW,clock=lambda:NOW))
     assert result.checks[0].outcome == 'failed'
-    from contest_detective.server.contest.models import ContestPageLink
+    from contest_detective.contest.models import ContestPageLink
     with session_factory() as session:
         page=session.scalar(select(ContestPage).where(ContestPage.url==url))
         assert session.get(ContestPageLink,(cid,page.id)).verified_content_hash is None

@@ -6,11 +6,11 @@ from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RequestUsage
 from sqlalchemy import select
 
-from contest_detective.server.agent.budget import Budget
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.extraction import create_page_extractor
-from contest_detective.server.agent.llm import GuardedModel
-from contest_detective.server.agent.models import LLMUsage
+from contest_detective.agent.budget import Budget
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.extraction import create_page_extractor
+from contest_detective.agent.llm import GuardedModel
+from contest_detective.agent.models import LLMUsage
 
 
 def test_page_extractor_uses_the_shared_guard_and_preserves_full_page_text(session_factory):
@@ -36,7 +36,7 @@ def test_page_extractor_uses_the_shared_guard_and_preserves_full_page_text(sessi
 
 
 def test_production_extractor_construction_does_not_construct_a_provider(monkeypatch):
-    import contest_detective.server.agent.llm as llm
+    import contest_detective.agent.llm as llm
     def forbidden(**_):
         raise RuntimeError('provider is disabled')
     monkeypatch.setattr(llm, 'create_model', forbidden)

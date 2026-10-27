@@ -6,11 +6,11 @@ from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
 
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.contest.schemas import ContestDraft
-from contest_detective.server.contest.service import save
-from contest_detective.server.user.schemas import Profile
-from contest_detective.web.api.agent import get_investigator, limiter
+from contest_detective.agent.loop import Investigator
+from contest_detective.contest.schemas import ContestDraft
+from contest_detective.contest.service import save
+from contest_detective.system.user.schemas import Profile
+from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
 
 @pytest.fixture(autouse=True)
@@ -119,10 +119,10 @@ def test_profile_validation_happens_before_opening_the_stream(client, session_fa
 
 def test_large_profile_context_is_rejected_before_provider_or_balance_access(session_factory):
     from sqlalchemy import select
-    from contest_detective.server.agent.budget import Budget
-    from contest_detective.server.agent.config import LLMSettings
-    from contest_detective.server.agent.llm import GuardedModel
-    from contest_detective.server.agent.models import LLMUsage
+    from contest_detective.agent.budget import Budget
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.agent.llm import GuardedModel
+    from contest_detective.agent.models import LLMUsage
     profile = Profile(skills=['Python'], github_evidence=[{
         'name': f'repository-{index}', 'url': f'https://github.com/person/repository-{index}',
         'topics': ['测' * 80] * 50,

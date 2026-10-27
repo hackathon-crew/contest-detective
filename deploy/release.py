@@ -264,7 +264,7 @@ def point_to(directory):
 
 
 def release_services(directory):
-    module = directory / 'backend/src/contest_detective/web/bootstrap/mcp_http.py'
+    module = directory / 'backend/src/contest_detective/bootstrap/mcp_http.py'
     return (SERVICE, MCP_SERVICE) if module.is_file() else (SERVICE,)
 
 
@@ -303,13 +303,13 @@ def configure_environment(directory, snapshot):
 
 
 def validate_configuration(directory, unit):
-    module = directory / 'backend/src/contest_detective/server/agent/normalization_prompts.py'
+    module = directory / 'backend/src/contest_detective/agent/normalization_prompts.py'
     if not module.is_file():
         return
     # Load settings and render the template without constructing a model or starting the application.
     check = (
-        'from contest_detective.server.agent.config import get_llm_settings; '
-        'from contest_detective.server.agent.normalization_prompts import load_prompt; '
+        'from contest_detective.agent.config import get_llm_settings; '
+        'from contest_detective.agent.normalization_prompts import load_prompt; '
         'assert load_prompt(get_llm_settings().normalization_prompt_path).render().strip(); '
         'print("Normalization prompt configuration validated")'
     )

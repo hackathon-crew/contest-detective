@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from contest_detective.server.contest import service
-from contest_detective.server.contest.models import ContestEvent
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, PageIn
+from contest_detective.contest import service
+from contest_detective.contest.models import ContestEvent
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, PageIn
 
 
 def draft(value='上海', excerpt='上海'):
@@ -30,9 +30,9 @@ def test_events_commit_with_contests_and_ignore_source_wording(session):
 def test_pipeline_can_suppress_notifications_without_skipping_storage(session, monkeypatch):
     import importlib
     from sqlalchemy.orm import sessionmaker
-    from contest_detective.server.contest.models import Contest
-    from contest_detective.server.research_pipeline.pipeline.models import ContestSyncOutput
-    module = importlib.import_module('contest_detective.server.research_pipeline.pipeline.execute')
+    from contest_detective.contest.models import Contest
+    from contest_detective.research.pipeline.models import ContestSyncOutput
+    module = importlib.import_module('contest_detective.research.pipeline.execute')
     calls = []
     async def write(*_):
         with sessionmaker(bind=session.get_bind())() as current:
@@ -49,9 +49,9 @@ def test_pipeline_can_suppress_notifications_without_skipping_storage(session, m
 def test_multiple_sources_rollback_as_one_contest_transaction(session, monkeypatch):
     import importlib
     from sqlalchemy.orm import sessionmaker
-    from contest_detective.server.contest.models import Contest
-    from contest_detective.server.research_pipeline.pipeline.models import ContestRecord, ContestSyncContext, ContestSyncInput
-    module = importlib.import_module('contest_detective.server.research_pipeline.pipeline.persist')
+    from contest_detective.contest.models import Contest
+    from contest_detective.research.pipeline.models import ContestRecord, ContestSyncContext, ContestSyncInput
+    module = importlib.import_module('contest_detective.research.pipeline.persist')
     original, calls = module.save, []
     def failing_save(*args, **kwargs):
         calls.append(1)

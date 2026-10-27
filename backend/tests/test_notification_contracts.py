@@ -16,7 +16,7 @@ def test_notification_storage_has_durable_owner_scoped_constraints(tmp_path):
     assert expected <= set(inspector.get_table_names())
     for table in ('notification_pending', 'notification_seen'):
         assert {'users', 'contests'} <= {fk['referred_table'] for fk in inspector.get_foreign_keys(table)}
-    from contest_detective.server.notifications.models import PendingNotification
+    from contest_detective.system.notifications.models import PendingNotification
     with Session(engine) as session:
         values = dict(user_id=uuid.uuid4(), contest_id='contest', event_id=1,
                       reason='profile', track_ids=[], version='a' * 64)
@@ -30,7 +30,7 @@ def test_notification_storage_has_durable_owner_scoped_constraints(tmp_path):
 
 
 def test_delivery_contract_carries_a_stable_idempotency_key():
-    from contest_detective.server.notifications.ports import DeliveryReceipt, OutgoingMail
+    from contest_detective.system.notifications.ports import DeliveryReceipt, OutgoingMail
     message = OutgoingMail(key='daily:user:2026-10-25', sender='Inkpaw <hello@example.com>',
                            recipient='reader@example.com', subject='新比赛', html='<p>新比赛</p>', text='新比赛')
     assert message.key == 'daily:user:2026-10-25'

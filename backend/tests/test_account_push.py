@@ -16,8 +16,8 @@ def test_push_settings_require_login_and_verified_address(tmp_path):
 
 
 def test_push_and_tracks_are_owned_and_parse_once(tmp_path):
-    from contest_detective.web.api.account_push import get_tracking_parser
-    from contest_detective.server.account.schemas import TrackingConditions
+    from contest_detective.bootstrap.api.account_push import get_tracking_parser
+    from contest_detective.system.account.schemas import TrackingConditions
     with account_client(tmp_path) as client:
         owner = login(client)
         parsed = []
@@ -41,8 +41,8 @@ def test_push_and_tracks_are_owned_and_parse_once(tmp_path):
 
 
 def test_structured_tracking_filters_dates_modes_city_and_prize(session):
-    from contest_detective.server.notifications.tracking import matching_contests
-    from contest_detective.server.account.schemas import TrackingConditions
+    from contest_detective.system.notifications.tracking import matching_contests
+    from contest_detective.system.account.schemas import TrackingConditions
     target = contest(session, 'AI线上', deadline='2027-11-20T00:00:00Z', start='2027-11-21T01:00:00Z', end='2027-11-22T10:00:00Z', extra={'prize': '10000 元'})
     contest(session, 'AI线下', mode='offline', deadline='2027-11-20T00:00:00Z')
     contest(session, '游戏线上', deadline='2027-12-01T00:00:00Z')
@@ -52,10 +52,10 @@ def test_structured_tracking_filters_dates_modes_city_and_prize(session):
 
 
 def test_scheduler_uses_beijing_time_and_claims_a_daily_delivery_once(tmp_path, monkeypatch):
-    from contest_detective.server.notifications.service import dispatch_due
-    from contest_detective.server.account.models import MailDelivery
-    from contest_detective.server.user import matching
-    from contest_detective.server.contest import service
+    from contest_detective.system.notifications.service import dispatch_due
+    from contest_detective.system.account.models import MailDelivery
+    from contest_detective.system.user import matching
+    from contest_detective.contest import service
     now = datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(matching, '_now', lambda: now)
     monkeypatch.setattr(service, '_now', lambda: now)
@@ -82,7 +82,7 @@ def test_scheduler_uses_beijing_time_and_claims_a_daily_delivery_once(tmp_path, 
 
 
 def test_test_mail_failure_is_recorded_without_claiming_success(tmp_path):
-    from contest_detective.web.api.account_push import get_mailer
+    from contest_detective.bootstrap.api.account_push import get_mailer
     with account_client(tmp_path) as client:
         login(client)
         class Broken:
@@ -97,8 +97,8 @@ def test_test_mail_failure_is_recorded_without_claiming_success(tmp_path):
 
 
 def test_same_verified_fact_does_not_notify_for_a_source_excerpt_change(session):
-    from contest_detective.server.notifications.service import fingerprint
-    from contest_detective.server.contest import service
+    from contest_detective.system.notifications.service import fingerprint
+    from contest_detective.contest import service
     key = contest(session, '来源更新')
     item = service.get(session, key)
     before = fingerprint(item)
@@ -107,9 +107,9 @@ def test_same_verified_fact_does_not_notify_for_a_source_excerpt_change(session)
 
 
 def test_deadline_reminders_run_independently_and_respect_per_contest_switch(tmp_path):
-    from contest_detective.server.notifications.service import dispatch_due, fingerprint
-    from contest_detective.server.account.models import Follow
-    from contest_detective.server.contest import service
+    from contest_detective.system.notifications.service import dispatch_due, fingerprint
+    from contest_detective.system.account.models import Follow
+    from contest_detective.contest import service
     with account_client(tmp_path) as client:
         user_id = login(client)
         client.put('/account/push', json={'enabled': True, 'frequency': 'daily', 'time': '23:00', 'reminder_days': [3, 1]})
@@ -131,8 +131,8 @@ def test_deadline_reminders_run_independently_and_respect_per_contest_switch(tmp
 
 
 def test_next_send_uses_beijing_weekday_and_rolls_after_the_selected_time():
-    from contest_detective.server.notifications.service import next_send
-    from contest_detective.server.account.schemas import PushSettings
+    from contest_detective.system.notifications.service import next_send
+    from contest_detective.system.account.schemas import PushSettings
     config = PushSettings(enabled=True, frequency='weekly', weekday=0, time='08:00')
     assert next_send(config, datetime(2026, 10, 25, 23, 59, tzinfo=timezone.utc)).isoformat() == '2026-10-26T08:00:00+08:00'
     assert next_send(config, datetime(2026, 10, 26, 0, 0, tzinfo=timezone.utc)).isoformat() == '2026-11-02T08:00:00+08:00'
@@ -142,11 +142,11 @@ def test_next_send_uses_beijing_weekday_and_rolls_after_the_selected_time():
 
 def test_digest_only_calls_verified_ingestion_dates_new(tmp_path, monkeypatch):
     from datetime import timedelta
-    from contest_detective.server.user import matching
-    from contest_detective.server.user.models import User
-    from contest_detective.server.contest import service
-    from contest_detective.server.contest.models import ContestEvent
-    from contest_detective.server.notifications.service import preview
+    from contest_detective.system.user import matching
+    from contest_detective.system.user.models import User
+    from contest_detective.contest import service
+    from contest_detective.contest.models import ContestEvent
+    from contest_detective.system.notifications.service import preview
     now = datetime(2026, 10, 25, 1, 0, tzinfo=timezone.utc)
     monkeypatch.setattr(matching, '_now', lambda: now)
     monkeypatch.setattr(service, '_now', lambda: now)
@@ -166,8 +166,8 @@ def test_digest_only_calls_verified_ingestion_dates_new(tmp_path, monkeypatch):
 
 
 def test_track_results_and_undo_stay_scoped_to_the_owner(tmp_path):
-    from contest_detective.web.api.account_push import get_tracking_parser
-    from contest_detective.server.account.schemas import TrackingConditions
+    from contest_detective.bootstrap.api.account_push import get_tracking_parser
+    from contest_detective.system.account.schemas import TrackingConditions
     with account_client(tmp_path) as client:
         login(client)
         async def parser(text, today): return TrackingConditions(keywords=['AI'], modes=['online'])

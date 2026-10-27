@@ -7,8 +7,8 @@ from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
 
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.schemas import AskRequest
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.schemas import AskRequest
 
 
 HISTORY = [
@@ -44,7 +44,7 @@ def test_history_is_optional_and_retains_roles():
 
 
 def test_http_question_forwards_conversation_history(client, session_factory):
-    from contest_detective.web.api.agent import get_investigator
+    from contest_detective.bootstrap.api.agent import get_investigator
 
     def respond(messages, _info):
         assert any(isinstance(part, UserPromptPart) and part.content == HISTORY[0]['content']
@@ -86,7 +86,7 @@ def test_long_question_and_full_history_reach_the_model(session_factory):
 
 
 def test_http_delivers_a_long_question_without_cutting_it(client, session_factory):
-    from contest_detective.web.api.agent import get_investigator, limiter
+    from contest_detective.bootstrap.api.agent import get_investigator, limiter
     question = '请完整保留这些参赛条件。' * 100
     seen = []
     def respond(messages, info):

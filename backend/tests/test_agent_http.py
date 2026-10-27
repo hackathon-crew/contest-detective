@@ -9,9 +9,9 @@ from pydantic_ai.models.function import FunctionModel
 from agent_responses import answer_part
 from sqlalchemy import select
 
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.models import Investigation
-from contest_detective.web.api.agent import get_investigator, limiter
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.models import Investigation
+from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
 
 @pytest.fixture(autouse=True)
@@ -86,8 +86,8 @@ def test_parameter_errors_remain_json_and_do_not_start_investigation(local_clien
 
 
 def test_disabled_provider_remains_json_and_validates_question_first(client, monkeypatch):
-    from contest_detective.server.agent.config import LLMSettings
-    import contest_detective.server.agent.llm as llm
+    from contest_detective.agent.config import LLMSettings
+    import contest_detective.agent.llm as llm
     monkeypatch.setattr(llm, 'get_llm_settings', lambda: LLMSettings(_env_file=None, enabled=False))
     invalid = client.post('/agent/ask', json={'question': '   '})
     assert invalid.headers['content-type'].startswith('application/json')
@@ -109,10 +109,10 @@ def test_campaign_switch_removes_query_count_cap(local_client, monkeypatch):
 @pytest.mark.parametrize('mode', ['deep', 'realtime'])
 def test_legacy_strict_request_uses_normal_workflow_without_plans_or_claim_report(client, session_factory, monkeypatch, mode):
     from pydantic_ai.messages import ToolCallPart, ToolReturnPart
-    from contest_detective.server.contest.service import save
-    from contest_detective.server.contest.schemas import ContestDraft
-    from contest_detective.server.agent.config import LLMSettings
-    from contest_detective.server.account.schemas import SearchPreferences
+    from contest_detective.contest.service import save
+    from contest_detective.contest.schemas import ContestDraft
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.system.account.schemas import SearchPreferences
     from contest_detective.framework.config.search import SearchSettings
     with session_factory() as session:
         contest_id = save(session, ContestDraft(name='公开开发挑战赛', page={
@@ -129,8 +129,8 @@ def test_legacy_strict_request_uses_normal_workflow_without_plans_or_claim_repor
         return ModelResponse([answer_part('可以先看公开开发挑战赛，含金量尚需按你的目标比较。', [{
             'contest_id': contest_id, 'introduction': '公开赛事', 'reason': '请参考主办方规则',
         }])])
-    monkeypatch.setattr('contest_detective.server.agent.llm.create_model', lambda **_: FunctionModel(respond))
-    monkeypatch.setattr('contest_detective.web.api.agent.runtime_for', lambda *_: SimpleNamespace(
+    monkeypatch.setattr('contest_detective.agent.llm.create_model', lambda **_: FunctionModel(respond))
+    monkeypatch.setattr('contest_detective.bootstrap.api.agent.runtime_for', lambda *_: SimpleNamespace(
         llm=LLMSettings(_env_file=None), search=SearchSettings(_env_file=None), preferences=SearchPreferences()))
     response = client.post('/agent/ask', json={'question': '帮我找找最近含金量最高的比赛', 'mode': mode})
     assert response.headers['content-type'].startswith('text/event-stream')
@@ -143,7 +143,7 @@ def test_legacy_strict_request_uses_normal_workflow_without_plans_or_claim_repor
 
 
 def test_confirmed_screenshot_claims_are_paused_before_model_initialization(client, monkeypatch):
-    monkeypatch.setattr('contest_detective.server.agent.llm.create_model', lambda **_: pytest.fail('paused verification must not run model'))
+    monkeypatch.setattr('contest_detective.agent.llm.create_model', lambda **_: pytest.fail('paused verification must not run model'))
     response = client.post('/agent/ask', json={'question': '核实截图', 'mode': 'deep',
         'confirmed_claims': [{'id': 'c1', 'text': '比赛报名今天截止', 'origin': 'screenshot'}]})
     assert response.json()['code'] == 503

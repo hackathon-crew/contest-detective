@@ -3,13 +3,13 @@ from datetime import datetime, timezone
 import httpx
 
 from contest_detective.framework.config.app import AppSettings
-from contest_detective.server.contest import service
-from contest_detective.server.contest.content import CoverageObservation
-from contest_detective.server.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
-from contest_detective.server.research_pipeline.detail import document_for
-from contest_detective.server.research_pipeline.detail_contracts import DetailFetchResult
-from contest_detective.server.research_pipeline.pipeline.execute import run_pipeline
-from contest_detective.server.research_pipeline.pipeline.models import ContestRecord, ContestSyncContext, ContestSyncInput
+from contest_detective.contest import service
+from contest_detective.contest.content import CoverageObservation
+from contest_detective.contest.schemas import ClaimIn, ContestDraft, ContestQuery, PageIn
+from contest_detective.research.detail import document_for
+from contest_detective.research.detail_contracts import DetailFetchResult
+from contest_detective.research.pipeline.execute import run_pipeline
+from contest_detective.research.pipeline.models import ContestRecord, ContestSyncContext, ContestSyncInput
 
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 DESCRIPTION = 'This hackathon invites student developers to build practical projects together.'
@@ -51,10 +51,10 @@ def test_detail_body_intro_and_metadata_reach_list_detail_without_republishing_b
 
 
 def test_atomic_multisource_failure_rolls_back_only_bad_contest_and_reports_safe_error(session_factory, monkeypatch):
-    from contest_detective.server.contest.schemas import FieldValue, Source
+    from contest_detective.contest.schemas import FieldValue, Source
     import importlib
 
-    module = importlib.import_module('contest_detective.server.research_pipeline.pipeline.persist')
+    module = importlib.import_module('contest_detective.research.pipeline.persist')
     real_save = module.save
 
     def fail_second_page(session, incoming, **kwargs):
@@ -105,7 +105,7 @@ def test_body_only_candidate_is_saved_without_model_calls(session_factory):
 
 
 def test_denied_detail_is_not_retried_through_unprotected_legacy_reader(session_factory, monkeypatch):
-    from contest_detective.server.research_pipeline import pages
+    from contest_detective.research import pages
 
     original = draft('https://fixture.devpost.com/')
     original.claims.append(ClaimIn(field='registration_url', value=original.page.url, excerpt=original.page.url))

@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.db import get_session
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.models import LLMUsage
-from contest_detective.server.auth import service as auth
-from contest_detective.server.documents.schemas import MAX_QUESTION_BYTES
-from contest_detective.web.api.companion import limiter
-from contest_detective.web.api.mail import get_mailer
-from contest_detective.web.bootstrap.app import create_app
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.models import LLMUsage
+from contest_detective.system.auth import service as auth
+from contest_detective.system.documents.schemas import MAX_QUESTION_BYTES
+from contest_detective.bootstrap.api.companion import limiter
+from contest_detective.bootstrap.api.mail import get_mailer
+from contest_detective.bootstrap.app import create_app
 
 from account_helpers import Mailbox, request_code
 from test_document_contracts import grounded_answer, question_data

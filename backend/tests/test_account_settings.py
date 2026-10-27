@@ -10,10 +10,10 @@ from test_profile_matching import contest
 
 
 def test_email_changes_only_after_single_use_verification(tmp_path):
-    from contest_detective.web.api.account_settings import get_mailer
-    from contest_detective.server.account.models import EmailChange, MailDelivery
-    from contest_detective.server.notifications.ports import DeliveryReceipt
-    from contest_detective.server.user.models import User
+    from contest_detective.bootstrap.api.account_settings import get_mailer
+    from contest_detective.system.account.models import EmailChange, MailDelivery
+    from contest_detective.system.notifications.ports import DeliveryReceipt
+    from contest_detective.system.user.models import User
 
     messages = []
 
@@ -62,8 +62,8 @@ def test_email_changes_only_after_single_use_verification(tmp_path):
 
 
 def test_unverified_account_can_verify_its_current_email(tmp_path):
-    from contest_detective.web.api.mail import get_mailer
-    from contest_detective.server.notifications.ports import DeliveryReceipt
+    from contest_detective.bootstrap.api.mail import get_mailer
+    from contest_detective.system.notifications.ports import DeliveryReceipt
 
     messages = []
 
@@ -141,16 +141,16 @@ def test_password_change_revokes_other_sessions_and_keeps_current_session(tmp_pa
 def test_export_and_delete_are_owned_and_preserve_public_contests(
     tmp_path, monkeypatch
 ):
-    from contest_detective.server.account.models import (
+    from contest_detective.system.account.models import (
         Follow,
         Track,
         AccountSettings,
         PersonalToken,
     )
-    from contest_detective.server.account.tokens import resolve_token
-    from contest_detective.server.user.models import User
-    from contest_detective.server.contest.models import Contest
-    from contest_detective.server.agent.models import Investigation, TraceRecord
+    from contest_detective.system.account.tokens import resolve_token
+    from contest_detective.system.user.models import User
+    from contest_detective.contest.models import Contest
+    from contest_detective.agent.models import Investigation, TraceRecord
 
     monkeypatch.setenv(
         "DETECTIVE_ACCOUNT_ENCRYPTION_KEY", Fernet.generate_key().decode()

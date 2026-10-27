@@ -9,12 +9,12 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.db import get_session
-from contest_detective.server.agent.loop import Investigator
-from contest_detective.server.agent.models import Investigation
-from contest_detective.server.user import service as users
-from contest_detective.web.api.agent import get_investigator, limiter
-from contest_detective.web.api.mail import get_mailer
-from contest_detective.web.bootstrap.app import create_app
+from contest_detective.agent.loop import Investigator
+from contest_detective.agent.models import Investigation
+from contest_detective.system.user import service as users
+from contest_detective.bootstrap.api.agent import get_investigator, limiter
+from contest_detective.bootstrap.api.mail import get_mailer
+from contest_detective.bootstrap.app import create_app
 
 
 def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path):

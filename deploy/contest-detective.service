@@ -10,7 +10,7 @@ Group=contest-detective
 WorkingDirectory=/srv/contest-detective/backend
 EnvironmentFile=/etc/contest-detective.env
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/srv/contest-detective/backend/.venv/bin/uvicorn contest_detective.web.bootstrap.app:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1
+ExecStart=/srv/contest-detective/backend/.venv/bin/uvicorn contest_detective.bootstrap.app:app --host 127.0.0.1 --port 8000 --workers 1 --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=on-failure
 RestartSec=5
 TimeoutStopSec=30

@@ -5,7 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from contest_detective.server.contest import service as contests
+from contest_detective.contest import service as contests
 
 FIXTURES = Path(__file__).parent / 'fixtures'
 CASES = [
@@ -44,7 +44,7 @@ def replay(source, *, empty=False, raw=None):
             return httpx.Response(200, json=details[request.url.path.rsplit('/', 1)[-1]])
         return httpx.Response(200, json=payload)
 
-    adapter = import_module(f'contest_detective.server.research_pipeline.sources.{source}')
+    adapter = import_module(f'contest_detective.research.sources.{source}')
     with httpx.Client(transport=httpx.MockTransport(handle)) as client:
         return adapter.fetch(client)
 

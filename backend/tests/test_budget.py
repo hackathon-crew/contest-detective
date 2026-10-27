@@ -13,12 +13,12 @@ from pydantic_ai.usage import RequestUsage
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from contest_detective.common.exceptions import BizException
+from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.db import init_db
-from contest_detective.server.agent.budget import Budget, calculate_cost, read_balance
-from contest_detective.server.agent.config import LLMSettings
-from contest_detective.server.agent.llm import GuardedModel, create_model
-from contest_detective.server.agent.models import LLMUsage
+from contest_detective.agent.budget import Budget, calculate_cost, read_balance
+from contest_detective.agent.config import LLMSettings
+from contest_detective.agent.llm import GuardedModel, create_model
+from contest_detective.agent.models import LLMUsage
 
 
 def settings(**kwargs):
@@ -231,7 +231,7 @@ def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory)
 }}])
 def test_deepseek_wire_request_preserves_the_reserved_output_cap(session_factory, monkeypatch, overrides):
     import json
-    from contest_detective.server.agent import llm
+    from contest_detective.agent import llm
     real_client = llm.AsyncOpenAI
     def handle(request):
         payload = json.loads(request.content)
@@ -261,7 +261,7 @@ def test_deepseek_wire_request_preserves_the_reserved_output_cap(session_factory
 
 def test_call_settings_cannot_turn_sdk_retries_back_on(session_factory, monkeypatch):
     from pydantic_ai.exceptions import ModelHTTPError
-    from contest_detective.server.agent import llm
+    from contest_detective.agent import llm
     real_client, requests = llm.AsyncOpenAI, []
     def fail(request):
         requests.append(request)

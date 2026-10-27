@@ -4,11 +4,11 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from contest_detective.server.contest.events import ContestChange, ContestSnapshot
-from contest_detective.server.notifications.watch.contracts import (
+from contest_detective.contest.events import ContestChange, ContestSnapshot
+from contest_detective.system.notifications.watch.contracts import (
     WatchCursor, WatchNotification, WatchStatus, WatchSubscription,
 )
-from contest_detective.server.research_pipeline.verification_contracts import PageCheck
+from contest_detective.research.verification_contracts import PageCheck
 
 NOW = datetime(2026, 10, 25, tzinfo=timezone.utc)
 
