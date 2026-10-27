@@ -137,7 +137,7 @@ flowchart TD
 | **Field evidence and deterministic processing** | Models interpret requests and extract content; code handles dates, eligibility and availability filters, ranking, deduplication, and report completion rules. Conclusions retain inspectable sources. |
 | **Change events and personal delivery** | Persisted additions and changes connect to profiles, tracking conditions, and follows, turning refreshed data into personal digests and reminders. |
 
-Implementation: [GitHub profiles](backend/src/contest_detective/server/user/github.py) · [Matching](backend/src/contest_detective/server/user/matching.py) · [Deep verification](backend/src/contest_detective/server/agent/verification.py) · [Update pipeline](backend/src/contest_detective/server/research_pipeline/pipeline/execute.py) · [Daily scheduling](backend/src/contest_detective/server/research_pipeline/scheduler.py) · [Email delivery](backend/src/contest_detective/server/notifications/service.py).
+Implementation: [GitHub profiles](backend/src/contest_detective/system/user/github.py) · [Matching](backend/src/contest_detective/system/user/matching.py) · [Deep verification](backend/src/contest_detective/agent/verification.py) · [Update pipeline](backend/src/contest_detective/research/pipeline/execute.py) · [Daily scheduling](backend/src/contest_detective/research/scheduler.py) · [Email delivery](backend/src/contest_detective/system/notifications/service.py).
 
 ## Get started
 

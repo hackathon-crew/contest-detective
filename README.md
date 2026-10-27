@@ -143,7 +143,7 @@ flowchart TD
 | **字段级证据与确定性处理** | 模型理解查询与抽取内容，代码执行日期比较、资格与时间筛选、匹配排序、去重及报告完成条件；每个结论保留可检查的来源。 |
 | **变更事件与个人通知** | 入库后的新增和变化连接画像匹配、追踪条件与关注设置，让每日更新的数据继续产生个性化摘要和提醒。 |
 
-实现入口：[GitHub 画像](backend/src/contest_detective/server/user/github.py) · [画像匹配](backend/src/contest_detective/server/user/matching.py) · [深度核验](backend/src/contest_detective/server/agent/verification.py) · [更新 Pipeline](backend/src/contest_detective/server/research_pipeline/pipeline/execute.py) · [每日调度](backend/src/contest_detective/server/research_pipeline/scheduler.py) · [邮件推送](backend/src/contest_detective/server/notifications/service.py)。
+实现入口：[GitHub 画像](backend/src/contest_detective/system/user/github.py) · [画像匹配](backend/src/contest_detective/system/user/matching.py) · [深度核验](backend/src/contest_detective/agent/verification.py) · [更新 Pipeline](backend/src/contest_detective/research/pipeline/execute.py) · [每日调度](backend/src/contest_detective/research/scheduler.py) · [邮件推送](backend/src/contest_detective/system/notifications/service.py)。
 
 ## 开始使用
 
