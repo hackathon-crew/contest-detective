@@ -1,7 +1,7 @@
 import asyncio
 
 import pytest
-from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
@@ -49,3 +49,56 @@ def test_deep_discovery_preserves_search_results_without_full_verification(sessi
     if not interrupted:
         assert events[-1].payload['content'] == answer
     assert any(event.type == 'observation' and event.payload['tool'] == 'web_search' for event in events)
+
+
+@pytest.mark.parametrize('mode', [None, 'deep'])
+@pytest.mark.parametrize('read_result', [None, 'direct', 'redirect', 'rejected'])
+def test_interruption_lists_only_unopened_search_leads_as_unread(session_factory, mode, read_result):
+    first_url = 'https://organizer.example/rules'
+    final_url = 'https://organizer.example/rules-v2' if read_result == 'redirect' else first_url
+    unread_url = 'https://directory.example/event'
+
+    def respond(messages, info):
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        if mode == 'deep' and not results:
+            return ModelResponse([ToolCallPart('plan_investigation', {'plan': {
+                'mode': 'deep', 'steps': [{'id': 's1', 'purpose': '查黑客松规则',
+                    'query': '周末黑客松规则', 'claim_ids': ['c1']}],
+            }})])
+        if not any(part.tool_name == 'web_search' for part in results):
+            arguments = {'query': '周末黑客松规则'}
+            if mode == 'deep':
+                arguments['step_id'] = 's1'
+            return ModelResponse([ToolCallPart('web_search', arguments)])
+        if read_result and not any(part.tool_name == 'fetch_page' for part in results):
+            return ModelResponse([ToolCallPart('fetch_page', {'url': first_url})])
+        raise RuntimeError('provider-unavailable')
+
+    def fetch(url):
+        if read_result == 'rejected':
+            raise PermissionError('redirect rejected')
+        return {'url': final_url, 'text': '公开黑客松规则'}
+
+    investigator = Investigator(FunctionModel(respond), session_factory=session_factory, mode=mode,
+        search_provider='yuanbao', search=lambda *args, **kwargs: [
+            {'title': '主办方规则', 'url': first_url, 'site': '主办方', 'provider': 'yuanbao'},
+            {'title': '其他黑客松线索', 'url': unread_url, 'site': '目录', 'provider': 'yuanbao'},
+        ], fetch=fetch)
+
+    async def consume():
+        return [event async for event in investigator.ask('查公开黑客松规则')]
+
+    events = asyncio.run(consume())
+    assert events[-1].type == 'answer', events[-1].payload
+    answer = events[-1].payload
+    assert f'- [其他黑客松线索]({unread_url})（未读取原文）' in answer['content']
+    if read_result in {'direct', 'redirect'}:
+        assert f'- [主办方规则]({first_url})（未读取原文）' not in answer['content']
+        assert answer['content'].count(f']({final_url})') == 1
+        assert [source['url'] for source in answer['sources']] == [final_url]
+    else:
+        assert answer['sources'] == []
+        if mode == 'deep' and read_result == 'rejected':
+            assert first_url not in answer['content']
+        else:
+            assert f'- [主办方规则]({first_url})（未读取原文）' in answer['content']

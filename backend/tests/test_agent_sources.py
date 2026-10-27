@@ -71,3 +71,27 @@ def test_opened_search_result_keeps_its_title_and_excludes_other_hits(session_fa
     assert [(source['url'], source['title']) for source in events[-1].payload['sources']] == [
         (final_url, '周末黑客松参赛规则'),
     ]
+
+
+def test_search_summary_stays_on_one_line_without_repeating_lead_links(session_factory):
+    def respond(messages, info):
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        if not results:
+            return ModelResponse([ToolCallPart('web_search', {'query': '周末黑客松'})])
+        assert results[-1].content['items'][0]['title'] == '周末黑客松参赛规则'
+        return ModelResponse([answer_part('找到一条待查线索。')])
+
+    investigator = Investigator(FunctionModel(respond), session_factory=session_factory,
+        search=lambda *args, **kwargs: [
+            {'title': '周末黑客松参赛规则', 'url': 'https://organizer.example/rules', 'site': '主办方'},
+        ])
+
+    async def consume():
+        return [event async for event in investigator.ask('查周末黑客松规则')]
+
+    events = asyncio.run(consume())
+    observation = next(event for event in events if event.type == 'observation')
+    summary = observation.payload['summary']
+    assert '\n' not in summary
+    assert '周末黑客松参赛规则' not in summary and 'https://' not in summary
+    assert events[-1].payload['sources'] == []
