@@ -19,6 +19,11 @@ from contest_detective.contest import service
 from contest_detective.contest.schemas import ContestDraft
 from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
+
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
 URL = 'https://organizer.example/output-rules'
 CITED = f'作品提交截止为[2026-10-27 16:00]({URL})，报名截止未找到。'
 
