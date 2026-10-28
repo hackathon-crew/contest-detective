@@ -2,10 +2,11 @@
 
 使用已发布版本。静态文件在 `frontend/dist`，后端只监听回环地址，nginx 将 `/api/` 转发给后端。独立只读 MCP 监听 `127.0.0.1:8001`，nginx 将 `/mcp` 原路径转发给它。SQLite 部署下两个进程读取同一份 `/var/lib/contest-detective/contest.db`；PostgreSQL 部署下共用 `/etc/contest-detective.env` 中的连接配置。
 
-服务器安装 nginx、uv、Git 和 `postgresql-client-16`（发布脚本用 `pg_dump` / `pg_restore` 备份 PostgreSQL）。前端在本地对应版本运行 `npm ci && npm run build`，将 `dist` 传到服务器；后端在服务器运行：
+服务器安装 nginx、uv 和 Git；PostgreSQL 部署还需要 `postgresql-client-16`（发布脚本用 `pg_dump` / `pg_restore` 备份 PostgreSQL）。前端在本地对应版本运行 `npm ci && npm run build`，将 `dist` 传到服务器；后端在服务器运行：
 
 ```sh
-sudo apt-get install -y postgresql-client-16
+# PostgreSQL 部署需要 postgresql-client-16；Ubuntu 22.04 需先添加 PGDG 源
+# sudo apt-get install -y postgresql-client-16
 sudo install -d -m 755 /srv/contest-detective /opt/contest-python
 # 将对应发布版本解压到 /srv/contest-detective
 cd /srv/contest-detective/backend
