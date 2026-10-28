@@ -322,7 +322,7 @@ class VerificationState:
         status = 'complete'
         if not successful:
             status = 'blocked'
-            limitations.append('这次没有搜到可用资料，尚未核实最新信息。')
+            limitations.append('最新资料尚未完成查找和核对，相关信息仍未核实。')
         for item in claims:
             linked = {query.id for query in successful
                       if self.plan and any(step.id == query.step_id and item.id in step.claim_ids for step in self.plan.steps)}
@@ -370,7 +370,7 @@ def render_report(report):
     labels = {'supported': '证据支持', 'refuted': '证据反驳', 'conflicting': '来源冲突', 'insufficient': '尚未核实'}
     lines = [{'complete': '已根据读到的原文核对了你的问题。',
               'incomplete': '已查到部分资料，还有内容尚未核实。',
-              'blocked': '这次还没有查到足够资料，暂时不能确认你的问题。'}[report.status]]
+              'blocked': '这次核验还没有完成，暂时不能确认你的问题。'}[report.status]]
     for item in report.claims:
         lines.extend(['', markdown_text(item.text), f'{labels[item.verdict]}：{markdown_text(item.comparison)}'])
         for key in item.evidence_ids:
