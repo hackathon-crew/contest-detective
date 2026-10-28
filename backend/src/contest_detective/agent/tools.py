@@ -3,7 +3,7 @@ import asyncio
 import inspect
 import logging
 from functools import wraps
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
 from typing import Annotated, Callable, Literal
 from urllib.parse import urlsplit
@@ -11,10 +11,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
-from contest_detective.contest.schemas import ContestQuery, DEADLINE_FIELDS, date_bounds
+from contest_detective.contest.schemas import ContestQuery, EvidenceField
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user import matching
@@ -77,6 +78,7 @@ class ToolDeps:
     scope_classifier: Callable | None = None
     question: str = ''
     scope_context: str = ''
+    wrapping_up: bool = False
 
     def observe_contest(self, item):
         self.observed_contests[item.id] = plain(item)
@@ -100,13 +102,6 @@ class ToolDeps:
             for domain in self.preferences.blocked_domains)
 
     def allows_contest(self, item):
-        if self.preferences is None:
-            return True
-        if self.preferences.exclude_ended:
-            deadlines = [v for name, v in item.fields.items() if name in DEADLINE_FIELDS and v.value]
-            now = datetime.now(timezone.utc)
-            if item.status == 'ended' or (deadlines and all(date_bounds(v.value, v.precision)[1] <= now for v in deadlines)):
-                return False
         return not any(not self.allows_url(source.url) for value in item.fields.values() for source in value.sources)
 
     def remember(self, sources):
@@ -127,9 +122,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     def research_tool(function):
         @wraps(function)
         async def call(*args, **kwargs):
+            ctx = args[0] if args else kwargs.get('ctx')
             try:
                 result = await function(*args, **kwargs)
-                ctx = args[0] if args else kwargs.get('ctx')
                 if ctx and ctx.deps.verification:
                     result = public_payload(result)
                     if isinstance(result, dict) and 'sources' in result:
@@ -137,6 +132,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                             if safe_evidence_url(source.get('url', ''))
                             and source['url'] not in ctx.deps.verification.rejected_urls]
                 return result
+            except UsageLimitExceeded:
+                limit = ctx.usage_limits.request_limit
+                if limit is not None and ctx.usage.requests == limit - 1:
+                    return {'summary': '本轮已停止新增查证，保留已读取的资料。', 'sources': []}
+                raise
             except Exception as exc:
                 logger.warning('%s failed: %s', function.__name__, type(exc).__name__)
                 return {'error': type(exc).__name__, 'summary': '本次查询未完成，可尝试其他来源或方法。', 'sources': []}
@@ -149,11 +149,15 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                               date_from: datetime | None = None, date_to: datetime | None = None,
                               sort: Literal['deadline', 'start'] = 'deadline', page: Annotated[int, Field(ge=1)] = 1,
                               page_size: Annotated[int, Field(ge=1, le=20)] = 20) -> dict:
-        """查询候选名片；page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。"""
+        """查询候选名片；未传 status 时遵循账户默认截止过滤开关，无账户时启用。显式 status 可查历史。
+
+        page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。
+        """
         with ctx.deps.session_factory() as session:
             items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
                 date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
-                accept=ctx.deps.allows_contest if ctx.deps.preferences else None)
+                attendable=status is None and (ctx.deps.preferences is None or ctx.deps.preferences.exclude_ended),
+                blocked_domains=ctx.deps.preferences.blocked_domains if ctx.deps.preferences else ())
         for item in items:
             ctx.deps.observe_contest(item)
         ctx.deps.contest_ids.update(item.id for item in items)
@@ -162,17 +166,24 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 'summary': f'找到 {total} 场比赛，本页 {len(items)} 场'}
 
     @research_tool
-    async def get_contest(ctx: RunContext[ToolDeps], contest_id: str) -> dict:
-        """读取字段、精度和出处；precision=day 只公布日期，不得把排序锚点说成小时。"""
+    async def get_contest(ctx: RunContext[ToolDeps], contest_id: str,
+                          fields: Annotated[list[EvidenceField], Field(min_length=1, max_length=6)] | None = None) -> dict:
+        """按需读取最多 6 个字段的值、精度、等级和出处；省略 fields 时给五个日期字段和 city。
+
+        summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。precision=day 只有日期。
+        """
         with ctx.deps.session_factory() as session:
             item = contests.get(session, contest_id)
         if item is None or not ctx.deps.allows_contest(item):
             return {'contest': None, 'summary': '比赛未找到', 'sources': []}
         ctx.deps.observe_contest(item)
-        sources = contest_sources(item)
+        selected = contests.evidence(item, fields)
+        sources = contest_sources(selected)
         ctx.deps.contest_ids.add(item.id)
         ctx.deps.remember(sources)
-        return {'contest': plain(item), 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
+        payload = selected.model_dump(mode='json',
+            exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
+        return {'contest': payload, 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
     @research_tool
     async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None,
@@ -306,9 +317,12 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         if ctx.deps.record is None:
             return {'contest_id': None, 'summary': '页面保存暂未配置', 'sources': []}
 
-        # 网页抽取属于同一轮查证，必须共用计数和上限，不能另领一份请求预算。
+        # 抽取共用本轮计数，但不能花掉最终成文的那一次请求。
+        limits = ctx.usage_limits
+        if limits.request_limit is not None:
+            limits = replace(limits, request_limit=limits.request_limit - 1)
         extract = create_page_extractor(model=ctx.deps.model, session_factory=ctx.deps.session_factory,
-                                        usage=ctx.usage, usage_limits=ctx.usage_limits)
+                                        usage=ctx.usage, usage_limits=limits)
 
         context = {}
         if ctx.deps.verification:

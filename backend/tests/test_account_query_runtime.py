@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
+import pytest
 from cryptography.fernet import Fernet
 
 from account_helpers import account_client, login
@@ -58,18 +59,20 @@ def test_interactive_query_builds_only_the_current_users_provider_settings(
         assert calls[-1]["model_settings"] is None
 
 
-def test_query_preferences_filter_deadlines_and_blocked_subdomains():
+@pytest.mark.parametrize('exclude_ended', [True, False])
+def test_contest_access_only_filters_blocked_source_domains(exclude_ended):
     from types import SimpleNamespace
     from contest_detective.agent.tools import ToolDeps
     from contest_detective.system.account.schemas import SearchPreferences
 
     deps = ToolDeps(
-        None, None, preferences=SearchPreferences(blocked_domains=["csdn.net"])
+        None, None, preferences=SearchPreferences(exclude_ended=exclude_ended, blocked_domains=["csdn.net"])
     )
     assert not deps.allows_url("https://blog.csdn.net/article/one")
     assert deps.allows_url("https://notcsdn.net/contest")
-    past = SimpleNamespace(value="2000-01-01T00:00:00Z", precision="day", sources=[])
-    contest = SimpleNamespace(status="ongoing", fields={"registration_deadline": past})
-    assert not deps.allows_contest(contest)
-    deps.preferences = SearchPreferences(exclude_ended=False)
+    past = SimpleNamespace(value="2000-01-01T00:00:00Z", precision="day",
+                           sources=[SimpleNamespace(url="https://organizer.example/rules")])
+    contest = SimpleNamespace(status="ended", fields={"registration_deadline": past})
     assert deps.allows_contest(contest)
+    past.sources = [SimpleNamespace(url="https://blog.csdn.net/article/one")]
+    assert not deps.allows_contest(contest)

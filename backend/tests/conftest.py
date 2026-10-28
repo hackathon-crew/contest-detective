@@ -1,4 +1,5 @@
 import pytest
+import time_machine
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -6,6 +7,12 @@ from sqlalchemy.pool import StaticPool
 
 from contest_detective.framework.db import Base, get_session, init_db
 from contest_detective.bootstrap.app import create_app
+
+
+@pytest.fixture(autouse=True)
+def fixed_current_time():
+    with time_machine.travel('2026-10-24T00:00:00Z', tick=False):
+        yield
 
 
 @pytest.fixture

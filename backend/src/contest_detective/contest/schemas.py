@@ -13,6 +13,8 @@ ContestField = Literal[
 ]
 VerificationLevel = Literal['official', 'reposted', 'conflict', 'not_found']
 ContestStatus = Literal['upcoming', 'ongoing', 'ended']
+EvidenceField = ContestField | Literal['summary']
+DEFAULT_EVIDENCE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified', 'city')
 DatePrecision = Literal['day', 'datetime']
 BEIJING = timezone(timedelta(hours=8))
 DATE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified')
@@ -162,6 +164,14 @@ class ContestBrief(BaseModel):
     mode: Literal['online', 'offline', 'hybrid'] | None
     prize: str | None
     themes: list[str]
+
+
+class ContestEvidence(BaseModel):
+    id: str
+    name: str
+    status: ContestStatus
+    fields: dict[ContestField, FieldValue]
+    summary: str | None = None
 
 
 class ContestSummary(BaseModel):
