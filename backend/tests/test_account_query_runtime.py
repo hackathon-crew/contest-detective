@@ -59,6 +59,34 @@ def test_interactive_query_builds_only_the_current_users_provider_settings(
         assert calls[-1]["model_settings"] is None
 
 
+def test_unreadable_personal_key_explains_resaving_and_the_resaved_key_works(tmp_path, monkeypatch):
+    from pydantic_ai.messages import ModelResponse, TextPart
+    from pydantic_ai.models.function import FunctionModel
+
+    monkeypatch.setenv('DETECTIVE_ACCOUNT_ENCRYPTION_KEY', Fernet.generate_key().decode())
+    created = []
+
+    def model(**kwargs):
+        created.append(kwargs)
+        return FunctionModel(lambda *_: ModelResponse([TextPart('可以继续查证公开比赛。')]))
+
+    monkeypatch.setattr('contest_detective.agent.llm.create_model', model)
+    with account_client(tmp_path) as client:
+        login(client)
+        body = {'llm_api_key': 'test-only-owner-key'}
+        assert client.put('/account/providers', json=body).json()['code'] == 200
+        monkeypatch.setenv('DETECTIVE_ACCOUNT_ENCRYPTION_KEY', Fernet.generate_key().decode())
+        failed = client.post('/agent/ask', json={'question': '查公开比赛'}).json()
+        assert failed['code'] == 503
+        assert '账户设置' in failed['message'] and '重新保存' in failed['message']
+        assert '解密' not in failed['message']
+        assert created == []
+        assert client.put('/account/providers', json=body).json()['code'] == 200
+        recovered = client.post('/agent/ask', json={'question': '查公开比赛'})
+        assert 'event: answer' in recovered.text and '可以继续查证公开比赛。' in recovered.text
+        assert len(created) == 1
+
+
 @pytest.mark.parametrize('exclude_ended', [True, False])
 def test_contest_access_only_filters_blocked_source_domains(exclude_ended):
     from types import SimpleNamespace
