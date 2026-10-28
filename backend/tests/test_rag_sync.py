@@ -36,7 +36,7 @@ def test_cli_refreshes_index_after_contest_commit_and_survives_index_failure(ses
 
     monkeypatch.setattr(source_sync, 'run_pipeline', pipeline)
     monkeypatch.setattr(index.EmbeddingIndexer, 'refresh', refresh)
-    source_sync.main()
+    source_sync.main([])
     assert observed == [1]
     assert json.loads(capsys.readouterr().out) == {'saved': 1}
     with session_factory() as session:
