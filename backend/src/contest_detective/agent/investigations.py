@@ -53,7 +53,7 @@ class Investigations:
         try:
             async with investigator.agent:
                 await investigator._execute(investigation_id, body.question, user_id, body.profile,
-                                            body.history, body.confirmed_claims, owner_id=owner_id)
+                                            body.history, body.confirmed_claims, owner_id=owner_id, contest_id=body.contest_id)
         finally:
             self._interrupt(investigation_id, owner_id)
 
