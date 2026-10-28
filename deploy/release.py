@@ -359,7 +359,7 @@ def postgres_snapshot(target, snapshot):
     temporary.unlink(missing_ok=True)
     try:
         run('pg_dump', '--format=custom', '--file', str(temporary),
-            '--dbname', target.database, env=target.env)
+            '--dbname', target.database, env=target.env, timeout=3600)
         temporary.chmod(0o600)
         os.replace(temporary, snapshot)
     finally:
@@ -370,7 +370,7 @@ def postgres_restore(target, snapshot):
     run('psql', '--dbname', target.database, '--set', 'ON_ERROR_STOP=1', '--command',
         'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;', env=target.env)
     run('pg_restore', '--dbname', target.database, '--no-owner', '--no-privileges',
-        '--single-transaction', '--exit-on-error', str(snapshot), env=target.env)
+        '--single-transaction', '--exit-on-error', str(snapshot), env=target.env, timeout=3600)
 
 
 def snapshot_database(database, snapshot):
@@ -404,8 +404,8 @@ def interrupted(signum, frame):
     raise InterruptedError(f'Deployment interrupted by signal {signum}')
 
 
-def run(*args, **kwargs):
-    subprocess.run(args, check=True, timeout=600, **kwargs)
+def run(*args, timeout=600, **kwargs):
+    subprocess.run(args, check=True, timeout=timeout, **kwargs)
 
 
 def point_to(directory):
