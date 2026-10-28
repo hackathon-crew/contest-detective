@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router'
 import type { ComponentProps } from 'react'
+import type { Profile, PublicUser } from '@/shared/api'
 import { ProfileMatchDialog, loadConfirmedProfile } from './index'
 
 const profile = {
@@ -30,15 +31,28 @@ const recommendation = {
   score: 5,
   reason: '你的 [agent 项目](https://github.com/octocat/agent) 与这场赛道相符。',
 }
+const account: PublicUser = { id: 'user', username: 'student@example.org', profile: {} }
+let savedProfile: Profile = {}
+let accountCalls: string[] = []
 function envelope(data: unknown, code = 200, message = 'ok') {
   return new Response(JSON.stringify({ code, message, data }), {
     headers: { 'content-type': 'application/json' },
   })
 }
 function show(
-  user = null as { id: string; username: string; profile: typeof profile } | null,
+  user: PublicUser = account,
   initialSection?: ComponentProps<typeof ProfileMatchDialog>['initialSection'],
 ) {
+  savedProfile = user.profile
+  const transport = globalThis.fetch
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+    accountCalls.push(String(input))
+    if (String(input).endsWith('/user/profile')) {
+      savedProfile = JSON.parse(String(init?.body))
+      return envelope({ ...user, profile: savedProfile })
+    }
+    return transport(input, init)
+  })
   return render(
     <MemoryRouter>
       <ProfileMatchDialog user={user} initialSection={initialSection} onClose={vi.fn()} />
@@ -48,6 +62,8 @@ function show(
 
 beforeEach(() => {
   localStorage.clear()
+  savedProfile = {}
+  accountCalls = []
 })
 afterEach(() => {
   cleanup()
@@ -57,7 +73,7 @@ afterEach(() => {
 describe('profile confirmation', () => {
   it('moves a GitHub draft into the editable profile before saving it', async () => {
     vi.stubGlobal('fetch', async () => envelope(profile))
-    show(null, 'github')
+    show(account, 'github')
     expect(screen.queryByRole('button', { name: '确认并挑比赛' })).toBeNull()
     fireEvent.change(screen.getByLabelText('GitHub 用户名'), { target: { value: 'octocat' } })
     fireEvent.click(screen.getByRole('button', { name: '读取 GitHub' }))
@@ -73,13 +89,13 @@ describe('profile confirmation', () => {
       matched = JSON.parse(String(init?.body))
       return envelope([])
     })
-    show(null, 'filters')
+    show({ ...account, profile }, 'filters')
     fireEvent.change(screen.getByLabelText('城市'), { target: { value: '上海' } })
     fireEvent.click(screen.getByRole('button', { name: '线上' }))
     fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
     await screen.findByText('没有找到符合条件的比赛，调整画像后再试。')
     expect(matched).toEqual({ ...profile, city: '上海', preferred_modes: ['online'] })
-    expect(loadConfirmedProfile()).toEqual(matched)
+    expect(savedProfile).toEqual(matched)
   })
 
   it('discards an unconfirmed draft after the controlled dialog closes', () => {
@@ -89,13 +105,13 @@ describe('profile confirmation', () => {
     })
     view.rerender(
       <MemoryRouter>
-        <ProfileMatchDialog open={false} onClose={vi.fn()} />
+        <ProfileMatchDialog user={account} open={false} onClose={vi.fn()} />
       </MemoryRouter>,
     )
     expect(screen.queryByRole('dialog')).toBeNull()
     view.rerender(
       <MemoryRouter>
-        <ProfileMatchDialog open onClose={vi.fn()} />
+        <ProfileMatchDialog user={account} open onClose={vi.fn()} />
       </MemoryRouter>,
     )
     expect((screen.getByLabelText('GitHub 用户名') as HTMLInputElement).value).toBe('')
@@ -105,7 +121,7 @@ describe('profile confirmation', () => {
     localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
     const fetch = vi.fn(async () => envelope([]))
     vi.stubGlobal('fetch', fetch)
-    show()
+    show({ ...account, profile })
     fireEvent.click(screen.getByRole('button', { name: '清空草稿' }))
     expect((screen.getByLabelText('GitHub 用户名') as HTMLInputElement).value).toBe('')
     expect(screen.queryByRole('button', { name: '移除技能 Python' })).toBeNull()
@@ -113,7 +129,7 @@ describe('profile confirmation', () => {
     expect(fetch).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
     await screen.findByText('没有找到符合条件的比赛，调整画像后再试。')
-    expect(loadConfirmedProfile()).toEqual({})
+    expect(savedProfile).toEqual({})
   })
   it('keeps a GitHub draft unsaved until edited and confirmed', async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = []
@@ -139,7 +155,7 @@ describe('profile confirmation', () => {
     fireEvent.click(screen.getByRole('button', { name: '添加技能' }))
     fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
     await screen.findByRole('link', { name: '线上智能体周末' })
-    expect(loadConfirmedProfile()?.skills).toEqual(['TypeScript'])
+    expect(savedProfile.skills).toEqual(['TypeScript'])
     expect(
       JSON.parse(String(calls.find((call) => call.url.endsWith('/match'))?.init?.body)).skills,
     ).toEqual(['TypeScript'])
@@ -162,7 +178,7 @@ describe('profile confirmation', () => {
     show({ id: 'user', username: 'student@example.org', profile })
     fireEvent.click(screen.getByRole('button', { name: '确认并挑比赛' }))
     await screen.findByText('没有找到符合条件的比赛，调整画像后再试。')
-    expect(calls).toEqual(['/api/user/profile', '/api/match'])
+    expect(accountCalls).toEqual(['/api/user/profile', '/api/match'])
     expect(loadConfirmedProfile()).toBeNull()
   })
 
@@ -212,7 +228,7 @@ describe('profile confirmation', () => {
           : envelope({ ...profile, github: null, topics: [], skills: ['TypeScript'] }),
       ),
     )
-    show()
+    show({ ...account, profile: { city: '北京', identity_kind: 'student' } })
     fireEvent.change(screen.getByLabelText('GitHub 用户名'), { target: { value: 'octocat' } })
     fireEvent.click(screen.getByRole('button', { name: '读取 GitHub' }))
     await screen.findByRole('button', { name: '移除技能 Python' })
@@ -231,7 +247,7 @@ describe('profile confirmation', () => {
     localStorage.setItem('contest-detective.profile', JSON.stringify({ github: 12 }))
     expect(loadConfirmedProfile()).toBeNull()
     localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
-    show()
+    show({ ...account, profile })
     fireEvent.click(screen.getByRole('button', { name: '移除技能 Python' }))
     await waitFor(() => expect(loadConfirmedProfile()?.skills).toEqual(['Python']))
   })
