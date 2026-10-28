@@ -49,9 +49,11 @@ def test_disconnect_for_ten_seconds_does_not_cancel_and_replays_from_database(se
 
 
 def test_event_reads_are_owned_and_honor_last_event_id(client, session_factory, monkeypatch):
-    async def identity(request):
+    from fastapi import Request
+    from contest_detective.bootstrap.api.agent import get_request_user_id
+    async def identity(request: Request):
         return request.headers.get('test-user')
-    monkeypatch.setattr('contest_detective.bootstrap.api.agent.get_current_user_id', identity)
+    client.app.dependency_overrides[get_request_user_id] = identity
     investigation_id = str(uuid4())
     with session_factory() as session:
         session.add(Investigation(id=investigation_id, question='报名时间', user_id='alice', status='completed'))
@@ -123,7 +125,8 @@ def test_restart_persists_retry_action_with_original_question(session_factory):
         assert row.status == 'interrupted' and row.question == '原问题：比赛报名时间'
 
 
-def test_repeated_start_is_idempotent_and_guest_cookie_owns_the_result(client, session_factory, monkeypatch):
+def test_repeated_start_is_idempotent_and_account_owns_the_result(authenticated_client, session_factory, monkeypatch):
+    client = authenticated_client
     calls = []
     def create(**_):
         calls.append('create')
@@ -133,16 +136,17 @@ def test_repeated_start_is_idempotent_and_guest_cookie_owns_the_result(client, s
     body = {'investigation_id': investigation_id, 'question': '查比赛'}
     first = client.post('/agent/ask', json=body)
     assert 'event: answer' in first.text
-    assert client.cookies.get('cd_investigator')
+    assert not client.cookies.get('cd_investigator')
     assert client.post('/agent/ask', json=body).text == first.text
     assert calls == ['create']
     assert '完整答案' in client.get(f'/agent/investigations/{investigation_id}/events?after=0').text
-    client.cookies.clear()
-    assert client.get(f'/agent/investigations/{investigation_id}/events').json()['code'] == 404
-    assert client.post(f'/agent/investigations/{investigation_id}/cancel').json()['code'] == 404
+    client.app.dependency_overrides.clear()
+    assert client.get(f'/agent/investigations/{investigation_id}/events').json()['code'] == 401
+    assert client.post(f'/agent/investigations/{investigation_id}/cancel').json()['code'] == 401
 
 
-def test_live_heartbeats_do_not_consume_persisted_event_sequences(client, session_factory, monkeypatch):
+def test_live_heartbeats_do_not_consume_persisted_event_sequences(authenticated_client, session_factory, monkeypatch):
+    client = authenticated_client
     from contest_detective.bootstrap.api import agent as api
     async def respond(*_):
         await asyncio.sleep(0.05)
