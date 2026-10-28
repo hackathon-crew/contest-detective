@@ -13,6 +13,11 @@ from contest_detective.agent.loop import Investigator
 from contest_detective.bootstrap.api import agent as web_agent
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 def local_provider(session_factory, monkeypatch, *, failure=False, pause=None):
     clients, requests = [], []
     real_client = llm.AsyncOpenAI
