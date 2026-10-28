@@ -10,18 +10,13 @@ import {
   officialDeadlineCount,
   safeUrl,
 } from '@/entities/contest'
-import { currentUserKey, useCurrentUser } from '@/entities/user'
+import { currentUserKey, personalIntent, useCurrentUser, useLoginGate } from '@/entities/user'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import { ContestDetail } from '@/features/contest-detail'
 import { DetectiveComposer, useDetective } from '@/features/detective'
 import { FollowButton, useFollows } from '@/features/follow'
-import {
-  ProfileMatchDialog,
-  loadConfirmedProfile,
-  type ProfileMatchSection,
-} from '@/features/profile-match'
-import type { Profile } from '@/shared/api'
+import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile-match'
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { SiteFooter } from '@/shared/ui/site-footer'
@@ -72,15 +67,17 @@ function WallCover({ url, name }: { url: string; name: string }) {
 }
 
 export function HomePage({ contestId }: { contestId?: string }) {
+  const location = useLocation()
   const { data: user } = useCurrentUser()
   const client = useQueryClient()
-  const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
-  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
-  const [question, setQuestion] = useState('')
+  const requireLogin = useLoginGate()
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(
+    () => personalIntent(location).profileSection ?? null,
+  )
+  const [question, setQuestion] = useState(() => personalIntent(location).question ?? '')
   const [size, setSize] = useState(() => (window.innerWidth <= 880 ? 120 : 360))
   const input = useRef<HTMLTextAreaElement>(null)
   const navigate = useNavigate()
-  const location = useLocation()
   const { send } = useDetective()
   const follows = useFollows()
   const collection = useContestCollection()
@@ -105,15 +102,17 @@ export function HomePage({ contestId }: { contestId?: string }) {
     () => navigate({ pathname: '/', search: location.search }),
     [navigate, location.search],
   )
-  function confirmed(profile: Profile) {
-    if (user) void client.invalidateQueries({ queryKey: currentUserKey })
-    else setGuestProfile(profile)
+  function confirmed() {
+    void client.invalidateQueries({ queryKey: currentUserKey })
+  }
+  function addProfile(section: ProfileMatchSection) {
+    if (requireLogin({ question, profileSection: section })) setProfileSection(section)
   }
   function ask(text: string, verification?: VerificationOptions) {
     const value = text.trim()
     if (!value) return
-    const id = send(value, user?.profile ?? guestProfile, undefined, verification)
-    navigate(`/detective/${id}`)
+    const id = send(value, user?.profile, undefined, verification)
+    if (id) navigate(`/detective/${id}`)
   }
   function focusAsk() {
     input.current?.scrollIntoView({
@@ -159,7 +158,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
                     ask(question, verification)
                   }}
                   onStop={() => {}}
-                  onAddProfile={setProfileSection}
+                  onAddProfile={addProfile}
                   onVerifyScreenshot={({ question, ...verification }) =>
                     ask(question, verification)
                   }
@@ -171,7 +170,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 <button
                   className="btn btn-primary"
                   type="button"
-                  onClick={() => setProfileSection('github')}
+                  onClick={() => addProfile('github')}
                 >
                   按我的画像推荐
                   <Icon name="arrow-right" />
@@ -250,11 +249,8 @@ export function HomePage({ contestId }: { contestId?: string }) {
         </section>
         <section className="feature" id="personalized">
           <div className="wrap feature-grid">
-            <PersonalizedIntro onAddProfile={setProfileSection} />
-            <PersonalizedPreview
-              profile={user?.profile ?? guestProfile}
-              onAddProfile={setProfileSection}
-            />
+            <PersonalizedIntro onAddProfile={addProfile} />
+            <PersonalizedPreview profile={user?.profile ?? null} onAddProfile={addProfile} />
           </div>
         </section>
         <section className="feature" id="research">
@@ -273,16 +269,16 @@ export function HomePage({ contestId }: { contestId?: string }) {
           <div className="wrap feature-grid flip">
             <FilterIntro />
             <HomeFilter
-              profile={user?.profile ?? guestProfile}
+              profile={user?.profile ?? null}
               total={total}
-              onAddProfile={() => setProfileSection('all')}
+              onAddProfile={() => addProfile('all')}
             />
           </div>
         </section>
         <section className="feature" id="agent">
           <div className="wrap feature-grid flip">
             <DetectiveIntro />
-            <DetectiveDemo contests={contests} onAsk={ask} onAddProfile={setProfileSection} />
+            <DetectiveDemo contests={contests} onAsk={ask} onAddProfile={addProfile} />
           </div>
         </section>
         <section className="feature" id="mcp">

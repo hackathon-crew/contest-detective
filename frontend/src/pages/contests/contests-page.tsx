@@ -14,14 +14,10 @@ import { SiteFooter } from '@/shared/ui/site-footer'
 import octopusRead from '@/shared/assets/mascot/octo-read.png'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
-import {
-  ProfileMatchDialog,
-  loadConfirmedProfile,
-  type ProfileMatchSection,
-} from '@/features/profile-match'
-import { currentUserKey, useCurrentUser } from '@/entities/user'
+import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile-match'
+import { currentUserKey, personalIntent, useCurrentUser, useLoginGate } from '@/entities/user'
 import { createContestCalendar, libraryDate, type LibraryRow } from '@/entities/contest'
-import { apiClient, type MatchItem, type Profile } from '@/shared/api'
+import { apiClient, type MatchItem } from '@/shared/api'
 import type { TrackMatches } from '@/shared/api/generated'
 import { ContestCalendar, ContestDatePicker } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
@@ -35,10 +31,13 @@ const Octopus = lazy(() =>
 )
 
 export function ContestsPage({ contestId }: { contestId?: string }) {
+  const location = useLocation()
   const { data: user } = useCurrentUser()
+  const requireLogin = useLoginGate()
   const client = useQueryClient()
-  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
-  const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(
+    () => personalIntent(location).profileSection ?? null,
+  )
   const [matches, setMatches] = useState<MatchItem[] | null>(null)
   const [sheet, setSheet] = useState(false)
   const [narrow, setNarrow] = useState(
@@ -54,8 +53,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   const closeSheet = useCallback(() => setSheet(false), [])
   const [downloadError, setDownloadError] = useState<unknown>(null)
   const follows = useFollows()
-  const location = useLocation(),
-    { search } = location
+  const { search } = location
   const trackingId = new URLSearchParams(search).get('tracking')
   const tracking = useQuery({
     queryKey: ['track-matches', user?.id, trackingId],
@@ -94,7 +92,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
     () => navigate({ pathname: '/contests', search }),
     [navigate, search],
   )
-  const profile = user?.profile ?? guestProfile
+  const profile = user?.profile ?? null
   const reasons = matches
     ? new Map(matches.map((item) => [item.contest.id, item.reason]))
     : undefined
@@ -228,7 +226,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             className="site-button site-button--ghost nav-follows"
             type="button"
             onClick={() => {
-              change({ mine: true })
+              if (requireLogin()) change({ mine: true })
               scrollToLibrary()
             }}
           >
@@ -430,9 +428,8 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
         user={user}
         initialSection={profileSection ?? 'all'}
         onClose={() => setProfileSection(null)}
-        onConfirmed={(confirmed: Profile) => {
-          if (user) void client.invalidateQueries({ queryKey: currentUserKey })
-          else setGuestProfile(confirmed)
+        onConfirmed={() => {
+          void client.invalidateQueries({ queryKey: currentUserKey })
         }}
         onMatched={(_confirmed, results) => {
           setMatches(results)
@@ -445,7 +442,10 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
         open={!!contestId}
         contestId={detailId}
         onClose={closeDetail}
-        onAsk={(question) => navigate('/detective/' + send(question, profile))}
+        onAsk={(question) => {
+          const id = send(question, profile)
+          if (id) navigate('/detective/' + id)
+        }}
         action={<FollowButton contestId={detailId} follows={follows} />}
       />
     </div>
