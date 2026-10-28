@@ -1,19 +1,14 @@
 import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } from 'lucide-react'
 import { Collapsible, Dialog as PrimitiveDialog } from 'radix-ui'
 import { useQueryClient } from '@tanstack/react-query'
-import { currentUserKey, useCurrentUser } from '@/entities/user'
-import {
-  loadConfirmedProfile,
-  ProfileMatchDialog,
-  type ProfileMatchSection,
-} from '@/features/profile-match'
+import { currentUserKey, personalIntent, useCurrentUser } from '@/entities/user'
+import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile-match'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
-import type { Profile } from '@/shared/api'
 import readingFrame from '@/shared/assets/mascot/octo-read.png'
 import {
   DetectiveComposer,
@@ -30,8 +25,9 @@ const Octopus = lazy(() =>
 )
 
 export function DetectivePage() {
+  const location = useLocation()
   const { conversationId } = useParams()
-  const { sessions, storageError, send, stop } = useDetective()
+  const { sessions, loading, storageError, reload, send, stop } = useDetective()
   const session = sessions.find((item) => item.id === conversationId)
   const [researchState, setResearchState] = useState<{
     conversationId?: string
@@ -51,11 +47,12 @@ export function DetectivePage() {
   const navigate = useNavigate()
   const { data: user, isPending: userPending } = useCurrentUser()
   const client = useQueryClient()
-  const [guestProfile, setGuestProfile] = useState(loadConfirmedProfile)
-  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(null)
+  const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(
+    () => personalIntent(location).profileSection ?? null,
+  )
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileGuideDismissed, setProfileGuideDismissed] = useState(false)
-  const profile = user?.profile ?? guestProfile
+  const profile = user?.profile
   const hasProfile = Boolean(
     profile?.github ||
     profile?.skills?.length ||
@@ -76,9 +73,8 @@ export function DetectivePage() {
     setResearchMode('closed')
     researchButton.current?.focus({ preventScroll: true })
   }
-  function confirmed(profile: Profile) {
-    if (user) void client.invalidateQueries({ queryKey: currentUserKey })
-    else setGuestProfile(profile)
+  function confirmed() {
+    void client.invalidateQueries({ queryKey: currentUserKey })
   }
 
   return (
@@ -135,11 +131,14 @@ export function DetectivePage() {
           <Conversation
             key={conversationId ?? 'new'}
             session={session}
-            missing={!!conversationId && !session}
+            missing={!!conversationId && !session && !loading && !storageError}
+            loading={loading && !!conversationId}
             storageError={storageError}
+            onReload={() => void reload()}
+            initialQuestion={personalIntent(location).question}
             onSubmit={(text, verification) => {
-              const id = send(text, user?.profile ?? guestProfile, session?.id, verification)
-              if (id !== conversationId) navigate(`/detective/${id}`)
+              const id = send(text, user?.profile, session?.id, verification)
+              if (id && id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
             onAddProfile={setProfileSection}
@@ -233,7 +232,10 @@ export function DetectivePage() {
 function Conversation({
   session,
   missing,
+  loading,
   storageError,
+  onReload,
+  initialQuestion,
   onSubmit,
   onStop,
   onAddProfile,
@@ -242,20 +244,23 @@ function Conversation({
 }: {
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
+  loading: boolean
   storageError: boolean
+  onReload: () => void
+  initialQuestion?: string
   onSubmit: (question: string, verification?: VerificationOptions) => void
   onStop: () => void
   onAddProfile: (section: ProfileMatchSection) => void
   showProfileGuide: boolean
   onDismissProfileGuide: () => void
 }) {
-  const [question, setQuestion] = useState('')
+  const [question, setQuestion] = useState(initialQuestion ?? '')
   const input = useRef<HTMLTextAreaElement>(null)
   const scroll = useRef<HTMLDivElement>(null)
   const pinned = useRef(true)
   const turns = session?.turns ?? []
   const lastTurn = turns.at(-1)
-  const pending = lastTurn?.status === 'running'
+  const pending = loading || lastTurn?.status === 'running'
   useEffect(() => {
     if (!pending) input.current?.focus({ preventScroll: true })
   }, [pending])
@@ -320,14 +325,19 @@ function Conversation({
                 </Suspense>
               </div>
             )}
-            <h2>{missing ? '这段对话不在当前浏览器中' : '想找什么样的比赛？'}</h2>
+            <h2>
+              {loading ? '正在读取对话…' : missing ? '没有找到这段对话' : '想找什么样的比赛？'}
+            </h2>
             {missing && <p>从左侧选择已有记录，或发起一段新对话。</p>}
           </div>
         )}
         <div className="detective-conversation__compose">
           {storageError && (
             <p role="alert" className="detective-turn__error">
-              浏览器未能保存记录，刷新前请复制需要保留的内容。
+              聊天记录暂时无法读取。
+              <button type="button" className="underline" onClick={onReload}>
+                重新读取
+              </button>
             </p>
           )}
           <DetectiveComposer
