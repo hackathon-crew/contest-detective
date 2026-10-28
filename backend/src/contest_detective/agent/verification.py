@@ -304,7 +304,7 @@ class VerificationState:
         errors = self.validate_assessments(parsed)
         by_id = {item.id: item for item in parsed} if not errors else {}
         claims = []
-        limitations = list(dict.fromkeys(errors))
+        limitations = ['部分结论还没有对应的原文支持，相关说法尚未核实。'] if errors else []
         for target in self.claims:
             item = by_id.get(target.id)
             if item is None:
@@ -322,7 +322,7 @@ class VerificationState:
         status = 'complete'
         if not successful:
             status = 'blocked'
-            limitations.append('本轮没有成功执行元宝搜索，未完成实时核验。')
+            limitations.append('这次没有搜到可用资料，尚未核实最新信息。')
         for item in claims:
             linked = {query.id for query in successful
                       if self.plan and any(step.id == query.step_id and item.id in step.claim_ids for step in self.plan.steps)}
@@ -330,7 +330,7 @@ class VerificationState:
                      and self.evidence[key].evidence_kind == 'fetched_page']
             if not any(linked.intersection(value.query_ids) for value in fresh):
                 if status != 'blocked': status = 'incomplete'
-                limitations.append(f'{item.id} 尚未建立元宝查询、读取原文与该说法的完整证据链。')
+                limitations.append(f'「{item.text}」尚未找到可对应的网页原文。')
         if any(item.verdict == 'conflicting' for item in claims):
             limitations.append('来源仍有冲突，不构成已确认事实；调查完成不等于说法已获证实。')
         if any(item.verdict == 'insufficient' for item in claims):
@@ -338,15 +338,16 @@ class VerificationState:
             limitations.append('部分核验目标仍缺少已读取的原文支持。')
         if self.plan is None:
             if status != 'blocked': status = 'incomplete'
-            limitations.append('调查计划尚未完成。')
+            limitations.append('你的问题还没有完成逐项核对。')
         elif self.mode == 'deep':
             done_steps = {query.step_id for query in successful}
             if len({_compact(query.query) for query in successful}) < 2 or len({query.round for query in successful}) < 2:
                 if status != 'blocked': status = 'incomplete'
-                limitations.append('深度调查尚未完成不同查询的多轮元宝检索。')
+                limitations.append('目前找到的资料还不够，尚未完成进一步查找和比对。')
             if not {step.id for step in self.plan.steps} <= done_steps:
                 if status != 'blocked': status = 'incomplete'
-                limitations.append('仍有计划步骤未完成实际搜索。')
+                pending = [step.purpose for step in self.plan.steps if step.id not in done_steps]
+                limitations.append('还有内容没有查到：' + '、'.join(pending) + '。')
             for item in claims:
                 evidence = [self.evidence[key] for key in item.evidence_ids if key in self.evidence]
                 fresh = [value for value in evidence if value.evidence_kind == 'fetched_page' and not value.historical]
@@ -354,10 +355,10 @@ class VerificationState:
                 hashes = {value.content_hash for value in fresh if value.content_hash}
                 if len(lineages) < 2 or len(hashes) < 2:
                     if status != 'blocked': status = 'incomplete'
-                    limitations.append(f'{item.id} 尚无两个已识别原始来源的交叉比对；转载或镜像不计独立证据。')
+                    limitations.append(f'「{item.text}」还缺少不同原始来源的相互印证；同文转载只能算一份资料。')
         if interrupted:
             if status != 'blocked': status = 'incomplete'
-            limitations.append('调查被中断，已取得资料仅为部分结果。')
+            limitations.append('这次查证还没有完成，已查到的资料已保留。')
         selected_ids = set(key for item in claims for key in item.evidence_ids)
         evidence = [item for key, item in self.evidence.items() if key in selected_ids]
         return InvestigationReport(mode=self.mode, status=status, generated_at=datetime.now(timezone.utc),
@@ -367,8 +368,9 @@ class VerificationState:
 
 def render_report(report):
     labels = {'supported': '证据支持', 'refuted': '证据反驳', 'conflicting': '来源冲突', 'insufficient': '尚未核实'}
-    status = {'complete': '已完成', 'incomplete': '部分完成', 'blocked': '未完成'}[report.status]
-    lines = [f'{"深度调查" if report.mode == "deep" else "实时核验"}：{status}']
+    lines = [{'complete': '已根据读到的原文核对了你的问题。',
+              'incomplete': '已查到部分资料，还有内容尚未核实。',
+              'blocked': '这次还没有查到足够资料，暂时不能确认你的问题。'}[report.status]]
     for item in report.claims:
         lines.extend(['', markdown_text(item.text), f'{labels[item.verdict]}：{markdown_text(item.comparison)}'])
         for key in item.evidence_ids:
@@ -377,6 +379,4 @@ def render_report(report):
                 lines.append(f'- 原文：{markdown_text(evidence.excerpt)}\n  [{markdown_text(evidence.title)}]({quote(evidence.url, safe=":/?&=#%+;,@~.-_")})')
     if report.limitations:
         lines.extend(['', '尚待确认：', *('- ' + markdown_text(value) for value in report.limitations)])
-    successful = sum(query.provider == 'yuanbao' and query.status == 'success' for query in report.queries)
-    lines.extend(['', f'本轮实际元宝搜索成功 {successful} 次；执行轨迹与证据见调查报告。'])
     return '\n'.join(lines)
