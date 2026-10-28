@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from contest_detective.framework.db import Base
@@ -27,7 +27,7 @@ class Investigation(Base):
     __tablename__ = 'investigations'
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    question: Mapped[str] = mapped_column(String(500))
+    question: Mapped[str] = mapped_column(Text)
     user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     status: Mapped[str] = mapped_column(String(20), default='running')
     answer: Mapped[str | None] = mapped_column(nullable=True)

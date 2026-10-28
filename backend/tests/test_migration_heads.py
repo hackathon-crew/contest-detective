@@ -15,7 +15,7 @@ MERGE = '0012_merge_content_notifications'
 MAIL = '0012_mail_delivery'
 ACCOUNT_MERGE = '0013_merge_account_mail'
 WATCH = '0014_private_watch'
-HEAD = '0016_pgvector_extension'
+HEAD = '0017_widen_question'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -145,7 +145,8 @@ def assert_integrity(engine):
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
-    assert scripts.get_revision(HEAD).down_revision == '0015_registration_codes'
+    assert scripts.get_revision(HEAD).down_revision == '0016_pgvector_extension'
+    assert scripts.get_revision('0016_pgvector_extension').down_revision == '0015_registration_codes'
     assert scripts.get_revision('0015_registration_codes').down_revision == WATCH
     assert scripts.get_revision(WATCH).down_revision == ACCOUNT_MERGE
     assert scripts.get_revision(ACCOUNT_MERGE).down_revision == (MERGE, MAIL)
@@ -207,3 +208,21 @@ def test_merge_only_downgrade_retains_both_branches_and_all_data(migration_engin
     assert versions(engine) == {MERGE}
     assert rows(engine) == before and schema(engine) == before_schema
     assert_integrity(engine)
+
+
+def test_upgrade_widens_investigation_question_without_losing_data(migration_engine):
+    engine = migration_engine
+    migrate(engine, '0016_pgvector_extension')
+    long_question = 'x' * 708
+    with engine.begin() as connection:
+        connection.execute(text(
+            "INSERT INTO investigations (id, question, status, started_at) "
+            "VALUES ('long-question', :question, 'completed', '2026-10-24 00:00:00')"
+        ), {'question': long_question})
+    migrate(engine, 'head')
+    with engine.connect() as connection:
+        assert connection.execute(text(
+            "SELECT length(question) FROM investigations WHERE id = 'long-question'"
+        )).scalar_one() == 708
+    with pytest.raises(ValueError, match='Shorten'):
+        migrate(engine, '0016_pgvector_extension', downgrade=True)
