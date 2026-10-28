@@ -15,9 +15,10 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.exceptions import UsageLimitExceeded, ModelConnectionError, ModelHTTPError, ModelQuotaExceededError, UnexpectedModelBehavior
 from pydantic_ai.models import Model
+from pydantic_ai.tools import ToolDefinition
 
 from contest_detective.contest import service as contests
-from contest_detective.contest.schemas import ContestQuery, EvidenceField
+from contest_detective.contest.schemas import ContestDetail, ContestQuery, EvidenceField
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user import matching
@@ -88,6 +89,7 @@ class ToolDeps:
     scope_context: str = ''
     wrapping_up: bool = False
     read_contests: dict = field(default_factory=dict)
+    selected_contest: ContestDetail | None = None
     database_searched: bool = False
     web_searched: bool = False
     unavailable_sources: bool = False
@@ -132,6 +134,12 @@ class ToolDeps:
 
 
 def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = True, verification_enabled: bool = False):
+    async def prepare_tool(ctx: RunContext[ToolDeps], definition: ToolDefinition):
+        # 选定对象后不向模型提供候选发现工具，避免重复关键词和向量召回。
+        if ctx.deps.selected_contest and definition.name in {'search_contests', 'match_contests'}:
+            return None
+        return definition
+
     def research_tool(function):
         @wraps(function)
         async def call(*args, **kwargs):
@@ -161,7 +169,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 logger.warning('%s could not read this source', function.__name__, exc_info=True)
                 return {'error': type(exc).__name__, 'model_hint': '这个来源不可用，换一个查询或来源继续查证。不要向用户复述内部错误。',
                         'summary': '正在查找其他来源。', 'status': 'continuing', 'sources': []}
-        return agent.tool(call)
+        return agent.tool(prepare=prepare_tool)(call)
 
     @research_tool
     async def search_contests(ctx: RunContext[ToolDeps], keyword: str | None = None,
@@ -199,8 +207,13 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
 
         summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。precision=day 只有日期。
         """
-        with ctx.deps.session_factory() as session:
-            item = contests.get(session, contest_id)
+        if ctx.deps.selected_contest:
+            if contest_id != ctx.deps.selected_contest.id:
+                raise ValueError('本轮只读取已选定的比赛')
+            item = ctx.deps.selected_contest
+        else:
+            with ctx.deps.session_factory() as session:
+                item = contests.get(session, contest_id)
         if item is None or not ctx.deps.allows_contest(item):
             return {'contest': None, 'summary': '比赛未找到', 'sources': []}
         ctx.deps.observe_contest(item)
@@ -337,6 +350,10 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     @research_tool
     async def record_page(ctx: RunContext[ToolDeps], url: str, contest_id: str | None = None) -> dict:
         """将网页送入核实流水线；已有赛事时传 contest_id，使用库中的报名域名核对官方来源。"""
+        if ctx.deps.selected_contest:
+            if contest_id is not None and contest_id != ctx.deps.selected_contest.id:
+                raise ValueError('补充资料必须归入已选定的比赛')
+            contest_id = ctx.deps.selected_contest.id
         if ctx.deps.verification and not safe_evidence_url(url):
             raise ValueError('链接不能用于公开核验')
         await ctx.deps.check_external_scope(url, ctx)
@@ -373,6 +390,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             with ctx.deps.session_factory() as session:
                 item = contests.get(session, contest_id)
             if item:
+                if ctx.deps.selected_contest and item.id == ctx.deps.selected_contest.id:
+                    ctx.deps.selected_contest = item
                 ctx.deps.observe_contest(item)
                 ctx.deps.contest_ids.add(item.id)
                 sources = contest_sources(item)

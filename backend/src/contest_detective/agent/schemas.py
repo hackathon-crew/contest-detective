@@ -18,12 +18,19 @@ class ConversationMessage(BaseModel):
     content: str = Field(min_length=1)
 
 
+class ContestReference(BaseModel):
+    id: str
+    name: str
+    cover_url: str | None = None
+
+
 class AskRequest(BaseModel):
     investigation_id: UUID | None = None
     retry_of: UUID | None = None
     conversation_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1, max_length=64, pattern=r'^[A-Za-z0-9_.:-]+$')
     turn_id: str = Field(default_factory=lambda: str(uuid4()), min_length=1, max_length=64, pattern=r'^[A-Za-z0-9_.:-]+$')
     question: str = Field(min_length=1)
+    contest_id: str | None = Field(default=None, min_length=1, max_length=128)
     profile: Profile | None = None
     history: list[ConversationMessage] = Field(default_factory=list)
     mode: VerificationMode | None = None

@@ -1,3 +1,4 @@
+import type { ContestReferenceValue } from './contest-reference'
 import { safeUrl } from '@/entities/contest'
 import type { ConversationMessage, MatchItem, Profile, ContestRecommendation } from '@/shared/api'
 import type { InvestigationPlan, InvestigationReport } from './verification-contracts'
@@ -24,7 +25,11 @@ export interface DetectiveTurn {
   investigationId?: string
   lastSeq?: number
   action?: RecoveryAction
-  request?: { profile?: Profile | null; verificationOptions?: VerificationOptions }
+  request?: {
+    profile?: Profile | null
+    verificationOptions?: VerificationOptions
+    contest?: ContestReferenceValue | null
+  }
   plan?: InvestigationPlan
   report?: InvestigationReport
   // 与正文一起保存 Agent 最终选中的比赛；旧记录缺少此字段时按正文引用补读。

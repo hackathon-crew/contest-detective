@@ -11,6 +11,7 @@ import { parseTrace, recoveryAction, type RecoveryAction } from './events'
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
 import { cancelInvestigation, investigationStream } from './investigation-stream'
+import type { ContestReferenceValue } from './contest-reference'
 import type { VerificationOptions } from './verification-contracts'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
@@ -189,17 +190,23 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     profile?: Profile | null,
     sessionId?: string,
     verificationOptions?: VerificationOptions,
+    contest?: ContestReferenceValue | null,
   ) {
     const text = question.trim()
     if (!requireLogin({ question: text })) return null
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
+    const selected = contest === undefined ? existing?.turns.at(-1)?.request?.contest : contest
     const turnId = createId()
     const turn: DetectiveTurn = {
       id: turnId,
       investigationId: turnId,
       lastSeq: 0,
-      request: { profile, verificationOptions },
+      request: {
+        profile,
+        verificationOptions,
+        ...(selected !== undefined ? { contest: selected } : {}),
+      },
       question: text,
       content: '',
       trace: [],
@@ -290,6 +297,9 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           ...(retryOf ? { retry_of: retryOf } : {}),
 
           question,
+          ...(current?.request && 'contest' in current.request
+            ? { contest_id: current.request.contest?.id ?? null }
+            : {}),
           ...(history.length ? { history } : {}),
           ...(profile ? { profile } : {}),
           ...verificationOptions,

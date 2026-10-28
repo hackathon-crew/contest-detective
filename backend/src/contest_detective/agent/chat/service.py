@@ -6,7 +6,7 @@ from sqlalchemy import delete, false, func, select, update
 from contest_detective.framework.db import lock_for_write
 from contest_detective.framework.exceptions import BizException
 from contest_detective.system.user.models import User
-from .contracts import SavedConversation, SavedTurn
+from .contracts import SavedConversation, SavedRequest, SavedTurn
 from .models import ChatConversation, ChatTurn
 
 
@@ -114,6 +114,11 @@ class SqlConversationStore:
             raise BizException('该查证编号已经属于另一条问题。', code=409)
         previous = self.session.get(ChatTurn, (self.owner, conversation_id, turn_id))
         if previous is not None:
+            previous_ref = (previous.data.get('request') or {}).get('contest') or {}
+            next_ref = SavedRequest.model_validate(saved_request or {}).contest
+            next_id = next_ref.id if next_ref is not None else None
+            if previous_ref.get('id') != next_id:
+                raise BizException('这条问题引用的比赛已改变，请重新提问。', code=409)
             if investigation_id and previous.data.get('investigationId') == investigation_id and previous.data['question'] == question:
                 return
             if not retry_of or previous.data.get('investigationId') != retry_of or previous.data['status'] == 'running' or previous.data['question'] != question:
