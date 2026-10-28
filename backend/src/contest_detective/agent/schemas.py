@@ -110,6 +110,7 @@ class ResolveRecommendations(BaseModel):
 
 
 class Answer(BaseModel):
+    action: Literal['settings', 'retry', 'provide_link'] | None = None
     report: InvestigationReport | None = None
     content: str
     sources: list[ToolSource] = Field(default_factory=list)

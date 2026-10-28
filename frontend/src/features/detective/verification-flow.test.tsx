@@ -56,7 +56,7 @@ it('计划、真实执行和终态报告流式保存，重开仍使用同一份�
   await emit('answer', { content: '这一段不覆盖原始说法。', sources: [], report })
   expect(log().getByText('查证未完成')).toBeTruthy()
   expect(log().getByText('反驳')).toBeTruthy()
-  expect(log().queryByText('这一段不覆盖原始说法。')).toBeNull()
+  expect(log().getByText('这一段不覆盖原始说法。')).toBeTruthy()
   await waitFor(() => expect(loadSessions('guest')[0].turns[0].report).toEqual(report))
   const session = loadSessions('guest')[0]
   expect(session.turns[0].plan).toEqual(report.plan)

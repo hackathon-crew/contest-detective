@@ -74,7 +74,7 @@ def test_default_page_extractor_closes_its_client_on_success_or_failure(session_
             for client in clients:
                 await client.close()
     asyncio.run(run())
-    assert len(requests) == 1
+    assert len(requests) == (3 if failure else 1)
 
 
 def test_page_extractor_does_not_close_a_borrowed_model(session_factory, monkeypatch):

@@ -46,5 +46,7 @@ it.each([
   const body = JSON.parse(
     (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
   )
-  expect(body).toEqual({ question: '核实比赛截止', ...options })
+  expect(body.investigation_id).toMatch(/^[0-9a-f-]{36}$/)
+  const { investigation_id: _id, ...request } = body
+  expect(request).toEqual({ question: '核实比赛截止', ...options })
 })

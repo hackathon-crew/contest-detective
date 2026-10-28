@@ -49,10 +49,11 @@ def test_external_request_errors_keep_the_unconfirmed_reservation(session_factor
         assert row.status == 'reserved' and row.cost_cny == row.reserved_cny > 0
 
 
-def test_external_context_uses_provider_capacity_and_still_records_usage(session_factory):
+def test_external_context_is_trimmed_and_still_records_actual_usage(session_factory):
     question = '赛事原文：在校大学生可参加。' * 3000
     def respond(messages, info):
-        assert messages[0].parts[0].content == question
+        assert len(messages[0].parts[0].content.encode()) < 8192
+        assert messages[0].parts[0].content.startswith('赛事原文：')
         return ModelResponse([TextPart('已核对赛事出处。')],
                              usage=RequestUsage(input_tokens=24000, output_tokens=500))
     model = GuardedModel(FunctionModel(respond), Budget(session_factory, config(max_input_tokens=8192)),
@@ -105,5 +106,5 @@ def test_local_protection_remains_the_default_and_model_disable_still_applies(se
     with pytest.raises(ValidationError):
         LLMSettings(_env_file=None, limits_mode='unknown')
     disabled = LLMSettings(_env_file=None, limits_mode='external', enabled=False)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='公共查证服务'):
         Budget(session_factory, disabled).reserve()

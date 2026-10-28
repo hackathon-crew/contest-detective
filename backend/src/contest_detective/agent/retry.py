@@ -28,5 +28,8 @@ async def retry_transient(operation, *, errors=TRANSIENT_ERRORS):
         except errors as error:
             if not temporary(error) or attempt == 2:
                 raise
-            logger.warning('Transient request failure; retrying attempt %s', attempt + 2, exc_info=True)
+            # 供应商响应可能回显用户资料；保留调用栈和类型，不写响应正文。
+            safe_error = RuntimeError(type(error).__name__)
+            logger.warning('Transient request failure; retrying attempt %s', attempt + 2,
+                           exc_info=(RuntimeError, safe_error, error.__traceback__))
             await sleep(2 ** attempt)

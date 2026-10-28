@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMatch } from 'react-router'
-import { apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
+import { ApiError, apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
 import { historyFor, type DetectiveTurn } from './conversation'
 import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
-import { parseTrace } from './events'
+import { parseTrace, recoveryAction, type RecoveryAction } from './events'
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
 import { cancelInvestigation, investigationStream } from './investigation-stream'
@@ -31,6 +31,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   useEffect(
     () => () => {
       for (const controller of requests.current.values()) controller.abort()
+      requests.current.clear()
     },
     [],
   )
@@ -125,10 +126,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         session.id === sessionId
           ? {
               ...session,
-              turns: session.turns.map((turn) =>
-                turn.status === 'running'
-                  ? { ...turn, status: 'stopped', error: '查证已停止。' }
-                  : turn,
+              turns: session.turns.map((current) =>
+                current.id === turn?.id
+                  ? { ...current, status: 'stopped', error: '查证已停止。', action: undefined }
+                  : current,
               ),
             }
           : session,
@@ -149,6 +150,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       id: turnId,
       investigationId: turnId,
       lastSeq: 0,
+      request: { profile, verificationOptions },
       question: text,
       content: '',
       trace: [],
@@ -174,6 +176,37 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     )
     return id
   }
+  function retry(turnId: string) {
+    const session = snapshot.current.find((item) => item.turns.some((turn) => turn.id === turnId))
+    if (!session || requests.current.has(session.id)) return
+    const index = session.turns.findIndex((turn) => turn.id === turnId)
+    const previous = session.turns[index]!
+    const controller = new AbortController()
+    requests.current.set(session.id, controller)
+    update(session.id, turnId, (turn) => ({
+      ...turn,
+      investigationId: createId(),
+      lastSeq: 0,
+      content: '',
+      trace: [],
+      sources: [],
+      status: 'running',
+      error: undefined,
+      action: undefined,
+      recommendations: undefined,
+      report: undefined,
+      plan: undefined,
+    }))
+    void run(
+      session.id,
+      turnId,
+      previous.question,
+      historyFor(session.turns.slice(0, index)),
+      previous.request?.profile,
+      controller,
+      previous.request?.verificationOptions,
+    )
+  }
   async function run(
     sessionId: string,
     turnId: string,
@@ -185,12 +218,13 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     resume = false,
   ) {
     let terminal = false
-    const fail = (message: string) =>
-      update(sessionId, turnId, (turn) =>
-        turn.content.trim()
-          ? { ...turn, status: 'stopped', error: undefined }
-          : { ...turn, status: 'error', error: message },
-      )
+    const fail = (message: string, action?: RecoveryAction) =>
+      update(sessionId, turnId, (turn) => ({
+        ...turn,
+        status: turn.content.trim() ? 'stopped' : 'error',
+        error: message,
+        action,
+      }))
     try {
       const current = snapshot.current
         .find((session) => session.id === sessionId)
@@ -222,7 +256,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
             recommendations: event.recommendations,
             report: event.report,
             plan: event.report?.plan ?? turn.plan,
-            status: 'completed',
+            action: event.action,
+            error: undefined,
+            status:
+              event.action === 'retry' || event.action === 'settings' ? 'stopped' : 'completed',
           }))
           terminal = true
           void client.invalidateQueries({ queryKey: ['contests'] })
@@ -230,7 +267,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           break
         }
         if (event.type === 'error') {
-          fail(event.message)
+          fail(event.message, event.action)
           terminal = true
           break
         }
@@ -242,15 +279,25 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           updateEvent((turn) => ({ ...turn, content: turn.content + event.content }))
         else updateEvent((turn) => ({ ...turn, trace: [...turn.trace, event] }))
       }
-      if (!terminal && !controller.signal.aborted) fail('查证提前结束，请重试。')
+      if (!terminal && !controller.signal.aborted)
+        fail('这次查证没能完成。点击一键重查，无需重新输入问题。', 'retry')
     } catch (cause) {
       if (!controller.signal.aborted)
-        fail(cause instanceof Error ? cause.message : '查证失败，请重试。')
+        fail(
+          cause instanceof ApiError && cause.kind === 'business'
+            ? cause.message
+            : '这次查证没能完成。点击一键重查，无需重新输入问题。',
+          cause instanceof ApiError && cause.kind === 'business'
+            ? (recoveryAction((cause.data as { action?: unknown } | null)?.action) ?? 'retry')
+            : 'retry',
+        )
     } finally {
       if (requests.current.get(sessionId) === controller) requests.current.delete(sessionId)
     }
   }
   return (
-    <DetectiveContext value={{ sessions, storageError, send, stop }}>{children}</DetectiveContext>
+    <DetectiveContext value={{ sessions, storageError, send, stop, retry }}>
+      {children}
+    </DetectiveContext>
   )
 }

@@ -190,6 +190,16 @@ export function Preview() {
           }, 900)
           return session.id
         },
+        retry(turnId) {
+          setSessions((items) =>
+            items.map((session) => ({
+              ...session,
+              turns: session.turns.map((turn) =>
+                turn.id === turnId ? { ...makeTurn(turn.question), id: turn.id } : turn,
+              ),
+            })),
+          )
+        },
         stop(sessionId) {
           clearTimeout(pending.current)
           setSessions((items) =>

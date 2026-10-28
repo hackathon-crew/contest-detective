@@ -19,7 +19,8 @@ from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user.matching import has_preferences
 
 from .models import Investigation, TraceRecord
-from .investigations import Investigations
+from .investigations import Investigations, INTERRUPTED
+from .presentation import interrupted_answer
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
 from .tools import ToolDeps, invoke, register_tools
@@ -69,6 +70,7 @@ class Investigator:
                  profile_reader=None, preferences=None, mode: VerificationMode | None = None,
                  search_provider: str | None = None, scope_classifier=None, settings: LLMSettings | None = None):
         self.model = model
+        self.started = False
         self.settings = settings or get_llm_settings()
         self.mode, self.search_provider = mode, search_provider
         self.scope_classifier = scope_classifier or (classify_scope if mode in {'realtime', 'deep'} else None)
@@ -106,15 +108,31 @@ class Investigator:
         usage, limits = RunUsage(), UsageLimits(request_limit=self.settings.request_limit,
                                                tool_calls_limit=self.settings.tool_calls_limit)
         seq, status, answer = 0, 'running', None
-        findings = []
 
         def store(event):
             nonlocal seq
             seq += 1
             with self.session_factory() as session:
                 session.add(TraceRecord(investigation_id=investigation_id, seq=seq, type=event.type, payload=event.payload))
+                if event.type in {'answer', 'error'}:
+                    record = session.get(Investigation, investigation_id)
+                    record.status, record.answer = status, answer
+                    record.finished_at = datetime.now(timezone.utc)
                 session.commit()
             return event
+
+        def finish_interrupted(message=INTERRUPTED['message'], action='retry', terminal_status='failed'):
+            nonlocal status, answer
+            status = terminal_status
+            partial = interrupted_answer(deps)
+            report = state.build([], interrupted=True) if state else None
+            if partial or report:
+                answer = '\n\n'.join(filter(None, [partial, render_report(report) if report else None, message]))
+                store(TraceEvent(type='answer', payload={'content': answer,
+                    'sources': [source.model_dump() for source in deps.sources.values()], 'action': action,
+                    **({'report': report.model_dump(mode='json')} if report else {})}))
+            else:
+                store(TraceEvent(type='error', payload={'message': message, 'action': action}))
 
         try:
             # Reject every edited/current payload before any model or external tool.
@@ -175,8 +193,6 @@ class Investigator:
                                     if event.part.tool_name == 'respond_to_user':
                                         continue
                                     content = event.part.content if isinstance(event.part.content, dict) else {}
-                                    if content.get('summary') and not content.get('error'):
-                                        findings.append(content['summary'])
                                     if content.get('plan'):
                                         store(TraceEvent(type='plan', payload=content['plan']))
                                     payload = {'tool': event.part.tool_name,
@@ -191,60 +207,44 @@ class Investigator:
             # 正文是交付结果；卡片和核验元数据不能让已生成的回复进入重试后丢失。
             reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
                 content=result.output, recommendations=[])
+            answer = reply.content
             report = state.build(reply.assessments) if state else None
-            answer = render_report(report) if report and confirmed_claims and not deps.wrapping_up else reply.content
-            status = report.status if report and report.status != 'complete' else 'completed'
+            answer = render_report(report) if report and confirmed_claims and not deps.wrapping_up else answer
             with self.session_factory() as session:
                 recommendations = materialize(session, [item for item in reply.recommendations
                     if item.contest_id in deps.contest_ids])
+            status = report.status if report and report.status != 'complete' else 'completed'
+            action = None
+            if not deps.contest_ids and not deps.sources and not deps.search_results:
+                if deps.unavailable_sources:
+                    action = 'retry'
+                    answer += '\n\n' + INTERRUPTED['message']
+                elif deps.database_searched and deps.web_searched:
+                    action = 'provide_link'
+                    answer += '\n\n你可以贴官网链接，让侦探读取原文。'
             store(TraceEvent(type='answer', payload={
-                'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
+                'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()], 'action': action,
                 'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
                 **({'report': report.model_dump(mode='json')} if report else {}),
             }))
-        except (BizException, UsageLimitExceeded, ModelAPIError, UnexpectedModelBehavior, httpx.HTTPError, TimeoutError) as exc:
-            logger.warning('Investigation interrupted', exc_info=True)
-            unread = [f'- [{source["title"]}]({url})（未读取原文）'
-                      for url, source in deps.search_results.items()
-                      if url not in deps.opened_urls and url not in deps.sources
-                      and (not state or url not in state.rejected_urls)]
-            if state:
-                report = state.build([], interrupted=True)
-                if isinstance(exc, BizException):
-                    report.limitations.append(exc.message)
-                answer = '\n\n'.join([
-                    *dict.fromkeys(findings),
-                    *(f'- [{source.title}]({source.url})' for source in deps.sources.values()),
-                    *unread,
-                    render_report(report),
-                ])
-                status = report.status
-                store(TraceEvent(type='answer', payload={'content': answer,
-                    'sources': [source.model_dump() for source in deps.sources.values()],
-                    'report': report.model_dump(mode='json')}))
-            elif deps.sources or findings or unread:
-                lines = ['查证暂时未能继续，以下是已查到的资料，尚未完成全部核实：']
-                lines.extend(dict.fromkeys(findings))
-                lines.extend(f'- [{source.title}]({source.url})' for source in deps.sources.values())
-                lines.extend(unread)
-                answer, status = '\n\n'.join(lines), 'completed'
-                store(TraceEvent(type='answer', payload={
-                    'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
-                }))
-            else:
-                status = 'failed'
-                if isinstance(exc, UsageLimitExceeded):
-                    message = '这轮查证已用完可用步数，还没有取得可核实的资料。'
-                else:
-                    message = exc.message if isinstance(exc, BizException) else '本次查证未取得结果，请稍后重试'
-                store(TraceEvent(type='error', payload={'message': message}))
+        except BizException as exc:
+            logger.warning('Investigation needs user action', exc_info=True)
+            finish_interrupted(exc.message, exc.data.get('action') if isinstance(exc.data, dict) else None)
+        except (UsageLimitExceeded, ModelAPIError, UnexpectedModelBehavior, httpx.HTTPError, TimeoutError):
+            logger.warning('Investigation exhausted automatic recovery', exc_info=True)
+            if answer is None:
+                finish_interrupted()
         finally:
             with self.session_factory() as session:
-                record = session.get(Investigation, investigation_id)
-                if record.status == 'running' and status != 'running':
-                    record.status, record.answer = status, answer
-                    record.finished_at = datetime.now(timezone.utc)
-                    session.commit()
+                active = session.get(Investigation, investigation_id).status == 'running'
+            if active and status == 'running':
+                if answer is not None:
+                    # 已生成的正文直接交付；附加卡片不可用时不让用户再查一次。
+                    status = 'completed'
+                    store(TraceEvent(type='answer', payload={'content': answer,
+                        'sources': [source.model_dump() for source in deps.sources.values()]}))
+                else:
+                    finish_interrupted(terminal_status='interrupted')
 
 
 def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None, mode: VerificationMode | None = None) -> Investigator:

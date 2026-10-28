@@ -1,4 +1,5 @@
 import json
+from collections.abc import AsyncIterator
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -8,6 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session, sessionmaker
 from sse_starlette.sse import EventSourceResponse
+from sse_starlette.event import ServerSentEvent
 
 from contest_detective.framework.result import Response
 from contest_detective.framework.exceptions import BizException
@@ -23,6 +25,7 @@ from contest_detective.system.auth.service import get_current_user_id
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
+SSE_PING_SECONDS = 10
 
 
 @router.post('/agent/recommendations/resolve', response_model=Response[list[ContestRecommendation]])
@@ -35,17 +38,26 @@ async def get_request_user_id(request: Request) -> str | None:
 
 
 async def get_investigator(request: Request, body: AskRequest, session: Session = Depends(get_session),
-                           user_id: str | None = Depends(get_request_user_id)) -> Investigator | None:
+                           user_id: str | None = Depends(get_request_user_id)) -> AsyncIterator[Investigator | None]:
     if body.confirmed_claims:
         raise BizException('截图与深度核验暂时停用，请使用普通文字推荐或查询比赛库。', code=503)
     if body.investigation_id and session.get(Investigation, str(body.investigation_id)):
-        request.app.state.investigations.get(str(body.investigation_id), owner_for(request, user_id))
-        return None
+        row = request.app.state.investigations.get(str(body.investigation_id), owner_for(request, user_id))
+        if row.question != body.question:
+            raise BizException('该查证编号已经使用，请重新发起查证。', code=409, data={'action': 'retry'})
+        yield None
+        return
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
     runtime = runtime_for(session, user_id)
     investigator = create_investigator(session_factory=factory, model_settings=runtime.llm,
                                       search_settings=runtime.search, preferences=runtime.preferences, mode=body.mode)
-    return investigator
+    try:
+        yield investigator
+    finally:
+        # 已交给后台任务的资源由任务关闭；限流等启动前拒绝由依赖回收。
+        if not investigator.started:
+            async with investigator.agent:
+                pass
 
 
 def owner_for(request, user_id):
@@ -61,7 +73,9 @@ def event_response(runs, investigation_id, owner_id, after=0):
     async def stream():
         async for event in runs.events(investigation_id, owner_id, after=after):
             yield {'id': str(event.seq), 'event': event.type, 'data': json.dumps(event.payload, ensure_ascii=False)}
-    return EventSourceResponse(stream(), headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
+    return EventSourceResponse(stream(), ping=SSE_PING_SECONDS,
+        ping_message_factory=lambda: ServerSentEvent(event='ping', data='{}'),
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'})
 
 
 async def question_stream(request: Request, body: AskRequest, investigator: Investigator, user_id: str | None):

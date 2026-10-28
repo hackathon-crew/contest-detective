@@ -254,8 +254,7 @@ def test_unconfigured_optional_tools_do_not_open_network_connections(session_fac
     events = run(Investigator(model, session_factory=session_factory))
     assert events[-1].type == 'answer'
     summaries = [event.payload['summary'] for event in events if event.type == 'observation']
-    assert '网页读取暂未配置' in summaries
-    assert '页面保存暂未配置' in summaries
+    assert summaries.count('正在查找其他来源。') == 2
     assert '比赛未找到' in summaries
 
 

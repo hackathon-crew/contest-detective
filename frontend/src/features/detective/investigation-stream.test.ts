@@ -67,3 +67,40 @@ it('reuses the same investigation id when the first response is lost', async () 
   ])
   await stream.return(undefined)
 })
+
+it('reconnects a silently stalled connection without cancelling the investigation', async () => {
+  vi.useFakeTimers()
+  let attempts = 0
+  let firstSignal: AbortSignal | undefined
+  vi.stubGlobal('fetch', async (_: RequestInfo | URL, init: RequestInit) => {
+    if (++attempts === 1) {
+      firstSignal = init.signal ?? undefined
+      return new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('id: 1\nevent: step\ndata: {}\n\n'))
+            init.signal?.addEventListener('abort', () =>
+              controller.error(new DOMException('idle', 'AbortError')),
+            )
+          },
+        }),
+        { headers: { 'content-type': 'text/event-stream' } },
+      )
+    }
+    return new Response('id: 2\nevent: answer\ndata: {"content":"完整回答"}\n\n', {
+      headers: { 'content-type': 'text/event-stream' },
+    })
+  })
+  const controller = new AbortController()
+  const stream = investigationStream(
+    { investigation_id: 'stalled', question: '查比赛' },
+    controller.signal,
+  )
+  expect((await stream.next()).value?.id).toBe('1')
+  const next = stream.next()
+  await vi.advanceTimersByTimeAsync(31_000)
+  expect((await next).value?.event).toBe('answer')
+  expect(firstSignal?.aborted).toBe(true)
+  expect(controller.signal.aborted).toBe(false)
+  await stream.return(undefined)
+})

@@ -38,6 +38,7 @@ class Investigations:
                 return investigation_id
             session.add(Investigation(id=investigation_id, question=body.question, user_id=owner_id, status='running'))
             session.commit()
+        investigator.started = True
         task = asyncio.create_task(self._run(investigator, investigation_id, body, user_id))
         self.tasks[investigation_id] = task
         task.add_done_callback(lambda done: self._finished(investigation_id, done))

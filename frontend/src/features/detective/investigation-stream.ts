@@ -22,6 +22,8 @@ export async function* investigationStream(
 ) {
   for (let attempt = 0; attempt < 8; attempt++) {
     signal.throwIfAborted()
+    const connection = new AbortController()
+    let idle = setTimeout(() => connection.abort(), 30_000)
     try {
       const reconnect = resume || after > 0
       const path = reconnect
@@ -31,8 +33,10 @@ export async function* investigationStream(
         ...(reconnect
           ? { headers: { 'Last-Event-ID': String(after) } }
           : { method: 'POST', json: body }),
-        signal,
+        signal: AbortSignal.any([signal, connection.signal]),
       })) {
+        clearTimeout(idle)
+        idle = setTimeout(() => connection.abort(), 30_000)
         if (event.id !== null) {
           const seq = Number(event.id)
           if (seq <= after) continue
@@ -42,7 +46,13 @@ export async function* investigationStream(
         yield event
       }
     } catch (cause) {
-      if (!(cause instanceof ApiError && cause.retryable)) throw cause
+      if (
+        signal.aborted ||
+        (!connection.signal.aborted && !(cause instanceof ApiError && cause.retryable))
+      )
+        throw cause
+    } finally {
+      clearTimeout(idle)
     }
     await pause(Math.min(1000 * 2 ** attempt, 8000), signal)
   }

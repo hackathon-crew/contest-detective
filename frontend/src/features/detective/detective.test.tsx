@@ -200,8 +200,8 @@ describe('侦探过程', () => {
     vi.stubGlobal('fetch', fetch)
     renderDetective({}, '/detective/conversation')
     expect(await screen.findByText('已续接完整回答。')).toBeTruthy()
-    expect(fetch).toHaveBeenCalledTimes(1)
-    const [path, init] = fetch.mock.calls[0] as unknown as [string, RequestInit]
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const [path, init] = fetch.mock.calls.at(-1) as unknown as [string, RequestInit]
     expect(path).toBe('/api/agent/investigations/saved-run/events')
     expect(new Headers(init.headers).get('Last-Event-ID')).toBe('1')
     expect(init.method).toBeUndefined()

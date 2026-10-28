@@ -140,3 +140,17 @@ def test_repeated_start_is_idempotent_and_guest_cookie_owns_the_result(client, s
     client.cookies.clear()
     assert client.get(f'/agent/investigations/{investigation_id}/events').json()['code'] == 404
     assert client.post(f'/agent/investigations/{investigation_id}/cancel').json()['code'] == 404
+
+
+def test_live_heartbeats_do_not_consume_persisted_event_sequences(client, session_factory, monkeypatch):
+    from contest_detective.bootstrap.api import agent as api
+    async def respond(*_):
+        await asyncio.sleep(0.05)
+        return ModelResponse([answer_part('完整回答')])
+    monkeypatch.setattr(api, 'SSE_PING_SECONDS', 0.01, raising=False)
+    client.app.dependency_overrides[api.get_investigator] = lambda: Investigator(FunctionModel(respond), session_factory=session_factory)
+    response = client.post('/agent/ask', json={'question': '查比赛'})
+    assert 'event: ping' in response.text and 'event: answer' in response.text
+    with session_factory() as session:
+        rows = session.scalars(select(TraceRecord)).all()
+        assert [(row.seq, row.type) for row in rows] == [(1, 'answer')]

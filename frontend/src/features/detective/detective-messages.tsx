@@ -1,5 +1,8 @@
 import { Check, ChevronRight, LoaderCircle, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { Link } from 'react-router'
+import { Button } from '@/shared/ui/button'
+import { useDetective } from './detective-context'
 import { safeUrl } from '@/entities/contest'
 import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
 import type { DetectiveTurn } from './conversation'
@@ -135,6 +138,15 @@ const markdownComponents = {
   ),
 }
 
+function RetryInvestigation({ turnId }: { turnId: string }) {
+  const { retry } = useDetective()
+  return (
+    <Button variant="outline" size="sm" onClick={() => retry(turnId)}>
+      一键重查
+    </Button>
+  )
+}
+
 export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
   const paced = useStreamPacer(turn.content, turn.status === 'running')
   return (
@@ -173,7 +185,7 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
                 {turn.trace.length ? '正在整理回复' : '正在看你的问题'}
               </p>
             )}
-          {!turn.report && paced.visible && (
+          {(!turn.report || turn.report.status !== 'complete') && paced.visible && (
             <div className="detective-prose">
               <ReactMarkdown
                 urlTransform={(url) => safeUrl(url) ?? ''}
@@ -194,6 +206,27 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
             >
               {turn.error}
             </p>
+          )}
+          {turn.action === 'settings' && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/account/keys">账户设置</Link>
+            </Button>
+          )}
+          {turn.action === 'retry' && turn.status !== 'running' && (
+            <RetryInvestigation turnId={turn.id} />
+          )}
+          {turn.action === 'provide_link' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                document
+                  .querySelector<HTMLTextAreaElement>('textarea[aria-label="问侦探"]')
+                  ?.focus()
+              }
+            >
+              贴官网链接
+            </Button>
           )}
         </div>
       </div>

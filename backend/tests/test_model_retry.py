@@ -4,7 +4,7 @@ from decimal import Decimal
 import httpx
 import pytest
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import ModelHTTPError
+from contest_detective.framework.exceptions import BizException
 from sqlalchemy import select
 
 from contest_detective.agent import llm
@@ -57,7 +57,8 @@ def test_key_and_billing_errors_do_not_retry(session_factory, monkeypatch, statu
             monkeypatch.setattr(llm, 'AsyncOpenAI', lambda **kwargs: real_client(**kwargs, http_client=client))
             model = llm.create_model(LLMSettings(_env_file=None, enabled=True, api_key='test', limits_mode='external'), session_factory=session_factory)
             async with model:
-                with pytest.raises(ModelHTTPError):
+                with pytest.raises(BizException) as caught:
                     await Agent(model).run('查询比赛')
+                assert caught.value.data == {'action': 'settings'}
     asyncio.run(exercise())
     assert len(calls) == 1

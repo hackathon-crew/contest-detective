@@ -53,7 +53,8 @@ def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path)
             assert 'event: answer' in client.post('/agent/ask', json={'question': '找比赛'}).text
         with sessions() as session:
             records = session.scalars(select(Investigation).order_by(Investigation.started_at)).all()
-            assert [record.user_id for record in records] == [user_id, None]
+            assert records[0].user_id == user_id
+            assert records[1].user_id.startswith('g:') and records[1].user_id != user_id
         assert 'Python' in instructions[0] and '杭州' in instructions[0]
         assert 'Python' not in instructions[1] and '杭州' not in instructions[1]
     finally:
