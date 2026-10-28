@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useMatch } from 'react-router'
-import { ApiError, apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
+import { useLocation, useMatch, useNavigate } from 'react-router'
+import { apiClient, ApiError, type ContestRecommendation, type Profile } from '@/shared/api'
+import { currentUserKey, loginReturn, useLoginGate } from '@/entities/user'
 import { historyFor, type DetectiveTurn } from './conversation'
-import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
+import { loadSessions, sessionWithTurn, type DetectiveSession } from './sessions'
+import { readAccountSessions } from './sessions-api'
 import { parseTrace, recoveryAction, type RecoveryAction } from './events'
+
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
 import { cancelInvestigation, investigationStream } from './investigation-stream'
@@ -12,13 +15,19 @@ import type { VerificationOptions } from './verification-contracts'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
   const client = useQueryClient()
-  const [sessions, setSessions] = useState(() => loadSessions(scope))
+  const location = useLocation()
+  const navigate = useNavigate()
+  const requireLogin = useLoginGate()
+  const [sessions, setSessions] = useState(() => (scope === 'guest' ? [] : loadSessions(scope)))
+  const [loading, setLoading] = useState(scope !== 'guest')
   const snapshot = useRef(sessions)
+  const revision = useRef(0)
+  const edited = useRef(new Map<string, number>())
   const legacyTurns = useRef(
     new Set(
       sessions.flatMap((session) =>
         session.turns
-          .filter((turn) => turn.status === 'completed' && turn.recommendations === undefined)
+          .filter((turn) => turn.status === 'completed' && turn.recommendations == null)
           .map((turn) => turn.id),
       ),
     ),
@@ -28,6 +37,28 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   const [storageError, setStorageError] = useState(false)
   const activeId = useMatch('/detective/:conversationId')?.params.conversationId
 
+  const reload = useCallback(
+    async (signal?: AbortSignal) => {
+      if (scope === 'guest') return
+      const started = revision.current
+      try {
+        const saved = await readAccountSessions(scope, signal)
+        if (signal?.aborted) return
+        const merged = new Map(saved.map((item) => [item.id, item]))
+        for (const item of snapshot.current)
+          if (requests.current.has(item.id) || (edited.current.get(item.id) ?? 0) > started)
+            merged.set(item.id, item)
+        change(() => [...merged.values()].sort((a, b) => b.updatedAt - a.updatedAt))
+        setStorageError(false)
+      } catch {
+        if (!signal?.aborted) setStorageError(true)
+      } finally {
+        if (!signal?.aborted) setLoading(false)
+      }
+    },
+    [scope],
+  )
+
   useEffect(
     () => () => {
       for (const controller of requests.current.values()) controller.abort()
@@ -36,13 +67,29 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     [],
   )
   useEffect(() => {
-    try {
-      localStorage.setItem(sessionsKey(scope), JSON.stringify(sessions))
-      queueMicrotask(() => setStorageError(false))
-    } catch {
-      queueMicrotask(() => setStorageError(true))
+    const controller = new AbortController()
+    void reload(controller.signal)
+    const refresh = () => void reload(controller.signal)
+    window.addEventListener('focus', refresh)
+    return () => {
+      controller.abort()
+      window.removeEventListener('focus', refresh)
     }
-  }, [scope, sessions])
+  }, [reload])
+
+  const remoteRunning = sessions.some(
+    (item) =>
+      item.turns.some((turn) => turn.status === 'running') && !requests.current.has(item.id),
+  )
+  useEffect(() => {
+    if (!remoteRunning) return
+    const controller = new AbortController()
+    const timer = setInterval(() => void reload(controller.signal), 2000)
+    return () => {
+      clearInterval(timer)
+      controller.abort()
+    }
+  }, [remoteRunning, reload])
 
   useEffect(() => {
     for (const session of sessions) {
@@ -62,7 +109,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         !legacyTurns.current.has(turn.id) ||
         turn.status !== 'completed' ||
         turn.report ||
-        turn.recommendations !== undefined ||
+        turn.recommendations != null ||
         recovering.current.has(turn.id)
       )
         continue
@@ -91,6 +138,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     turnId: string,
     transform: (turn: DetectiveTurn) => DetectiveTurn,
   ) {
+    edited.current.set(sessionId, ++revision.current)
     change((items) =>
       items.map((session) =>
         session.id === sessionId
@@ -143,6 +191,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     verificationOptions?: VerificationOptions,
   ) {
     const text = question.trim()
+    if (!requireLogin({ question: text })) return null
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
     const turnId = createId()
@@ -162,6 +211,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     if (!text) return id
     const controller = new AbortController()
     requests.current.set(id, controller)
+    edited.current.set(id, ++revision.current)
     change((items) =>
       existing ? items.map((session) => (session.id === id ? next : session)) : [next, ...items],
     )
@@ -205,6 +255,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       previous.request?.profile,
       controller,
       previous.request?.verificationOptions,
+      false,
+      previous.investigationId,
     )
   }
   async function run(
@@ -216,6 +268,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     controller: AbortController,
     verificationOptions?: VerificationOptions,
     resume = false,
+    retryOf?: string,
   ) {
     let terminal = false
     const fail = (message: string, action?: RecoveryAction) =>
@@ -232,6 +285,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       for await (const raw of investigationStream(
         {
           investigation_id: current?.investigationId ?? turnId,
+          conversation_id: sessionId,
+          turn_id: turnId,
+          ...(retryOf ? { retry_of: retryOf } : {}),
+
           question,
           ...(history.length ? { history } : {}),
           ...(profile ? { profile } : {}),
@@ -282,6 +339,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       if (!terminal && !controller.signal.aborted)
         fail('这次查证没能完成。点击一键重查，无需重新输入问题。', 'retry')
     } catch (cause) {
+      if (cause instanceof ApiError && cause.code === 401) {
+        client.setQueryData(currentUserKey, null)
+        navigate('/login', { state: loginReturn(location, { question }) })
+      }
       if (!controller.signal.aborted)
         fail(
           cause instanceof ApiError && cause.kind === 'business'
@@ -296,7 +357,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     }
   }
   return (
-    <DetectiveContext value={{ sessions, storageError, send, stop, retry }}>
+    <DetectiveContext value={{ sessions, loading, storageError, reload, send, stop, retry }}>
       {children}
     </DetectiveContext>
   )
