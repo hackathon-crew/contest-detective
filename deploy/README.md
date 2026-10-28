@@ -159,6 +159,29 @@ uv run alembic upgrade head
 
 - 发布脚本按 `/etc/contest-detective.env` 判断数据库类型：SQLite 使用文件快照，PostgreSQL 使用 `pg_dump` / `pg_restore`；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
 
+### Contest semantic retrieval
+
+Postgres 部署可在 `/etc/contest-detective.env` 配置 `DETECTIVE_RAG_API_KEY`，使用硅基流动的免费 `BAAI/bge-m3`。模型与地址固定，每场比赛保存一个 1024 维向量。SQLite 始终只走关键词检索，不调用 embedding。
+
+迁移后先回填现有比赛：
+
+```sh
+cd /srv/contest-detective/backend
+uv run python -m contest_detective.bootstrap.rag_index
+```
+
+命令输出 `updated`、`unchanged`、`failed`，有失败时退出码为 1，可重新执行；已成功且内容未变的比赛不会重算。后续每轮定时同步或 `contest-detective-sync` 完成比赛提交后刷新索引。索引文本包含名称、简介、主题、已保存字段及各来源最新正文，不包含搜索摘要和抓取时间；正文按 8000 UTF-8 字节截断为单个输入，不切块。完整文本哈希决定是否更新向量。
+
+侦探的 `search_contests` 在日期、状态、方式和屏蔽来源过滤后，合并全部关键词候选与最多 100 个余弦距离候选，用固定 RRF 排名去重，再按原名片结构分页。关键词一路始终执行，向量一路叠加召回，任一路失败只跳过该路，不中断搜索，也不向用户显示内部错误。没有关键词时沿用日期排序；有查询时按相关性排序，关键词路内仍沿用所选日期排序。具体信息仍通过 `get_contest` 读取出处。
+
+固定评测题及标注位于 `backend/evals/contest_retrieval.json`。在对应比赛快照的 Postgres 副本完成回填后运行：
+
+```sh
+uv run python evals/evaluate_retrieval.py --cases evals/contest_retrieval.json --output /tmp/retrieval.json
+```
+
+评测关闭默认截止过滤以纳入历史比赛，原样将每题交给两种检索。Hit@5 表示前五项至少有一场相关比赛的问题比例；Precision@5 按每题五个名额计，少于五项的空位计为未命中。宽主题题按已存来源标签标注，具体需求题按简介及正文标注；结果用于比较召回，不代表参赛资格已核实。
+
 ## 个人中心配置
 
 配置 `DETECTIVE_ACCOUNT_ENCRYPTION_KEY` 后才能保存个人模型与搜索密钥。使用独立的 Fernet 主密钥，生成方式见根目录 `.env.example`，生产环境单独生成并保管，不复用开发密钥。`DETECTIVE_PUBLIC_BASE_URL` 设为网站的 HTTPS 地址，供日历订阅和验证邮件使用。`DETECTIVE_QUERY_LIMITS_ENABLED=false` 为活动期间不限提问次数。
