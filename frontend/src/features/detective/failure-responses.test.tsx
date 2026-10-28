@@ -89,16 +89,14 @@ it('核验未完成时保留可读正文，报告中保留说法与原文但不�
   )
 })
 
-it.each(['network', 'http', 'invalid-response', 'unavailable'] as const)(
+it.each(['network', 'http', 'invalid-response', 'internal'] as const)(
   '请求 %s 时显示查证进展而不展示技术错误',
   async (failure) => {
     vi.stubGlobal('fetch', async () => {
       if (failure === 'network') throw new TypeError('fetch failed internal')
       if (failure === 'http') return new Response('bad gateway internal', { status: 502 })
       if (failure === 'invalid-response') return new Response('invalid internal response')
-      return new Response(
-        JSON.stringify({ code: 503, message: 'internal provider configuration', data: null }),
-      )
+      return new Response(JSON.stringify({ code: 500, message: '服务器内部错误', data: null }))
     })
     send()
     const alert = await screen.findByRole('alert')
@@ -106,6 +104,34 @@ it.each(['network', 'http', 'invalid-response', 'unavailable'] as const)(
     expect(alert.textContent).not.toMatch(/internal|HTTP|格式无效|请求失败|重试/)
   },
 )
+
+it.each([400, 429, 503])('业务提示 %s 保留用户能采取的处理办法', async (code) => {
+  const message =
+    code === 400
+      ? '这些资料太长了，请先只问一场比赛或一项具体规则。'
+      : code === 429
+        ? '公共查证额度已用完。你可以到账户设置中填写自己的模型密钥后继续。'
+        : '无法读取你保存的密钥，请到账户设置中重新保存。'
+  vi.stubGlobal('fetch', async () => new Response(JSON.stringify({ code, message, data: null })))
+  send()
+  expect((await screen.findByRole('alert')).textContent).toBe(message)
+})
+
+it('部分正文之后的业务错误仍说明处理办法', async () => {
+  const message = '这些资料太长了，请先只问一场比赛或一项具体规则。'
+  vi.stubGlobal(
+    'fetch',
+    async () =>
+      new Response(
+        'event: delta\ndata: {"content":"已读到报名截止为十月三十日。"}\n\n' +
+          `event: error\ndata: ${JSON.stringify({ message })}\n\n`,
+        { headers: { 'content-type': 'text/event-stream' } },
+      ),
+  )
+  send()
+  expect(await screen.findByText('已读到报名截止为十月三十日。')).toBeTruthy()
+  await waitFor(() => expect(screen.getByRole('status').textContent).toContain(message))
+})
 
 it('部分正文后断流保留已有内容并说明还没写完', async () => {
   vi.stubGlobal(
