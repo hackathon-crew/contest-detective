@@ -36,7 +36,7 @@ const clients: QueryClient[] = []
 function show(
   data: Partial<Contest>,
   variant: 'default' | 'library' = 'library',
-  onAsk?: (question: string) => void,
+  onAsk?: (contest: Contest) => void,
   toggle = vi.fn(),
 ) {
   vi.stubGlobal('fetch', async () =>
@@ -235,7 +235,9 @@ it.each(['default', 'library'] as const)(
     expect(ask.className).toBe('site-button site-button--outline')
     expect(ask.querySelector('svg')).toBeNull()
     fireEvent.click(ask)
-    expect(onAsk).toHaveBeenCalledWith('帮我核实一下「城市服务挑战赛」的截止时间')
+    expect(onAsk).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'one', name: '城市服务挑战赛' }),
+    )
     const follow = within(actions).getByRole('button', { name: '关注' })
     expect(follow.getAttribute('data-size')).toBe('sm')
     fireEvent.click(follow)
