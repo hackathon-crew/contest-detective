@@ -62,6 +62,7 @@ class Observation(BaseModel):
     execution: SearchExecution | None = None
     tool: str
     summary: str
+    status: Literal['success', 'failure', 'stopped'] = 'success'
     sources: list[ToolSource] = Field(default_factory=list)
 
 

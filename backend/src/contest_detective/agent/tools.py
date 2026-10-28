@@ -25,6 +25,7 @@ from .schemas import ToolSource
 from .verification import VerificationState, safe_evidence_url, scope_check, public_search_site, public_payload
 from .verification_contracts import InvestigationPlan
 from contest_detective.research.contracts import SearchExecution
+from .presentation import tool_failure
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,8 @@ class ToolDeps:
     contest_ids: set[str] = field(default_factory=set)
     verification: VerificationState | None = None
     observed_contests: dict = field(default_factory=dict)
+    # 只留本轮 get_contest 真正返回的字段，不能把内部完整档案当作已经读过。
+    read_contests: dict = field(default_factory=dict)
     fetched_pages: dict[str, str] = field(default_factory=dict)
     round: int = 0
     search_provider: str | None = None
@@ -125,6 +128,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             ctx = args[0] if args else kwargs.get('ctx')
             try:
                 result = await function(*args, **kwargs)
+                result.setdefault('status', 'success')
                 if ctx and ctx.deps.verification:
                     result = public_payload(result)
                     if isinstance(result, dict) and 'sources' in result:
@@ -135,11 +139,12 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             except UsageLimitExceeded:
                 limit = ctx.usage_limits.request_limit
                 if limit is not None and ctx.usage.requests == limit - 1:
-                    return {'summary': '本轮已停止新增查证，保留已读取的资料。', 'sources': []}
+                    return {'status': 'stopped', 'summary': '已查到的资料已保留，还有部分信息未核实。', 'sources': [],
+                            'model_hint': '不再调用工具，用已读取资料完成回答，说明未核实项，不提调用预算或本提示。'}
                 raise
             except Exception as exc:
                 logger.warning('%s failed: %s', function.__name__, type(exc).__name__)
-                return {'error': type(exc).__name__, 'summary': '本次查询未完成，可尝试其他来源或方法。', 'sources': []}
+                return tool_failure(function.__name__, error=type(exc).__name__)
         return agent.tool(call)
 
     @research_tool
@@ -175,7 +180,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         with ctx.deps.session_factory() as session:
             item = contests.get(session, contest_id)
         if item is None or not ctx.deps.allows_contest(item):
-            return {'contest': None, 'summary': '比赛未找到', 'sources': []}
+            return {'contest': None, **tool_failure('get_contest', error='not_found',
+                summary='没有找到这场比赛的资料，参赛信息仍待核实。')}
         ctx.deps.observe_contest(item)
         selected = contests.evidence(item, fields)
         sources = contest_sources(selected)
@@ -183,7 +189,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         ctx.deps.remember(sources)
         payload = selected.model_dump(mode='json',
             exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
-        return {'contest': payload, 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
+        previous = ctx.deps.read_contests.get(item.id)
+        ctx.deps.read_contests[item.id] = {**payload, 'fields': {**(previous['fields'] if previous else {}), **payload['fields']}}
+        return {'contest': payload, 'summary': f'已读取「{item.name}」的参赛资料与出处', 'sources': sources}
 
     @research_tool
     async def match_contests(ctx: RunContext[ToolDeps], profile: Profile | None = None,
@@ -193,7 +201,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         selected = profile if profile is not None else ctx.deps.profile
         if selected is None or not matching.has_preferences(selected):
             return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'has_more': False,
-                    'summary': '请先确认画像，再按你的情况挑比赛', 'sources': []}
+                    **tool_failure('match_contests', error='missing_profile', summary='还没有可用的参赛偏好，暂未按个人条件筛选。')}
         with ctx.deps.session_factory() as session:
             items = matching.match(session, selected, limit=None)
             items = [item for item in items if ctx.deps.allows_contest(item.contest)]
@@ -216,13 +224,13 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         async def plan_investigation(ctx: RunContext[ToolDeps], plan: InvestigationPlan) -> dict:
             """先拆调查步骤，说明目的、查询与所覆盖的已确认说法 ID；执行后不能篡改原计划。"""
             result = ctx.deps.verification.set_plan(plan)
-            return {'plan': result.model_dump(mode='json'), 'summary': '调查计划已记录', 'sources': []}
+            return {'plan': result.model_dump(mode='json'), 'summary': '已确定要核对的内容', 'sources': []}
 
         @research_tool
         async def cite_evidence(ctx: RunContext[ToolDeps], url: str, excerpt: str) -> dict:
             """从本轮 fetch_page 实际返回的原文中登记摘录，返回可用于 assessments 的真实证据 ID。"""
             evidence = ctx.deps.verification.cite(url, excerpt)
-            return {'evidence': evidence.model_dump(mode='json'), 'summary': '原文证据已登记', 'sources': []}
+            return {'evidence': evidence.model_dump(mode='json'), 'summary': '已找到对应的原文摘录', 'sources': []}
 
     if web_enabled and external_enabled:
         @research_tool
@@ -253,14 +261,14 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 if receipt:
                     receipt = receipt.model_copy(update={'error_code': 'search_failed'})
                     state.remember_search([], receipt)
-                    return {'error': 'search_failed', 'summary': '元宝搜索未完成，未切换其他服务。',
-                            'sources': [], 'execution': receipt.model_dump(mode='json')}
+                    return {**tool_failure('web_search', error='search_failed'),
+                            'execution': receipt.model_dump(mode='json')}
                 raise
             sources = [{**{key: item.get(key, '') for key in ('title', 'url', 'site')},
                         'provider': item.get('provider'), 'query': query,
                         'retrieved_at': datetime.now(timezone.utc).isoformat()} for item in items]
             ctx.deps.search_results.update({source['url']: source for source in sources})
-            return {'items': items, 'summary': f'{"元宝" if state else ""}搜索到 {len(items)} 条线索',
+            return {'items': items, 'summary': f'搜索到 {len(items)} 条线索',
                     **({'execution': receipt.model_dump(mode='json')} if receipt else {})}
 
     if not external_enabled:
@@ -273,9 +281,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             raise ValueError('链接包含私有地址或敏感参数，不能用于公开核验')
         await ctx.deps.check_external_scope(url, ctx)
         if not ctx.deps.allows_url(url):
-            return {'text': '', 'summary': '该网站已在你的搜索偏好中屏蔽', 'sources': []}
+            return {'text': '', **tool_failure('fetch_page', error='blocked_site', summary='这个网站已被你的搜索偏好屏蔽，尚未读取原文。')}
         if ctx.deps.fetch is None:
-            return {'text': '', 'summary': '网页读取暂未配置', 'sources': []}
+            return {'text': '', **tool_failure('fetch_page')}
         if offset < 0 or (length is not None and length < 1):
             raise ValueError('读取位置需为非负数，长度需为正数')
         requested_url = url
@@ -313,9 +321,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             raise ValueError('链接不能用于公开核验')
         await ctx.deps.check_external_scope(url, ctx)
         if not ctx.deps.allows_url(url):
-            return {'contest_id': None, 'summary': '该网站已在你的搜索偏好中屏蔽', 'sources': []}
+            return {'contest_id': None, **tool_failure('record_page', error='blocked_site', summary='这个网站已被你的搜索偏好屏蔽，尚未核对其中的赛事资料。')}
         if ctx.deps.record is None:
-            return {'contest_id': None, 'summary': '页面保存暂未配置', 'sources': []}
+            return {'contest_id': None, **tool_failure('record_page')}
 
         # 抽取共用本轮计数，但不能花掉最终成文的那一次请求。
         limits = ctx.usage_limits
@@ -348,4 +356,4 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 ctx.deps.contest_ids.add(item.id)
                 sources = contest_sources(item)
                 ctx.deps.remember(sources)
-        return {'contest_id': contest_id, 'summary': '赛事已写回比赛库' if contest_id else '未找到可写入的赛事字段', 'sources': sources}
+        return {'contest_id': contest_id, 'summary': '已核对并收录赛事资料' if contest_id else '这个页面没有可核实的赛事信息。', 'sources': sources}
