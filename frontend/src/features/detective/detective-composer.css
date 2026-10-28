@@ -35,9 +35,23 @@
   box-shadow: var(--composer-shadow);
 }
 
-.detective-composer[data-multiline='true'] {
+.detective-composer[data-multiline='true'],
+.detective-composer[data-attachment='true'] {
   align-items: end;
   border-radius: var(--composer-radius-expanded);
+}
+
+.detective-composer__attachment {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: var(--composer-text-inset);
+  animation: detective-message-in 240ms var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detective-composer__attachment {
+    animation: none;
+  }
 }
 
 .detective-composer > textarea {
