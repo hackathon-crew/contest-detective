@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
-import { Link, useLocation } from 'react-router'
+import { Link, Navigate, useLocation } from 'react-router'
+import { loginReturn } from '@/entities/user'
 import ReactMarkdown from 'react-markdown'
 import { ArrowRight, FileUp, X } from 'lucide-react'
 
@@ -18,7 +19,7 @@ import {
   SelectValue,
 } from '@/shared/ui'
 import { confirmAccountProfile, githubDraft, matchProfile, resumeDraft } from './api'
-import { loadConfirmedProfile, mergeDraft, saveConfirmedProfile } from './state'
+import { mergeDraft } from './state'
 import githubMark from '@/shared/assets/github-mark.svg'
 import { ContestFilterIcon, ProfileIcon } from '@/shared/ui/context-icons'
 
@@ -116,7 +117,15 @@ interface ProfileMatchDialogProps {
 }
 export function ProfileMatchDialog({ open = true, ...props }: ProfileMatchDialogProps) {
   const [session, setSession] = useState({ open, revision: 0 })
+  const location = useLocation()
   if (session.open !== open) setSession({ open, revision: session.revision + (open ? 1 : 0) })
+  if (open && !props.user)
+    return (
+      <Navigate
+        to="/login"
+        state={loginReturn(location, { profileSection: props.initialSection ?? 'all' })}
+      />
+    )
   return <ProfileMatchForm key={session.revision} open={open} {...props} />
 }
 // 关闭时让 Radix 保留退场内容，重新打开时以确认过的画像重建表单。
@@ -132,9 +141,7 @@ function ProfileMatchForm({
   const showProfile = section === 'all' || section === 'profile'
   const showFilters = section === 'all' || section === 'filters'
   const location = useLocation()
-  const [profile, setProfile] = useState<Profile>(
-    () => user?.profile ?? loadConfirmedProfile() ?? {},
-  )
+  const [profile, setProfile] = useState<Profile>(() => user?.profile ?? {})
   const [username, setUsername] = useState(profile.github ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<unknown>(null)
@@ -177,8 +184,7 @@ function ProfileMatchForm({
 
   function confirmProfile() {
     void perform(async (signal) => {
-      const confirmed = user ? (await confirmAccountProfile(profile, signal)).profile : profile
-      if (!user) saveConfirmedProfile(confirmed)
+      const confirmed = (await confirmAccountProfile(profile, signal)).profile
       onConfirmed?.(confirmed)
       const matched = await matchProfile(confirmed, signal)
       setResults(matched)
