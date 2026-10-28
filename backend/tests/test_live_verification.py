@@ -123,7 +123,7 @@ def test_failed_yuanbao_does_not_become_completed_or_leak_provider_exception(ses
             return ModelResponse([ToolCallPart('web_search', {'query':'比赛规则','step_id':'s1'})])
         return ModelResponse([answer_part('完成')])
     def broken(*args, **kwargs):
-        raise RuntimeError('api_key=private-key-do-not-export')
+        raise ValueError('api_key=private-key-do-not-export')
     inv=Investigator(FunctionModel(respond),session_factory=session_factory,mode='deep',
         search=broken, search_provider='yuanbao', scope_classifier=allowed)
     events=consume(inv)
