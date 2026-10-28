@@ -13,6 +13,11 @@ from contest_detective.system.user.schemas import Profile
 from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 @pytest.fixture(autouse=True)
 def clear_limits():
     limiter.reset()
@@ -99,7 +104,7 @@ def test_no_effective_profile_requests_confirmation_without_personalization(sess
     assert all('用户已确认的画像' not in text for text in instructions)
 
 
-def test_anonymous_http_profile_reaches_the_investigation(client, session_factory):
+def test_authenticated_http_profile_reaches_the_investigation(client, session_factory):
     def respond(_, info):
         return ModelResponse([answer_part('收到 Rust 画像。' if 'Rust' in info.instructions else '未收到画像。')])
     client.app.dependency_overrides[get_investigator] = lambda: Investigator(
@@ -150,6 +155,8 @@ def test_local_function_model_factory_runs_the_profile_journey(session_factory):
     seed(session_factory)
     app = create_fake_app(db_engine=session_factory.kw['bind'], session_factory=session_factory)
     with TestClient(app) as client:
+        from account_helpers import authenticate_transport
+        authenticate_transport(app, session_factory)
         response = client.post('/agent/ask', json={
             'question': '我适合哪场比赛', 'profile': {'skills': ['Rust']},
         })

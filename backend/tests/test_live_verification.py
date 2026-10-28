@@ -12,6 +12,11 @@ from agent_responses import answer_part
 import pytest
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 def consume(investigator, **kwargs):
     return asyncio.run(_consume(investigator, **kwargs))
 
@@ -170,9 +175,9 @@ def test_http_uses_the_effective_executor_mode(client, session_factory):
     from contest_detective.bootstrap.api.agent import get_investigator
     received = {}
     class EffectiveInvestigator(Investigator):
-        async def _execute(self, investigation_id, question, user_id, profile, history, confirmed_claims):
+        async def _execute(self, investigation_id, question, user_id, profile, history, confirmed_claims, **kwargs):
             received.update(mode=self.mode, confirmed_claims=confirmed_claims)
-            return await super()._execute(investigation_id, question, user_id, profile, history, confirmed_claims)
+            return await super()._execute(investigation_id, question, user_id, profile, history, confirmed_claims, **kwargs)
     client.app.dependency_overrides[get_investigator] = lambda: EffectiveInvestigator(
         FunctionModel(lambda *_: ModelResponse([answer_part('mock')])), session_factory=session_factory)
     try:
