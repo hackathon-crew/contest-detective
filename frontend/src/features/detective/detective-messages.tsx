@@ -4,6 +4,7 @@ import { safeUrl } from '@/entities/contest'
 import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
 import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
+import { observationStatus } from './events'
 import { rehypeStreamReveal } from './rehype-stream-reveal'
 import { useStreamPacer } from './use-stream-pacer'
 import { SourceIcon } from './source-icon'
@@ -49,6 +50,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
     summary?: string
     sources: TraceSource[]
     execution?: SearchExecution
+    status?: 'success' | 'failure' | 'stopped'
   }[] = []
   for (const event of turn.trace) {
     if (event.type === 'step') steps.push({ label: event.label, tool: event.tool, sources: [] })
@@ -58,27 +60,28 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
         step.summary = event.summary
         step.sources = event.sources
         step.execution = event.execution
+        step.status = observationStatus(event)
       }
     }
   }
   if (!steps.length) return null
   const active = turn.status === 'running' && !turn.content && steps.at(-1)!.summary === undefined
   const completed = steps.filter(
-    (step) => step.summary !== undefined && step.execution?.status !== 'failure',
+    (step) => step.summary !== undefined && step.status === 'success',
   ).length
-  const failed = steps.some((step) => step.execution?.status === 'failure')
-  const unfinished = steps.some((step) => step.summary === undefined)
+  const failed = steps.some((step) => step.status === 'failure')
+  const unfinished = steps.some((step) => step.summary === undefined || step.status === 'stopped')
   const label = turn.report
     ? reportStatusNames[turn.report.status]
     : active
       ? `正在${steps.at(-1)!.label}`
       : turn.status === 'stopped'
-        ? `已停止，完成 ${completed} 项检索`
+        ? `已停止，已查看 ${completed} 项资料`
         : turn.status === 'error'
-          ? '检索未完成'
+          ? '尚未取得查证结果'
           : failed || unfinished
-            ? `检索未完成，成功 ${completed} 项`
-            : `已完成 ${completed} 项检索`
+            ? '部分资料尚未查到'
+            : `已查看 ${completed} 项资料`
   return (
     <details className="detective-tools">
       <summary aria-label={label}>
@@ -100,8 +103,10 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
           <li key={index}>
             <div className="detective-tools__heading">
               <strong>{step.label}</strong>
-              {step.execution?.status === 'failure' ? (
+              {step.status === 'failure' ? (
                 <span>失败</span>
+              ) : step.status === 'stopped' ? (
+                <Square aria-label="已停止" />
               ) : step.summary !== undefined ? (
                 <Check aria-label="已完成" />
               ) : turn.status === 'running' ? (
@@ -166,7 +171,7 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
                 {turn.trace.length ? '正在整理回复' : '正在看你的问题'}
               </p>
             )}
-          {!turn.report && paced.visible && (
+          {paced.visible && turn.report?.status !== 'complete' && (
             <div className="detective-prose">
               <ReactMarkdown
                 urlTransform={(url) => safeUrl(url) ?? ''}

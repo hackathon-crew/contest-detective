@@ -29,6 +29,7 @@ export type TraceEvent =
       summary: string
       sources: TraceSource[]
       execution?: SearchExecution
+      status?: 'success' | 'failure' | 'stopped'
     }
   | { type: 'delta'; content: string }
   | {
@@ -42,6 +43,11 @@ export type TraceEvent =
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** 旧消息靠真实搜索回执判断；新消息也覆盖没有搜索回执的工具失败。 */
+export function observationStatus(event: Extract<TraceEvent, { type: 'observation' }>) {
+  return event.execution?.status === 'failure' ? 'failure' : (event.status ?? 'success')
 }
 function sources(value: unknown): TraceSource[] {
   if (!Array.isArray(value)) return []
@@ -92,6 +98,9 @@ export function parseTrace(event: ServerSentEvent): TraceEvent | null {
       summary: value.summary,
       sources: sources(value.sources),
       execution: optional(value.execution, parseSearchExecution),
+      ...(value.status === 'success' || value.status === 'failure' || value.status === 'stopped'
+        ? { status: value.status }
+        : {}),
     }
   if (event.event === 'answer' && typeof value.content === 'string') {
     const report = optional(value.report, parseInvestigationReport)

@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronRight, CircleAlert, LoaderCircle, X } from 'lucide
 import { safeUrl } from '@/entities/contest'
 import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
+import { observationStatus } from './events'
 import { ExecutionDetails, InvestigationProgress } from './evidence-report'
 import type { SearchExecution } from './verification-contracts'
 import { publicReportUrl, reportStatusNames, sourceLevelNames } from './verification-report'
@@ -44,17 +45,20 @@ function researchFor(turns: readonly DetectiveTurn[]) {
         const step = steps.findLast(
           (item) => item.tool === event.tool && item.summary === undefined,
         )
+        const status = observationStatus(event)
+        const activityStatus =
+          status === 'failure' ? 'failed' : status === 'stopped' ? 'interrupted' : 'completed'
         if (step) {
           step.summary = event.summary
-          step.status = event.execution?.status === 'failure' ? 'failed' : 'completed'
+          step.status = activityStatus
           step.execution = event.execution
         } else {
           steps.push({
             id: `${turn.id}:${index}`,
             tool: event.tool,
-            label: event.tool,
+            label: '核对赛事资料',
             summary: event.summary,
-            status: event.execution?.status === 'failure' ? 'failed' : 'completed',
+            status: activityStatus,
             execution: event.execution,
           })
         }
@@ -148,7 +152,6 @@ function Sources({ sources }: { sources: TraceSource[] }) {
       <span>
         <strong>{source.title || source.site || new URL(source.url).hostname}</strong>
         <small>{new URL(source.url).hostname.replace(/^www\./u, '')}</small>
-        {source.provider && <small>服务：{source.provider}</small>}
         {source.query && <small>查询：{source.query}</small>}
         {source.retrieved_at && <small>获取时间：{source.retrieved_at}</small>}
         {source.stale ? <em>来源已过期</em> : !source.is_official ? <em>待核实</em> : null}
@@ -238,7 +241,6 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
               )}
               <div>
                 <strong>{activity.label}</strong>
-                <small>{activity.tool}</small>
                 {activity.summary && <p>{activity.summary}</p>}
                 {activity.execution && <ExecutionDetails execution={activity.execution} />}
               </div>
