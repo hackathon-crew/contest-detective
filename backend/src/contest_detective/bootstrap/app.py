@@ -20,6 +20,7 @@ from contest_detective.bootstrap.api import router
 from contest_detective.bootstrap.handler import register_exception_handlers
 from contest_detective.bootstrap.source_sync import (
     configured_detail_fetcher, configured_extractor, configured_normalizer, configured_tavily,
+    refresh_index,
 )
 
 
@@ -48,6 +49,7 @@ def create_app(*, db_engine=None, async_session_factory=None,
         scheduler_kwargs = {'extractor': extractor}
         if daily_at or interval > 0:
             scheduler_kwargs['detail_fetcher'] = configured_detail_fetcher()
+            scheduler_kwargs['after_sync'] = lambda: refresh_index(factory)
         if normalizer is not None:
             scheduler_kwargs['normalizer'] = normalizer
         if tavily is not None:
