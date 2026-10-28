@@ -133,7 +133,10 @@ def test_large_profile_context_is_rejected_before_provider_or_balance_access(ses
     guarded = GuardedModel(FunctionModel(lambda *_: pytest.fail('The oversized context must not reach a provider')),
                            Budget(session_factory, settings), balance_reader=forbidden_balance)
     events = ask(Investigator(guarded, session_factory=session_factory), profile=profile)
-    assert events[-1].type == 'error' and '上下文过长' in events[-1].payload['message']
+    assert events[-1].type == 'error'
+    assert '参赛资料太长' in events[-1].payload['message']
+    assert '减少附带资料' in events[-1].payload['message']
+    assert '具体规则' in events[-1].payload['message']
     with session_factory() as session:
         assert session.scalars(select(LLMUsage)).all() == []
 

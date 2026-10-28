@@ -105,5 +105,5 @@ def test_local_protection_remains_the_default_and_model_disable_still_applies(se
     with pytest.raises(ValidationError):
         LLMSettings(_env_file=None, limits_mode='unknown')
     disabled = LLMSettings(_env_file=None, limits_mode='external', enabled=False)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='自己的模型密钥'):
         Budget(session_factory, disabled).reserve()

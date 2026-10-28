@@ -54,10 +54,10 @@ def test_missing_or_invalid_usage_is_not_free(bad):
 
 def test_disabled_switch_prevents_balance_and_model_access(session_factory):
     config = LLMSettings(_env_file=None, enabled=False, api_key='test-only')
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='自己的模型密钥'):
         create_model(config, session_factory=session_factory)
     budget = Budget(session_factory, config)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='自己的模型密钥'):
         budget.reserve()
     with session_factory() as session:
         assert session.scalars(select(LLMUsage)).all() == []
@@ -65,7 +65,7 @@ def test_disabled_switch_prevents_balance_and_model_access(session_factory):
 
 def test_quota_checks_include_maximum_next_request(session_factory):
     budget = Budget(session_factory, settings(budget_cny='0.01'))
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='查证额度已用完'):
         budget.reserve()
     with session_factory() as session:
         assert session.scalars(select(LLMUsage)).all() == []
@@ -105,15 +105,18 @@ def test_two_concurrent_calls_cannot_reserve_the_same_money(tmp_path):
     engine.dispose()
 
 
-@pytest.mark.parametrize('balance', ['89.99', 'broken'])
+@pytest.mark.parametrize('balance', ['89.99', 'broken', 'unexpected'])
 def test_low_or_unreadable_balance_releases_unspent_reservation(session_factory, balance):
     async def balance_reader():
         if balance == 'broken':
             raise httpx.ConnectError('offline')
+        if balance == 'unexpected':
+            raise RuntimeError('unexpected balance bug')
         return Decimal(balance)
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('model request must be blocked')),
                          Budget(session_factory, settings()), balance_reader=balance_reader)
-    with pytest.raises(BizException, match='余额'):
+    error_type, message = (RuntimeError, 'unexpected balance bug') if balance == 'unexpected' else (BizException, '余额')
+    with pytest.raises(error_type, match=message):
         asyncio.run(Agent(model).run('查询'))
     with session_factory() as session:
         assert sum(row.cost_cny for row in session.scalars(select(LLMUsage))) == 0
@@ -177,7 +180,7 @@ def test_disabled_request_never_reads_balance_or_dispatches_model(session_factor
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('disabled configuration reached provider')),
                          Budget(session_factory, LLMSettings(_env_file=None, enabled=False)),
                          balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='自己的模型密钥'):
         asyncio.run(Agent(model).run('查询'))
 
 
@@ -187,7 +190,7 @@ def test_overlarge_context_is_rejected_before_any_balance_request(session_factor
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized context reached provider')),
                          Budget(session_factory, settings(max_input_tokens=8192)),
                          balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
+    with pytest.raises(BizException, match='减少附带资料'):
         asyncio.run(Agent(model).run('问题' * 5000))
 
 
@@ -196,7 +199,7 @@ def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
     call = budget.reserve()
     with pytest.raises(ValueError, match='超出预留'):
         budget.settle(call, usage(hit=0, miss=100_000, output=1_000))
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='查证额度已用完'):
         budget.reserve()
 
 
@@ -205,7 +208,7 @@ def test_confirmed_profile_context_is_included_in_input_reservation_bound(sessio
         pytest.fail('oversized instructions reached balance endpoint')
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized instructions reached provider')),
                          Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
+    with pytest.raises(BizException, match='减少附带资料'):
         asyncio.run(Agent(model, instructions='已确认资料' * 5000).run('查询'))
 
 
@@ -221,7 +224,7 @@ def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory)
         assert row.status == 'overrun'
         assert row.cost_cny == Decimal('0.208')
         assert (row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens) == (0, 100_000, 1_000)
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='查证额度已用完'):
         budget.reserve()
 
 
