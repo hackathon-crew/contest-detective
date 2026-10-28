@@ -1,12 +1,15 @@
 """在装配层选择抽取器，来源模块不依赖具体模型供应商。"""
 
+import argparse
+import asyncio
+import json
 import logging
 
 from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.config.search import get_search_settings
 from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.agent.config import get_llm_settings
-from contest_detective.research.pipeline.execute import run_pipeline
+from contest_detective.research.pipeline.execute import reconcile_existing, run_pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +49,26 @@ def configured_detail_fetcher():
     return BoundedPublicDetailFetcher()
 
 
-def main() -> None:
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description='采集赛事，或整理历史记录中的文字差异')
+    parser.add_argument('--reconcile-existing', action='store_true', help='清点历史待合并字段，默认不调用模型、不写数据库')
+    parser.add_argument('--apply', action='store_true', help='调用已配置模型并保存历史合并结果，会产生模型调用费用')
+    parser.add_argument('--contest-id', action='append', help='只整理指定赛事，可重复传入')
+    parser.add_argument('--limit', type=int, help='最多处理的候选赛事数')
+    args = parser.parse_args(argv)
+    if (args.apply or args.contest_id or args.limit is not None) and not args.reconcile_existing:
+        parser.error('--apply、--contest-id 和 --limit 需要与 --reconcile-existing 一起使用')
+    if args.limit is not None and args.limit < 1:
+        parser.error('--limit 必须大于0')
     logging.basicConfig(level=get_app_settings().log_level)
+    if args.reconcile_existing:
+        normalizer = configured_normalizer() if args.apply else None
+        if args.apply and normalizer is None:
+            parser.error('历史信息整理需要配置模型')
+        report = asyncio.run(reconcile_existing(SessionLocal, normalizer=normalizer, apply=args.apply,
+            contest_ids=args.contest_id, limit=args.limit))
+        print(json.dumps(report, ensure_ascii=False))
+        return
     init_db()
     kwargs = {'extractor': configured_extractor(SessionLocal), 'detail_fetcher': configured_detail_fetcher()}
     normalizer = configured_normalizer()
