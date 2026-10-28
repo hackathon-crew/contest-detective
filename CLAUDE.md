@@ -21,6 +21,7 @@ uv run --directory backend alembic upgrade head
 uv run --directory backend contest-detective       # FastAPI development server on port 8000
 uv run --directory backend contest-detective-sync  # run one source synchronization
 uv run --directory backend contest-detective-mcp   # local read-only stdio MCP; needs an existing SQLite or PostgreSQL database
+uv run --directory backend contest-detective-migrate-sqlite --source contest_detective.db --dry-run  # verify a SQLite -> PostgreSQL copy
 ```
 
 The default local database is `backend/contest_detective.db` when `DETECTIVE_DB_URL` is not overridden. Copy `.env.example` to a local environment file and configure provider/model settings only when a feature needs them. The MCP stdio process opens the configured database in read-only mode and does not create a database or run migrations.

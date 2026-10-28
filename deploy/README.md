@@ -114,6 +114,36 @@ docker compose -f docker-compose.dev.yml config   # 检查变量插值
 
 数据目录是 bind mount，可以直接备份或迁移；切换目录前先停容器。`POSTGRES_*` 只在数据目录为空时初始化，修改密码后复用旧目录不会生效，需要 `ALTER ROLE` 或重建数据目录。
 
+### 数据搬迁
+
+源 SQLite 必须已经在 Alembic head，目标 PostgreSQL 必须已经迁移到 head 且除 `alembic_version` 外为空。搬迁前停止同步、通知和盯梢调度，避免切换窗口内继续写入。
+
+先用单独的 PG 环境文件跑 dry-run：
+
+```sh
+sudo systemd-run --wait --pipe --collect \
+  --unit=contest-detective-migrate-dryrun \
+  --property=User=contest-detective \
+  --property=EnvironmentFile=/etc/contest-detective-pg.env \
+  --working-directory=/srv/contest-detective/backend \
+  /srv/contest-detective/backend/.venv/bin/contest-detective-migrate-sqlite \
+  --source /var/lib/contest-detective/contest.db --dry-run
+```
+
+确认报告中的源行数和目标为空后，再执行：
+
+```sh
+sudo systemd-run --wait --pipe --collect \
+  --unit=contest-detective-migrate-apply \
+  --property=User=contest-detective \
+  --property=EnvironmentFile=/etc/contest-detective-pg.env \
+  --working-directory=/srv/contest-detective/backend \
+  /srv/contest-detective/backend/.venv/bin/contest-detective-migrate-sqlite \
+  --source /var/lib/contest-detective/contest.db --apply
+```
+
+复制和校验在同一个 PostgreSQL 事务内完成；失败会整体回滚，目标仍为空。校验内容包括每张表的行数和规范化行哈希，以及 `contest_events` / `registration_code_sends` 的自增序列。
+
 ### 生产
 
 - 需要 PostgreSQL 16 与 pgvector >= 0.8；数据库角色需要 `CREATE EXTENSION vector` 权限。

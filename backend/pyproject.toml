@@ -37,6 +37,7 @@ contest-detective = "contest_detective.bootstrap.app:main"
 contest-detective-sync = "contest_detective.bootstrap.source_sync:main"
 contest-detective-mcp = "contest_detective.bootstrap.mcp:main"
 contest-detective-refresh = "contest_detective.bootstrap.offline_refresh:main"
+contest-detective-migrate-sqlite = "contest_detective.bootstrap.migrate_sqlite:main"
 
 [build-system]
 requires = ["hatchling"]
