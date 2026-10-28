@@ -1,4 +1,5 @@
 import json
+import logging
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, Depends, Request
@@ -15,6 +16,7 @@ from contest_detective.framework.db import get_session
 from contest_detective.framework.config.app import get_app_settings
 from contest_detective.system.account.providers import runtime_for
 from contest_detective.agent.loop import Investigator, create_investigator
+from contest_detective.agent.presentation import UNAVAILABLE_ANSWER
 from contest_detective.agent.schemas import AskRequest
 from contest_detective.agent.schemas import ContestRecommendation, ResolveRecommendations
 from contest_detective.agent.recommendations import resolve_previous
@@ -22,6 +24,7 @@ from contest_detective.system.auth.service import get_current_user_id
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
+logger = logging.getLogger(__name__)
 
 
 @router.post('/agent/recommendations/resolve', response_model=Response[list[ContestRecommendation]])
@@ -38,9 +41,13 @@ async def get_investigator(body: AskRequest, session: Session = Depends(get_sess
     if body.confirmed_claims:
         raise BizException('截图与深度核验暂时停用，请使用普通文字推荐或查询比赛库。', code=503)
     factory = sessionmaker(bind=session.get_bind(), expire_on_commit=False)
-    runtime = runtime_for(session, user_id)
-    investigator = create_investigator(session_factory=factory, model_settings=runtime.llm,
-                                      search_settings=runtime.search, preferences=runtime.preferences, mode=body.mode)
+    try:
+        runtime = runtime_for(session, user_id)
+        investigator = create_investigator(session_factory=factory, model_settings=runtime.llm,
+                                          search_settings=runtime.search, preferences=runtime.preferences, mode=body.mode)
+    except Exception as exc:
+        logger.warning('Investigation unavailable: %s', type(exc).__name__)
+        raise BizException(UNAVAILABLE_ANSWER, code=503) from None
     async with investigator.agent:
         yield investigator
 
