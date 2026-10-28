@@ -40,7 +40,7 @@ export function AppRoutes() {
   const location = useLocation()
   const background = location.state?.backgroundLocation as Location | undefined
   const contestId = matchPath('/contests/:contestId', location.pathname)?.params.contestId
-  const { data: user } = useCurrentUser()
+  const { data: user, isPending } = useCurrentUser()
   if (location.pathname === '/login' || location.pathname === '/register') {
     return (
       <AuthPage
@@ -49,6 +49,15 @@ export function AppRoutes() {
         utilities={<AppearanceControl />}
       />
     )
+  }
+  if (/^\/detective(?:\/|$)/.test(location.pathname) && !user) {
+    if (isPending)
+      return (
+        <main aria-busy="true">
+          <p role="status">正在确认登录状态…</p>
+        </main>
+      )
+    return <Navigate to="/login" state={{ returnTo: location }} replace />
   }
   return (
     <DetectiveProvider key={user?.id ?? 'guest'} scope={user?.id ?? 'guest'}>
