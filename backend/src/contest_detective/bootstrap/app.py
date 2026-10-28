@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from contest_detective.framework.async_db import AsyncSessionLocal
 from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.db import SessionLocal, init_db
+from contest_detective.agent.chat.service import recover_interrupted
 from contest_detective.research.scheduler import start_scheduler
 from contest_detective.agent.investigations import Investigations
 
@@ -31,6 +32,10 @@ def create_app(*, db_engine=None, async_session_factory=None,
         factory = sessionmaker(bind=db_engine, expire_on_commit=False) if db_engine is not None else SessionLocal
         _app.state.investigations = Investigations(factory)
         _app.state.investigations.recover_interrupted()
+        _app.state.chat_session_factory = factory
+        with factory() as session:
+            recover_interrupted(session)
+            session.commit()
         settings = get_app_settings()
         interval = sync_interval_minutes if sync_interval_minutes is not None else settings.sync_interval_minutes
         daily_at = sync_daily_at if sync_daily_at is not None else settings.sync_daily_at
