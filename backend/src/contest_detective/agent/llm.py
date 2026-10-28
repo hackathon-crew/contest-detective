@@ -12,12 +12,14 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.wrapper import WrapperModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.profiles.openai import OpenAIModelProfile
+from sqlalchemy.exc import SQLAlchemyError
 
 from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.db import SessionLocal
 
 from .budget import Budget, read_balance
 from .config import LLMSettings, get_llm_settings
+from .retry import retry_transient
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,9 @@ class GuardedModel(WrapperModel):
             await self.aclose()
 
     async def request(self, messages, model_settings, model_request_parameters):
+        return await retry_transient(lambda: self._request_once(messages, model_settings, model_request_parameters))
+
+    async def _request_once(self, messages, model_settings, model_request_parameters):
         self.budget.ensure_enabled()
         config = self.budget.settings
         # 本地金额预留需要保守的输入上界；外部模式由网关和模型限制真实上下文容量。
@@ -52,13 +57,15 @@ class GuardedModel(WrapperModel):
                 raise BizException('查证上下文过长，请缩小问题范围', code=400)
         call_id = self.budget.reserve()
         if config.limits_mode == 'local':
+            confirmed = False
             try:
                 balance = await self.balance_reader()
                 if not balance.is_finite() or balance < config.balance_floor_cny:
-                    raise ValueError('余额不足')
-            except Exception as exc:
-                self.budget.cancel_before_request(call_id)
-                raise BizException('模型余额不足或暂时无法确认余额', code=503) from exc
+                    raise BizException('模型余额不足或暂时无法确认余额', code=503)
+                confirmed = True
+            finally:
+                if not confirmed:
+                    self.budget.cancel_before_request(call_id)
         # Once dispatched, failed requests keep their unconfirmed reservation.
         # Body overlays and SDK retries can bypass local spending reservations.
         # External quotas leave output capacity to the provider as well as input.
@@ -72,8 +79,8 @@ class GuardedModel(WrapperModel):
         response = await self.wrapped.request(messages, settings, model_request_parameters)
         try:
             self.budget.settle(call_id, response.usage)
-        except Exception as exc:
-            logger.warning('Usage settlement pending for %s: %s', call_id, type(exc).__name__)
+        except (ValueError, SQLAlchemyError):
+            logger.exception('Usage settlement pending for %s', call_id)
         return response
 
     @asynccontextmanager
