@@ -2,6 +2,7 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
+import { MemoryRouter } from 'react-router'
 import { useFollows, FOLLOW_STORAGE_KEY } from './model'
 const row = (id: string) => ({
   contest: { id, name: id, status: 'upcoming', cover_url: null, fields: {} },
@@ -22,7 +23,9 @@ function setup() {
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <Harness />
+      <MemoryRouter>
+        <Harness />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
