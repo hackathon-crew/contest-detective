@@ -5,6 +5,104 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/account/conversations": {
+      "get": {
+        "summary": "List Conversations",
+        "operationId": "list_conversations_account_conversations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_list_SavedConversation__"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/conversations/{conversation_id}": {
+      "get": {
+        "summary": "Read Conversation",
+        "operationId": "read_conversation_account_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_SavedConversation_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/account/conversations/import": {
+      "post": {
+        "summary": "Import Conversations",
+        "operationId": "import_conversations_account_conversations_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationImport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/watch": {
       "get": {
         "summary": "Read Watch",
@@ -2075,6 +2173,32 @@
             ],
             "title": "Investigation Id"
           },
+          "retry_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retry Of"
+          },
+          "conversation_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Conversation Id"
+          },
+          "turn_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Turn Id"
+          },
           "question": {
             "type": "string",
             "minLength": 1,
@@ -2196,6 +2320,66 @@
           "url"
         ],
         "title": "CalendarRead"
+      },
+      "ClaimAssessment": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "refuted",
+              "conflicting",
+              "insufficient"
+            ],
+            "title": "Verdict"
+          },
+          "source_level": {
+            "type": "string",
+            "enum": [
+              "official",
+              "reposted",
+              "conflict",
+              "not_found"
+            ],
+            "title": "Source Level"
+          },
+          "evidence_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Ids"
+          },
+          "comparison": {
+            "type": "string",
+            "title": "Comparison"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "verdict",
+          "source_level",
+          "comparison"
+        ],
+        "title": "ClaimAssessment"
       },
       "CodeRequest": {
         "properties": {
@@ -2671,6 +2855,24 @@
         ],
         "title": "ContestSummary"
       },
+      "ConversationImport": {
+        "properties": {
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SavedConversation"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Sessions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sessions"
+        ],
+        "title": "ConversationImport"
+      },
       "ConversationMessage": {
         "properties": {
           "role": {
@@ -3121,6 +3323,110 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "InvestigationPlan": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "realtime",
+              "deep"
+            ],
+            "title": "Mode"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/PlanStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "steps"
+        ],
+        "title": "InvestigationPlan"
+      },
+      "InvestigationReport": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Version",
+            "default": 1
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "realtime",
+              "deep"
+            ],
+            "title": "Mode"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "incomplete",
+              "blocked"
+            ],
+            "title": "Status"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/SearchExecution"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "claims": {
+            "items": {
+              "$ref": "#/components/schemas/ClaimAssessment"
+            },
+            "type": "array",
+            "title": "Claims"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ReportEvidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Limitations"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "status",
+          "generated_at"
+        ],
+        "title": "InvestigationReport"
+      },
       "LibraryConditions": {
         "properties": {
           "keyword": {
@@ -3558,6 +3864,37 @@
         ],
         "title": "PasswordInput"
       },
+      "PlanStep": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "claim_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Claim Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "purpose",
+          "query"
+        ],
+        "title": "PlanStep"
+      },
       "Profile": {
         "properties": {
           "skills": {
@@ -3753,6 +4090,31 @@
         },
         "type": "object",
         "title": "Profile"
+      },
+      "ProfileAttachment": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/Profile"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/MatchItem"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "profile",
+          "candidates"
+        ],
+        "title": "ProfileAttachment"
       },
       "ProviderInput": {
         "properties": {
@@ -4184,6 +4546,113 @@
           "code"
         ],
         "title": "RegisterCredentials"
+      },
+      "ReportEvidence": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "excerpt": {
+            "type": "string",
+            "title": "Excerpt"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "retrieved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieved At"
+          },
+          "evidence_kind": {
+            "type": "string",
+            "enum": [
+              "search_snippet",
+              "fetched_page",
+              "database_record"
+            ],
+            "title": "Evidence Kind"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "query_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Query Ids"
+          },
+          "source_level": {
+            "type": "string",
+            "enum": [
+              "official",
+              "reposted",
+              "conflict",
+              "not_found"
+            ],
+            "title": "Source Level"
+          },
+          "source_lineage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Lineage"
+          },
+          "historical": {
+            "type": "boolean",
+            "title": "Historical",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "url",
+          "excerpt",
+          "evidence_kind",
+          "source_level"
+        ],
+        "title": "ReportEvidence"
       },
       "ResolveRecommendations": {
         "properties": {
@@ -4828,6 +5297,48 @@
         },
         "type": "object",
         "title": "Response[QuotaRead]"
+      },
+      "Response_SavedConversation_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedConversation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[SavedConversation]"
       },
       "Response_SearchPreferences_": {
         "properties": {
@@ -5481,6 +5992,52 @@
         "type": "object",
         "title": "Response[list[MatchItem]]"
       },
+      "Response_list_SavedConversation__": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SavedConversation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[list[SavedConversation]]"
+      },
       "Response_list_TrackRead__": {
         "properties": {
           "code": {
@@ -5526,6 +6083,407 @@
         },
         "type": "object",
         "title": "Response[list[TrackRead]]"
+      },
+      "SavedConversation": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "createdAt": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Createdat"
+          },
+          "updatedAt": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Updatedat"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/SavedTurn"
+            },
+            "type": "array",
+            "title": "Turns"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "createdAt",
+          "updatedAt",
+          "turns"
+        ],
+        "title": "SavedConversation"
+      },
+      "SavedObservation": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "continuing"
+            ],
+            "title": "Status",
+            "default": "success"
+          },
+          "execution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchExecution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ToolSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "type": {
+            "type": "string",
+            "const": "observation",
+            "title": "Type",
+            "default": "observation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "summary"
+        ],
+        "title": "SavedObservation"
+      },
+      "SavedRequest": {
+        "properties": {
+          "profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Profile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verificationOptions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedVerificationOptions"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SavedRequest"
+      },
+      "SavedStep": {
+        "properties": {
+          "tool": {
+            "type": "string",
+            "title": "Tool"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "const": "step",
+            "title": "Type",
+            "default": "step"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tool",
+          "label"
+        ],
+        "title": "SavedStep"
+      },
+      "SavedTurn": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Id"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Question"
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "default": ""
+          },
+          "trace": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/SavedStep"
+                },
+                {
+                  "$ref": "#/components/schemas/SavedObservation"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Trace"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/ToolSource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "completed",
+              "stopped",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "investigationId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_.:-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Investigationid"
+          },
+          "lastSeq": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Lastseq",
+            "default": 0
+          },
+          "action": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "settings",
+                  "retry",
+                  "provide_link"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SavedRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationPlan"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InvestigationReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recommendations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ContestRecommendation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recommendations"
+          },
+          "profileFile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProfileAttachment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "status"
+        ],
+        "title": "SavedTurn"
+      },
+      "SavedVerificationOptions": {
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "database",
+                  "realtime",
+                  "deep"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mode"
+          },
+          "confirmed_claims": {
+            "items": {
+              "$ref": "#/components/schemas/ConfirmedClaim"
+            },
+            "type": "array",
+            "title": "Confirmed Claims"
+          }
+        },
+        "type": "object",
+        "title": "SavedVerificationOptions"
+      },
+      "SearchExecution": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "step_id": {
+            "type": "string",
+            "title": "Step Id"
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Round"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "failure"
+            ],
+            "title": "Status"
+          },
+          "executed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Executed At"
+          },
+          "result_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Result Count"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "step_id",
+          "round",
+          "query",
+          "provider",
+          "status",
+          "executed_at",
+          "result_count"
+        ],
+        "title": "SearchExecution"
       },
       "SearchPreferences": {
         "properties": {

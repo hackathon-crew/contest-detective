@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { DetectiveProvider } from './detective-provider'
 import { useDetective } from './detective-context'
 import type { VerificationOptions } from './verification-contracts'
+import { currentUserKey } from '@/entities/user'
 
 beforeEach(() => localStorage.clear())
 afterEach(() => {
@@ -26,15 +27,26 @@ it.each([
   },
 ] as (VerificationOptions | undefined)[])('只转发明确选择的核验选项 %j', async (options) => {
   const fetch = vi.fn(
-    async () =>
+    async (_input?: RequestInfo | URL, _init?: RequestInit) =>
       new Response('event: answer\ndata: {"content":"尚未核实。","sources":[]}\n\n', {
         headers: { 'content-type': 'text/event-stream' },
       }),
   )
   vi.stubGlobal('fetch', fetch)
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) =>
+    String(input).endsWith('/account/conversations')
+      ? Promise.resolve(Response.json({ code: 200, message: 'ok', data: [] }))
+      : fetch(input, init),
+  )
+  const client = new QueryClient()
+  client.setQueryData(currentUserKey, {
+    id: 'options-test',
+    username: 'options@example.org',
+    profile: {},
+  })
   render(
     <MemoryRouter>
-      <QueryClientProvider client={new QueryClient()}>
+      <QueryClientProvider client={client}>
         <DetectiveProvider scope="options-test">
           <Submit options={options} />
         </DetectiveProvider>
@@ -46,7 +58,11 @@ it.each([
   const body = JSON.parse(
     (fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body as string,
   )
-  expect(body.investigation_id).toMatch(/^[0-9a-f-]{36}$/)
-  const { investigation_id: _id, ...request } = body
-  expect(request).toEqual({ question: '核实比赛截止', ...options })
+  expect(body).toEqual({
+    investigation_id: expect.any(String),
+    conversation_id: expect.any(String),
+    turn_id: expect.any(String),
+    question: '核实比赛截止',
+    ...options,
+  })
 })

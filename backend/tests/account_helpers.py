@@ -63,3 +63,15 @@ def login(client, email='owner@example.com', *, verified=True):
         user.is_verified = verified
         session.commit()
     return client.get('/auth/me').json()['data']['id']
+
+
+def authenticate_transport(app, session_factory):
+    """Give transport tests a real owner without exercising the separate cookie flow."""
+    import uuid
+    from contest_detective.system.auth.service import require_user
+    owner = uuid.uuid4()
+    with session_factory() as session:
+        session.add(User(id=owner, email=f'{owner.hex}@example.org', hashed_password='unused', is_verified=True))
+        session.commit()
+    app.dependency_overrides[require_user] = lambda: str(owner)
+    return str(owner)

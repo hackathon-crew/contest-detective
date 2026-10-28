@@ -2,6 +2,12 @@ from datetime import datetime, timezone
 
 from contest_detective.system.user.schemas import Profile
 
+import pytest
+
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
 
 def test_match_endpoint_returns_reasons_and_empty_profile_is_empty(client, session, monkeypatch):
     from contest_detective.contest import service
@@ -22,7 +28,7 @@ def test_match_endpoint_returns_reasons_and_empty_profile_is_empty(client, sessi
     assert client.post('/match', json={'skills': ['x'] * 51}).json()['code'] == 400
 
 
-def test_github_draft_and_raw_resume_draft_do_not_require_login(client):
+def test_github_draft_and_raw_resume_draft_for_an_authenticated_user(client):
     from contest_detective.bootstrap.api.profile import get_github_builder, get_resume_extractor
 
     async def github(username):
@@ -42,7 +48,6 @@ def test_github_draft_and_raw_resume_draft_do_not_require_login(client):
         headers={'Content-Type': 'application/octet-stream'}).json()
     assert second['code'] == 200
     assert second['data']['identity_kind'] == 'student'
-    assert client.get('/auth/me').json()['data'] is None
 
 
 def test_resume_stream_has_size_limit_and_does_not_expose_extractor_errors(client, caplog):

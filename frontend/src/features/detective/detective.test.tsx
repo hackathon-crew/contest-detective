@@ -1,3 +1,4 @@
+import type { DetectiveSession } from './sessions'
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -168,29 +169,26 @@ describe('侦探过程', () => {
     expect(screen.getByText('查证已停止。')).toBeTruthy()
   })
   it('重新打开页面按保存的断点续读，不再次发起查证', async () => {
-    localStorage.setItem(
-      'contest-detective.sessions.guest',
-      JSON.stringify([
-        {
-          id: 'conversation',
-          title: '查报名时间',
-          createdAt: 1,
-          updatedAt: 1,
-          turns: [
-            {
-              id: 'turn',
-              investigationId: 'saved-run',
-              lastSeq: 1,
-              question: '查报名时间',
-              content: '',
-              trace: [],
-              sources: [],
-              status: 'running',
-            },
-          ],
-        },
-      ]),
-    )
+    const savedSessions: DetectiveSession[] = [
+      {
+        id: 'conversation',
+        title: '查报名时间',
+        createdAt: 1,
+        updatedAt: 1,
+        turns: [
+          {
+            id: 'turn',
+            investigationId: 'saved-run',
+            lastSeq: 1,
+            question: '查报名时间',
+            content: '',
+            trace: [],
+            sources: [],
+            status: 'running',
+          },
+        ],
+      },
+    ]
     const fetch = vi.fn(
       async () =>
         new Response('id: 2\n' + event('answer', { content: '已续接完整回答。', sources: [] }), {
@@ -198,9 +196,9 @@ describe('侦探过程', () => {
         }),
     )
     vi.stubGlobal('fetch', fetch)
-    renderDetective({}, '/detective/conversation')
+    renderDetective({ savedSessions }, '/detective/conversation')
     expect(await screen.findByText('已续接完整回答。')).toBeTruthy()
-    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(fetch).toHaveBeenCalledTimes(1)
     const [path, init] = fetch.mock.calls.at(-1) as unknown as [string, RequestInit]
     expect(path).toBe('/api/agent/investigations/saved-run/events')
     expect(new Headers(init.headers).get('Last-Event-ID')).toBe('1')

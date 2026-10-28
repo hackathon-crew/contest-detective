@@ -23,6 +23,7 @@ from contest_detective.system.account.store import owner, settings_for
 from contest_detective.system.auth.models import AccessToken
 from contest_detective.system.user.models import User
 from contest_detective.agent.models import Investigation, TraceRecord
+from contest_detective.agent.chat.service import SqlConversationStore, lock_chat_writes
 from contest_detective.system.notifications.config import get_account_runtime_settings
 from contest_detective.system.notifications.models import (
     PendingNotification,
@@ -170,6 +171,7 @@ def export_account(session, user_id):
     user = owner(session, user_id)
     row = settings_for(session, user.id)
     return {
+        "conversations": [item.model_dump(mode='json') for item in SqlConversationStore(session, user.id).list_sessions()],
         "watch": export_data(session, user.id),
         "email": user.email,
         "created_at": utc(user.created_at).isoformat(),
@@ -195,9 +197,13 @@ def export_account(session, user_id):
 
 
 def delete_account(session, user_id, email):
+    if not user_id:
+        raise BizException('请先登录', code=401)
+    lock_chat_writes(session)
     user = owner(session, user_id)
     if email.strip() != user.email:
         raise BizException("请输入当前登录邮箱确认删除", code=400)
+    SqlConversationStore(session, user.id).delete_all()
     investigations = select(Investigation.id).where(
         Investigation.user_id == str(user.id)
     )

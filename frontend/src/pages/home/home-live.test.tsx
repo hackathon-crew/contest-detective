@@ -5,6 +5,8 @@ import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { MemoryRouter } from 'react-router'
 import { afterEach, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
+import { currentUserKey } from '@/entities/user'
+import { stubResizeObserver } from '@/features/detective/detective.test.utils'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 const official = (value: string) => ({ value, level: 'official', precision: 'day', sources: [] })
 const contests = [
@@ -37,11 +39,19 @@ function show(
   collectionResponse?: (url: URL) => Promise<Response>,
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
 ) {
+  stubResizeObserver()
   window.history.replaceState(null, '', path)
+  client.setQueryData(currentUserKey, {
+    id: 'home-user',
+    username: 'home@example.org',
+    profile: {},
+  })
   const calls: { url: URL; init?: RequestInit }[] = []
   vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input), 'http://localhost')
     calls.push({ url, init })
+    if (url.pathname.startsWith('/api/account/'))
+      return Response.json({ code: 200, message: 'ok', data: [] })
     if (
       url.pathname === '/api/contests' &&
       !url.searchParams.has('date_from') &&

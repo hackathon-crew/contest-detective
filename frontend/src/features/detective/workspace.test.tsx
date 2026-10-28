@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
 import { stubResizeObserver } from './detective.test.utils'
+import { currentUserKey, type PublicUser } from '@/entities/user'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 beforeEach(() => {
@@ -22,11 +23,26 @@ const json = (data: unknown) =>
     JSON.stringify({ code: 200, message: 'success', data, total: 0, page: 1, page_size: 100 }),
   )
 
-function show(path = '/') {
+const workspaceUser: PublicUser = {
+  id: 'workspace-user',
+  username: 'reader@example.org',
+  profile: {},
+}
+function show(path = '/', user = workspaceUser) {
+  const remote: unknown[] = []
+  const transport = globalThis.fetch
+  vi.stubGlobal('fetch', (input: RequestInfo | URL, init?: RequestInit) => {
+    if (String(input).endsWith('/account/conversations/import')) {
+      remote.push(...JSON.parse(String(init?.body)).sessions)
+      return Promise.resolve(json(null))
+    }
+    if (String(input).endsWith('/account/conversations')) return Promise.resolve(json(remote))
+    return transport(input, init)
+  })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(currentUserKey, user)
   return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <NuqsAdapter>
           <AppRoutes />
@@ -84,17 +100,12 @@ it('画像提示可以关闭，建立画像按钮打开现有画像表单', asyn
   expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
 })
 
-it.each(['guest', 'account'])('已有 %s 画像时保留章鱼但不再提示建立画像', async (scope) => {
+it('已有账号画像时保留章鱼但不再提示建立画像', async () => {
   const profile = { skills: ['Python'] }
-  if (scope === 'guest') localStorage.setItem('contest-detective.profile', JSON.stringify(profile))
-  vi.stubGlobal('fetch', async () =>
-    json(
-      scope === 'account' ? { id: 'profile-user', username: 'reader@example.org', profile } : null,
-    ),
-  )
-  show('/detective')
+  vi.stubGlobal('fetch', async () => json([]))
+  show('/detective', { ...workspaceUser, profile })
   expect(await screen.findByRole('img', { name: '捧书的 Inkpaw 八爪鱼' })).toBeTruthy()
-  if (scope === 'account') expect(await screen.findByText('reader@example.org')).toBeTruthy()
+  expect(await screen.findByText('reader@example.org')).toBeTruthy()
   expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
 })
 
@@ -142,7 +153,7 @@ it('首页入口进入独立侦探页，发送后有独立会话记录', async (
   expect(within(history()).getByRole('link', { name: '大学生线上比赛' })).toBeTruthy()
 })
 
-it('HTTP 环境没有 randomUUID 时仍能发送、追问并恢复不同会话', async () => {
+it('HTTP 环境没有 randomUUID 时仍能发送、追问并切换不同会话', async () => {
   vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
   vi.stubGlobal('fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
     if (!String(url).includes('/agent/ask'))
@@ -152,7 +163,7 @@ it('HTTP 环境没有 randomUUID 时仍能发送、追问并恢复不同会话',
       headers: { 'content-type': 'text/event-stream' },
     })
   })
-  const first = show('/detective')
+  show('/detective')
   const submit = (text: string) => {
     fireEvent.change(screen.getByRole('textbox', { name: '问侦探' }), {
       target: { value: text },
@@ -167,8 +178,6 @@ it('HTTP 环境没有 randomUUID 时仍能发送、追问并恢复不同会话',
   submit('另开一段对话')
   expect(await screen.findByText('回复：另开一段对话')).toBeTruthy()
 
-  first.unmount()
-  show('/detective')
   const records = history()
   expect(within(records).getAllByRole('link')).toHaveLength(2)
   fireEvent.click(within(records).getByRole('link', { name: '线上第一条消息' }))
@@ -177,7 +186,7 @@ it('HTTP 环境没有 randomUUID 时仍能发送、追问并恢复不同会话',
   expect(screen.queryByText('回复：另开一段对话')).toBeNull()
 })
 
-it('首页发送直接进入聊天页，新建与切换会话不混用前文，刷新恢复记录', async () => {
+it('首页发送直接进入聊天页，新建与切换会话不混用前文', async () => {
   const requests: { question: string; history?: unknown[] }[] = []
   vi.stubGlobal('fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
     if (!String(url).includes('/agent/ask'))
@@ -188,7 +197,7 @@ it('首页发送直接进入聊天页，新建与切换会话不混用前文，�
       headers: { 'content-type': 'text/event-stream' },
     })
   })
-  const first = show()
+  show()
   send('第一段参赛计划')
   expect(await screen.findByText('已记下：第一段参赛计划')).toBeTruthy()
   expect(screen.queryByRole('heading', { name: '近期值得参加的黑客松' })).toBeNull()
@@ -205,8 +214,6 @@ it('首页发送直接进入聊天页，新建与切换会话不混用前文，�
     { role: 'user', content: '第一段参赛计划' },
     { role: 'assistant', content: '已记下：第一段参赛计划' },
   ])
-  first.unmount()
-  show('/detective')
   const records = history()
   expect(within(records).getAllByRole('link')).toHaveLength(2)
   fireEvent.click(within(records).getByRole('link', { name: '第一段参赛计划' }))
@@ -258,7 +265,7 @@ const recommendation = {
   reason: '适合从现有项目开始。',
 }
 
-it('正式回复同时显示原文与 Agent 选中的卡片，刷新后保留', async () => {
+it('正式回复同时显示原文与 Agent 选中的卡片，切换后保留', async () => {
   vi.stubGlobal('fetch', async (url: RequestInfo | URL) =>
     String(url).includes('/agent/ask')
       ? new Response(
@@ -273,21 +280,20 @@ it('正式回复同时显示原文与 Agent 选中的卡片，刷新后保留', 
         )
       : json(String(url).includes('/auth/me') ? null : []),
   )
-  const first = show('/detective')
+  show('/detective')
   send('推荐一场应用开发比赛')
   expect(await screen.findByText('建议参加周末应用赛。')).toBeTruthy()
   const card = await screen.findByRole('article', { name: '周末应用赛' })
   expect(within(card).getByText('适合从现有项目开始。')).toBeTruthy()
   expect(within(card).getByText('面向应用开发的周末比赛。')).toBeTruthy()
-  first.unmount()
-  show('/detective')
+  fireEvent.click(screen.getByRole('link', { name: '新对话' }))
   fireEvent.click(within(history()).getByRole('link', { name: '推荐一场应用开发比赛' }))
   expect(await screen.findByRole('article', { name: '周末应用赛' })).toBeTruthy()
 })
 
 it('旧对话补回正文引用的比赛卡片，保留原文且不重新提问', async () => {
   localStorage.setItem(
-    'contest-detective.sessions.guest',
+    'contest-detective.sessions.workspace-user',
     JSON.stringify([
       {
         id: 'old-session',

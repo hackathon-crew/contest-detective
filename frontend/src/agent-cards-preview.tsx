@@ -166,6 +166,8 @@ export function Preview() {
     <DetectiveContext
       value={{
         sessions,
+        loading: false,
+        reload: async () => {},
         storageError: false,
         send(question, value, sessionId) {
           const previous = sessions.find((session) => session.id === sessionId)

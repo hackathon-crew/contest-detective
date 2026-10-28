@@ -7,6 +7,8 @@ import { Link, MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+import { currentUserKey } from '@/entities/user'
+import { stubResizeObserver } from '@/features/detective/detective.test.utils'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
 afterEach(() => {
@@ -15,6 +17,7 @@ afterEach(() => {
 })
 
 function renderAt(path: string) {
+  stubResizeObserver()
   vi.stubGlobal(
     'fetch',
     async (input: RequestInfo | URL) =>
@@ -40,13 +43,17 @@ function renderAt(path: string) {
         }),
       ),
   )
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(currentUserKey, {
+    id: 'motion-user',
+    username: 'motion@example.org',
+    profile: { skills: ['Python'] },
+  })
   return render(
     <StrictMode>
       <MemoryRouter initialEntries={[path]}>
         <NuqsAdapter>
-          <QueryClientProvider
-            client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-          >
+          <QueryClientProvider client={client}>
             <Link to="/?q=robot#explore">筛选赛事</Link>
             <Link to="/contests/example">赛事详情地址</Link>
             <Link to="/detective/saved-conversation">另一段对话</Link>

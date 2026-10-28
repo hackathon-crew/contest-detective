@@ -5,13 +5,15 @@ import type { VerificationOptions } from './verification-contracts'
 
 interface DetectiveStore {
   sessions: DetectiveSession[]
+  loading: boolean
   storageError: boolean
+  reload: () => Promise<void>
   send: (
     question: string,
     profile?: Profile | null,
     sessionId?: string,
     verificationOptions?: VerificationOptions,
-  ) => string
+  ) => string | null
   stop: (sessionId: string) => void
   retry: (turnId: string) => void
 }

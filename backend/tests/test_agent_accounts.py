@@ -50,13 +50,12 @@ def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path)
             assert client.put('/user/profile', json={'skills': ['Python'], 'city': '杭州'}).json()['code'] == 200
             assert 'event: answer' in client.post('/agent/ask', json={'question': '哪些比赛适合我'}).text
             client.post('/auth/logout')
-            assert 'event: answer' in client.post('/agent/ask', json={'question': '找比赛'}).text
+            assert client.post('/agent/ask', json={'question': '找比赛'}).json()['code'] == 401
         with sessions() as session:
             records = session.scalars(select(Investigation).order_by(Investigation.started_at)).all()
-            assert records[0].user_id == user_id
-            assert records[1].user_id.startswith('g:') and records[1].user_id != user_id
+            assert [record.user_id for record in records] == [user_id]
         assert 'Python' in instructions[0] and '杭州' in instructions[0]
-        assert 'Python' not in instructions[1] and '杭州' not in instructions[1]
+        assert len(instructions) == 1
     finally:
         limiter.reset()
         sync.dispose()

@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
 import { FollowsPanel } from './follows-panel'
+import { MemoryRouter } from 'react-router'
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
@@ -48,7 +49,9 @@ it('does not label a known start date as an unknown deadline', async () => {
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <FollowsPanel />
+      <MemoryRouter>
+        <FollowsPanel />
+      </MemoryRouter>
     </QueryClientProvider>,
   )
   expect(await screen.findByText('仅公布开赛日')).toBeTruthy()
