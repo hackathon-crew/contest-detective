@@ -16,6 +16,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from typing import NamedTuple
 from urllib.request import Request, urlopen
 
 
@@ -48,6 +49,14 @@ MANIFEST_REQUEST = b'INKPAW_RELEASE_MANIFEST_V1\n'
 REQUIRED_FILES = {'backend/pyproject.toml', 'backend/uv.lock', 'backend/alembic.ini',
                   'frontend/dist/index.html', 'frontend/dist/version.json',
                   'RELEASE_COMMIT', 'RELEASE_TAG'}
+
+
+class DatabaseTarget(NamedTuple):
+    backend: str
+    sqlite_path: Path | None = None
+    env: dict[str, str] | None = None
+    url: str | None = None
+    database: str | None = None
 
 
 def allowed_file(name):
@@ -236,6 +245,76 @@ def unpack(stream, destination):
         return tag, commit
 
 
+def environment_values(path=None):
+    path = path or ENVIRONMENT_FILE
+    values = {}
+    try:
+        lines = path.read_text(encoding='utf-8').splitlines()
+    except FileNotFoundError:
+        return values
+    for raw in lines:
+        line = raw.strip()
+        if not line or line.startswith('#') or '=' not in line:
+            continue
+        key, _, value = line.partition('=')
+        key = key.strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+        values[key] = value
+    return values
+
+
+def database_target(values=None):
+    values = environment_values() if values is None else values
+    url = values.get('DETECTIVE_DB_URL', '').strip()
+    host = values.get('DETECTIVE_DB_HOST', '').strip()
+    if url and host:
+        raise ValueError('DETECTIVE_DB_URL 与 DETECTIVE_DB_HOST 只能设置一个')
+    if host:
+        name = values.get('DETECTIVE_DB_NAME', '').strip()
+        user = values.get('DETECTIVE_DB_USER', '').strip()
+        if not name or not user:
+            raise ValueError('DETECTIVE_DB_HOST 需要同时设置 DETECTIVE_DB_NAME 和 DETECTIVE_DB_USER')
+        environment = dict(os.environ)
+        for key, pg_key in (
+            ('DETECTIVE_DB_HOST', 'PGHOST'),
+            ('DETECTIVE_DB_PORT', 'PGPORT'),
+            ('DETECTIVE_DB_NAME', 'PGDATABASE'),
+            ('DETECTIVE_DB_USER', 'PGUSER'),
+            ('DETECTIVE_DB_PASSWORD', 'PGPASSWORD'),
+        ):
+            value = values.get(key, '').strip()
+            if value:
+                environment[pg_key] = value
+        return DatabaseTarget('postgresql', env=environment, database=name)
+    if url.startswith(('postgresql://', 'postgresql+psycopg://', 'postgres://')):
+        normalized = url.replace('postgresql+psycopg://', 'postgresql://', 1)
+        normalized = normalized.replace('postgres://', 'postgresql://', 1)
+        return DatabaseTarget('postgresql', url=normalized)
+    if url and not url.startswith('sqlite:'):
+        raise ValueError('只支持 SQLite 或 PostgreSQL 数据库地址')
+    return DatabaseTarget('sqlite', sqlite_path=DATABASE)
+
+
+def postgres_snapshot(target, snapshot):
+    args = ['pg_dump', '--format=custom', '--file', str(snapshot)]
+    if target.url:
+        args.append(target.url)
+    else:
+        args.extend(['--dbname', target.database])
+    run(*args, env=target.env)
+    snapshot.chmod(0o600)
+
+
+def postgres_restore(target, snapshot):
+    dbname = target.url or target.database
+    run('psql', '--dbname', dbname, '--set', 'ON_ERROR_STOP=1', '--command',
+        'DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;', env=target.env)
+    run('pg_restore', '--dbname', dbname, '--no-owner', '--no-privileges',
+        '--exit-on-error', str(snapshot), env=target.env)
+
+
 def snapshot_database(database, snapshot):
     # SQLite's backup API includes committed WAL data; copying just contest.db can lose it.
     with sqlite3.connect(f'file:{database}?mode=ro', uri=True) as source:
@@ -407,6 +486,7 @@ def deploy(stream):
     stage.chmod(0o755)
     stopped = False
     snapshot = None
+    database = None
     environment_snapshot = None
     migration_unit = 'contest-detective-migrate-' + stage.name
     previous = APP.resolve()
@@ -434,11 +514,16 @@ def deploy(stream):
         environment_snapshot = backup / 'environment'
         configure_environment(stage, environment_snapshot)
         validate_configuration(stage, 'contest-detective-config-' + stage.name)
+        database = database_target()
         MAINTENANCE.touch(mode=0o644)
         stopped = True
         run('systemctl', 'stop', *managed_services)
-        snapshot_database(DATABASE, backup / 'contest.db')
-        snapshot = backup / 'contest.db'
+        snapshot_path = backup / ('contest.db' if database.backend == 'sqlite' else 'contest.dump')
+        if database.backend == 'sqlite':
+            snapshot_database(database.sqlite_path, snapshot_path)
+        else:
+            postgres_snapshot(database, snapshot_path)
+        snapshot = snapshot_path
         (backup / 'previous-release').write_text(str(previous) + '\n')
         if not APP.is_symlink():
             previous = RELEASES / ('legacy-' + stage.name)
@@ -469,8 +554,11 @@ def deploy(stream):
             except subprocess.CalledProcessError as error:
                 if error.returncode != 5:  # An already collected unit no longer exists.
                     raise
-            if snapshot is not None:
-                restore_database(snapshot, DATABASE)
+            if snapshot is not None and database is not None:
+                if database.backend == 'sqlite':
+                    restore_database(snapshot, database.sqlite_path)
+                else:
+                    postgres_restore(database, snapshot)
             point_to(previous)
             configure_services(previous, previous_services)
             run('systemctl', 'start', *previous_services)
