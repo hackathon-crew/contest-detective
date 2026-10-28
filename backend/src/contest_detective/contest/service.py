@@ -17,9 +17,9 @@ from sqlalchemy.orm import Session
 from .identity import name_tokens as _identity_name_tokens, normalized_name as _identity_normalized_name
 from .models import Contest, ContestClaim, ContestDetails, ContestPage, ContestPageLink, ContestEvent
 from .schemas import (DATE_FIELDS, DEADLINE_FIELDS, DEFAULT_EVIDENCE_FIELDS, EvidenceField, BriefDate, BriefDeadline, ContestBrief, ContestDetail, ContestDraft, ContestEvidence,
-                      ContestField, ContestQuery, ContestSummary, FieldValue, Source,
+                      ContestField, ContestQuery, ContestSummary, FieldResolution, FieldValue, Source,
                       calendar_date, date_bounds, utc_iso)
-from .verification import resolve
+from .verification import resolve, resolution_matches
 from .events import ContestSnapshot
 from .content import ContentCoverage, ContestDocument, ContestIntroduction, CoverageObservation
 from .content_service import build_introduction, document_key, normalized_text, public_document, validate_document, validate_introduction
@@ -84,7 +84,35 @@ def _fields(session, contest_id):
         grouped[claim.field].append(Source(url=page.url, site=page.site, title=page.title,
             published_at=page.published_at, is_official=page.is_official,
             value=claim.value, excerpt=claim.excerpt, precision=claim.precision))
-    return {field: resolve(field, claims) for field, claims in grouped.items()}
+    decisions = field_resolutions(session, contest_id)
+    return {field: resolve(field, claims, decisions.get(field)) for field, claims in grouped.items()}
+
+
+def field_resolutions(session, contest_id):
+    details = session.get(ContestDetails, contest_id)
+    return {field: FieldResolution.model_validate(item['resolution'])
+            for field, item in (details.fields if details else {}).items() if 'resolution' in item}
+
+
+def apply_field_resolutions(session, contest_id, decisions):
+    """只更新派生判断；模型请求期间变化的原始来源不能被旧结果覆盖。"""
+    session.flush()
+    if session.get_bind().dialect.name == 'sqlite':
+        session.connection().exec_driver_sql('UPDATE contests SET id = id WHERE 0')
+    session.expire_all()
+    contest = session.get(Contest, contest_id)
+    if contest is None:
+        raise ValueError('赛事不存在')
+    fields = _fields(session, contest_id)
+    if any(field not in fields or not resolution_matches(field, fields[field].sources, decision)
+           for field, decision in decisions.items()):
+        raise ValueError('参与判断的来源已变化，需要重新整理')
+    details = _details(session, contest)
+    details.fields = {**details.fields, **{field: {
+        **details.fields.get(field, {}), 'resolution': decision.model_dump()}
+        for field, decision in decisions.items()}}
+    _refresh(session, contest, _now())
+    session.commit()
 
 
 def _next_deadline(fields, now):
@@ -142,8 +170,12 @@ def _details(session, contest):
 def _refresh(session, contest, now):
     fields = _fields(session, contest.id)
     details = _details(session, contest)
-    details.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision}
-                      for field, result in fields.items()}
+    decisions = field_resolutions(session, contest.id)
+    details.fields = {field: {'value': result.value, 'level': result.level, 'precision': result.precision,
+        **({'resolution': decisions[field].model_dump()} if field in decisions
+           and resolution_matches(field, result.sources, decisions[field]) else {})}
+        for field, result in fields.items()}
+    details.coverage = _coverage(details, fields, None).model_dump(mode='json')
     for column, value in _date_projection(details.fields).items():
         setattr(details, column, value)
     details.start_at = fields['start_at'].value
@@ -214,8 +246,8 @@ def _coverage(details, fields, introduction):
     coverage = ContentCoverage.model_validate(details.coverage or {})
     for field, value in fields.items():
         observation = coverage.fields.get(field, CoverageObservation())
-        if value.value is not None:
-            state = 'conflict' if value.level == 'conflict' or observation.state == 'conflict' else 'found'
+        if value.value is not None or value.sources or observation.state == 'conflict':
+            state = 'conflict' if value.level == 'conflict' else 'found' if value.sources else 'not_fetched'
             observation = observation.model_copy(update={'state': state,
                 'urls': list(dict.fromkeys([*observation.urls, *(source.url for source in value.sources)]))})
         coverage.fields[field] = observation
@@ -307,6 +339,10 @@ def save(session: Session, draft: ContestDraft, *, contest_id: str | None = None
     before_snapshots = {key: ContestSnapshot(name=session.get(Contest, key).name,
         fields=_fields(session, key)).model_dump(mode='json') for key in before}
     details = _details(session, contest)
+    if draft.field_resolutions:
+        details.fields = {**details.fields, **{field: {
+            **details.fields.get(field, {}), 'resolution': decision.model_dump()}
+            for field, decision in draft.field_resolutions.items()}}
     documents = {document_key(item): item for item in (details.documents or [])}
     for item in draft.documents:
         previous = documents.get(document_key(item))
