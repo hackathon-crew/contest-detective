@@ -30,6 +30,7 @@ AI 生成的代码要有测试兜底，没有测试的先补测试再合并。
 - Commit message 只用英文，格式 `type(scope): subject`，一个提交只做一件事。
 - PR 标题用英文 `type(scope): subject`，小标题用英文，正文用中文，按 `.github/pull_request_template.md` 填写。
 - PR、Issue 和 commit message 里不写 prompt 摘要，也不写任何 AI 协作的字样。
+- 开 PR 前必须跑后端全量 `cd backend && uv run pytest && uv run lint-imports` 和前端全量 `cd frontend && npm test`，确认通过并把实际结果写进 PR。
 
 ## 产品不变量
 
