@@ -1,13 +1,13 @@
-"""按高峰价计费。SQLite 写锁把余额占用的检查和预留放在同一事务里。"""
+"""按高峰价计费。写锁把余额占用的检查和预留放在同一事务里。"""
 from decimal import Decimal
 from uuid import uuid4
 
 import httpx
 from pydantic_ai.usage import RequestUsage
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select
 
 from contest_detective.framework.exceptions import BizException
-from contest_detective.framework.db import SessionLocal
+from contest_detective.framework.db import SessionLocal, lock_for_write
 
 from .config import LLMSettings, get_llm_settings
 from .models import LLMUsage
@@ -43,8 +43,8 @@ class Budget:
         self.ensure_enabled()
         maximum = (Decimal(self.settings.max_input_tokens) * 2 + Decimal(self.settings.max_tokens) * 8) / MILLION
         with self.session_factory() as session:
-            # Deferred SQLite transactions otherwise let two readers approve the same remainder.
-            session.execute(text('BEGIN IMMEDIATE'))
+            # Without the lock two readers can approve the same remainder.
+            lock_for_write(session, LLMUsage)
             if self.settings.limits_mode == 'local':
                 total = session.scalar(select(func.coalesce(func.sum(LLMUsage.cost_cny), 0)))
                 if session.scalar(select(LLMUsage.id).where(LLMUsage.status == 'overrun').limit(1)) or total + maximum > self.settings.budget_cny:
@@ -58,7 +58,7 @@ class Budget:
     def cancel_before_request(self, call_id: str):
         """仅在确定还未向模型发请求时撤销；请求异常不走这里。"""
         with self.session_factory() as session:
-            session.execute(text('BEGIN IMMEDIATE'))
+            lock_for_write(session, LLMUsage)
             row = session.get(LLMUsage, call_id)
             if row is not None and row.status == 'reserved':
                 row.status, row.cost_cny = 'cancelled', Decimal(0)
@@ -68,7 +68,7 @@ class Budget:
         cost = calculate_cost(usage)
         hit, miss, output = token_split(usage)
         with self.session_factory() as session:
-            session.execute(text('BEGIN IMMEDIATE'))
+            lock_for_write(session, LLMUsage)
             row = session.get(LLMUsage, call_id)
             if row is None or row.status == 'cancelled':
                 raise ValueError('费用预留不存在，无法结算')
