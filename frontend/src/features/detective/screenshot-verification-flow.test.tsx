@@ -78,6 +78,6 @@ it('尚无查询步骤的计划也打开既有研究面板', async () => {
   await waitFor(() => expect(requests).toHaveLength(1))
   await emit('plan', reportFixture().plan)
   const panel = within(await screen.findByRole('complementary', { name: '研究面板' }))
-  expect(panel.getByText('调查计划')).toBeTruthy()
-  expect(panel.getByText('尚无实际查询记录。')).toBeTruthy()
+  expect(panel.getByText('待核对内容')).toBeTruthy()
+  expect(panel.getByText('还没有查找结果。')).toBeTruthy()
 })

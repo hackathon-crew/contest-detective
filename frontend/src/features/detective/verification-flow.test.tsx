@@ -41,8 +41,8 @@ it('计划、真实执行和终态报告流式保存，重开仍使用同一份�
   send()
   const report = reportFixture()
   await emit('plan', report.plan)
-  expect(log().getByText('调查计划')).toBeTruthy()
-  expect(log().getByText('尚无实际查询记录。')).toBeTruthy()
+  expect(log().getByText('待核对内容')).toBeTruthy()
+  expect(log().getByText('还没有查找结果。')).toBeTruthy()
   await emit('step', { tool: 'web_search', label: '元宝查询' })
   await emit('observation', {
     tool: 'web_search',
@@ -56,7 +56,7 @@ it('计划、真实执行和终态报告流式保存，重开仍使用同一份�
   await emit('answer', { content: '这一段不覆盖原始说法。', sources: [], report })
   expect(log().getByText('查证未完成')).toBeTruthy()
   expect(log().getByText('反驳')).toBeTruthy()
-  expect(log().queryByText('这一段不覆盖原始说法。')).toBeNull()
+  expect(log().getByText('这一段不覆盖原始说法。')).toBeTruthy()
   await waitFor(() => expect(loadSessions('guest')[0].turns[0].report).toEqual(report))
   const session = loadSessions('guest')[0]
   expect(session.turns[0].plan).toEqual(report.plan)
@@ -91,7 +91,7 @@ it('计划后提前断流保留计划并显示错误，不生成成功报告', a
   await emit('plan', reportFixture().plan)
   await act(async () => streams.at(-1)!.close())
   expect(await log().findByRole('alert')).toBeTruthy()
-  expect(log().getByText('调查计划')).toBeTruthy()
+  expect(log().getByText('待核对内容')).toBeTruthy()
   expect(log().queryByText('查证完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
 })
@@ -102,7 +102,7 @@ it('取消已发出但未返回的查询不显示完成，也不生成报告', a
   await emit('plan', reportFixture().plan)
   await emit('step', { tool: 'web_search', label: '元宝查询' })
   fireEvent.click(screen.getByRole('button', { name: '停止查证' }))
-  expect(log().getByText('已停止，完成 0 项检索')).toBeTruthy()
+  expect(log().getByText('已停止，已查看 0 项资料')).toBeTruthy()
   expect(log().queryByLabelText('已完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
   expect(loadSessions('guest')[0].turns[0].status).toBe('stopped')
