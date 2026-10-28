@@ -163,7 +163,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           ? {
               ...turn,
               status: 'stopped',
-              error: '回答还没写完，已查到的内容保留在上方，其余信息尚未核实。',
+              error: '回答还没写完，已查到的内容保留在上方。' + message,
             }
           : { ...turn, status: 'error', error: message },
       )
@@ -214,13 +214,11 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     } catch (cause) {
       if (!controller.signal.aborted)
         fail(
-          cause instanceof ApiError &&
-            cause.kind === 'business' &&
-            [400, 401, 403, 429].includes(cause.code ?? 0)
+          cause instanceof ApiError && cause.kind === 'business' && cause.code !== 500
             ? cause.message
             : cause instanceof ApiError && cause.kind === 'network'
-              ? '连接中断了，还没有收到查证结果。请检查网络连接后再继续。'
-              : '侦探暂时无法完成查证，还没有核实你的问题。',
+              ? '连接中断了，查证还没有完成。请检查网络连接后再继续。'
+              : '这次没能完成查证，暂时无法给出结论。',
         )
     } finally {
       if (requests.current.get(sessionId) === controller) requests.current.delete(sessionId)
