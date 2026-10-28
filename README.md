@@ -145,6 +145,10 @@ flowchart TD
 
 实现入口：[GitHub 画像](backend/src/contest_detective/system/user/github.py) · [画像匹配](backend/src/contest_detective/system/user/matching.py) · [深度核验](backend/src/contest_detective/agent/verification.py) · [更新 Pipeline](backend/src/contest_detective/research/pipeline/execute.py) · [每日调度](backend/src/contest_detective/research/scheduler.py) · [邮件推送](backend/src/contest_detective/system/notifications/service.py)。
 
+文字字段按事实关系合并：同义或详略不同采用完整表述，兼容的部分信息合并，只有同一条件下明确互斥的事实才列为冲突。模型在更新时统一判断一场赛事的多值文字字段，原始记录与出处继续保留；相同证据复用已保存的结果，页面读取不调用模型。模型未给出有效判断时，详情保留各方原文并显示“信息待核实”。日期、参赛形式枚举与报名链接继续按确定性规则处理。
+
+整理历史数据时，在已配置数据库的后端环境运行 `uv run contest-detective-sync --reconcile-existing`。默认只清点待处理字段、最多需要的模型请求数和来源值、摘录及 URL 的字符数，不调用模型、不写入数据库；字符数不含模型规则与输出结构说明。确认模型调用费用后，显式添加 `--apply` 才重判并保存；可用 `--contest-id <id>` 选择赛事或 `--limit <数量>` 限制候选数。该操作只更新派生结论，不替换原始来源、不发送历史变更通知，也不启用定时同步。
+
 ## 开始使用
 
 1. [登录并建立画像](https://inkpaw.windup.xin/account/profile)，关联 GitHub，确认技能、兴趣和参赛偏好。
