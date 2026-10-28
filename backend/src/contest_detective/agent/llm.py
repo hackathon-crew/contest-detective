@@ -23,6 +23,10 @@ from .config import LLMSettings, get_llm_settings
 logger = logging.getLogger(__name__)
 
 
+class ModelInputTooLong(BizException):
+    """当前请求的输入过长；单页抽取失败不能等同于整轮对话过长。"""
+
+
 class GuardedModel(WrapperModel):
     def __init__(self, wrapped: Model, budget: Budget, *,
                  balance_reader: Callable[[], Awaitable[Decimal]] | None = None,
@@ -50,7 +54,7 @@ class GuardedModel(WrapperModel):
             size = len(ModelMessagesTypeAdapter.dump_json(messages))
             size += len(json.dumps(model_request_parameters.declared_tool_defs, default=str, ensure_ascii=False).encode())
             if size + 4096 > config.max_input_tokens:
-                raise BizException('这次的对话或参赛资料太长了，请减少附带资料，或新开对话问一项具体规则。', code=400)
+                raise ModelInputTooLong('这次的对话或参赛资料太长了，请减少附带资料，或新开对话问一项具体规则。', code=400)
         call_id = self.budget.reserve()
         if config.limits_mode == 'local':
             try:

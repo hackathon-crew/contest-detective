@@ -328,6 +328,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     @research_tool
     async def record_page(ctx: RunContext[ToolDeps], url: str, contest_id: str | None = None) -> dict:
         """将网页送入核实流水线；已有赛事时传 contest_id，使用库中的报名域名核对官方来源。"""
+        from .llm import ModelInputTooLong
+
         if ctx.deps.verification and not safe_evidence_url(url):
             raise ValueError('链接不能用于公开核验')
         await ctx.deps.check_external_scope(url, ctx)
@@ -356,8 +358,15 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 registration = existing.fields.get('registration_url')
                 if registration and registration.value and registration.level == 'official':
                     context['registration_url'] = registration.value
-        contest_id = await invoke(ctx.deps.record, url, extractor=extract,
-                                 session_factory=ctx.deps.session_factory, **context)
+        try:
+            contest_id = await invoke(ctx.deps.record, url, extractor=extract,
+                                     session_factory=ctx.deps.session_factory, **context)
+        except ModelInputTooLong:
+            logger.warning('Page extraction input too long', exc_info=True)
+            return {'contest_id': None,
+                    **tool_failure('record_page', error='page_too_long',
+                        summary='这页内容太长，暂时无法核对其中的赛事信息。'),
+                    'model_hint': '仅当前网页过长，未完成抽取。可换较短的公告或其他来源继续查证，回答时说明已核实内容和未核实项。'}
         sources = []
         if contest_id:
             with ctx.deps.session_factory() as session:
