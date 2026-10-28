@@ -61,6 +61,7 @@ class Step(BaseModel):
 
 
 class Observation(BaseModel):
+    status: Literal['success', 'continuing'] = 'success'
     execution: SearchExecution | None = None
     tool: str
     summary: str

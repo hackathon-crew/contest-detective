@@ -14,7 +14,7 @@ interface Activity {
   tool: string
   label: string
   summary?: string
-  status: 'running' | 'completed' | 'interrupted' | 'failed'
+  status: 'running' | 'completed' | 'continuing' | 'interrupted' | 'failed'
   execution?: SearchExecution
 }
 
@@ -46,7 +46,12 @@ function researchFor(turns: readonly DetectiveTurn[]) {
         )
         if (step) {
           step.summary = event.summary
-          step.status = event.execution?.status === 'failure' ? 'failed' : 'completed'
+          step.status =
+            event.status === 'continuing'
+              ? 'continuing'
+              : event.execution?.status === 'failure'
+                ? 'failed'
+                : 'completed'
           step.execution = event.execution
         } else {
           steps.push({
@@ -54,7 +59,12 @@ function researchFor(turns: readonly DetectiveTurn[]) {
             tool: event.tool,
             label: event.tool,
             summary: event.summary,
-            status: event.execution?.status === 'failure' ? 'failed' : 'completed',
+            status:
+              event.status === 'continuing'
+                ? 'continuing'
+                : event.execution?.status === 'failure'
+                  ? 'failed'
+                  : 'completed',
             execution: event.execution,
           })
         }
@@ -233,12 +243,13 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
                 <LoaderCircle className="detective-spin" aria-label="进行中" />
               ) : activity.status === 'completed' ? (
                 <CheckCircle2 aria-label="已完成" />
+              ) : activity.status === 'continuing' ? (
+                <ChevronRight aria-label="继续查找" />
               ) : (
                 <CircleAlert aria-label={activity.status === 'failed' ? '失败' : '已中断'} />
               )}
               <div>
                 <strong>{activity.label}</strong>
-                <small>{activity.tool}</small>
                 {activity.summary && <p>{activity.summary}</p>}
                 {activity.execution && <ExecutionDetails execution={activity.execution} />}
               </div>
@@ -247,9 +258,11 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
                   ? '进行中'
                   : activity.status === 'completed'
                     ? '已完成'
-                    : activity.status === 'failed'
-                      ? '失败'
-                      : '已中断'}
+                    : activity.status === 'continuing'
+                      ? '继续查找'
+                      : activity.status === 'failed'
+                        ? '失败'
+                        : '已中断'}
               </span>
             </article>
           ))}

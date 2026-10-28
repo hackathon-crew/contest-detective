@@ -181,14 +181,15 @@ def test_disabled_request_never_reads_balance_or_dispatches_model(session_factor
         asyncio.run(Agent(model).run('查询'))
 
 
-def test_overlarge_context_is_rejected_before_any_balance_request(session_factory):
-    async def forbidden_balance():
-        pytest.fail('oversized context reached balance endpoint')
-    model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized context reached provider')),
-                         Budget(session_factory, settings(max_input_tokens=8192)),
-                         balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
-        asyncio.run(Agent(model).run('问题' * 5000))
+def test_overlarge_context_is_trimmed_before_dispatch(session_factory):
+    from pydantic_ai.messages import ModelMessagesTypeAdapter
+    async def enough():
+        return Decimal('100')
+    def respond(messages, _):
+        assert len(ModelMessagesTypeAdapter.dump_json(messages)) + 4096 <= 8192
+        return ModelResponse([TextPart('继续查证')], usage=usage())
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=enough)
+    assert asyncio.run(Agent(model).run('问题' * 5000)).output == '继续查证'
 
 
 def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
@@ -200,13 +201,16 @@ def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
         budget.reserve()
 
 
-def test_confirmed_profile_context_is_included_in_input_reservation_bound(session_factory):
-    async def forbidden_balance():
-        pytest.fail('oversized instructions reached balance endpoint')
-    model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized instructions reached provider')),
-                         Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
-        asyncio.run(Agent(model, instructions='已确认资料' * 5000).run('查询'))
+def test_confirmed_profile_context_is_trimmed_in_actual_request_instructions(session_factory):
+    async def enough():
+        return Decimal(100)
+    def respond(_, info):
+        assert len(info.instructions.encode()) < 4096
+        assert '规则' in info.instructions
+        return ModelResponse([TextPart('继续查证')], usage=usage())
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=enough)
+    result = asyncio.run(Agent(model, instructions='规则\n用户已确认的画像资料：' + '已确认资料' * 5000).run('查询'))
+    assert result.output == '继续查证'
 
 
 def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory):

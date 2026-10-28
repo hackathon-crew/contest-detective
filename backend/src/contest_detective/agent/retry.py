@@ -8,6 +8,7 @@ from pydantic_ai.exceptions import ModelConnectionError, ModelHTTPError, ModelQu
 logger = logging.getLogger(__name__)
 TRANSIENT_ERRORS = (ModelConnectionError, ModelHTTPError, httpx.TransportError, httpx.HTTPStatusError,
                     ConnectionError, TimeoutError)
+WEB_ERRORS = (httpx.TransportError, httpx.HTTPStatusError, ConnectionError, TimeoutError)
 
 
 def temporary(error):
@@ -20,11 +21,11 @@ def temporary(error):
     return isinstance(error, (ModelConnectionError, httpx.TransportError, ConnectionError, TimeoutError))
 
 
-async def retry_transient(operation):
+async def retry_transient(operation, *, errors=TRANSIENT_ERRORS):
     for attempt in range(3):
         try:
             return await operation()
-        except TRANSIENT_ERRORS as error:
+        except errors as error:
             if not temporary(error) or attempt == 2:
                 raise
             logger.warning('Transient request failure; retrying attempt %s', attempt + 2, exc_info=True)

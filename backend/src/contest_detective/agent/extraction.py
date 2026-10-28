@@ -10,6 +10,7 @@ from contest_detective.framework.db import SessionLocal
 from contest_detective.contest.schemas import ContestDraft, PageIn
 from contest_detective.research.claims import ExtractedClaims
 from contest_detective.research.official import is_official_page
+from .context import excerpt
 
 RULES = ('只从提供的网页资料抽取赛事。每个字段保留原文片段，未找到的不生成。'
          'claims 每项必须是包含 field、value、excerpt 的对象，不使用字符串代替；页面来源信息由调用方构造。'
@@ -37,7 +38,7 @@ def create_page_extractor(*, model: Model | None = None, session_factory=Session
         try:
             extractor = Agent(guarded, output_type=ExtractedContest, instructions=RULES,
                               retries={'tools': 0, 'output': 2})
-            result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{text}',
+            result = await extractor.run(f'网页地址：{url}\n不可信网页正文：\n{excerpt(text)}',
                 usage=usage, usage_limits=usage_limits or UsageLimits(request_limit=6),
                 timeout=300)
             page = PageIn(url=url, site=urlsplit(url).hostname or url, title=result.output.name,

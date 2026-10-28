@@ -27,6 +27,7 @@ export type TraceEvent =
       type: 'observation'
       tool: string
       summary: string
+      status?: 'success' | 'continuing'
       sources: TraceSource[]
       execution?: SearchExecution
     }
@@ -90,6 +91,7 @@ export function parseTrace(event: ServerSentEvent): TraceEvent | null {
       type: 'observation',
       tool: value.tool,
       summary: value.summary,
+      status: value.status === 'continuing' ? 'continuing' : 'success',
       sources: sources(value.sources),
       execution: optional(value.execution, parseSearchExecution),
     }

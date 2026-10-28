@@ -117,8 +117,10 @@ def test_profile_validation_happens_before_opening_the_stream(client, session_fa
     assert response.json()['code'] == 400
 
 
-def test_large_profile_context_is_rejected_before_provider_or_balance_access(session_factory):
+def test_large_profile_context_is_trimmed_and_investigation_continues(session_factory):
+    from decimal import Decimal
     from sqlalchemy import select
+    from pydantic_ai.usage import RequestUsage
     from contest_detective.agent.budget import Budget
     from contest_detective.agent.config import LLMSettings
     from contest_detective.agent.llm import GuardedModel
@@ -127,15 +129,19 @@ def test_large_profile_context_is_rejected_before_provider_or_balance_access(ses
         'name': f'repository-{index}', 'url': f'https://github.com/person/repository-{index}',
         'topics': ['测' * 80] * 50,
     } for index in range(100)])
-    async def forbidden_balance():
-        pytest.fail('The oversized context must be rejected before checking a provider balance')
+    def respond(_, info):
+        assert 'Python' in info.instructions
+        assert len(info.instructions.encode()) < 65536
+        return ModelResponse([answer_part('按 Python 条件继续查找比赛。')], usage=RequestUsage(input_tokens=100, output_tokens=20))
+    async def enough():
+        return Decimal(100)
     settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only')
-    guarded = GuardedModel(FunctionModel(lambda *_: pytest.fail('The oversized context must not reach a provider')),
-                           Budget(session_factory, settings), balance_reader=forbidden_balance)
+    guarded = GuardedModel(FunctionModel(respond), Budget(session_factory, settings), balance_reader=enough)
     events = ask(Investigator(guarded, session_factory=session_factory), profile=profile)
-    assert events[-1].type == 'error' and '上下文过长' in events[-1].payload['message']
+    assert events[-1].type == 'answer' and 'Python' in events[-1].payload['content']
+    assert len(profile.github_evidence) == 100
     with session_factory() as session:
-        assert session.scalars(select(LLMUsage)).all() == []
+        assert session.scalars(select(LLMUsage)).one().status == 'settled'
 
 
 def test_local_function_model_factory_runs_the_profile_journey(session_factory):

@@ -47,6 +47,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
     label: string
     tool: string
     summary?: string
+    status?: 'success' | 'continuing'
     sources: TraceSource[]
     execution?: SearchExecution
   }[] = []
@@ -56,6 +57,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
       const step = steps.findLast((item) => item.tool === event.tool && item.summary === undefined)
       if (step) {
         step.summary = event.summary
+        step.status = event.status
         step.sources = event.sources
         step.execution = event.execution
       }
@@ -64,7 +66,10 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
   if (!steps.length) return null
   const active = turn.status === 'running' && !turn.content && steps.at(-1)!.summary === undefined
   const completed = steps.filter(
-    (step) => step.summary !== undefined && step.execution?.status !== 'failure',
+    (step) =>
+      step.summary !== undefined &&
+      step.status !== 'continuing' &&
+      step.execution?.status !== 'failure',
   ).length
   const failed = steps.some((step) => step.execution?.status === 'failure')
   const unfinished = steps.some((step) => step.summary === undefined)
@@ -102,6 +107,8 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
               <strong>{step.label}</strong>
               {step.execution?.status === 'failure' ? (
                 <span>失败</span>
+              ) : step.status === 'continuing' ? (
+                <ChevronRight aria-label="继续查找" />
               ) : step.summary !== undefined ? (
                 <Check aria-label="已完成" />
               ) : turn.status === 'running' ? (

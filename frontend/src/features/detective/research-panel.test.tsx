@@ -167,3 +167,28 @@ it('用 Escape 收起面板后焦点回到开关，键盘可以继续使用对�
   fireEvent.keyDown(close, { key: 'Escape' })
   expect(document.activeElement).toBe(screen.getByRole('button', { name: '研究面板' }))
 })
+
+it('搜索换来源继续时显示中性进度，不显示失败或误计成功', async () => {
+  renderDetective({}, '/detective')
+  send()
+  await emit('step', { tool: 'web_search', label: '搜索主办方资料' })
+  await emit('observation', {
+    tool: 'web_search',
+    summary: '正在查找其他来源。',
+    status: 'continuing',
+    sources: [],
+  })
+  await emit('step', { tool: 'fetch_page', label: '读取网页原文' })
+  await emit('observation', {
+    tool: 'fetch_page',
+    summary: '已读到官方公告。',
+    status: 'success',
+    sources: [official],
+  })
+  await emit('answer', { content: '已核对报名时间。', sources: [official] })
+  expect(within(panel()).getByLabelText('继续查找')).toBeTruthy()
+  expect(within(panel()).queryByLabelText('失败')).toBeNull()
+  expect(within(panel()).queryByText('失败')).toBeNull()
+  expect(within(screen.getByRole('log')).getByText('已完成 1 项检索')).toBeTruthy()
+  expect(screen.queryByRole('alert')).toBeNull()
+})
