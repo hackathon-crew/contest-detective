@@ -12,6 +12,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.config import get_database_settings
+from contest_detective.framework.config.database import normalize_database_url
 from contest_detective.framework.db import SessionLocal
 from contest_detective.contest import service as contests
 from contest_detective.contest.schemas import ContestQuery, ContestStatus
@@ -105,14 +106,25 @@ def create_server(*, session_factory=SessionLocal, private_tools=False, **transp
 
 
 def readonly_engine(url: str):
-    configured = make_url(url)
-    if configured.drivername != 'sqlite' or not configured.database or configured.database == ':memory:':
-        raise ValueError('只读服务需要已有的 SQLite 文件地址')
-    path = Path(configured.database).expanduser().resolve()
-    # mode=ro 同时阻止数据写入和缺库时自动建空库，不通过启动迁移补表。
-    target = URL.create('sqlite', database='file:' + quote(str(path), safe='/'),
-                        query={'mode': 'ro', 'uri': 'true'})
-    return create_engine(target, connect_args={'check_same_thread': False})
+    target = normalize_database_url(url)
+    configured = make_url(target)
+    if configured.get_backend_name() == 'sqlite':
+        if not configured.database or configured.database == ':memory:':
+            raise ValueError('只读服务需要已有的 SQLite 文件地址')
+        path = Path(configured.database).expanduser().resolve()
+        # mode=ro 同时阻止数据写入和缺库时自动建空库，不通过启动迁移补表。
+        sqlite_url = URL.create('sqlite', database='file:' + quote(str(path), safe='/'),
+                                query={'mode': 'ro', 'uri': 'true'})
+        return create_engine(sqlite_url, connect_args={'check_same_thread': False})
+    if configured.get_backend_name() == 'postgresql':
+        return create_engine(
+            target,
+            connect_args={
+                'application_name': 'contest-detective-mcp',
+                'options': '-c default_transaction_read_only=on -c timezone=UTC',
+            },
+        )
+    raise ValueError('只读服务只支持 SQLite 或 PostgreSQL')
 
 
 def main():

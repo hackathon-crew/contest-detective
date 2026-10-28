@@ -5,11 +5,11 @@ from contextlib import asynccontextmanager
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
 from starlette.responses import JSONResponse
 from contest_detective.system.account.tokens import mcp_owner,resolve_token
 
 from contest_detective.framework.config import get_database_settings
+from contest_detective.framework.db import create_db_engine
 from contest_detective.bootstrap.mcp import create_server, readonly_engine
 
 
@@ -47,7 +47,7 @@ def create_app(*, database_url: str | None = None):
     settings = MCPSettings()
     url=database_url or get_database_settings().url
     bind = readonly_engine(url)
-    auth_bind=create_engine(url,connect_args={'check_same_thread':False})
+    auth_bind = create_db_engine(url)
     server = create_server(
         session_factory=sessionmaker(bind=bind, expire_on_commit=False),
         private_tools=True, stateless_http=True, json_response=True, max_request_body_size=64 * 1024,
