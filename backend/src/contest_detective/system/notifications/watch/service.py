@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import delete, func, select
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.dialects import postgresql, sqlite
 
 from contest_detective.framework.exceptions import BizException
 from contest_detective.system.account.models import Follow
@@ -16,6 +16,12 @@ from contest_detective.system.user.models import User
 from .config import get_watch_settings
 from .contracts import WatchStatus
 from .models import Check, Cursor, Notification, Subscription
+
+
+def insert(session, model):
+    # ON CONFLICT is dialect-specific; a SQLite insert fails to compile on PostgreSQL.
+    dialect = postgresql if session.get_bind().dialect.name == 'postgresql' else sqlite
+    return dialect.insert(model)
 
 
 def utc(value):
@@ -43,7 +49,7 @@ class WatchRead(BaseModel):
 
 def set_enabled(session, user_id, contest_id, enabled):
     # The write obtains SQLite's transaction lock before reading the baseline.
-    session.execute(insert(Cursor).values(user_id=user_id, event_id=0).on_conflict_do_nothing())
+    session.execute(insert(session, Cursor).values(user_id=user_id, event_id=0).on_conflict_do_nothing())
     if session.get(Follow, (user_id, contest_id)) is None:
         raise BizException('请先关注这场比赛', code=404)
     row = session.get(Subscription, (user_id, contest_id))
@@ -58,12 +64,16 @@ def set_enabled(session, user_id, contest_id, enabled):
 
 
 def consume(factory, user_id, *, limit=500):
-    """Serialize each SQLite writer; cursor and unique notifications commit together."""
+    """Serialize each writer; cursor and unique notifications commit together.
+
+    SQLite locks the whole database; PostgreSQL locks only this user's row.
+    """
     if limit < 1:
         return 0
     with factory() as session:
-        session.connection().exec_driver_sql('BEGIN IMMEDIATE')
-        user = session.get(User, user_id)
+        if session.get_bind().dialect.name == 'sqlite':
+            session.connection().exec_driver_sql('BEGIN IMMEDIATE')
+        user = session.get(User, user_id, with_for_update=True)
         if user is None or not user.is_active:
             return 0
         cursor = session.get(Cursor, user_id)
@@ -84,7 +94,7 @@ def consume(factory, user_id, *, limit=500):
             change = ContestChange(before=event.before_snapshot, after=event.after_snapshot)
             if change.before == change.after:
                 continue
-            session.execute(insert(Notification).values(user_id=user_id, event_id=event.id)
+            session.execute(insert(session, Notification).values(user_id=user_id, event_id=event.id)
                 .on_conflict_do_nothing())
         if events:
             cursor.event_id = events[-1].id
