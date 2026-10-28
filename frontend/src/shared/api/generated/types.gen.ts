@@ -39,6 +39,18 @@ export type AskRequest = {
      */
     investigation_id?: string | null;
     /**
+     * Retry Of
+     */
+    retry_of?: string | null;
+    /**
+     * Conversation Id
+     */
+    conversation_id?: string;
+    /**
+     * Turn Id
+     */
+    turn_id?: string;
+    /**
      * Question
      */
     question: string;
@@ -97,6 +109,40 @@ export type CalendarRead = {
      * Url
      */
     url: string;
+};
+
+/**
+ * ClaimAssessment
+ */
+export type ClaimAssessment = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Text
+     */
+    text: string;
+    /**
+     * Verdict
+     */
+    verdict: 'supported' | 'refuted' | 'conflicting' | 'insufficient';
+    /**
+     * Source Level
+     */
+    source_level: 'official' | 'reposted' | 'conflict' | 'not_found';
+    /**
+     * Evidence Ids
+     */
+    evidence_ids?: Array<string>;
+    /**
+     * Comparison
+     */
+    comparison: string;
+    /**
+     * Limitations
+     */
+    limitations?: Array<string>;
 };
 
 /**
@@ -331,6 +377,16 @@ export type ContestSummary = {
      * Content Version
      */
     content_version?: 'content-v1';
+};
+
+/**
+ * ConversationImport
+ */
+export type ConversationImport = {
+    /**
+     * Sessions
+     */
+    sessions: Array<SavedConversation>;
 };
 
 /**
@@ -580,6 +636,59 @@ export type HttpValidationError = {
      * Detail
      */
     detail?: Array<ValidationError>;
+};
+
+/**
+ * InvestigationPlan
+ */
+export type InvestigationPlan = {
+    /**
+     * Mode
+     */
+    mode: 'realtime' | 'deep';
+    /**
+     * Steps
+     */
+    steps: Array<PlanStep>;
+};
+
+/**
+ * InvestigationReport
+ */
+export type InvestigationReport = {
+    /**
+     * Version
+     */
+    version?: 1;
+    /**
+     * Mode
+     */
+    mode: 'realtime' | 'deep';
+    /**
+     * Status
+     */
+    status: 'complete' | 'incomplete' | 'blocked';
+    /**
+     * Generated At
+     */
+    generated_at: string;
+    plan?: InvestigationPlan | null;
+    /**
+     * Queries
+     */
+    queries?: Array<SearchExecution>;
+    /**
+     * Claims
+     */
+    claims?: Array<ClaimAssessment>;
+    /**
+     * Evidence
+     */
+    evidence?: Array<ReportEvidence>;
+    /**
+     * Limitations
+     */
+    limitations?: Array<string>;
 };
 
 /**
@@ -846,6 +955,28 @@ export type PasswordInput = {
 };
 
 /**
+ * PlanStep
+ */
+export type PlanStep = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Purpose
+     */
+    purpose: string;
+    /**
+     * Query
+     */
+    query: string;
+    /**
+     * Claim Ids
+     */
+    claim_ids?: Array<string>;
+};
+
+/**
  * Profile
  */
 export type Profile = {
@@ -914,6 +1045,21 @@ export type Profile = {
      * Github Last Active At
      */
     github_last_active_at?: string | null;
+};
+
+/**
+ * ProfileAttachment
+ */
+export type ProfileAttachment = {
+    /**
+     * Name
+     */
+    name: string;
+    profile: Profile;
+    /**
+     * Candidates
+     */
+    candidates: Array<MatchItem>;
 };
 
 /**
@@ -1162,6 +1308,60 @@ export type RegisterCredentials = {
      * Code
      */
     code: string;
+};
+
+/**
+ * ReportEvidence
+ */
+export type ReportEvidence = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Url
+     */
+    url: string;
+    /**
+     * Excerpt
+     */
+    excerpt: string;
+    /**
+     * Content Hash
+     */
+    content_hash?: string | null;
+    /**
+     * Retrieved At
+     */
+    retrieved_at?: string | null;
+    /**
+     * Evidence Kind
+     */
+    evidence_kind: 'search_snippet' | 'fetched_page' | 'database_record';
+    /**
+     * Provider
+     */
+    provider?: string | null;
+    /**
+     * Query Ids
+     */
+    query_ids?: Array<string>;
+    /**
+     * Source Level
+     */
+    source_level: 'official' | 'reposted' | 'conflict' | 'not_found';
+    /**
+     * Source Lineage
+     */
+    source_lineage?: string | null;
+    /**
+     * Historical
+     */
+    historical?: boolean;
 };
 
 /**
@@ -1592,6 +1792,34 @@ export type ResponseQuotaRead = {
      * 业务数据
      */
     data?: QuotaRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[SavedConversation]
+ */
+export type ResponseSavedConversation = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: SavedConversation | null;
     /**
      * Timestamp
      *
@@ -2037,6 +2265,36 @@ export type ResponseListMatchItem = {
 };
 
 /**
+ * Response[list[SavedConversation]]
+ */
+export type ResponseListSavedConversation = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * Data
+     *
+     * 业务数据
+     */
+    data?: Array<SavedConversation> | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
  * Response[list[TrackRead]]
  */
 export type ResponseListTrackRead = {
@@ -2064,6 +2322,195 @@ export type ResponseListTrackRead = {
      * 响应时间；默认不携带，不携带时省略
      */
     timestamp?: string | null;
+};
+
+/**
+ * SavedConversation
+ */
+export type SavedConversation = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Title
+     */
+    title: string;
+    /**
+     * Createdat
+     */
+    createdAt: number;
+    /**
+     * Updatedat
+     */
+    updatedAt: number;
+    /**
+     * Turns
+     */
+    turns: Array<SavedTurn>;
+};
+
+/**
+ * SavedObservation
+ */
+export type SavedObservation = {
+    /**
+     * Status
+     */
+    status?: 'success' | 'continuing';
+    execution?: SearchExecution | null;
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Summary
+     */
+    summary: string;
+    /**
+     * Sources
+     */
+    sources?: Array<ToolSource>;
+    /**
+     * Type
+     */
+    type?: 'observation';
+};
+
+/**
+ * SavedRequest
+ */
+export type SavedRequest = {
+    profile?: Profile | null;
+    verificationOptions?: SavedVerificationOptions | null;
+};
+
+/**
+ * SavedStep
+ */
+export type SavedStep = {
+    /**
+     * Tool
+     */
+    tool: string;
+    /**
+     * Label
+     */
+    label: string;
+    /**
+     * Type
+     */
+    type?: 'step';
+};
+
+/**
+ * SavedTurn
+ */
+export type SavedTurn = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Question
+     */
+    question: string;
+    /**
+     * Content
+     */
+    content?: string;
+    /**
+     * Trace
+     */
+    trace?: Array<SavedStep | SavedObservation>;
+    /**
+     * Sources
+     */
+    sources?: Array<ToolSource>;
+    /**
+     * Status
+     */
+    status: 'running' | 'completed' | 'stopped' | 'error';
+    /**
+     * Error
+     */
+    error?: string | null;
+    /**
+     * Investigationid
+     */
+    investigationId?: string | null;
+    /**
+     * Lastseq
+     */
+    lastSeq?: number;
+    /**
+     * Action
+     */
+    action?: 'settings' | 'retry' | 'provide_link' | null;
+    request?: SavedRequest | null;
+    plan?: InvestigationPlan | null;
+    report?: InvestigationReport | null;
+    /**
+     * Recommendations
+     */
+    recommendations?: Array<ContestRecommendation> | null;
+    profileFile?: ProfileAttachment | null;
+};
+
+/**
+ * SavedVerificationOptions
+ */
+export type SavedVerificationOptions = {
+    /**
+     * Mode
+     */
+    mode?: 'database' | 'realtime' | 'deep' | null;
+    /**
+     * Confirmed Claims
+     */
+    confirmed_claims?: Array<ConfirmedClaim>;
+};
+
+/**
+ * SearchExecution
+ */
+export type SearchExecution = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Step Id
+     */
+    step_id: string;
+    /**
+     * Round
+     */
+    round: number;
+    /**
+     * Query
+     */
+    query: string;
+    /**
+     * Provider
+     */
+    provider: string;
+    /**
+     * Status
+     */
+    status: 'success' | 'failure';
+    /**
+     * Executed At
+     */
+    executed_at: string;
+    /**
+     * Result Count
+     */
+    result_count: number;
+    /**
+     * Error Code
+     */
+    error_code?: string | null;
 };
 
 /**
@@ -2426,6 +2873,77 @@ export type WatchUpdate = {
      */
     enabled: boolean;
 };
+
+export type ListConversationsAccountConversationsGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/conversations';
+};
+
+export type ListConversationsAccountConversationsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseListSavedConversation;
+};
+
+export type ListConversationsAccountConversationsGetResponse = ListConversationsAccountConversationsGetResponses[keyof ListConversationsAccountConversationsGetResponses];
+
+export type ReadConversationAccountConversationsConversationIdGetData = {
+    body?: never;
+    path: {
+        /**
+         * Conversation Id
+         */
+        conversation_id: string;
+    };
+    query?: never;
+    url: '/account/conversations/{conversation_id}';
+};
+
+export type ReadConversationAccountConversationsConversationIdGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ReadConversationAccountConversationsConversationIdGetError = ReadConversationAccountConversationsConversationIdGetErrors[keyof ReadConversationAccountConversationsConversationIdGetErrors];
+
+export type ReadConversationAccountConversationsConversationIdGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseSavedConversation;
+};
+
+export type ReadConversationAccountConversationsConversationIdGetResponse = ReadConversationAccountConversationsConversationIdGetResponses[keyof ReadConversationAccountConversationsConversationIdGetResponses];
+
+export type ImportConversationsAccountConversationsImportPostData = {
+    body: ConversationImport;
+    path?: never;
+    query?: never;
+    url: '/account/conversations/import';
+};
+
+export type ImportConversationsAccountConversationsImportPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ImportConversationsAccountConversationsImportPostError = ImportConversationsAccountConversationsImportPostErrors[keyof ImportConversationsAccountConversationsImportPostErrors];
+
+export type ImportConversationsAccountConversationsImportPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type ImportConversationsAccountConversationsImportPostResponse = ImportConversationsAccountConversationsImportPostResponses[keyof ImportConversationsAccountConversationsImportPostResponses];
 
 export type ReadWatchAccountWatchGetData = {
     body?: never;
