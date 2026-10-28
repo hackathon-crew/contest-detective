@@ -4,8 +4,9 @@ from html import escape
 import json
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import select, text
+from sqlalchemy import select
 
+from contest_detective.framework.db import lock_for_write
 from contest_detective.framework.exceptions import BizException
 from contest_detective.system.user.models import User
 from contest_detective.system.user.schemas import Profile
@@ -133,8 +134,8 @@ def _utc(value):
 def deliver(session, user, mailer, message, *, key, kind, now, sensitive=False):
     config = get_account_runtime_settings()
     session.commit()
-    # SQLite 写锁只保护额度与投递认领，网络调用放在事务之外。
-    session.execute(text('BEGIN IMMEDIATE'))
+    # 写锁只保护额度与投递认领，网络调用放在事务之外。
+    lock_for_write(session, MailDelivery)
     row = session.scalar(select(MailDelivery).where(MailDelivery.user_id == user.id, MailDelivery.message_key == key))
     if row is not None:
         if row.status in {'sent', 'delivered', 'bounced'} or row.attempts >= 5 or now-_utc(row.created_at) >= timedelta(hours=23):
