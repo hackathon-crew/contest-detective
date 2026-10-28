@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 import uuid
 from urllib.parse import urlsplit
 
@@ -24,6 +25,7 @@ GROUPS = {
     "yuanbao": ("yuanbao_secret_id", "yuanbao_secret_key"),
     "tavily": ("tavily_api_key",),
 }
+logger = logging.getLogger(__name__)
 
 
 class SecuritySettings(BaseSettings):
@@ -37,7 +39,8 @@ def cipher():
     try:
         return Fernet(SecuritySettings().encryption_key.get_secret_value())
     except (ValueError, TypeError):
-        raise BizException("个人密钥加密服务还没有配置", code=503) from None
+        logger.warning('Account key service unavailable', exc_info=True)
+        raise BizException("个人密钥服务暂时不可用，未能完成这次操作。", code=503) from None
 
 
 def validate_base(value):
@@ -93,7 +96,8 @@ def decrypt(row, key):
     try:
         return cipher().decrypt(saved["ciphertext"]).decode()
     except (InvalidToken, KeyError, UnicodeError):
-        raise BizException("个人密钥无法解密，请重新保存", code=503) from None
+        logger.warning('Unable to read saved account key', exc_info=True)
+        raise BizException("无法读取你保存的密钥，请到账户设置中重新保存。", code=503) from None
 
 
 @dataclass
