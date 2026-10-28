@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from pydantic_ai import Agent, ToolOutput
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits, RunUsage
@@ -27,7 +28,7 @@ from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
 from .config import LLMSettings, get_llm_settings
 from .limits import WrapUpNearRequestLimit
-from .presentation import EMPTY_ANSWER, interrupted_answer
+from .presentation import FAILED_ANSWER, interrupted_answer
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +125,6 @@ class Investigator:
         usage, limits = RunUsage(), UsageLimits(request_limit=self.settings.request_limit,
                                                tool_calls_limit=self.settings.tool_calls_limit)
         seq, status, answer, report = 0, 'cancelled', None, None
-        rejection = None
 
         def store(event):
             nonlocal seq
@@ -134,13 +134,34 @@ class Investigator:
                 session.commit()
             return event
 
+        async def finish_interrupted(message, *, actionable=False):
+            nonlocal answer, status, report
+            partial = answer or interrupted_answer(deps)
+            if partial and actionable:
+                partial += '\n\n' + message
+            if state:
+                report = report or state.build([], interrupted=True)
+                if actionable:
+                    report.limitations.append(message)
+                answer, status = partial or message, report.status
+                payload = {'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
+                           'report': report.model_dump(mode='json')}
+                await queue.put(store(TraceEvent(type='answer', payload=payload)))
+            elif partial:
+                answer, status = partial, 'completed'
+                await queue.put(store(TraceEvent(type='answer', payload={
+                    'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
+                })))
+            else:
+                status = 'failed'
+                await queue.put(store(TraceEvent(type='error', payload={'message': message})))
+
         try:
             # Reject every edited/current payload before any model or external tool.
             current_texts = [question, *(item.text for item in confirmed_claims)]
             for text in current_texts:
                 decision = scope_check(text, require_contest=False)
                 if decision.outcome != 'allowed_contest':
-                    rejection = decision.message
                     raise BizException(decision.message, code=400)
             # Scope context is public contest context only, not an automatic profile dump.
             previous = {}
@@ -156,10 +177,9 @@ class Investigator:
                     decision = await self.scope_classifier(self.model, text, context_question=scope_context,
                         usage=usage, usage_limits=limits)
                     if decision.outcome != 'allowed_contest':
-                        rejection = decision.message
                         raise BizException(decision.message, code=400)
             if state and (self.search is None or self.search_provider != 'yuanbao'):
-                raise BizException('实时核验需要实际元宝搜索执行器，未开始核验。', code=503)
+                raise BizException('实时核验暂时不可用。你可以继续普通推荐或查询比赛库。', code=503)
             today = datetime.now(timezone(timedelta(hours=8))).date().isoformat()
             instructions = f'当前北京时间日期：{today}。'
             if state:
@@ -198,7 +218,7 @@ class Investigator:
                                     if content.get('plan'):
                                         await queue.put(store(TraceEvent(type='plan', payload=content['plan'])))
                                     payload = {'tool': event.part.tool_name,
-                                        'summary': content.get('summary', '这次没有取得可用资料，相关信息仍待核实。'),
+                                        'summary': content.get('summary', '这次没能完成资料核对，相关信息仍待核实。'),
                                         'status': content.get('status', 'failure'), 'sources': content.get('sources', [])}
                                     if content.get('execution'):
                                         payload['execution'] = content['execution']
@@ -220,28 +240,16 @@ class Investigator:
                 'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
                 **({'report': report.model_dump(mode='json')} if report else {}),
             })))
-        except Exception as exc:
-            logger.warning('Investigation interrupted: %s: %s; cause: %s',
-                           type(exc).__name__, str(exc), str(exc.__cause__))
-            partial = answer or interrupted_answer(deps)
-            if state:
-                report = report or state.build([], interrupted=True)
-                if rejection:
-                    report.limitations.append(rejection)
-                answer = rejection or partial
-                status = report.status
-                await queue.put(store(TraceEvent(type='answer', payload={'content': answer,
-                    'sources': [source.model_dump() for source in deps.sources.values()],
-                    'report': report.model_dump(mode='json')})))
-            elif partial != EMPTY_ANSWER:
-                answer, status = partial, 'completed'
-                await queue.put(store(TraceEvent(type='answer', payload={
-                    'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
-                })))
-            else:
-                status = 'failed'
-                message = rejection or EMPTY_ANSWER
-                await queue.put(store(TraceEvent(type='error', payload={'message': message})))
+        except BizException as exc:
+            logger.warning('Investigation could not complete', exc_info=True)
+            await finish_interrupted(exc.message, actionable=True)
+        except UsageLimitExceeded:
+            logger.warning('Investigation reached its call limit', exc_info=True)
+            await finish_interrupted(FAILED_ANSWER)
+        except Exception:
+            # 流已经开始，内部故障仍要给出终态，并留下完整堆栈供排查。
+            logger.exception('Investigation interrupted by an unexpected error')
+            await finish_interrupted(FAILED_ANSWER)
         finally:
             with self.session_factory() as session:
                 record = session.get(Investigation, investigation_id)
@@ -259,7 +267,7 @@ def create_investigator(*, session_factory=SessionLocal, model_settings=None, se
     from contest_detective import research as research_pipeline
     strict = mode in {'realtime', 'deep'}
     if strict and not research_pipeline.yuanbao_available(search_settings):
-        raise BizException('实时核验需要完整的元宝搜索配置；可继续普通推荐或只查比赛库。', code=503)
+        raise BizException('实时核验暂时不可用。你可以继续普通推荐或查询比赛库。', code=503)
     model = create_model(settings=model_settings, session_factory=session_factory) if model_settings is not None else create_model(session_factory=session_factory)
     from contest_detective import research as research_pipeline
     from contest_detective.system.user.service import get

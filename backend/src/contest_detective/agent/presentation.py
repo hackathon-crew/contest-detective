@@ -6,8 +6,7 @@ from contest_detective.contest.schemas import BEIJING, DATE_FIELDS
 
 from .verification import markdown_text
 
-EMPTY_ANSWER = '这次还没有查到能核实你问题的资料，暂时不能给出结论。'
-UNAVAILABLE_ANSWER = '侦探暂时无法开始查证，还没有核实你的问题。'
+FAILED_ANSWER = '这次没能完成查证，暂时无法给出结论。'
 FIELD_NAMES = {
     'start_at': '开始日期', 'end_at': '结束日期', 'registration_deadline': '报名截止',
     'submission_deadline': '作品提交截止', 'deadline_unspecified': '截止日期（原文未说明类型）',
@@ -17,10 +16,10 @@ FIELD_NAMES = {
     'past_statistics': '往届情况',
 }
 TOOL_FAILURES = {
-    'search_contests': '这次没有查到比赛库中的候选，相关赛事仍待核实。',
+    'search_contests': '这次没能查询比赛库，候选赛事尚未核实。',
     'get_contest': '这次没有读到这场比赛的出处，参赛信息仍待核实。',
     'match_contests': '这次没有完成参赛条件比对，还不能确定哪些比赛适合你。',
-    'web_search': '这次没有搜到可用资料，相关信息仍待核实。',
+    'web_search': '这次没能完成网页搜索，相关信息仍待核实。',
     'fetch_page': '这次没有读到网页原文，页面中的信息仍待核实。',
     'record_page': '这次没有完成赛事资料核对，页面中的信息仍待核实。',
     'plan_investigation': '这次还没有开始逐项核对你的问题。',
@@ -76,6 +75,6 @@ def interrupted_answer(deps):
     if unread:
         paragraphs.append('还找到' + '、'.join(unread[:5]) + '等线索，尚未读取原文，不能据此确认内容。')
     if not paragraphs:
-        return EMPTY_ANSWER
+        return None
     paragraphs.append('这次查证还没有完成，其余信息仍未核实。')
     return '\n\n'.join(paragraphs)

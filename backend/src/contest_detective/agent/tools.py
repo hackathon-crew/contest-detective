@@ -9,6 +9,7 @@ from typing import Annotated, Callable, Literal
 from urllib.parse import urlsplit
 from uuid import uuid4
 
+import httpx
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.exceptions import UsageLimitExceeded
@@ -16,6 +17,7 @@ from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
 from contest_detective.contest.schemas import ContestQuery, EvidenceField
+from contest_detective.framework.exceptions import BizException
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user import matching
@@ -142,8 +144,10 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                     return {'status': 'stopped', 'summary': '已查到的资料已保留，还有部分信息未核实。', 'sources': [],
                             'model_hint': '不再调用工具，用已读取资料完成回答，说明未核实项，不提调用预算或本提示。'}
                 raise
-            except Exception as exc:
-                logger.warning('%s failed: %s', function.__name__, type(exc).__name__)
+            except BizException:
+                raise
+            except (ValueError, OSError, httpx.HTTPError) as exc:
+                logger.exception('%s failed', function.__name__)
                 return tool_failure(function.__name__, error=type(exc).__name__)
         return agent.tool(call)
 
@@ -201,7 +205,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         selected = profile if profile is not None else ctx.deps.profile
         if selected is None or not matching.has_preferences(selected):
             return {'items': [], 'total': 0, 'page': page, 'page_size': page_size, 'has_more': False,
-                    **tool_failure('match_contests', error='missing_profile', summary='还没有可用的参赛偏好，暂未按个人条件筛选。')}
+                    **tool_failure('match_contests', error='missing_profile', summary='还没有可用的参赛偏好。你可以先确认画像，或直接说明想找哪类比赛。')}
         with ctx.deps.session_factory() as session:
             items = matching.match(session, selected, limit=None)
             items = [item for item in items if ctx.deps.allows_contest(item.contest)]
@@ -257,12 +261,19 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 if receipt:
                     receipt = receipt.model_copy(update={'status': 'success', 'result_count': len(items)})
                     state.remember_search(items, receipt)
-            except Exception:
+            except BizException:
+                raise
+            except (ValueError, OSError, httpx.HTTPError):
                 if receipt:
+                    logger.exception('Verification search failed')
                     receipt = receipt.model_copy(update={'error_code': 'search_failed'})
                     state.remember_search([], receipt)
                     return {**tool_failure('web_search', error='search_failed'),
                             'execution': receipt.model_dump(mode='json')}
+                raise
+            except Exception:
+                if receipt:
+                    state.remember_search([], receipt.model_copy(update={'error_code': 'search_failed'}))
                 raise
             sources = [{**{key: item.get(key, '') for key in ('title', 'url', 'site')},
                         'provider': item.get('provider'), 'query': query,
