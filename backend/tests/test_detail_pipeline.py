@@ -99,7 +99,7 @@ def test_detail_failure_and_run_bound_preserve_healthy_adapter_data():
     assert second.draft.coverage.sources[second.draft.page.url].reason == 'detail_run_limit'
 
 
-def test_one_normalizer_call_maps_each_excerpt_to_its_document_and_keeps_conflicts():
+def test_one_extraction_maps_each_excerpt_to_its_document_and_keeps_distinct_assertions():
     candidate = StructuredCandidate('devpost', draft('https://fixture.devpost.com/', summary='AI'))
     candidate.draft.page.is_official = True
     called = []
@@ -129,7 +129,7 @@ def test_one_normalizer_call_maps_each_excerpt_to_its_document_and_keeps_conflic
         ('Shanghai', 'https://fixture.devpost.com/'), ('Beijing', 'https://fixture.devpost.com/'),
         ('Tokyo', 'https://fixture.devpost.com/rules'),
     }
-    assert ctx.records[0].fields['city'].level == 'conflict'
+    assert ctx.records[0].fields['city'].level == 'not_found'
     assert 'entry_fee' not in ctx.records[0].fields
 
 
@@ -213,7 +213,7 @@ def test_detail_fetcher_assembly_does_not_read_model_or_search_settings(monkeypa
     assert isinstance(source_sync.configured_detail_fetcher(), BoundedPublicDetailFetcher)
 
 
-def test_supported_same_page_contradiction_survives_a_partial_refresh(session_factory):
+def test_supported_same_page_alternatives_survive_a_partial_refresh_for_semantic_review(session_factory):
     from contest_detective.contest import service
     from contest_detective.research.record import run
 
@@ -233,7 +233,7 @@ def test_supported_same_page_contradiction_survives_a_partial_refresh(session_fa
     with session_factory() as session:
         city = service.get(session, contest_id).fields['city']
     assert {source.value for source in city.sources} == {'Shanghai', 'Beijing'}
-    assert city.level == 'conflict'
+    assert city.level == 'not_found'
 
 
 def test_same_hash_with_new_extractor_version_is_reprocessed_after_success(session_factory):

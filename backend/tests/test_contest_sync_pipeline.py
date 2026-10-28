@@ -180,7 +180,7 @@ def test_extract_keeps_only_claims_supported_by_the_page_text():
     assert ctx.skipped == 0
 
 
-def test_verify_prefers_the_official_claim_for_one_contest():
+def test_verify_keeps_all_distinct_text_pending_semantic_review():
     ctx = ContestSyncContext(request=ContestSyncInput(keywords=('黑客松',)))
     ctx.extracted_items.extend([
         draft('公开测试黑客松', 'online', url='https://news.example/event', city='上海'),
@@ -190,5 +190,6 @@ def test_verify_prefers_the_official_claim_for_one_contest():
     asyncio.run(DraftVerify().run(ctx))
 
     assert len(ctx.records) == 1
-    assert ctx.records[0].fields['city'].value == '北京'
-    assert ctx.records[0].fields['city'].level == 'official'
+    assert ctx.records[0].fields['city'].value is None
+    assert ctx.records[0].fields['city'].level == 'not_found'
+    assert {source.value for source in ctx.records[0].fields['city'].sources} == {'北京', '上海'}
