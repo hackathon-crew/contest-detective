@@ -6,7 +6,7 @@ from alembic.config import Config
 from importlib import import_module
 from pkgutil import walk_packages
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
@@ -41,6 +41,18 @@ def create_db_engine(url: str | None = None, settings: DatabaseSettings | None =
 
 engine = create_db_engine()
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def lock_for_write(session, model):
+    """在当前事务里串行化对一张表的写入，锁到提交或回滚为止。
+
+    SQLite 只能锁整个库，用 BEGIN IMMEDIATE，调用前事务必须还没开始；
+    PostgreSQL 只锁这张表，用 EXCLUSIVE 模式，别的写入会排队，普通查询不受影响。
+    """
+    if session.get_bind().dialect.name == 'sqlite':
+        session.execute(text('BEGIN IMMEDIATE'))
+    else:
+        session.execute(text(f'LOCK TABLE {model.__tablename__} IN EXCLUSIVE MODE'))
 
 
 def get_session():
