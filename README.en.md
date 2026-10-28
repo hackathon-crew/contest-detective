@@ -145,7 +145,7 @@ Implementation: [GitHub profiles](backend/src/contest_detective/system/user/gith
 2. Enable “按我的情况挑” in the [catalog](https://inkpaw.windup.xin/contests), inspect recommendation reasons, and use the [detective](https://inkpaw.windup.xin/detective) to investigate specific questions.
 3. Follow candidates, save your frequency and tracking conditions under [email preferences](https://inkpaw.windup.xin/account/push), and optionally subscribe to your personal calendar.
 
-The public catalog and anonymous MCP are available directly. Accounts save profiles, follows, tracking conditions, and settings. The web interface is currently primarily Chinese.
+The public catalog and anonymous MCP are available directly. Web chat, profile generation, and follow actions require sign-in. Profiles and conversations are saved to the account across devices, and account exports include conversations. Accounts also save tracking conditions and settings. The web interface is currently primarily Chinese.
 
 ## Connect via MCP
 
