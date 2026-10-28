@@ -47,7 +47,7 @@ class EmbeddingIndexer:
             except Exception as error:
                 report.failed += 1
                 logger.warning('Contest embedding failed contest_id=%s error_type=%s',
-                               document.contest_id, type(error).__name__)
+                               document.contest_id, type(error).__name__, exc_info=True)
         return report
 
 
@@ -58,5 +58,5 @@ def refresh_index(session_factory) -> IndexReport:
         logger.info('Contest index updated=%s unchanged=%s failed=%s', report.updated, report.unchanged, report.failed)
         return report
     except Exception as error:
-        logger.warning('Contest index unavailable error_type=%s', type(error).__name__)
+        logger.warning('Contest index unavailable error_type=%s', type(error).__name__, exc_info=True)
         return IndexReport(failed=1)

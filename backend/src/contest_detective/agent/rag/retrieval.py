@@ -29,7 +29,7 @@ class HybridRetriever:
                 with session.begin_nested():
                     return contests.query(session, query, **options)
             except Exception as error:
-                logger.warning('Keyword retrieval unavailable error_type=%s', type(error).__name__)
+                logger.warning('Keyword retrieval unavailable error_type=%s', type(error).__name__, exc_info=True)
                 return [], 0
 
         keywords, semantic = [], []
@@ -38,7 +38,7 @@ class HybridRetriever:
             with session.begin_nested():
                 keywords = list(session.scalars(contests.candidate_query(session, query, **options)))
         except Exception as error:
-            logger.warning('Keyword retrieval unavailable error_type=%s', type(error).__name__)
+            logger.warning('Keyword retrieval unavailable error_type=%s', type(error).__name__, exc_info=True)
 
         try:
             provider = self.provider or configured_provider()
@@ -49,7 +49,7 @@ class HybridRetriever:
                     eligible = contests.candidate_query(session, query.model_copy(update={'keyword': None}), **options)
                     semantic = store.nearest(session, eligible, vector)
         except Exception as error:
-            logger.warning('Semantic retrieval unavailable error_type=%s', type(error).__name__)
+            logger.warning('Semantic retrieval unavailable error_type=%s', type(error).__name__, exc_info=True)
 
         ranked = merge_ranks(keywords, semantic)
         offset = (query.page - 1) * query.page_size
@@ -64,5 +64,5 @@ class HybridRetriever:
             by_id = {item.id: item for item in items}
             return [by_id[contest_id] for contest_id in ids if contest_id in by_id], len(ranked)
         except Exception as error:
-            logger.warning('Contest candidates unavailable error_type=%s', type(error).__name__)
+            logger.warning('Contest candidates unavailable error_type=%s', type(error).__name__, exc_info=True)
             return [], 0
