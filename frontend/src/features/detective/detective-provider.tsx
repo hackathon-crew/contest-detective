@@ -7,6 +7,7 @@ import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } fro
 import { parseTrace } from './events'
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
+import { cancelInvestigation, investigationStream } from './investigation-stream'
 import type { VerificationOptions } from './verification-contracts'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
@@ -41,6 +42,16 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       queueMicrotask(() => setStorageError(true))
     }
   }, [scope, sessions])
+
+  useEffect(() => {
+    for (const session of sessions) {
+      const turn = session.turns.find((item) => item.status === 'running' && item.investigationId)
+      if (!turn || requests.current.has(session.id)) continue
+      const controller = new AbortController()
+      requests.current.set(session.id, controller)
+      void run(session.id, turn.id, turn.question, [], undefined, controller, undefined, true)
+    }
+  }, [sessions])
 
   useEffect(() => {
     const active = sessions.find((session) => session.id === activeId)
@@ -90,9 +101,23 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       ),
     )
   }
-  function stop(sessionId: string) {
+  async function stop(sessionId: string) {
     const controller = requests.current.get(sessionId)
     if (!controller) return
+    const turn = snapshot.current
+      .find((session) => session.id === sessionId)
+      ?.turns.find((item) => item.status === 'running')
+    if (turn?.investigationId) {
+      try {
+        await cancelInvestigation(turn.investigationId, controller.signal)
+      } catch {
+        update(sessionId, turn.id, (current) => ({
+          ...current,
+          error: '停止操作未能送达，请再次点击停止查证。',
+        }))
+        return
+      }
+    }
     controller.abort()
     requests.current.delete(sessionId)
     change((items) =>
@@ -122,6 +147,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     const turnId = createId()
     const turn: DetectiveTurn = {
       id: turnId,
+      investigationId: turnId,
+      lastSeq: 0,
       question: text,
       content: '',
       trace: [],
@@ -155,6 +182,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     profile: Profile | null | undefined,
     controller: AbortController,
     verificationOptions?: VerificationOptions,
+    resume = false,
   ) {
     let terminal = false
     const fail = (message: string) =>
@@ -164,21 +192,30 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           : { ...turn, status: 'error', error: message },
       )
     try {
-      for await (const raw of apiClient.stream('/agent/ask', {
-        method: 'POST',
-        json: {
+      const current = snapshot.current
+        .find((session) => session.id === sessionId)
+        ?.turns.find((turn) => turn.id === turnId)
+      for await (const raw of investigationStream(
+        {
+          investigation_id: current?.investigationId ?? turnId,
           question,
           ...(history.length ? { history } : {}),
           ...(profile ? { profile } : {}),
           ...verificationOptions,
         },
-        signal: controller.signal,
-      })) {
+        controller.signal,
+        { after: current?.lastSeq ?? 0, resume },
+      )) {
         if (controller.signal.aborted) break
         const event = parseTrace(raw)
         if (!event) continue
-        if (event.type === 'answer') {
+        const updateEvent = (transform: (turn: DetectiveTurn) => DetectiveTurn) =>
           update(sessionId, turnId, (turn) => ({
+            ...transform(turn),
+            ...(raw.id !== null ? { lastSeq: Number(raw.id) } : {}),
+          }))
+        if (event.type === 'answer') {
+          updateEvent((turn) => ({
             ...turn,
             content: event.content || turn.content,
             sources: event.sources,
@@ -198,12 +235,12 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           break
         }
         if (event.type === 'plan') {
-          update(sessionId, turnId, (turn) => ({ ...turn, plan: event.plan }))
+          updateEvent((turn) => ({ ...turn, plan: event.plan }))
           continue
         }
         if (event.type === 'delta')
-          update(sessionId, turnId, (turn) => ({ ...turn, content: turn.content + event.content }))
-        else update(sessionId, turnId, (turn) => ({ ...turn, trace: [...turn.trace, event] }))
+          updateEvent((turn) => ({ ...turn, content: turn.content + event.content }))
+        else updateEvent((turn) => ({ ...turn, trace: [...turn.trace, event] }))
       }
       if (!terminal && !controller.signal.aborted) fail('查证提前结束，请重试。')
     } catch (cause) {

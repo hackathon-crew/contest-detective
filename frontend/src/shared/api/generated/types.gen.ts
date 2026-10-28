@@ -35,6 +35,10 @@ export type AccountRead = {
  */
 export type AskRequest = {
     /**
+     * Investigation Id
+     */
+    investigation_id?: string | null;
+    /**
      * Question
      */
     question: string;
@@ -3718,6 +3722,75 @@ export type AskQuestionAgentAskPostResponses = {
      */
     200: unknown;
 };
+
+export type InvestigationEventsAgentInvestigationsInvestigationIdEventsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Last-Event-Id
+         */
+        'Last-Event-ID'?: number;
+    };
+    path: {
+        /**
+         * Investigation Id
+         */
+        investigation_id: string;
+    };
+    query?: {
+        /**
+         * After
+         */
+        after?: number;
+    };
+    url: '/agent/investigations/{investigation_id}/events';
+};
+
+export type InvestigationEventsAgentInvestigationsInvestigationIdEventsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type InvestigationEventsAgentInvestigationsInvestigationIdEventsGetError = InvestigationEventsAgentInvestigationsInvestigationIdEventsGetErrors[keyof InvestigationEventsAgentInvestigationsInvestigationIdEventsGetErrors];
+
+export type InvestigationEventsAgentInvestigationsInvestigationIdEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostData = {
+    body?: never;
+    path: {
+        /**
+         * Investigation Id
+         */
+        investigation_id: string;
+    };
+    query?: never;
+    url: '/agent/investigations/{investigation_id}/cancel';
+};
+
+export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostError = CancelInvestigationAgentInvestigationsInvestigationIdCancelPostErrors[keyof CancelInvestigationAgentInvestigationsInvestigationIdCancelPostErrors];
+
+export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponse = CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponses[keyof CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponses];
 
 export type AskDocumentCompanionDocumentsAskPostData = {
     body: DocumentQuestion;

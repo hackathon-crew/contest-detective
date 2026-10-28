@@ -85,12 +85,15 @@ it('没有执行的受阻报告不会显示任何已完成检索', async () => {
   expect(log().queryByText(/已完成/)).toBeNull()
 })
 
-it('计划后提前断流保留计划并显示错误，不生成成功报告', async () => {
+it('计划后断流自动续接并保留计划，不生成成功报告', async () => {
   renderDetective({}, '/detective')
   send()
   await emit('plan', reportFixture().plan)
   await act(async () => streams.at(-1)!.close())
-  expect(await log().findByRole('alert')).toBeTruthy()
+  expect(log().queryByRole('alert')).toBeNull()
+  await waitFor(() => expect(streams).toHaveLength(2), { timeout: 3000 })
+  await emit('answer', { content: '续接后已取得资料。', sources: [] })
+  expect(await log().findByText('续接后已取得资料。')).toBeTruthy()
   expect(log().getByText('调查计划')).toBeTruthy()
   expect(log().queryByText('查证完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
@@ -102,7 +105,7 @@ it('取消已发出但未返回的查询不显示完成，也不生成报告', a
   await emit('plan', reportFixture().plan)
   await emit('step', { tool: 'web_search', label: '元宝查询' })
   fireEvent.click(screen.getByRole('button', { name: '停止查证' }))
-  expect(log().getByText('已停止，完成 0 项检索')).toBeTruthy()
+  await waitFor(() => expect(log().getByText('已停止，完成 0 项检索')).toBeTruthy())
   expect(log().queryByLabelText('已完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
   expect(loadSessions('guest')[0].turns[0].status).toBe('stopped')

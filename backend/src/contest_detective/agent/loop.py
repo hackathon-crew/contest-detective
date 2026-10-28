@@ -1,15 +1,14 @@
 """编排库执行工具图；本模块只映射步骤并保存产品查证记录。"""
-import asyncio
 import json
 import logging
-from contextlib import suppress
 from functools import partial
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
+
+import httpx
 
 from pydantic_ai import Agent, ToolOutput
-from pydantic_ai.exceptions import UsageLimitExceeded
+from pydantic_ai.exceptions import UsageLimitExceeded, ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
 from pydantic_ai.usage import UsageLimits, RunUsage
@@ -20,6 +19,7 @@ from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user.matching import has_preferences
 
 from .models import Investigation, TraceRecord
+from .investigations import Investigations
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
 from .tools import ToolDeps, invoke, register_tools
@@ -91,38 +91,20 @@ class Investigator:
             raise ValueError('请求核验模式与执行器不匹配')
         body = AskRequest(question=question, profile=profile, history=history or [], mode=self.mode, confirmed_claims=confirmed_claims or [])
         question, profile = body.question, body.profile
-        queue: asyncio.Queue = asyncio.Queue(maxsize=1)
+        runs = Investigations(self.session_factory)
+        investigation_id = runs.start(self, body, user_id, user_id)
+        async for event in runs.events(investigation_id, user_id):
+            yield event
 
-        async def produce():
-            try:
-                await self._execute(question, user_id, profile, body.history, queue, body.confirmed_claims)
-            finally:
-                if not asyncio.current_task().cancelling():
-                    await queue.put(None)
-
-        task = asyncio.create_task(produce())
-        try:
-            while (event := await queue.get()) is not None:
-                yield event
-        finally:
-            if not task.done():
-                task.cancel()
-            with suppress(asyncio.CancelledError):
-                await task
-
-    async def _execute(self, question: str, user_id: str | None, profile: Profile | None,
-                       history: list[ConversationMessage], queue: asyncio.Queue, confirmed_claims: list[ConfirmedClaim]):
-        investigation_id = str(uuid4())
-        with self.session_factory() as session:
-            session.add(Investigation(id=investigation_id, question=question, user_id=user_id, status='running'))
-            session.commit()
+    async def _execute(self, investigation_id: str, question: str, user_id: str | None, profile: Profile | None,
+                       history: list[ConversationMessage], confirmed_claims: list[ConfirmedClaim]):
         state = VerificationState(self.mode, question, confirmed_claims) if self.mode in {'realtime', 'deep'} else None
         deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record,
                         preferences=self.preferences, verification=state, search_provider=self.search_provider,
                         scope_classifier=self.scope_classifier, question=question)
         usage, limits = RunUsage(), UsageLimits(request_limit=self.settings.request_limit,
                                                tool_calls_limit=self.settings.tool_calls_limit)
-        seq, status, answer = 0, 'cancelled', None
+        seq, status, answer = 0, 'running', None
         findings = []
 
         def store(event):
@@ -187,7 +169,7 @@ class Investigator:
                                     tool = event.part.tool_name
                                     if tool == 'respond_to_user':
                                         continue
-                                    await queue.put(store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)})))
+                                    store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)}))
                                 elif isinstance(event, FunctionToolResultEvent):
                                     if event.part.tool_name == 'respond_to_user':
                                         continue
@@ -195,12 +177,12 @@ class Investigator:
                                     if content.get('summary') and not content.get('error'):
                                         findings.append(content['summary'])
                                     if content.get('plan'):
-                                        await queue.put(store(TraceEvent(type='plan', payload=content['plan'])))
+                                        store(TraceEvent(type='plan', payload=content['plan']))
                                     payload = {'tool': event.part.tool_name,
                                         'summary': content.get('summary', '工具未返回可用资料'), 'sources': content.get('sources', [])}
                                     if content.get('execution'):
                                         payload['execution'] = content['execution']
-                                    await queue.put(store(TraceEvent(type='observation', payload=payload)))
+                                    store(TraceEvent(type='observation', payload=payload))
                 result = run.result
             if result is None:
                 raise RuntimeError('查证没有完成结果')
@@ -213,14 +195,13 @@ class Investigator:
             with self.session_factory() as session:
                 recommendations = materialize(session, [item for item in reply.recommendations
                     if item.contest_id in deps.contest_ids])
-            await queue.put(store(TraceEvent(type='answer', payload={
+            store(TraceEvent(type='answer', payload={
                 'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
                 'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
                 **({'report': report.model_dump(mode='json')} if report else {}),
-            })))
-        except Exception as exc:
-            logger.warning('Investigation interrupted: %s: %s; cause: %s',
-                           type(exc).__name__, str(exc), str(exc.__cause__))
+            }))
+        except (BizException, UsageLimitExceeded, ModelAPIError, UnexpectedModelBehavior, httpx.HTTPError, TimeoutError) as exc:
+            logger.warning('Investigation interrupted', exc_info=True)
             unread = [f'- [{source["title"]}]({url})（未读取原文）'
                       for url, source in deps.search_results.items()
                       if url not in deps.opened_urls and url not in deps.sources
@@ -236,31 +217,32 @@ class Investigator:
                     render_report(report),
                 ])
                 status = report.status
-                await queue.put(store(TraceEvent(type='answer', payload={'content': answer,
+                store(TraceEvent(type='answer', payload={'content': answer,
                     'sources': [source.model_dump() for source in deps.sources.values()],
-                    'report': report.model_dump(mode='json')})))
+                    'report': report.model_dump(mode='json')}))
             elif deps.sources or findings or unread:
                 lines = ['查证暂时未能继续，以下是已查到的资料，尚未完成全部核实：']
                 lines.extend(dict.fromkeys(findings))
                 lines.extend(f'- [{source.title}]({source.url})' for source in deps.sources.values())
                 lines.extend(unread)
                 answer, status = '\n\n'.join(lines), 'completed'
-                await queue.put(store(TraceEvent(type='answer', payload={
+                store(TraceEvent(type='answer', payload={
                     'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()],
-                })))
+                }))
             else:
                 status = 'failed'
                 if isinstance(exc, UsageLimitExceeded):
                     message = '这轮查证已用完可用步数，还没有取得可核实的资料。'
                 else:
                     message = exc.message if isinstance(exc, BizException) else '本次查证未取得结果，请稍后重试'
-                await queue.put(store(TraceEvent(type='error', payload={'message': message})))
+                store(TraceEvent(type='error', payload={'message': message}))
         finally:
             with self.session_factory() as session:
                 record = session.get(Investigation, investigation_id)
-                record.status, record.answer = status, answer
-                record.finished_at = datetime.now(timezone.utc)
-                session.commit()
+                if record.status == 'running' and status != 'running':
+                    record.status, record.answer = status, answer
+                    record.finished_at = datetime.now(timezone.utc)
+                    session.commit()
 
 
 def create_investigator(*, session_factory=SessionLocal, model_settings=None, search_settings=None, preferences=None, mode: VerificationMode | None = None) -> Investigator:

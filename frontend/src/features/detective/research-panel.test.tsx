@@ -113,7 +113,7 @@ it('工具未返回即停止时保留中断状态，重复调用同一工具分�
   fireEvent.click(screen.getByRole('button', { name: '停止查证' }))
   expect(within(panel()).getAllByText('查询比赛库')).toHaveLength(2)
   expect(within(panel()).getByLabelText('已完成')).toBeTruthy()
-  expect(within(panel()).getByLabelText('已中断')).toBeTruthy()
+  await waitFor(() => expect(within(panel()).getByLabelText('已中断')).toBeTruthy())
   expect(within(panel()).queryByLabelText('进行中')).toBeNull()
 })
 
