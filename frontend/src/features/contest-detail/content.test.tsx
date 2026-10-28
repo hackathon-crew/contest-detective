@@ -171,6 +171,26 @@ it('keeps conflicting conditions close to the decision and does not pick one as 
   expect(within(section).queryByText('官网说明可单人。')).toBeNull()
 })
 
+it('keeps unreviewed source values visible without declaring a conflict', async () => {
+  show({
+    fields: {
+      team_size: {
+        value: null,
+        level: 'not_found',
+        sources: [
+          { ...source, value: '每队最多8人' },
+          { ...source, url: 'https://other.example/rules', value: '支持个人参赛，每队上限8人' },
+        ],
+      },
+    },
+  })
+  const section = await screen.findByRole('region', { name: '参赛条件' })
+  expect(within(section).getByText('信息待核实')).toBeTruthy()
+  expect(within(section).getByText('每队最多8人')).toBeTruthy()
+  expect(within(section).getByText('支持个人参赛，每队上限8人')).toBeTruthy()
+  expect(within(section).queryByText('来源说法不一，待核实')).toBeNull()
+})
+
 it('retains exact date precision, type and timezone in the overview', async () => {
   show({ fields: { submission_deadline: { ...field('2026-11-01T00:00:00Z'), precision: 'day' } } })
   const overview = await screen.findByRole('region', { name: '参赛要点' })
