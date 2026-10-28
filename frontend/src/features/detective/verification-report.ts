@@ -277,55 +277,51 @@ export function serializeReport(value: InvestigationReport, format: 'json' | 'ma
     '',
   ]
   if (report.plan) {
-    lines.push('## 调查计划', '')
+    lines.push('## 待核对内容', '')
     for (const step of report.plan.steps)
-      lines.push(
-        `- ${markdownText(step.id)} · ${markdownText(step.purpose)}`,
-        `  - 计划查询：${markdownText(step.query)}`,
-        `  - 关联说法：${step.claim_ids.map(markdownText).join('、') || '无'}`,
-      )
+      lines.push(`- ${markdownText(step.purpose)}`, `  - 准备查找：${markdownText(step.query)}`)
     lines.push('')
   }
-  lines.push('## 实际查询记录', '')
-  if (!report.queries.length) lines.push('未执行查询。')
+  lines.push('## 查找记录', '')
+  if (!report.queries.length) lines.push('还没有查找结果。')
   for (const query of report.queries)
     lines.push(
-      `- ${markdownText(query.id)} · 第 ${query.round} 轮 · ${query.status === 'success' ? '成功' : '失败'}`,
+      `- ${query.status === 'success' ? `找到 ${query.result_count} 条线索` : '这次没有取得搜索结果，相关信息仍待核实。'}`,
       `  - 查询：${markdownText(query.query)}`,
-      `  - 服务：${markdownText(query.provider)}；执行时间：${query.executed_at}；结果数：${query.result_count}`,
-      `  - 计划步骤：${markdownText(query.step_id)}`,
-      ...(query.error_code ? [`  - 错误：${markdownText(query.error_code)}`] : []),
+      `  - 查找时间：${query.executed_at}`,
     )
   lines.push('', '## 逐条说法核对', '')
   if (!report.claims.length) lines.push('没有可用的说法核对结果。')
   for (const claim of report.claims)
     lines.push(
-      `### ${markdownText(claim.id)} · ${markdownText(claim.text)}`,
+      `### ${markdownText(claim.text)}`,
       '',
       `结论：${verdictNames[claim.verdict]}`,
       `来源等级：${sourceLevelNames[claim.source_level]}`,
       `比对：${markdownText(claim.comparison) || '未提供比对。'}`,
-      `证据：${claim.evidence_ids.map(markdownText).join('、') || '无'}`,
+      `证据：${claim.evidence_ids.map((id) => report.evidence.findIndex((item) => item.id === id) + 1).join('、') || '无'}`,
       ...claim.limitations.map((limitation) => `- 限制：${markdownText(limitation)}`),
       '',
     )
   lines.push('## 证据来源', '')
-  for (const evidence of report.evidence)
+  for (const [index, evidence] of report.evidence.entries())
     lines.push(
-      `### ${markdownText(evidence.id)} · ${markdownLink(evidence)}`,
+      `### 证据 ${index + 1} · ${markdownLink(evidence)}`,
       '',
       `来源等级：${sourceLevelNames[evidence.source_level]}；类型：${evidenceKindNames[evidence.evidence_kind]}`,
       `摘录：${markdownText(evidence.excerpt) || '无可用摘录。'}`,
       `获取时间：${evidence.retrieved_at ?? '未记录'}`,
-      `服务：${markdownText(evidence.provider ?? '未记录')}`,
-      `关联查询：${evidence.query_ids.map(markdownText).join('、') || '无'}`,
-      `来源谱系：${markdownText(evidence.source_lineage ?? '独立性未确认')}`,
+      evidence.source_lineage ? '可追溯到原始来源。' : '来源独立性未确认。',
       `历史资料：${evidence.historical ? '是' : '否'}`,
-      ...(evidence.content_hash ? [`内容校验：${markdownText(evidence.content_hash)}`] : []),
       '',
     )
   if (report.limitations.length)
-    lines.push('## 限制', '', ...report.limitations.map((item) => `- ${markdownText(item)}`), '')
+    lines.push(
+      '## 尚未核实',
+      '',
+      ...report.limitations.map((item) => `- ${markdownText(item)}`),
+      '',
+    )
   return lines.join('\n')
 }
 
