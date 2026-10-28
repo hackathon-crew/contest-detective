@@ -90,6 +90,57 @@ def test_unavailable_tools_are_failed_instead_of_successful_steps(session_factor
     assert '配置' not in observation['summary']
 
 
+def test_oversized_page_extraction_fails_one_tool_and_the_investigation_continues(session_factory, caplog):
+    from decimal import Decimal
+    from pydantic_ai.usage import RequestUsage
+    from contest_detective.agent.budget import Budget
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.agent.llm import GuardedModel
+    from contest_detective.research.record import run as record_page
+
+    long_url = 'https://host.example/contest/rules'
+    short_url = 'https://host.example/contest/notice'
+    answer = f'报名公告写明报名截止为 10 月 30 日；奖金仍未核实。[报名公告]({short_url})'
+    tool_results = []
+
+    def respond(messages, _):
+        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
+        if not results:
+            parts = [ToolCallPart('record_page', {'url': long_url})]
+        else:
+            tool_results.append(results[-1].content)
+            parts = ([ToolCallPart('fetch_page', {'url': short_url})] if len(results) == 1
+                     else [TextPart(answer)])
+        return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
+
+    async def record(url, **kwargs):
+        return await record_page(url, page_text='赛事规则正文。' * 12000, **kwargs)
+
+    def fetch(url):
+        assert url == short_url
+        return '报名截止：10 月 30 日。'
+
+    async def balance():
+        return Decimal('100')
+
+    config = LLMSettings(_env_file=None, enabled=True, api_key='test-only', limits_mode='local')
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, config), balance_reader=balance)
+    events = consume(Investigator(model, session_factory=session_factory, record=record, fetch=fetch))
+
+    assert [event.type for event in events] == ['step', 'observation', 'step', 'observation', 'answer']
+    failed_step, read_step = [event.payload for event in events if event.type == 'observation']
+    assert failed_step['status'] == 'failure' and '这页内容太长' in failed_step['summary']
+    assert read_step['status'] == 'success'
+    assert tool_results[0]['error'] == 'page_too_long'
+    assert 'model_hint' in tool_results[0]
+    assert 'model_hint' not in failed_step and 'error' not in failed_step
+    assert events[-1].payload['content'] == answer
+    assert [source['url'] for source in events[-1].payload['sources']] == [short_url]
+    public_text = json.dumps([event.payload for event in events], ensure_ascii=False)
+    assert '减少附带资料' not in public_text
+    assert any(record.exc_info and record.exc_info[2] for record in caplog.records)
+
+
 @pytest.mark.parametrize('failure', [
     RuntimeError('provider_internal_failure'),
     UsageLimitExceeded('request_limit internal failure'),
@@ -182,11 +233,14 @@ def test_unexpected_startup_error_reaches_the_handler_with_a_stack(client, monke
                for record in caplog.records)
 
 
-def test_tool_business_errors_are_not_converted_to_model_recovery_hints(session_factory):
-    message = '公共查证额度已用完。你可以到账户设置中填写自己的模型密钥后继续。'
+@pytest.mark.parametrize('code,message', [
+    (429, '公共查证额度已用完。你可以到账户设置中填写自己的模型密钥后继续。'),
+    (503, '公共查证服务暂时不可用。你可以到账户设置中填写自己的模型密钥后继续。'),
+])
+def test_tool_business_errors_are_not_converted_to_model_recovery_hints(session_factory, code, message):
 
     def record(*_args, **_kwargs):
-        raise BizException(message, code=429)
+        raise BizException(message, code=code)
 
     model = FunctionModel(lambda *_: ModelResponse([ToolCallPart('record_page', {'url': 'https://host.example/rules'})]))
     events = consume(Investigator(model, session_factory=session_factory, record=record))
