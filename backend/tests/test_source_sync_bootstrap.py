@@ -110,7 +110,7 @@ def test_disabled_extraction_keeps_structured_sync_without_discovery_or_verifica
         monkeypatch.setattr(source_sync, 'SessionLocal', session_factory)
         monkeypatch.setattr(source_sync, 'init_db', lambda: None)
         monkeypatch.setattr(source_sync, 'run_pipeline', sync)
-        source_sync.main()
+        source_sync.main([])
         output = json.loads(capsys.readouterr().out)
         assert output['saved'] == 3
     else:

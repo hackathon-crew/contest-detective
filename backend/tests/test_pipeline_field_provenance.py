@@ -284,8 +284,8 @@ def test_combined_verification_keeps_unstructured_official_evidence():
     asyncio.run(DraftVerify().run(ctx))
 
     city = ctx.records[0].fields['city']
-    assert city.value == '北京'
-    assert city.level == 'official'
+    assert city.value is None
+    assert city.level == 'not_found'
     assert {source.url for source in city.sources} == {original.page.url, official.page.url}
 
 

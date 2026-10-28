@@ -82,6 +82,6 @@ def configured_pipeline(*, client, extractor, searcher=None, tavily=None, normal
         normalize=StructuredNormalize(normalizer) if normalizer is not None else None,
         retrieve=PageRetrieve(searcher),
         extract=PageExtract(extractor, fetcher),
-        verify=DraftVerify(),
+        verify=DraftVerify(normalizer=normalizer),
         settings=resolved,
     )

@@ -80,7 +80,8 @@ def _targets(session, now, limit, *, contest_ids=None):
 
 
 async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None, runner=None,
-                        now=None, limit=30, extractor_version=EXTRACTOR_VERSION, contest_ids=None, clock=None) -> VerificationReport:
+                        now=None, limit=30, extractor_version=EXTRACTOR_VERSION, contest_ids=None, clock=None,
+                        normalizer=None) -> VerificationReport:
     """按批次核对未明确结束的赛事，只缓存成功写回的正文。"""
     report = VerificationReport()
     clock = clock or (lambda: datetime.now(timezone.utc))
@@ -150,6 +151,7 @@ async def verify_recent(*, extractor, session_factory=SessionLocal, fetcher=None
                     title=target.url, is_official=True)
                 kwargs['document'] = document_for(page, body, now=now).model_copy(update={
                     'extractor_version': extractor_version})
+                kwargs['normalizer'] = normalizer
             saved_id = await runner(target.url, extractor=extractor, session_factory=session_factory,
                 page_text=body, registration_url=target.url, contest_id=target.contest_id, **kwargs)
             stage = 'persist'

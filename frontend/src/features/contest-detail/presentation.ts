@@ -37,7 +37,15 @@ export function supportedValue(contest: ContestDetail, field: string): string | 
 }
 
 export function showField(contest: ContestDetail, field: string): boolean {
-  return Boolean(supportedValue(contest, field)) || hasConflict(contest, field)
+  return (
+    Boolean(supportedValue(contest, field)) ||
+    hasConflict(contest, field) ||
+    hasPendingEvidence(contest, field)
+  )
+}
+
+export function hasPendingEvidence(contest: ContestDetail, field: string): boolean {
+  return contest.fields[field]?.level === 'not_found' && conflictValues(contest, field).length > 0
 }
 
 export function displayField(field: string, item: FieldValue | undefined): string {

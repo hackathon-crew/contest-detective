@@ -8,7 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
-from contest_detective.contest.schemas import ContestDraft, ContestField, FieldValue
+from contest_detective.contest.schemas import ContestDraft, ContestField, FieldResolution, FieldValue
 from contest_detective.contest.content import ContentCoverage, ContestDocument, ContestIntroduction
 from contest_detective.research.refresh.contracts import RefreshFailure, SourceInventory
 from contest_detective.research.structured import StructuredCandidate
@@ -77,6 +77,7 @@ class ContestRecord(BaseModel):
     coverage: ContentCoverage = Field(default_factory=ContentCoverage)
     themes: list[str] | None = None
     theme_pages: dict[str, list[str]] = Field(default_factory=dict)
+    field_resolutions: dict[ContestField, FieldResolution] = Field(default_factory=dict, exclude=True)
 
 
 class ContestSyncOutput(BaseModel):

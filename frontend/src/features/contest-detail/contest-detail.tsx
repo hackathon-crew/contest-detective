@@ -20,6 +20,7 @@ import {
   detailLabels,
   displayField,
   hasConflict,
+  hasPendingEvidence,
   nextDetailDate,
   showField,
   supportedValue,
@@ -49,14 +50,17 @@ function Fact({
 }) {
   if (!showField(contest, field)) return null
   const conflict = hasConflict(contest, field)
+  const pending = hasPendingEvidence(contest, field)
   const alternatives = conflictValues(contest, field)
   return (
     <div className={'contest-detail-fact' + (conflict ? ' has-conflict' : '')}>
       <dt>{label}</dt>
       <dd>
-        {conflict ? (
+        {conflict || pending ? (
           <>
-            <p className="contest-detail-conflict-label">来源说法不一，待核实</p>
+            <p className="contest-detail-conflict-label">
+              {conflict ? '来源说法不一，待核实' : '信息待核实'}
+            </p>
             {!!alternatives.length && (
               <ul className="contest-detail-conflict-values">
                 {alternatives.map(({ value, site }) => (
@@ -127,8 +131,8 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
   const locationOnlyReposted = locationFields.every(
     (field) => contest.fields[field]?.level === 'reposted',
   )
-  const otherFields = ['organizer', 'mode', 'city', 'venue', 'registration_url'].filter((field) =>
-    hasConflict(contest, field),
+  const otherFields = ['organizer', 'mode', 'city', 'venue', 'registration_url'].filter(
+    (field) => hasConflict(contest, field) || hasPendingEvidence(contest, field),
   )
   const hasSummary = next || showField(contest, 'prize') || modeText || place
   return (

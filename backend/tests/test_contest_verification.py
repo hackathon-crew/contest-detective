@@ -32,17 +32,17 @@ def test_reposted_dates_conflict_at_the_earliest_without_stale_sources():
     assert all(not s.stale for s in result.sources)
 
 
-def test_conflicting_text_uses_latest_publication_and_official_sources_win():
+def test_different_text_needs_semantic_review_regardless_of_publication_or_authority():
     from contest_detective.contest.verification import resolve
 
     old = source('上海', published=datetime(2026, 10, 1, tzinfo=timezone.utc))
     latest = source('北京', url='https://news.example/latest',
                     published=datetime(2026, 10, 2, tzinfo=timezone.utc))
-    assert resolve('city', [old, latest]).model_dump()['value'] == '北京'
+    assert resolve('city', [old, latest]).value is None
     old.is_official = True
     result = resolve('city', [old, latest])
-    assert (result.value, result.level) == ('上海', 'official')
-    assert result.sources[1].stale is True
+    assert (result.value, result.level) == (None, 'not_found')
+    assert not any(source.stale for source in result.sources)
 
 
 def test_missing_and_consistent_claims_have_distinct_levels():

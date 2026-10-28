@@ -16,7 +16,7 @@ from typing import get_args
 from contest_detective.contest.content import ContentCitation, ContentCoverage, CoverageObservation
 from contest_detective.contest.schemas import ContestDraft, ContestField, PageIn, Source
 from contest_detective.contest.verification import resolve
-from contest_detective.research.normalization import supported_claims
+from contest_detective.research.normalization import reconcile_fields, supported_claims
 from contest_detective.research.detail import (
     MAX_TARGETS_PER_CONTEST, MAX_TARGETS_PER_RUN, call_detail_fetcher, detail_targets, distinct_documents,
     document_for, document_page, supporting_documents,
@@ -375,8 +375,9 @@ class PageExtract:
 class DraftVerify:
     """把同一场比赛的草稿和库里已有出处合并成带核实等级的记录。"""
 
-    def __init__(self, session_factory=None):
+    def __init__(self, session_factory=None, normalizer=None):
         self._session_factory = session_factory
+        self._normalizer = normalizer
 
     async def run(self, ctx: ContestSyncContext) -> None:
         claim_pages = {id(candidate.draft): candidate.claim_pages for candidate in ctx.structured_candidates}
@@ -422,15 +423,31 @@ class DraftVerify:
                 sources = [source for name, source in incoming if name == field]
                 sources.extend(source for name, source in carried if name == field)
                 fields[field] = resolve(field, sources)
+            previous = {}
+            if contest_id is not None:
+                from contest_detective.contest.service import field_resolutions
+                from contest_detective.framework.db import SessionLocal
+                with (self._session_factory or SessionLocal)() as session:
+                    previous = field_resolutions(session, contest_id)
+            try:
+                decisions = await reconcile_fields(drafts[0].name, fields, self._normalizer, previous=previous)
+            except Exception as error:
+                decisions = previous
+                ctx.failed += 1
+                _count(ctx, 'merge', 'failed')
+                ctx.failures.append(RefreshFailure(key=drafts[0].name, stage='extract', reason=type(error).__name__))
+                logger.warning('Contest fact merge failed error_type=%s', type(error).__name__)
+            for field, value in fields.items():
+                fields[field] = resolve(field, value.sources, decisions.get(field))
             first = drafts[0]
             themes = {}
             for draft in drafts:
                 themes.update(theme_pages.get(id(draft), {draft.page.url: draft.themes}
                     if draft.themes is not None else {}))
-            ctx.records.append(_record(first, drafts, fields, contest_id, theme_pages=themes))
+            ctx.records.append(_record(first, drafts, fields, contest_id, theme_pages=themes, field_resolutions=decisions))
 
 
-def _record(first, drafts, fields, contest_id=None, *, theme_pages=None):
+def _record(first, drafts, fields, contest_id=None, *, theme_pages=None, field_resolutions=None):
     documents = distinct_documents([doc for draft in drafts for doc in draft.documents])
     coverage = ContentCoverage()
     for draft in drafts:
@@ -461,6 +478,7 @@ def _record(first, drafts, fields, contest_id=None, *, theme_pages=None):
         themes=(list(dict.fromkeys(theme for draft in drafts for theme in (draft.themes or [])))
                 if any(draft.themes is not None for draft in drafts) else None),
         theme_pages=theme_pages or {},
+        field_resolutions=field_resolutions or {},
     )
 
 

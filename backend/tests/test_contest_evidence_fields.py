@@ -42,15 +42,17 @@ def test_participation_evidence_survives_save_query_and_detail_api(session, clie
 
 
 @pytest.mark.parametrize(('field', 'value'), CASES)
-def test_new_fields_keep_aggregators_reposted_and_mark_overridden_evidence_stale(session, field, value):
+def test_different_text_keeps_both_official_and_reposted_evidence_pending_semantic_review(session, field, value):
     repost = draft(field, value, url='https://hackertrip.space/hackathon/example', official=True)
     contest_id = contests.save(session, repost)
     assert contests.get(session, contest_id).fields[field].level == 'reposted'
     official = '官方更新：' + value
     contests.save(session, draft(field, official), contest_id=contest_id)
     evidence = contests.get(session, contest_id).fields[field]
-    assert evidence.value == official and evidence.level == 'official'
-    assert next(source for source in evidence.sources if source.url.startswith('https://hackertrip.space/')).stale
+    assert evidence.value is None and evidence.level == 'not_found'
+    assert {source.value for source in evidence.sources} == {value, official}
+    assert not any(source.stale for source in evidence.sources)
+    assert not next(source for source in evidence.sources if source.url.startswith('https://hackertrip.space/')).is_official
 
 
 def test_unknown_participation_evidence_remains_empty(session):

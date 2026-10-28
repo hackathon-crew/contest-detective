@@ -163,7 +163,9 @@ def test_shared_cache_never_masks_failed_or_new_contest_application(session_fact
         contest_ids=[b], fetcher=fetch, runner=runner, now=NOW, clock=lambda: NOW))
     assert calls == [b] and second.checks[0].outcome == 'changed'
     with session_factory() as session:
-        assert contests.get(session, b).fields['city'].value == '北京'
+        city = contests.get(session, b).fields['city']
+        assert any(source.value == '北京' and source.is_official for source in city.sources)
+        assert city.level == 'not_found'
         c = setup(session, 12, url)
     calls.clear()
     asyncio.run(verify_recent(session_factory=session_factory, extractor=None,
