@@ -157,7 +157,7 @@ cd /srv/contest-detective/backend
 uv run alembic upgrade head
 ```
 
-- 当前发布脚本仍使用 SQLite 快照；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
+- 发布脚本按 `/etc/contest-detective.env` 判断数据库类型：SQLite 使用文件快照，PostgreSQL 使用 `pg_dump` / `pg_restore`；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
 
 ## 个人中心配置
 
@@ -216,7 +216,9 @@ Action 先通过同一受限 SSH 入口读取当前发布的文件 SHA-256 清�
 - SQLite：使用 `sqlite3.backup` 生成 `contest.db`；
 - PostgreSQL：使用 `pg_dump --format=custom` 生成 `contest.dump`；失败回滚时先 `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`，再 `pg_restore --no-owner --no-privileges --exit-on-error`。
 
-PostgreSQL 备份与恢复需要服务器安装 `postgresql-client-16`，并且运行发布脚本的 root 用户能读取 `/etc/contest-detective.env`。组件配置通过 `PGHOST` / `PGPORT` / `PGDATABASE` / `PGUSER` / `PGPASSWORD` 传给 `pg_dump` 和 `pg_restore`；完整 URL 会去掉 SQLAlchemy 的 `+psycopg` 后缀后交给 libpq。回滚会恢复到备份时刻，备份后的写入会丢失。
+PostgreSQL 备份与恢复需要服务器安装 `postgresql-client-16`（主版本不低于服务器），并且运行发布脚本的 root 用户能读取 `/etc/contest-detective.env`。组件配置通过 `PGHOST` / `PGPORT` / `PGDATABASE` / `PGUSER` / `PGPASSWORD` 传给 `pg_dump` 和 `pg_restore`；完整 URL 会解析为同一组环境变量，不会把密码放到命令行。回滚会恢复到备份时刻，备份后的写入会丢失。
+
+数据库角色必须拥有 `public` schema，并能创建/恢复 `vector` 扩展；托管 PostgreSQL 若由管理员预装扩展，回滚前应确认 `CREATE EXTENSION` 权限，或由管理员执行恢复。`/etc/contest-detective.env` 只使用简单的 `KEY=VALUE`；不要使用行继续或 C 风格转义，密码建议使用十六进制或带引号的简单值。PostgreSQL 部署还需要包含 MCP PostgreSQL 支持的版本；旧版本会在 `/mcp` 健康检查处回滚。
 
 后端、nginx、前端版本与 MCP 初始化检查通过后恢复访问。失败会恢复本次补配前的环境文件、旧代码与数据库，并按旧版本能力启动服务；模板检查失败时网站尚未停止。回退到尚无 HTTP 入口的版本时保持 MCP 停止。恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective -u contest-detective-mcp` 后处理。环境文件原件仅在补配时保存到备份目录的 `environment`，权限为 600。
 
