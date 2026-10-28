@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMatch } from 'react-router'
-import { apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
+import { ApiError, apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
 import { historyFor, type DetectiveTurn } from './conversation'
 import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
 import { parseTrace } from './events'
@@ -160,7 +160,11 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     const fail = (message: string) =>
       update(sessionId, turnId, (turn) =>
         turn.content.trim()
-          ? { ...turn, status: 'stopped', error: undefined }
+          ? {
+              ...turn,
+              status: 'stopped',
+              error: '回答还没写完，已查到的内容保留在上方，其余信息尚未核实。',
+            }
           : { ...turn, status: 'error', error: message },
       )
     try {
@@ -205,10 +209,19 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           update(sessionId, turnId, (turn) => ({ ...turn, content: turn.content + event.content }))
         else update(sessionId, turnId, (turn) => ({ ...turn, trace: [...turn.trace, event] }))
       }
-      if (!terminal && !controller.signal.aborted) fail('查证提前结束，请重试。')
+      if (!terminal && !controller.signal.aborted)
+        fail('这次还没有收到完整的查证结果，暂时不能给出结论。')
     } catch (cause) {
       if (!controller.signal.aborted)
-        fail(cause instanceof Error ? cause.message : '查证失败，请重试。')
+        fail(
+          cause instanceof ApiError &&
+            cause.kind === 'business' &&
+            [400, 401, 403, 429].includes(cause.code ?? 0)
+            ? cause.message
+            : cause instanceof ApiError && cause.kind === 'network'
+              ? '连接中断了，还没有收到查证结果。请检查网络连接后再继续。'
+              : '侦探暂时无法完成查证，还没有核实你的问题。',
+        )
     } finally {
       if (requests.current.get(sessionId) === controller) requests.current.delete(sessionId)
     }
