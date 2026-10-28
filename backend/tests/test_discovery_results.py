@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
@@ -91,14 +92,17 @@ def test_interruption_lists_only_unopened_search_leads_as_unread(session_factory
     events = asyncio.run(consume())
     assert events[-1].type == 'answer', events[-1].payload
     answer = events[-1].payload
-    assert f'- [其他黑客松线索]({unread_url})（未读取原文）' in answer['content']
+    unread_text = '\n'.join(paragraph for paragraph in answer['content'].split('\n\n')
+                            if '尚未读取原文' in paragraph)
+    unread_links = set(re.findall(r'\]\((https?://[^)]+)\)', unread_text))
+    expected_unread = {unread_url}
+    if read_result not in {'direct', 'redirect'} and not (mode == 'deep' and read_result == 'rejected'):
+        expected_unread.add(first_url)
+    assert unread_links == expected_unread
     if read_result in {'direct', 'redirect'}:
-        assert f'- [主办方规则]({first_url})（未读取原文）' not in answer['content']
         assert answer['content'].count(f']({final_url})') == 1
         assert [source['url'] for source in answer['sources']] == [final_url]
     else:
         assert answer['sources'] == []
         if mode == 'deep' and read_result == 'rejected':
             assert first_url not in answer['content']
-        else:
-            assert f'- [主办方规则]({first_url})（未读取原文）' in answer['content']

@@ -130,7 +130,7 @@ def test_unexpected_errors_are_safe_for_client_and_stored(session_factory):
     def broken(*_):
         raise RuntimeError('provider secret must not be sent to clients')
     events = run(Investigator(FunctionModel(broken), session_factory=session_factory))
-    assert events[-1].payload == {'message': '这次还没有查到能核实你问题的资料，暂时不能给出结论。'}
+    assert events[-1].payload == {'message': '这次没能完成查证，暂时无法给出结论。'}
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'failed'
         assert 'secret' not in json.dumps(session.scalars(select(TraceRecord)).one().payload)
