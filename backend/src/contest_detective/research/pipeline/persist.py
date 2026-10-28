@@ -33,12 +33,13 @@ def persist(session_factory, ctx) -> int:
             continue
         try:
             with session_factory() as session:
-                for page, claims in pages.values():
+                for index, (page, claims) in enumerate(pages.values()):
                     # Theme labels originate in Devpost listing data, not arbitrary merged pages.
                     themes = record.theme_pages.get(page.url)
                     draft = ContestDraft(name=record.name, cover_url=record.cover_url, summary=record.summary,
                         introduction=record.introduction, documents=record.documents,
-                        coverage=record.coverage, themes=themes, page=page, claims=claims)
+                        coverage=record.coverage, themes=themes, page=page, claims=claims,
+                        field_resolutions=record.field_resolutions if index == len(pages) - 1 else {})
                     contest_id = save(session, draft, contest_id=contest_id, commit=False)
                 session.commit()
         except Exception as error:
