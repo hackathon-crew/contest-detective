@@ -29,7 +29,7 @@ def test_canonical_normalizes_cross_dialect_values():
 
 
 def test_head_revision_is_single():
-    assert head_revision() == '0016_pgvector_extension'
+    assert head_revision() == '0017_widen_question'
 
 
 def test_source_engine_is_read_only(tmp_path):

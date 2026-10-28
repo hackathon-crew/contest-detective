@@ -22,7 +22,7 @@ def test_watch_migration_preserves_legacy_missing_snapshots_and_has_single_head(
         assert any(key['referred_table'] == 'users' for key in inspect(engine).get_foreign_keys(table))
     config = Config()
     config.set_main_option('script_location', str(Path(db.__file__).parent/'migrations'))
-    assert ScriptDirectory.from_config(config).get_heads() == ['0016_pgvector_extension']
+    assert ScriptDirectory.from_config(config).get_heads() == ['0017_widen_question']
     migrate(engine, '0013_merge_account_mail', downgrade=True)
     assert 'watch_notifications' not in inspect(engine).get_table_names()
     migrate(engine, 'head')

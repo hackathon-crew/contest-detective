@@ -62,7 +62,7 @@ def seed(path):
                              reserved_cny=Decimal('0.1000000000'), cost_cny=Decimal('0.0500000000'),
                              cache_hit_tokens=1, cache_miss_tokens=2, output_tokens=3,
                              created_at=now))
-        investigation = Investigation(id=str(uuid4()), question='migration', user_id=str(user_id),
+        investigation = Investigation(id=str(uuid4()), question='x' * 708, user_id=str(user_id),
                                       status='completed', answer='done', started_at=now,
                                       finished_at=now)
         session.add(investigation)
@@ -126,6 +126,9 @@ def test_copy_sqlite_to_postgres(tmp_path):
         assert connection.execute(
             text("SELECT payload->>'ok' FROM trace_events")
         ).scalar_one() == 'true'
+        assert connection.execute(
+            text('SELECT length(question) FROM investigations')
+        ).scalar_one() == 708
 
     with target.begin() as connection:
         next_id = connection.execute(text(
