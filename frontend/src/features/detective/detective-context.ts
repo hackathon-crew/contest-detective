@@ -1,6 +1,7 @@
 import { createContext, useContext } from 'react'
 import type { Profile } from '@/shared/api'
 import type { DetectiveSession } from './sessions'
+import type { ContestReferenceValue } from './contest-reference'
 import type { VerificationOptions } from './verification-contracts'
 
 interface DetectiveStore {
@@ -13,6 +14,7 @@ interface DetectiveStore {
     profile?: Profile | null,
     sessionId?: string,
     verificationOptions?: VerificationOptions,
+    contest?: ContestReferenceValue | null,
   ) => string | null
   stop: (sessionId: string) => void
   retry: (turnId: string) => void
