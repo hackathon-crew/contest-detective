@@ -75,7 +75,7 @@ describe('侦探过程', () => {
   })
   it('没有终态就断流时不当成已完成', async () => {
     renderStream(event('step', { tool: 'search_contests', label: '查询比赛库' }))
-    expect(await screen.findByText('查证提前结束，请重试。')).toBeTruthy()
+    expect(await screen.findByText('这次还没有收到完整的查证结果，暂时不能给出结论。')).toBeTruthy()
   })
   it('不可用的附加消息不打断后续回答', async () => {
     renderStream(

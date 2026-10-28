@@ -15,7 +15,7 @@ afterEach(() => {
 const turn = (): DetectiveTurn => ({
   id: 'turn-1',
   question: '核实参赛资格',
-  content: '错误旧正文不应该覆盖确认说法',
+  content: '官网接受所有年满十八岁的参赛者，另一份公告尚未核实。',
   trace: [],
   sources: [],
   status: 'completed',
@@ -27,13 +27,13 @@ it('原始确认说法逐条展示，官方来源可反驳，证据引用与原�
   expect(screen.getByRole('heading', { name: '只有大学生可以参加。' })).toBeTruthy()
   expect(screen.getByText('反驳')).toBeTruthy()
   expect(screen.getAllByText('来源等级：官方来源').length).toBeGreaterThan(0)
-  const citation = screen.getByRole('link', { name: '证据 evidence-1' })
+  const citation = screen.getByRole('link', { name: '证据 1' })
   expect(document.getElementById(citation.getAttribute('href')!.slice(1))).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Example 官方参赛规则' }).getAttribute('href')).toBe(
     'https://example.org/rules',
   )
   expect(screen.getByText('所有年满十八岁的参赛者均可报名。')).toBeTruthy()
-  expect(screen.getAllByText(/yuanbao/).length).toBeGreaterThan(0)
+  expect(screen.queryByText(/yuanbao/)).toBeNull()
   expect(screen.getByText('2026-10-25T04:59:00Z')).toBeTruthy()
   expect(screen.queryByRole('table')).toBeNull()
 })
@@ -70,10 +70,11 @@ it('调查计划与实际执行分开显示，失败的真实回执不标为完�
     error_code: 'provider_unavailable',
   }
   render(<InvestigationProgress plan={report.plan!} queries={[execution]} />)
-  expect(screen.getByText('调查计划')).toBeTruthy()
-  expect(screen.getByText('实际查询记录')).toBeTruthy()
+  expect(screen.getByText('待核对内容')).toBeTruthy()
+  expect(screen.getByText('查找记录')).toBeTruthy()
   expect(screen.getByText('失败')).toBeTruthy()
-  expect(screen.getByText('provider_unavailable')).toBeTruthy()
+  expect(screen.getByText('这次没有取得搜索结果，相关信息仍待核实。')).toBeTruthy()
+  expect(screen.queryByText('provider_unavailable')).toBeNull()
   expect(screen.queryByText('查证完成')).toBeNull()
 })
 
@@ -99,10 +100,11 @@ it('报告 JSON 和 Markdown 使用同一合同，并释放下载 URL', async ()
   expect(document.querySelector('a[download]')).toBeNull()
 })
 
-it('报告存在时不把普通正文作为另一份核实结论', () => {
+it('已完成报告保持逐条核实结论，不引入第二份正文结论', () => {
   render(<DetectiveMessage turn={turn()} />)
   expect(screen.getByRole('region', { name: '查证报告' })).toBeTruthy()
-  expect(screen.queryByText('错误旧正文不应该覆盖确认说法')).toBeNull()
+  expect(screen.queryByText(turn().content)).toBeNull()
+  expect(screen.getByText('反驳')).toBeTruthy()
 })
 
 it('保存与重新打开保持原始报告和实际回执，非法关联不恢复', () => {
