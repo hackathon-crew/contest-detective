@@ -19,6 +19,8 @@ DatePrecision = Literal['day', 'datetime']
 BEIJING = timezone(timedelta(hours=8))
 DATE_FIELDS = ('start_at', 'end_at', 'registration_deadline', 'submission_deadline', 'deadline_unspecified')
 DEADLINE_FIELDS = ('registration_deadline', 'submission_deadline', 'deadline_unspecified')
+TEXT_FIELDS = ('city', 'prize', 'organizer', 'venue', 'eligibility', 'team_size', 'entry_fee',
+               'entry_requirements', 'judging_criteria', 'past_statistics')
 AGGREGATOR_DOMAINS = ('hackertrip.space', 'hackathonradar.com')
 
 
@@ -92,6 +94,24 @@ class ClaimIn(BaseModel):
         return self
 
 
+class FieldResolution(BaseModel):
+    """文字合并的派生结论；claims 绑定参与判断的原始断言，更新后需重新判断。"""
+
+    value: str | None = None
+    conflicting: bool = False
+    reason: str | None = None
+    claims: list[ClaimIn] = Field(min_length=1)
+
+    @model_validator(mode='after')
+    def has_conclusion(self):
+        if self.conflicting:
+            if self.value is not None or not self.reason or not self.reason.strip():
+                raise ValueError('冲突必须说明互斥事实，不选择采纳值')
+        elif not self.value or not self.value.strip():
+            raise ValueError('兼容信息必须有合并值')
+        return self
+
+
 class ContestDraft(BaseModel):
     name: str = Field(min_length=1, max_length=500)
     cover_url: str | None = None
@@ -102,6 +122,7 @@ class ContestDraft(BaseModel):
     themes: list[str] | None = None
     page: PageIn
     claims: list[ClaimIn]
+    field_resolutions: dict[ContestField, FieldResolution] = Field(default_factory=dict, exclude=True)
 
 
 class ContestQuery(BaseModel):
