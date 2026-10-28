@@ -167,6 +167,8 @@ class IncrementalReleaseTests(unittest.TestCase):
                 with sqlite3.connect(database) as connection:
                     connection.execute('CREATE TABLE marker (value TEXT)')
                     connection.execute("INSERT INTO marker VALUES ('original')")
+                environment = root / 'server.env'
+                environment.write_text('')
 
                 def command(*args, **kwargs):
                     if args[0] == 'systemd-run':
@@ -185,6 +187,7 @@ class IncrementalReleaseTests(unittest.TestCase):
                         'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
                         'DATABASE': database, 'MAINTENANCE': root / 'maintenance',
                         'run': command, 'healthy': readiness,
+                        'ENVIRONMENT_FILE': environment,
                     }.items():
                         patches.enter_context(patch.object(release, name, value))
                     if failure:

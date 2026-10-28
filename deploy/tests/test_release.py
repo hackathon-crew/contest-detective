@@ -214,6 +214,8 @@ class ReleaseTests(unittest.TestCase):
                     connection.execute('CREATE TABLE users (name TEXT)')
                     connection.execute("INSERT INTO users VALUES ('original')")
                 maintenance = root / 'maintenance'
+                environment = root / 'server.env'
+                environment.write_text('')
                 calls = []
 
                 def command(*args, **kwargs):
@@ -237,7 +239,7 @@ class ReleaseTests(unittest.TestCase):
                         'APP': app, 'RELEASES': root / 'releases',
                         'BACKUPS': root / 'backups', 'DATABASE': database,
                         'MAINTENANCE': maintenance, 'run': command, 'healthy': readiness,
-                        'SYSTEMD': self.systemd(root),
+                        'SYSTEMD': self.systemd(root), 'ENVIRONMENT_FILE': environment,
                     }.items():
                         patches.enter_context(patch.object(release, name, value))
                     with self.assertRaisesRegex(RuntimeError, 'failed'):
@@ -266,6 +268,8 @@ class ReleaseTests(unittest.TestCase):
                 database = root / 'contest.db'
                 with sqlite3.connect(database) as connection:
                     connection.execute('CREATE TABLE marker (value TEXT)')
+                environment = root / 'server.env'
+                environment.write_text('')
                 calls = []
 
                 def command(*args, **kwargs):
@@ -281,6 +285,7 @@ class ReleaseTests(unittest.TestCase):
                         'DATABASE': database, 'MAINTENANCE': root / 'maintenance',
                         'run': command, 'healthy': readiness,
                         'SYSTEMD': self.systemd(root, release.SERVICE, release.MCP_SERVICE),
+                        'ENVIRONMENT_FILE': environment,
                     }.items():
                         patches.enter_context(patch.object(release, name, value))
                     if fail:
@@ -373,6 +378,157 @@ class ReleaseTests(unittest.TestCase):
                         else:
                             with self.assertRaisesRegex(RuntimeError, 'MCP initialization failed'):
                                 release.healthy()
+
+
+    def test_database_target_recognizes_sqlite_postgres_and_mixed_settings(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'server.env'
+            path.write_text('DETECTIVE_DB_URL=sqlite:////var/lib/contest-detective/contest.db\n')
+            target = release.database_target(release.environment_values(path))
+            self.assertEqual(target.backend, 'sqlite')
+            self.assertEqual(target.sqlite_path, Path('/var/lib/contest-detective/contest.db'))
+            path.write_text('DETECTIVE_DB_URL=sqlite+pysqlite:////var/lib/contest-detective/contest.db\n')
+            target = release.database_target(release.environment_values(path))
+            self.assertEqual(target.backend, 'sqlite')
+            self.assertEqual(target.sqlite_path, Path('/var/lib/contest-detective/contest.db'))
+            path.write_text(
+                'DETECTIVE_DB_HOST=127.0.0.1\n'
+                'DETECTIVE_DB_PORT=5432\n'
+                'DETECTIVE_DB_NAME=contest_detective\n'
+                'DETECTIVE_DB_USER=contest_detective\n'
+                'DETECTIVE_DB_PASSWORD=secret\n'
+            )
+            target = release.database_target(release.environment_values(path))
+            self.assertEqual(target.backend, 'postgresql')
+            self.assertEqual(target.database, 'contest_detective')
+            self.assertEqual(target.env['PGHOST'], '127.0.0.1')
+            self.assertEqual(target.env['PGPASSWORD'], 'secret')
+            path.write_text(
+                'DETECTIVE_DB_URL=postgresql+psycopg://u:p@db:5544/app?sslmode=require\n'
+            )
+            target = release.database_target(release.environment_values(path))
+            self.assertEqual(target.backend, 'postgresql')
+            self.assertEqual(target.database, 'app')
+            self.assertEqual(target.env['PGHOST'], 'db')
+            self.assertEqual(target.env['PGPORT'], '5544')
+            self.assertEqual(target.env['PGUSER'], 'u')
+            self.assertEqual(target.env['PGPASSWORD'], 'p')
+            self.assertEqual(target.env['PGDATABASE'], 'app')
+            self.assertEqual(target.env['PGSSLMODE'], 'require')
+            path.write_text('DETECTIVE_DB_URL=sqlite:///local.db\nDETECTIVE_DB_HOST=db\n')
+            with self.assertRaises(ValueError):
+                release.database_target(release.environment_values(path))
+            path.write_text('DETECTIVE_DB_NAME=app\n')
+            with self.assertRaises(ValueError):
+                release.database_target(release.environment_values(path))
+
+    def test_postgres_release_backs_up_and_restores_the_dump(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            app = root / 'app'
+            app.mkdir()
+            (app / 'old-code').write_text('previous release')
+            environment = root / 'server.env'
+            environment.write_text(
+                'DETECTIVE_DB_HOST=127.0.0.1\n'
+                'DETECTIVE_DB_PORT=5432\n'
+                'DETECTIVE_DB_NAME=contest_detective\n'
+                'DETECTIVE_DB_USER=contest_detective\n'
+                'DETECTIVE_DB_PASSWORD=secret\n'
+            )
+            maintenance = root / 'maintenance'
+            calls = []
+
+            def command(*args, **kwargs):
+                calls.append((args, kwargs))
+                if args[0] == 'pg_dump':
+                    Path(args[args.index('--file') + 1]).write_bytes(b'custom dump')
+                if args[0] == 'systemd-run':
+                    raise RuntimeError('migration failed')
+
+            def readiness(expected_commit=None):
+                self.assertTrue(maintenance.exists())
+
+            with ExitStack() as patches:
+                for name, value in {
+                    'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
+                    'MAINTENANCE': maintenance, 'run': command, 'healthy': readiness,
+                    'ENVIRONMENT_FILE': environment, 'SYSTEMD': self.systemd(root),
+                }.items():
+                    patches.enter_context(patch.object(release, name, value))
+                patches.enter_context(patch.object(release.shutil, 'which', lambda name: '/usr/bin/' + name))
+                with self.assertRaisesRegex(RuntimeError, 'migration failed'):
+                    release.deploy(self.bundle())
+
+            self.assertFalse(maintenance.exists())
+            self.assertTrue(app.is_symlink())
+            self.assertEqual((app / 'old-code').read_text(), 'previous release')
+            dumps = list((root / 'backups').glob('*/contest.dump'))
+            self.assertEqual(len(dumps), 1)
+            dump = dumps[0]
+            self.assertEqual(dump.read_bytes(), b'custom dump')
+            dump_call = next((args, kwargs) for args, kwargs in calls if args[0] == 'pg_dump')
+            self.assertIn('--format=custom', dump_call[0])
+            self.assertEqual(dump_call[0][dump_call[0].index('--file') + 1], str(dump) + '.tmp')
+            self.assertEqual(dump_call[0][dump_call[0].index('--dbname') + 1], 'contest_detective')
+            self.assertEqual(dump_call[1]['env']['PGHOST'], '127.0.0.1')
+            self.assertEqual(dump_call[1]['env']['PGPASSWORD'], 'secret')
+            commands = [args for args, _ in calls]
+            psql_index = next(index for index, args in enumerate(commands)
+                              if args[0] == 'psql' and 'select 1' in args)
+            stop_index = next(index for index, args in enumerate(commands)
+                              if args[:2] == ('systemctl', 'stop'))
+            self.assertLess(psql_index, stop_index)
+            self.assertTrue(any(args[0] == 'psql' and 'DROP SCHEMA' in ' '.join(args) for args in commands))
+            restore = next(args for args in commands if args[0] == 'pg_restore')
+            self.assertIn('--single-transaction', restore)
+            self.assertIn('--exit-on-error', restore)
+            self.assertIn('--no-owner', restore)
+            self.assertIn(str(dump), restore)
+            self.assertIn('contest_detective', restore)
+
+    def test_postgres_url_release_succeeds_without_exposing_the_password(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            app = root / 'app'
+            app.mkdir()
+            (app / 'old-code').write_text('previous release')
+            environment = root / 'server.env'
+            environment.write_text(
+                'DETECTIVE_DB_URL=postgresql+psycopg://u:secret@db:5544/app?sslmode=require\n'
+            )
+            maintenance = root / 'maintenance'
+            calls = []
+
+            def command(*args, **kwargs):
+                calls.append((args, kwargs))
+                if args[0] == 'pg_dump':
+                    Path(args[args.index('--file') + 1]).write_bytes(b'custom dump')
+
+            with ExitStack() as patches:
+                for name, value in {
+                    'APP': app, 'RELEASES': root / 'releases', 'BACKUPS': root / 'backups',
+                    'MAINTENANCE': maintenance, 'run': command, 'healthy': lambda expected=None: None,
+                    'ENVIRONMENT_FILE': environment, 'SYSTEMD': self.systemd(root),
+                }.items():
+                    patches.enter_context(patch.object(release, name, value))
+                patches.enter_context(patch.object(release.shutil, 'which', lambda name: '/usr/bin/' + name))
+                release.deploy(self.bundle())
+
+            self.assertFalse(maintenance.exists())
+            self.assertTrue(app.is_symlink())
+            dumps = list((root / 'backups').glob('*/contest.dump'))
+            self.assertEqual(len(dumps), 1)
+            dump_call = next((args, kwargs) for args, kwargs in calls if args[0] == 'pg_dump')
+            self.assertNotIn('secret', ' '.join(dump_call[0]))
+            self.assertEqual(dump_call[0][dump_call[0].index('--dbname') + 1], 'app')
+            self.assertEqual(dump_call[1]['env']['PGHOST'], 'db')
+            self.assertEqual(dump_call[1]['env']['PGPORT'], '5544')
+            self.assertEqual(dump_call[1]['env']['PGUSER'], 'u')
+            self.assertEqual(dump_call[1]['env']['PGPASSWORD'], 'secret')
+            self.assertEqual(dump_call[1]['env']['PGDATABASE'], 'app')
+            self.assertEqual(dump_call[1]['env']['PGSSLMODE'], 'require')
+            self.assertFalse(any(args[0] == 'pg_restore' for args in (item[0] for item in calls)))
 
 
 if __name__ == '__main__':

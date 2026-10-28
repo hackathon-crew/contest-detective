@@ -1,10 +1,12 @@
 # 服务器运行
 
-使用已发布版本。静态文件在 `frontend/dist`，后端只监听回环地址，nginx 将 `/api/` 转发给后端。独立只读 MCP 监听 `127.0.0.1:8001`，nginx 将 `/mcp` 原路径转发给它。两个进程读取同一份 `/var/lib/contest-detective/contest.db`，更新代码时保留该目录。
+使用已发布版本。静态文件在 `frontend/dist`，后端只监听回环地址，nginx 将 `/api/` 转发给后端。独立只读 MCP 监听 `127.0.0.1:8001`，nginx 将 `/mcp` 原路径转发给它。SQLite 部署下两个进程读取同一份 `/var/lib/contest-detective/contest.db`；PostgreSQL 部署下共用 `/etc/contest-detective.env` 中的连接配置。
 
-服务器安装 nginx、uv 和 Git。前端在本地对应版本运行 `npm ci && npm run build`，将 `dist` 传到服务器；后端在服务器运行：
+服务器安装 nginx、uv 和 Git；PostgreSQL 部署还需要 `postgresql-client-16`（发布脚本用 `pg_dump` / `pg_restore` 备份 PostgreSQL）。前端在本地对应版本运行 `npm ci && npm run build`，将 `dist` 传到服务器；后端在服务器运行：
 
 ```sh
+# PostgreSQL 部署需要 postgresql-client-16；Ubuntu 22.04 需先添加 PGDG 源
+# sudo apt-get install -y postgresql-client-16
 sudo install -d -m 755 /srv/contest-detective /opt/contest-python
 # 将对应发布版本解压到 /srv/contest-detective
 cd /srv/contest-detective/backend
@@ -155,7 +157,7 @@ cd /srv/contest-detective/backend
 uv run alembic upgrade head
 ```
 
-- 当前发布脚本仍使用 SQLite 快照；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
+- 发布脚本按 `/etc/contest-detective.env` 判断数据库类型：SQLite 使用文件快照，PostgreSQL 使用 `pg_dump` / `pg_restore`；数据搬迁与生产切换另行处理，不要在切换前删除 SQLite 文件。
 
 ## 个人中心配置
 
@@ -183,7 +185,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 部署脚本在每次切换后按目标版本实际存在的入口重写 `/etc/systemd/system/<unit>.service.d/release.conf`（网站与 MCP 分别处理），并执行 `systemctl daemon-reload`。因此升级、重新部署和回退到旧包结构的版本都不需要手工修改 unit；但 unit 文件本身仍需按上述命令在首次安装时放入。
 
-MCP 不执行迁移或采集，赛事与个人资料查询使用 SQLite `mode=ro`；缺库或缺表时启动失败。个人令牌鉴权另用连接更新最近使用时间，因此 systemd 允许服务写入同一数据目录；工具不提供业务数据写入操作。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
+MCP 不执行迁移或采集。服务器上的 HTTP MCP 与网站共用 `DETECTIVE_DB_*`（SQLite 或 PostgreSQL）；本地 stdio MCP 仍以 SQLite `mode=ro` 打开文件，缺库或缺表时启动失败。个人令牌鉴权另用连接更新最近使用时间，因此 systemd 允许服务写入同一数据目录；工具不提供业务数据写入操作。SDK 保持 Host 与 Origin 校验，默认允许公网 IP 及回环地址。更换域名时，用环境变量 `DETECTIVE_MCP_ALLOWED_HOSTS` 和 `DETECTIVE_MCP_ALLOWED_ORIGINS` 配置 JSON 数组白名单并重启 MCP，示例见根目录 `.env.example`。nginx 保留原始 Host 和 Origin，每个 IP 限每分钟 60 次请求、突发 20 次和 4 个并发连接，请求体上限 64 KiB。
 
 为 Actions 单独生成 Ed25519 密钥，公钥加到部署用户的 `~/.ssh/authorized_keys`，整行前缀必须是：
 
@@ -207,11 +209,20 @@ Action 先通过同一受限 SSH 入口读取当前发布的文件 SHA-256 清�
 
 启用增量部署前，管理员须先用上述安装命令更新 `/usr/local/sbin/contest-detective-deploy`；SSH 公钥、sudoers 与授权范围保持原配置。清单接口只列出可发布文件，不包含运行环境、虚拟环境或密钥。Action 会保留自身版本的打包工具，因此手动重新部署旧 tag 时也使用当前增量协议。
 
-增量包包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `backend/src/contest_detective/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份 SQLite、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
+增量包包含该版本的 `deploy/server.env.example`。服务器先在 `/srv/contest-detective-releases/` 准备依赖；若环境文件缺少 `DETECTIVE_LLM_NORMALIZATION_PROMPT_PATH`，只从示例补入这一项，已有值、密钥与其他设置保持原样。相对模板路径可由 `backend/src/contest_detective/agent` 目录解析，默认是 `templates/contest_normalization.jinja2`。候选版本使用服务账号加载实际配置并渲染模板，通过后才暂停公网访问、停止网站及 MCP、备份数据库、执行迁移并切换 `/srv/contest-detective` 链接。配置检查、健康检查不调用模型或搜索。
+
+数据库备份按环境文件中的 `DETECTIVE_DB_*` 判断：
+
+- SQLite：使用 `sqlite3.backup` 生成 `contest.db`；
+- PostgreSQL：使用 `pg_dump --format=custom` 生成 `contest.dump`；失败回滚时先 `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`，再 `pg_restore --no-owner --no-privileges --exit-on-error`。
+
+PostgreSQL 备份与恢复需要服务器安装 `postgresql-client-16`（主版本不低于服务器），并且运行发布脚本的 root 用户能读取 `/etc/contest-detective.env`。组件配置通过 `PGHOST` / `PGPORT` / `PGDATABASE` / `PGUSER` / `PGPASSWORD` 传给 `pg_dump` 和 `pg_restore`；完整 URL 会解析为同一组环境变量，不会把密码放到命令行。回滚会恢复到备份时刻，备份后的写入会丢失。
+
+数据库角色必须拥有 `public` schema，并能创建/恢复 `vector` 扩展；托管 PostgreSQL 若由管理员预装扩展，回滚前应确认 `CREATE EXTENSION` 权限，或由管理员执行恢复。`/etc/contest-detective.env` 只使用简单的 `KEY=VALUE`；不要使用行继续或 C 风格转义，密码建议使用十六进制或带引号的简单值。PostgreSQL 部署还需要包含 MCP PostgreSQL 支持的版本；旧版本会在 `/mcp` 健康检查处回滚。
 
 后端、nginx、前端版本与 MCP 初始化检查通过后恢复访问。失败会恢复本次补配前的环境文件、旧代码与数据库，并按旧版本能力启动服务；模板检查失败时网站尚未停止。回退到尚无 HTTP 入口的版本时保持 MCP 停止。恢复失败时维持维护状态，管理员查看 Action 日志及 `journalctl -u contest-detective -u contest-detective-mcp` 后处理。环境文件原件仅在补配时保存到备份目录的 `environment`，权限为 600。
 
-数据库快照在 `/srv/contest-detective-backups/release-*/contest.db`，同目录的 `previous-release` 指向更新前代码。旧发布目录与快照保留供恢复，管理员应按磁盘容量定期清理，当前链接指向的发布目录必须保留。回退到旧 tag 会保留当前数据库并执行该版本迁移，不等同于还原历史数据库；存在不兼容迁移时应由管理员先确认恢复方案。
+数据库快照在 `/srv/contest-detective-backups/release-*/contest.db`（SQLite）或 `contest.dump`（PostgreSQL），同目录的 `previous-release` 指向更新前代码。旧发布目录与快照保留供恢复，管理员应按磁盘容量定期清理，当前链接指向的发布目录必须保留。回退到旧 tag 会保留当前数据库并执行该版本迁移，不等同于还原历史数据库；存在不兼容迁移时应由管理员先确认恢复方案。
 
 修改部署入口脚本或 nginx 配置后，管理员须重新执行安装命令；业务版本的日常发布无需登录服务器。
 
