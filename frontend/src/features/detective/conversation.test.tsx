@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { renderDetective } from './detective.test.utils'
+import { readRenderedSessions, renderDetective } from './detective.test.utils'
 
 beforeEach(() => localStorage.clear())
 afterEach(() => {
@@ -98,8 +98,11 @@ describe('连续侦探对话', () => {
     const first = show()
     send('我只考虑周末')
     expect(await screen.findByText('已保留你的参赛条件。')).toBeTruthy()
+    const saved = readRenderedSessions()
     first.unmount()
-    show('/detective')
+    renderDetective({ savedSessions: saved }, '/detective')
+    await screen.findByRole('button', { name: '打开会话列表' })
+    await waitFor(() => expect(screen.queryByText('正在读取对话…')).toBeNull())
     resume()
     expect(within(screen.getByRole('log')).getByText('我只考虑周末')).toBeTruthy()
     expect(screen.getByText('已保留你的参赛条件。')).toBeTruthy()
