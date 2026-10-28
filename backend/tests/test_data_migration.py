@@ -29,7 +29,7 @@ def test_canonical_normalizes_cross_dialect_values():
 
 
 def test_head_revision_is_single():
-    assert head_revision() == '0018_retrieval_windows'
+    assert head_revision() == '0019_account_conversations'
 
 
 def test_source_engine_is_read_only(tmp_path):
