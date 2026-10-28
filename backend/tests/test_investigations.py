@@ -130,7 +130,7 @@ def test_unexpected_errors_are_safe_for_client_and_stored(session_factory):
     def broken(*_):
         raise RuntimeError('provider secret must not be sent to clients')
     events = run(Investigator(FunctionModel(broken), session_factory=session_factory))
-    assert events[-1].payload == {'message': '本次查证未取得结果，请稍后重试'}
+    assert events[-1].payload == {'message': '这次还没有查到能核实你问题的资料，暂时不能给出结论。'}
     with session_factory() as session:
         assert session.scalars(select(Investigation)).one().status == 'failed'
         assert 'secret' not in json.dumps(session.scalars(select(TraceRecord)).one().payload)
@@ -256,7 +256,7 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
     model = GuardedModel(FunctionModel(respond), Budget(session_factory, config), balance_reader=enough)
     events = run(Investigator(model, session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
-    assert events[1].payload['summary'] == '赛事已写回比赛库'
+    assert events[1].payload['summary'] == '已核对并收录赛事资料'
     assert events[-1].payload['sources'][0]['url'] == url
     with session_factory() as session:
         rows = session.scalars(select(LLMUsage)).all()
@@ -270,9 +270,9 @@ def test_unconfigured_optional_tools_do_not_open_network_connections(session_fac
     events = run(Investigator(model, session_factory=session_factory))
     assert events[-1].type == 'answer'
     summaries = [event.payload['summary'] for event in events if event.type == 'observation']
-    assert '网页读取暂未配置' in summaries
-    assert '页面保存暂未配置' in summaries
-    assert '比赛未找到' in summaries
+    assert '这次没有读到网页原文，页面中的信息仍待核实。' in summaries
+    assert '这次没有完成赛事资料核对，页面中的信息仍待核实。' in summaries
+    assert '没有找到这场比赛的资料，参赛信息仍待核实。' in summaries
 
 
 def test_page_extraction_can_follow_seven_detail_lookups(session_factory):
