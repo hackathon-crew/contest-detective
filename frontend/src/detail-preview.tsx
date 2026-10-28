@@ -85,7 +85,7 @@ export function DetailPreview() {
           contestId={selected.id}
           variant={variant}
           onClose={() => void navigate('/contests')}
-          onAsk={setQuestion}
+          onAsk={(contest) => setQuestion(contest.name)}
           action={<FollowButton contestId={selected.id} follows={follows} />}
         />
       )}

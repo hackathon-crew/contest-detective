@@ -335,7 +335,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
         open={!!contestId}
         contestId={detailId}
         onClose={closeDetail}
-        onAsk={ask}
+        onAsk={(contest) => navigate(`/detective?contest=${encodeURIComponent(contest.id)}`)}
         action={<FollowButton contestId={detailId} follows={follows} />}
       />
     </div>
