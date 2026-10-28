@@ -124,6 +124,26 @@ def test_configured_engine_uses_an_existing_sqlite_file_in_read_only_mode(tmp_pa
         absent.dispose()
 
 
+def test_readonly_engine_accepts_postgresql_without_connecting():
+    from contest_detective.bootstrap.mcp import readonly_engine
+
+    engine = readonly_engine('postgresql+psycopg://user:pass@127.0.0.1:5432/app')
+    try:
+        assert engine.dialect.name == 'postgresql'
+    finally:
+        engine.dispose()
+
+
+def test_http_app_accepts_postgresql_configuration_without_connecting():
+    from contest_detective.bootstrap.mcp_http import create_app
+
+    app = create_app(database_url='postgresql+psycopg://user:pass@127.0.0.1:5432/app')
+    try:
+        assert app.state.db_engine.dialect.name == 'postgresql'
+    finally:
+        app.state.db_engine.dispose()
+
+
 def test_real_stdio_handshake_queries_errors_and_clean_process_shutdown(tmp_path):
     path = tmp_path / 'stdio.db'
     bind = create_engine(f'sqlite:///{path}')

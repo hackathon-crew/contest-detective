@@ -20,10 +20,10 @@ uv sync --locked --directory backend
 uv run --directory backend alembic upgrade head
 uv run --directory backend contest-detective       # FastAPI development server on port 8000
 uv run --directory backend contest-detective-sync  # run one source synchronization
-uv run --directory backend contest-detective-mcp   # local read-only stdio MCP; needs an existing SQLite DB
+uv run --directory backend contest-detective-mcp   # local read-only stdio MCP; needs an existing SQLite or PostgreSQL database
 ```
 
-The default local database is `backend/contest_detective.db` when `DETECTIVE_DB_URL` is not overridden. Copy `.env.example` to a local environment file and configure provider/model settings only when a feature needs them. The MCP stdio process opens SQLite in read-only mode and does not create a database or run migrations.
+The default local database is `backend/contest_detective.db` when `DETECTIVE_DB_URL` is not overridden. Copy `.env.example` to a local environment file and configure provider/model settings only when a feature needs them. The MCP stdio process opens the configured database in read-only mode and does not create a database or run migrations.
 
 ### Backend verification
 
@@ -96,7 +96,7 @@ A contest is backed by claims tied to source pages. `contest/service.py` refresh
 
 The FastAPI app is created in `bootstrap/app.py`, mounts the routers from `bootstrap/api`, initializes/upgrades the configured database during lifespan, and starts the optional synchronization scheduler. `/agent/ask` is an SSE endpoint: the investigator emits typed events and the route serializes them as event names plus JSON payloads. Contest/profile/auth routes use the common response envelope.
 
-The local and remote MCP entry points expose read-only contest search, contest detail, and profile matching. MCP calls reuse contest/user services, do not search the web or call a model, and must not persist the supplied profile. The stdio entry point uses a SQLite `mode=ro` engine; the HTTP entry point is a separate bootstrap path.
+The local and remote MCP entry points expose read-only contest search, contest detail, and profile matching. MCP calls reuse contest/user services, do not search the web or call a model, and must not persist the supplied profile. The stdio entry point uses a read-only SQLite or PostgreSQL engine; the HTTP entry point is a separate bootstrap path.
 
 ### Frontend layers and state
 
@@ -109,4 +109,4 @@ The React app is assembled in `frontend/src/app`, with routes under `pages`, use
 - Changes to backend routes or Pydantic response schemas require `npm run generate:api --prefix frontend`, followed by checking that both `backend/openapi.json` and the generated frontend directory are included in the change.
 - Changes to evidence fields, date precision, contest matching, source adapters, pipeline stages, or normalization should be covered by the corresponding backend tests and must preserve source URLs and verification levels.
 - Changes to frontend imports must satisfy the layer/slice test; shared code cannot import an upper layer, and a slice cannot reach across to another slice at the same layer.
-- Do not start a second production worker: scheduled synchronization and the web process assume a single worker against the SQLite database.
+- Do not start a second production worker: scheduled synchronization and the web process assume a single worker against the configured database.
