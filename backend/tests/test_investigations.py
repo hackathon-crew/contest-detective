@@ -130,9 +130,9 @@ def test_unexpected_errors_are_safe_for_client_and_stored(session_factory):
     def broken(*_):
         raise RuntimeError('provider secret must not be sent to clients')
     events = run(Investigator(FunctionModel(broken), session_factory=session_factory))
-    assert events[-1].payload == {'message': '本次查证未取得结果，请稍后重试'}
+    assert events[-1].payload['action'] == 'retry'
     with session_factory() as session:
-        assert session.scalars(select(Investigation)).one().status == 'failed'
+        assert session.scalars(select(Investigation)).one().status == 'interrupted'
         assert 'secret' not in json.dumps(session.scalars(select(TraceRecord)).one().payload)
 
 
@@ -165,22 +165,6 @@ def test_no_verified_matches_can_still_return_an_uncertain_answer(session_factor
     with session_factory() as session:
         record = session.scalars(select(Investigation)).one()
         assert record.status == 'completed' and record.answer == answer
-
-
-def test_early_client_close_marks_investigation_cancelled(session_factory):
-    def repeat(*_):
-        return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://organizer.example/rules'})])
-    async def read_page(url):
-        return '公开规则'
-    async def consume_one():
-        stream = Investigator(FunctionModel(repeat), session_factory=session_factory, fetch=read_page).ask('找比赛')
-        first = await anext(stream)
-        assert first.type == 'step'
-        await stream.aclose()
-    asyncio.run(consume_one())
-    with session_factory() as session:
-        record = session.scalars(select(Investigation)).one()
-        assert record.status == 'cancelled' and record.finished_at is not None
 
 
 def test_confirmed_profile_is_supplied_only_for_identified_user(session_factory):
@@ -270,8 +254,7 @@ def test_unconfigured_optional_tools_do_not_open_network_connections(session_fac
     events = run(Investigator(model, session_factory=session_factory))
     assert events[-1].type == 'answer'
     summaries = [event.payload['summary'] for event in events if event.type == 'observation']
-    assert '网页读取暂未配置' in summaries
-    assert '页面保存暂未配置' in summaries
+    assert summaries.count('正在查找其他来源。') == 2
     assert '比赛未找到' in summaries
 
 

@@ -3,6 +3,8 @@ import type { ConversationMessage, MatchItem, Profile, ContestRecommendation } f
 import type { InvestigationPlan, InvestigationReport } from './verification-contracts'
 import { parseInvestigationPlan, parseInvestigationReport } from './verification-report'
 import { parseTrace, type TraceEvent, type TraceSource } from './events'
+import type { RecoveryAction } from './events'
+import type { VerificationOptions } from './verification-contracts'
 
 export type ToolEvent = Extract<TraceEvent, { type: 'step' | 'observation' }>
 export type { ContestRecommendation } from '@/shared/api'
@@ -19,6 +21,10 @@ export interface DetectiveTurn {
   sources: TraceSource[]
   status: 'running' | 'completed' | 'stopped' | 'error'
   error?: string
+  investigationId?: string
+  lastSeq?: number
+  action?: RecoveryAction
+  request?: { profile?: Profile | null; verificationOptions?: VerificationOptions }
   plan?: InvestigationPlan
   report?: InvestigationReport
   // 与正文一起保存 Agent 最终选中的比赛；旧记录缺少此字段时按正文引用补读。
@@ -67,7 +73,7 @@ export function loadConversation(scope: string, value?: unknown): DetectiveTurn[
         trace,
         ...(turn.plan != null ? { plan: parseInvestigationPlan(turn.plan) } : {}),
         ...(turn.report != null ? { report: parseInvestigationReport(turn.report) } : {}),
-        ...(turn.status === 'running'
+        ...(turn.status === 'running' && !turn.investigationId
           ? { status: 'stopped', error: '回复已中断，可以继续提问。' }
           : {}),
       } as DetectiveTurn

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useMatch } from 'react-router'
-import { apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
+import { ApiError, apiClient, type ContestRecommendation, type Profile } from '@/shared/api'
 import { historyFor, type DetectiveTurn } from './conversation'
 import { loadSessions, sessionsKey, sessionWithTurn, type DetectiveSession } from './sessions'
-import { parseTrace } from './events'
+import { parseTrace, recoveryAction, type RecoveryAction } from './events'
 import { DetectiveContext } from './detective-context'
 import { createId } from './id'
+import { cancelInvestigation, investigationStream } from './investigation-stream'
 import type { VerificationOptions } from './verification-contracts'
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
@@ -30,6 +31,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   useEffect(
     () => () => {
       for (const controller of requests.current.values()) controller.abort()
+      requests.current.clear()
     },
     [],
   )
@@ -41,6 +43,16 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       queueMicrotask(() => setStorageError(true))
     }
   }, [scope, sessions])
+
+  useEffect(() => {
+    for (const session of sessions) {
+      const turn = session.turns.find((item) => item.status === 'running' && item.investigationId)
+      if (!turn || requests.current.has(session.id)) continue
+      const controller = new AbortController()
+      requests.current.set(session.id, controller)
+      void run(session.id, turn.id, turn.question, [], undefined, controller, undefined, true)
+    }
+  }, [sessions])
 
   useEffect(() => {
     const active = sessions.find((session) => session.id === activeId)
@@ -90,9 +102,23 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       ),
     )
   }
-  function stop(sessionId: string) {
+  async function stop(sessionId: string) {
     const controller = requests.current.get(sessionId)
     if (!controller) return
+    const turn = snapshot.current
+      .find((session) => session.id === sessionId)
+      ?.turns.find((item) => item.status === 'running')
+    if (turn?.investigationId) {
+      try {
+        await cancelInvestigation(turn.investigationId, controller.signal)
+      } catch {
+        update(sessionId, turn.id, (current) => ({
+          ...current,
+          error: '停止操作未能送达，请再次点击停止查证。',
+        }))
+        return
+      }
+    }
     controller.abort()
     requests.current.delete(sessionId)
     change((items) =>
@@ -100,10 +126,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         session.id === sessionId
           ? {
               ...session,
-              turns: session.turns.map((turn) =>
-                turn.status === 'running'
-                  ? { ...turn, status: 'stopped', error: '查证已停止。' }
-                  : turn,
+              turns: session.turns.map((current) =>
+                current.id === turn?.id
+                  ? { ...current, status: 'stopped', error: '查证已停止。', action: undefined }
+                  : current,
               ),
             }
           : session,
@@ -122,6 +148,9 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     const turnId = createId()
     const turn: DetectiveTurn = {
       id: turnId,
+      investigationId: turnId,
+      lastSeq: 0,
+      request: { profile, verificationOptions },
       question: text,
       content: '',
       trace: [],
@@ -147,6 +176,37 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     )
     return id
   }
+  function retry(turnId: string) {
+    const session = snapshot.current.find((item) => item.turns.some((turn) => turn.id === turnId))
+    if (!session || requests.current.has(session.id)) return
+    const index = session.turns.findIndex((turn) => turn.id === turnId)
+    const previous = session.turns[index]!
+    const controller = new AbortController()
+    requests.current.set(session.id, controller)
+    update(session.id, turnId, (turn) => ({
+      ...turn,
+      investigationId: createId(),
+      lastSeq: 0,
+      content: '',
+      trace: [],
+      sources: [],
+      status: 'running',
+      error: undefined,
+      action: undefined,
+      recommendations: undefined,
+      report: undefined,
+      plan: undefined,
+    }))
+    void run(
+      session.id,
+      turnId,
+      previous.question,
+      historyFor(session.turns.slice(0, index)),
+      previous.request?.profile,
+      controller,
+      previous.request?.verificationOptions,
+    )
+  }
   async function run(
     sessionId: string,
     turnId: string,
@@ -155,37 +215,51 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     profile: Profile | null | undefined,
     controller: AbortController,
     verificationOptions?: VerificationOptions,
+    resume = false,
   ) {
     let terminal = false
-    const fail = (message: string) =>
-      update(sessionId, turnId, (turn) =>
-        turn.content.trim()
-          ? { ...turn, status: 'stopped', error: undefined }
-          : { ...turn, status: 'error', error: message },
-      )
+    const fail = (message: string, action?: RecoveryAction) =>
+      update(sessionId, turnId, (turn) => ({
+        ...turn,
+        status: turn.content.trim() ? 'stopped' : 'error',
+        error: message,
+        action,
+      }))
     try {
-      for await (const raw of apiClient.stream('/agent/ask', {
-        method: 'POST',
-        json: {
+      const current = snapshot.current
+        .find((session) => session.id === sessionId)
+        ?.turns.find((turn) => turn.id === turnId)
+      for await (const raw of investigationStream(
+        {
+          investigation_id: current?.investigationId ?? turnId,
           question,
           ...(history.length ? { history } : {}),
           ...(profile ? { profile } : {}),
           ...verificationOptions,
         },
-        signal: controller.signal,
-      })) {
+        controller.signal,
+        { after: current?.lastSeq ?? 0, resume },
+      )) {
         if (controller.signal.aborted) break
         const event = parseTrace(raw)
         if (!event) continue
-        if (event.type === 'answer') {
+        const updateEvent = (transform: (turn: DetectiveTurn) => DetectiveTurn) =>
           update(sessionId, turnId, (turn) => ({
+            ...transform(turn),
+            ...(raw.id !== null ? { lastSeq: Number(raw.id) } : {}),
+          }))
+        if (event.type === 'answer') {
+          updateEvent((turn) => ({
             ...turn,
             content: event.content || turn.content,
             sources: event.sources,
             recommendations: event.recommendations,
             report: event.report,
             plan: event.report?.plan ?? turn.plan,
-            status: 'completed',
+            action: event.action,
+            error: undefined,
+            status:
+              event.action === 'retry' || event.action === 'settings' ? 'stopped' : 'completed',
           }))
           terminal = true
           void client.invalidateQueries({ queryKey: ['contests'] })
@@ -193,27 +267,37 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           break
         }
         if (event.type === 'error') {
-          fail(event.message)
+          fail(event.message, event.action)
           terminal = true
           break
         }
         if (event.type === 'plan') {
-          update(sessionId, turnId, (turn) => ({ ...turn, plan: event.plan }))
+          updateEvent((turn) => ({ ...turn, plan: event.plan }))
           continue
         }
         if (event.type === 'delta')
-          update(sessionId, turnId, (turn) => ({ ...turn, content: turn.content + event.content }))
-        else update(sessionId, turnId, (turn) => ({ ...turn, trace: [...turn.trace, event] }))
+          updateEvent((turn) => ({ ...turn, content: turn.content + event.content }))
+        else updateEvent((turn) => ({ ...turn, trace: [...turn.trace, event] }))
       }
-      if (!terminal && !controller.signal.aborted) fail('查证提前结束，请重试。')
+      if (!terminal && !controller.signal.aborted)
+        fail('这次查证没能完成。点击一键重查，无需重新输入问题。', 'retry')
     } catch (cause) {
       if (!controller.signal.aborted)
-        fail(cause instanceof Error ? cause.message : '查证失败，请重试。')
+        fail(
+          cause instanceof ApiError && cause.kind === 'business'
+            ? cause.message
+            : '这次查证没能完成。点击一键重查，无需重新输入问题。',
+          cause instanceof ApiError && cause.kind === 'business'
+            ? (recoveryAction((cause.data as { action?: unknown } | null)?.action) ?? 'retry')
+            : 'retry',
+        )
     } finally {
       if (requests.current.get(sessionId) === controller) requests.current.delete(sessionId)
     }
   }
   return (
-    <DetectiveContext value={{ sessions, storageError, send, stop }}>{children}</DetectiveContext>
+    <DetectiveContext value={{ sessions, storageError, send, stop, retry }}>
+      {children}
+    </DetectiveContext>
   )
 }

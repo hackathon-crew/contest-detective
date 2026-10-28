@@ -139,22 +139,24 @@ describe('连续侦探对话', () => {
   })
 
   it('停止后迟到的终态不会覆盖已停止的回复', async () => {
-    vi.stubGlobal(
-      'fetch',
-      async (_input: RequestInfo | URL, init?: RequestInit) =>
-        new Response(
-          new ReadableStream({
-            start(controller) {
-              init?.signal?.addEventListener('abort', () => {
-                controller.enqueue(
-                  new TextEncoder().encode(event('answer', { content: '迟到的回复', sources: [] })),
-                )
-                controller.close()
-              })
-            },
-          }),
-          { headers: { 'content-type': 'text/event-stream' } },
-        ),
+    vi.stubGlobal('fetch', async (_input: RequestInfo | URL, init?: RequestInit) =>
+      String(_input).endsWith('/cancel')
+        ? new Response(JSON.stringify({ code: 200, message: 'success', data: null }))
+        : new Response(
+            new ReadableStream({
+              start(controller) {
+                init?.signal?.addEventListener('abort', () => {
+                  controller.enqueue(
+                    new TextEncoder().encode(
+                      event('answer', { content: '迟到的回复', sources: [] }),
+                    ),
+                  )
+                  controller.close()
+                })
+              },
+            }),
+            { headers: { 'content-type': 'text/event-stream' } },
+          ),
     )
     show()
     send('随时可以停止')

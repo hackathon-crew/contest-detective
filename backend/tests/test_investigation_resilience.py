@@ -78,7 +78,8 @@ def test_later_model_failure_still_delivers_known_sources(session_factory):
     assert '已核对的比赛' in events[-1].payload['content']
     assert 'private-key-value' not in json.dumps(events[-1].payload)
     with session_factory() as session:
-        assert session.scalars(select(Investigation)).one().status == 'completed'
+        assert session.scalars(select(Investigation)).one().status == 'failed'
+        assert events[-1].payload['action'] == 'retry'
 
 
 def test_external_usage_gap_does_not_discard_a_valid_answer(session_factory):

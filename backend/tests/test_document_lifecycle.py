@@ -164,9 +164,10 @@ def test_provider_failure_closes_client_and_preserves_unconfirmed_reservation(se
     assert error.value.code == 503
     assert 'private-document-sentinel' not in str(error.value)
     assert 'private-document-sentinel' not in caplog.text
-    assert len(requests) == 1 and clients[0].is_closed()
-    row = session.scalars(select(LLMUsage)).one()
-    assert row.status == 'reserved' and row.cost_cny == row.reserved_cny > 0
+    assert len(requests) == 3 and clients[0].is_closed()
+    rows = session.scalars(select(LLMUsage)).all()
+    assert len(rows) == len(requests)
+    assert all(row.status == 'reserved' and row.cost_cny == row.reserved_cny > 0 for row in rows)
 
 
 @pytest.mark.parametrize('config', [

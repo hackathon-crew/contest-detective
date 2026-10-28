@@ -13,6 +13,8 @@ from .config import LLMSettings, get_llm_settings
 from .models import LLMUsage
 
 MILLION = Decimal(1_000_000)
+SERVICE_UNAVAILABLE = '公共查证服务尚未配置。你可以到账户设置中填写自己的模型密钥后继续。'
+SETTINGS_ACTION = {'action': 'settings'}
 
 
 def token_split(usage: RequestUsage) -> tuple[int, int, int]:
@@ -37,7 +39,7 @@ class Budget:
 
     def ensure_enabled(self):
         if not self.settings.enabled:
-            raise BizException('侦探模型尚未启用', code=503)
+            raise BizException(SERVICE_UNAVAILABLE, code=503, data=SETTINGS_ACTION)
 
     def reserve(self) -> str:
         self.ensure_enabled()
@@ -48,7 +50,7 @@ class Budget:
             if self.settings.limits_mode == 'local':
                 total = session.scalar(select(func.coalesce(func.sum(LLMUsage.cost_cny), 0)))
                 if session.scalar(select(LLMUsage.id).where(LLMUsage.status == 'overrun').limit(1)) or total + maximum > self.settings.budget_cny:
-                    raise BizException('模型额度已用完', code=429)
+                    raise BizException('公共查证额度已用完。你可以到账户设置中填写自己的模型密钥后继续。', code=429, data=SETTINGS_ACTION)
             call_id = str(uuid4())
             session.add(LLMUsage(id=call_id, model=self.settings.model,
                                  reserved_cny=maximum, cost_cny=maximum, status='reserved'))

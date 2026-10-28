@@ -54,10 +54,10 @@ def test_missing_or_invalid_usage_is_not_free(bad):
 
 def test_disabled_switch_prevents_balance_and_model_access(session_factory):
     config = LLMSettings(_env_file=None, enabled=False, api_key='test-only')
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='公共查证服务'):
         create_model(config, session_factory=session_factory)
     budget = Budget(session_factory, config)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='公共查证服务'):
         budget.reserve()
     with session_factory() as session:
         assert session.scalars(select(LLMUsage)).all() == []
@@ -65,7 +65,7 @@ def test_disabled_switch_prevents_balance_and_model_access(session_factory):
 
 def test_quota_checks_include_maximum_next_request(session_factory):
     budget = Budget(session_factory, settings(budget_cny='0.01'))
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='公共查证额度已用完'):
         budget.reserve()
     with session_factory() as session:
         assert session.scalars(select(LLMUsage)).all() == []
@@ -113,7 +113,7 @@ def test_low_or_unreadable_balance_releases_unspent_reservation(session_factory,
         return Decimal(balance)
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('model request must be blocked')),
                          Budget(session_factory, settings()), balance_reader=balance_reader)
-    with pytest.raises(BizException, match='余额'):
+    with pytest.raises(httpx.ConnectError if balance == 'broken' else BizException):
         asyncio.run(Agent(model).run('查询'))
     with session_factory() as session:
         assert sum(row.cost_cny for row in session.scalars(select(LLMUsage))) == 0
@@ -177,18 +177,19 @@ def test_disabled_request_never_reads_balance_or_dispatches_model(session_factor
     model = GuardedModel(FunctionModel(lambda *_: pytest.fail('disabled configuration reached provider')),
                          Budget(session_factory, LLMSettings(_env_file=None, enabled=False)),
                          balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='尚未启用'):
+    with pytest.raises(BizException, match='公共查证服务'):
         asyncio.run(Agent(model).run('查询'))
 
 
-def test_overlarge_context_is_rejected_before_any_balance_request(session_factory):
-    async def forbidden_balance():
-        pytest.fail('oversized context reached balance endpoint')
-    model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized context reached provider')),
-                         Budget(session_factory, settings(max_input_tokens=8192)),
-                         balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
-        asyncio.run(Agent(model).run('问题' * 5000))
+def test_overlarge_context_is_trimmed_before_dispatch(session_factory):
+    from pydantic_ai.messages import ModelMessagesTypeAdapter
+    async def enough():
+        return Decimal('100')
+    def respond(messages, _):
+        assert len(ModelMessagesTypeAdapter.dump_json(messages)) + 4096 <= 8192
+        return ModelResponse([TextPart('继续查证')], usage=usage())
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=enough)
+    assert asyncio.run(Agent(model).run('问题' * 5000)).output == '继续查证'
 
 
 def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
@@ -196,17 +197,20 @@ def test_unexpected_provider_overrun_blocks_all_later_requests(session_factory):
     call = budget.reserve()
     with pytest.raises(ValueError, match='超出预留'):
         budget.settle(call, usage(hit=0, miss=100_000, output=1_000))
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='公共查证额度已用完'):
         budget.reserve()
 
 
-def test_confirmed_profile_context_is_included_in_input_reservation_bound(session_factory):
-    async def forbidden_balance():
-        pytest.fail('oversized instructions reached balance endpoint')
-    model = GuardedModel(FunctionModel(lambda *_: pytest.fail('oversized instructions reached provider')),
-                         Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=forbidden_balance)
-    with pytest.raises(BizException, match='上下文过长'):
-        asyncio.run(Agent(model, instructions='已确认资料' * 5000).run('查询'))
+def test_confirmed_profile_context_is_trimmed_in_actual_request_instructions(session_factory):
+    async def enough():
+        return Decimal(100)
+    def respond(_, info):
+        assert len(info.instructions.encode()) < 4096
+        assert '规则' in info.instructions
+        return ModelResponse([TextPart('继续查证')], usage=usage())
+    model = GuardedModel(FunctionModel(respond), Budget(session_factory, settings(max_input_tokens=8192)), balance_reader=enough)
+    result = asyncio.run(Agent(model, instructions='规则\n用户已确认的画像资料：' + '已确认资料' * 5000).run('查询'))
+    assert result.output == '继续查证'
 
 
 def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory):
@@ -221,7 +225,7 @@ def test_overrun_cannot_be_downgraded_by_replayed_smaller_usage(session_factory)
         assert row.status == 'overrun'
         assert row.cost_cny == Decimal('0.208')
         assert (row.cache_hit_tokens, row.cache_miss_tokens, row.output_tokens) == (0, 100_000, 1_000)
-    with pytest.raises(BizException, match='模型额度已用完'):
+    with pytest.raises(BizException, match='公共查证额度已用完'):
         budget.reserve()
 
 
@@ -276,6 +280,7 @@ def test_call_settings_cannot_turn_sdk_retries_back_on(session_factory, monkeypa
             with pytest.raises(ModelHTTPError):
                 await Agent(model, model_settings={'max_retries': 1}).run('查询')
     asyncio.run(exercise())
-    assert len(requests) == 1
+    assert len(requests) == 3
     with session_factory() as session:
-        assert session.scalars(select(LLMUsage)).one().status == 'reserved'
+        rows = session.scalars(select(LLMUsage)).all()
+        assert len(rows) == len(requests) and all(row.status == 'reserved' for row in rows)

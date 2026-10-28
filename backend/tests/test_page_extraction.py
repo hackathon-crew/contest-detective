@@ -13,11 +13,12 @@ from contest_detective.agent.llm import GuardedModel
 from contest_detective.agent.models import LLMUsage
 
 
-def test_page_extractor_uses_the_shared_guard_and_preserves_full_page_text(session_factory):
+def test_page_extractor_uses_the_shared_guard_and_bounds_page_text(session_factory):
     url = 'https://organizer.example/event'
     def respond(messages, info):
         content = next(part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart))
-        assert content.count('测') == 8000
+        assert 0 < content.count('测') < 8000
+        assert '开头规则' in content and '末尾截止' in content
         assert url in content
         draft = {'name': '网页活动', 'page': {'url': url, 'site': '主办方', 'title': '赛事', 'is_official': False},
                  'claims': [{'field': 'city', 'value': '杭州', 'excerpt': '杭州'}]}
@@ -27,7 +28,7 @@ def test_page_extractor_uses_the_shared_guard_and_preserves_full_page_text(sessi
         return Decimal('100')
     settings = LLMSettings(_env_file=None, enabled=True, api_key='test-only')
     guarded = GuardedModel(FunctionModel(respond), Budget(session_factory, settings), balance_reader=enough)
-    extracted = asyncio.run(create_page_extractor(model=guarded)(url, '测' * 8000))
+    extracted = asyncio.run(create_page_extractor(model=guarded)(url, '开头规则' + '测' * 8000 + '末尾截止'))
     assert extracted.name == '网页活动'
     with session_factory() as session:
         usage = session.scalars(select(LLMUsage)).one()

@@ -1,3 +1,4 @@
+import httpx
 import asyncio
 from pydantic_ai.messages import ModelResponse, ToolCallPart, ToolReturnPart
 from pydantic_ai.models.function import FunctionModel
@@ -123,7 +124,7 @@ def test_failed_yuanbao_does_not_become_completed_or_leak_provider_exception(ses
             return ModelResponse([ToolCallPart('web_search', {'query':'比赛规则','step_id':'s1'})])
         return ModelResponse([answer_part('完成')])
     def broken(*args, **kwargs):
-        raise RuntimeError('api_key=private-key-do-not-export')
+        raise httpx.ReadTimeout('api_key=private-key-do-not-export')
     inv=Investigator(FunctionModel(respond),session_factory=session_factory,mode='deep',
         search=broken, search_provider='yuanbao', scope_classifier=allowed)
     events=consume(inv)
@@ -132,7 +133,8 @@ def test_failed_yuanbao_does_not_become_completed_or_leak_provider_exception(ses
     assert report['queries'][0]['status']=='failure'
     assert 'private-key' not in str([event.payload for event in events])
     executions=[e.payload['execution'] for e in events if e.type=='observation' and e.payload.get('execution')]
-    assert len(executions)==1 and executions[0]['status']=='failure'
+    assert not executions
+    assert any(e.payload.get('status') == 'continuing' for e in events if e.type == 'observation')
 
 
 def test_edited_screenshot_personal_claim_is_rechecked_before_provider(session_factory):
@@ -164,21 +166,19 @@ def test_day_precision_metadata_cannot_block_the_final_reply(session_factory):
     assert card['fields']['submission_deadline']['precision'] == 'day'
 
 
-def test_http_uses_the_effective_executor_mode(client):
+def test_http_uses_the_effective_executor_mode(client, session_factory):
     from contest_detective.bootstrap.api.agent import get_investigator
-    from contest_detective.agent.schemas import TraceEvent
-    received={}
-    class FakeInvestigator:
-        mode = None
-        async def ask(self, question, user_id, **kwargs):
-            received.update(question=question,user_id=user_id,**kwargs)
-            yield TraceEvent(type='answer',payload={'content':'mock'})
-    client.app.dependency_overrides[get_investigator]=lambda:FakeInvestigator()
+    received = {}
+    class EffectiveInvestigator(Investigator):
+        async def _execute(self, investigation_id, question, user_id, profile, history, confirmed_claims):
+            received.update(mode=self.mode, confirmed_claims=confirmed_claims)
+            return await super()._execute(investigation_id, question, user_id, profile, history, confirmed_claims)
+    client.app.dependency_overrides[get_investigator] = lambda: EffectiveInvestigator(
+        FunctionModel(lambda *_: ModelResponse([answer_part('mock')])), session_factory=session_factory)
     try:
-        response=client.post('/agent/ask',json={'question':'比赛规则','mode':'deep'})
+        response = client.post('/agent/ask', json={'question': '比赛规则', 'mode': 'deep'})
         assert 'event: answer' in response.text
-        assert received['mode'] is None
-        assert 'confirmed_claims' not in received
+        assert received == {'mode': None, 'confirmed_claims': []}
     finally:
         client.app.dependency_overrides.pop(get_investigator)
 

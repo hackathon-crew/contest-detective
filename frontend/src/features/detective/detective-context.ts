@@ -13,6 +13,7 @@ interface DetectiveStore {
     verificationOptions?: VerificationOptions,
   ) => string
   stop: (sessionId: string) => void
+  retry: (turnId: string) => void
 }
 export const DetectiveContext = createContext<DetectiveStore | null>(null)
 

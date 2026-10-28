@@ -1,5 +1,8 @@
 import { Check, ChevronRight, LoaderCircle, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { Link } from 'react-router'
+import { Button } from '@/shared/ui/button'
+import { useDetective } from './detective-context'
 import { safeUrl } from '@/entities/contest'
 import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
 import type { DetectiveTurn } from './conversation'
@@ -47,6 +50,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
     label: string
     tool: string
     summary?: string
+    status?: 'success' | 'continuing'
     sources: TraceSource[]
     execution?: SearchExecution
   }[] = []
@@ -56,6 +60,7 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
       const step = steps.findLast((item) => item.tool === event.tool && item.summary === undefined)
       if (step) {
         step.summary = event.summary
+        step.status = event.status
         step.sources = event.sources
         step.execution = event.execution
       }
@@ -64,7 +69,10 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
   if (!steps.length) return null
   const active = turn.status === 'running' && !turn.content && steps.at(-1)!.summary === undefined
   const completed = steps.filter(
-    (step) => step.summary !== undefined && step.execution?.status !== 'failure',
+    (step) =>
+      step.summary !== undefined &&
+      step.status !== 'continuing' &&
+      step.execution?.status !== 'failure',
   ).length
   const failed = steps.some((step) => step.execution?.status === 'failure')
   const unfinished = steps.some((step) => step.summary === undefined)
@@ -102,6 +110,8 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
               <strong>{step.label}</strong>
               {step.execution?.status === 'failure' ? (
                 <span>失败</span>
+              ) : step.status === 'continuing' ? (
+                <ChevronRight aria-label="继续查找" />
               ) : step.summary !== undefined ? (
                 <Check aria-label="已完成" />
               ) : turn.status === 'running' ? (
@@ -126,6 +136,15 @@ const markdownComponents = {
       {children}
     </a>
   ),
+}
+
+function RetryInvestigation({ turnId }: { turnId: string }) {
+  const { retry } = useDetective()
+  return (
+    <Button variant="outline" size="sm" onClick={() => retry(turnId)}>
+      一键重查
+    </Button>
+  )
 }
 
 export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
@@ -166,7 +185,7 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
                 {turn.trace.length ? '正在整理回复' : '正在看你的问题'}
               </p>
             )}
-          {!turn.report && paced.visible && (
+          {(!turn.report || turn.report.status !== 'complete') && paced.visible && (
             <div className="detective-prose">
               <ReactMarkdown
                 urlTransform={(url) => safeUrl(url) ?? ''}
@@ -187,6 +206,27 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
             >
               {turn.error}
             </p>
+          )}
+          {turn.action === 'settings' && (
+            <Button asChild variant="outline" size="sm">
+              <Link to="/account/keys">账户设置</Link>
+            </Button>
+          )}
+          {turn.action === 'retry' && turn.status !== 'running' && (
+            <RetryInvestigation turnId={turn.id} />
+          )}
+          {turn.action === 'provide_link' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                document
+                  .querySelector<HTMLTextAreaElement>('textarea[aria-label="问侦探"]')
+                  ?.focus()
+              }
+            >
+              贴官网链接
+            </Button>
           )}
         </div>
       </div>

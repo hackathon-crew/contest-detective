@@ -20,6 +20,10 @@ export interface TraceSource {
   query?: string | null
   retrieved_at?: string | null
 }
+export type RecoveryAction = 'settings' | 'retry' | 'provide_link'
+export function recoveryAction(value: unknown): RecoveryAction | undefined {
+  return value === 'settings' || value === 'retry' || value === 'provide_link' ? value : undefined
+}
 export type TraceEvent =
   | { type: 'plan'; plan: InvestigationPlan }
   | { type: 'step'; tool: string; label: string }
@@ -27,6 +31,7 @@ export type TraceEvent =
       type: 'observation'
       tool: string
       summary: string
+      status?: 'success' | 'continuing'
       sources: TraceSource[]
       execution?: SearchExecution
     }
@@ -37,8 +42,9 @@ export type TraceEvent =
       sources: TraceSource[]
       recommendations?: ContestRecommendation[]
       report?: InvestigationReport
+      action?: RecoveryAction
     }
-  | { type: 'error'; message: string }
+  | { type: 'error'; message: string; action?: RecoveryAction }
 
 function record(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -90,6 +96,9 @@ export function parseTrace(event: ServerSentEvent): TraceEvent | null {
       type: 'observation',
       tool: value.tool,
       summary: value.summary,
+      ...(value.status === 'continuing' || value.status === 'success'
+        ? { status: value.status }
+        : {}),
       sources: sources(value.sources),
       execution: optional(value.execution, parseSearchExecution),
     }
@@ -102,10 +111,11 @@ export function parseTrace(event: ServerSentEvent): TraceEvent | null {
       recommendations: Array.isArray(value.recommendations)
         ? (value.recommendations as ContestRecommendation[])
         : undefined,
+      action: recoveryAction(value.action),
       ...(report ? { report } : {}),
     }
   }
   if (event.event === 'error' && typeof value.message === 'string')
-    return { type: 'error', message: value.message }
+    return { type: 'error', message: value.message, action: recoveryAction(value.action) }
   return null
 }

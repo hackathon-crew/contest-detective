@@ -1,6 +1,7 @@
 import re
 from typing import Literal
 from datetime import datetime
+from uuid import UUID
 
 from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan
 from contest_detective.research.contracts import SearchExecution
@@ -17,6 +18,7 @@ class ConversationMessage(BaseModel):
 
 
 class AskRequest(BaseModel):
+    investigation_id: UUID | None = None
     question: str = Field(min_length=1)
     profile: Profile | None = None
     history: list[ConversationMessage] = Field(default_factory=list)
@@ -59,6 +61,7 @@ class Step(BaseModel):
 
 
 class Observation(BaseModel):
+    status: Literal['success', 'continuing'] = 'success'
     execution: SearchExecution | None = None
     tool: str
     summary: str
@@ -107,6 +110,7 @@ class ResolveRecommendations(BaseModel):
 
 
 class Answer(BaseModel):
+    action: Literal['settings', 'retry', 'provide_link'] | None = None
     report: InvestigationReport | None = None
     content: str
     sources: list[ToolSource] = Field(default_factory=list)
@@ -115,9 +119,11 @@ class Answer(BaseModel):
 
 class Error(BaseModel):
     message: str
+    action: Literal['settings', 'retry', 'provide_link'] | None = None
 
 
 class TraceEvent(BaseModel):
+    seq: int = 0
     type: Literal['step', 'observation', 'answer', 'error', 'plan']
     payload: dict
 

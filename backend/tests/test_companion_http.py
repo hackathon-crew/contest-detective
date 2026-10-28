@@ -115,7 +115,7 @@ def test_disabled_model_is_an_explicit_business_failure(signed_in, monkeypatch):
     clients, requests = provider(monkeypatch, config=LLMSettings(_env_file=None, enabled=False))
     response = signed_in.post('/companion/documents/ask', json=question_data())
     assert response.status_code == 200 and response.json()['code'] == 503
-    assert response.json()['data'] is None and clients == requests == []
+    assert response.json()['data'] == {'action': 'settings'} and clients == requests == []
 
 
 def test_authenticated_cookie_roundtrip_and_logout(tmp_path, monkeypatch):

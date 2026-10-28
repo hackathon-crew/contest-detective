@@ -93,7 +93,7 @@ def decrypt(row, key):
     try:
         return cipher().decrypt(saved["ciphertext"]).decode()
     except (InvalidToken, KeyError, UnicodeError):
-        raise BizException("个人密钥无法解密，请重新保存", code=503) from None
+        raise BizException("无法读取保存的密钥，请到账户设置中重新保存。", code=503, data={"action": "settings"}) from None
 
 
 @dataclass
