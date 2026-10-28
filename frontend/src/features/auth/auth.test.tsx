@@ -86,6 +86,53 @@ function submit(name: string) {
 }
 
 describe('全屏账户流程', () => {
+  it.each([false, true])('取消画像推荐登录回到首页并保留草稿（切换注册：%s）', async (register) => {
+    setup('/?mode=online#personalized')
+    const draft = '想找适合 Python 项目的比赛'
+    fireEvent.change(screen.getAllByRole('textbox', { name: '问侦探' })[0], {
+      target: { value: draft },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '按我的画像推荐' }))
+    await screen.findByRole('heading', { name: '登录 Inkpaw' })
+    if (register) fireEvent.click(screen.getByRole('link', { name: '创建账号' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回原页面' }))
+    await screen.findByRole('heading', { name: /按你的兴趣和优势/ })
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/?mode=online#personalized')
+    expect(screen.getAllByRole('textbox', { name: '问侦探' })[0]).toHaveProperty('value', draft)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.queryByRole('heading', { name: /登录 Inkpaw|注册 Inkpaw/ })).toBeNull()
+  })
+
+  it.each(['/account/profile', '/detective'])(
+    '直接访问受保护页面后取消登录可回首页：%s',
+    async (path) => {
+      setup(path)
+      await screen.findByRole('heading', { name: '登录 Inkpaw' })
+      fireEvent.click(screen.getByRole('button', { name: '返回原页面' }))
+      await screen.findByRole('heading', { name: /按你的兴趣和优势/ })
+      expect(screen.getByLabelText('当前地址').textContent).toBe('/')
+    },
+  )
+
+  it('取消普通登录仍返回原赛事库及筛选地址', async () => {
+    setup('/contests?keyword=Python#all')
+    fireEvent.click(screen.getByRole('link', { name: '登录' }))
+    fireEvent.click(screen.getByRole('button', { name: '返回原页面' }))
+    await screen.findByRole('heading', { name: '赛事库' })
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/contests?keyword=Python#all')
+  })
+
+  it('画像推荐登录成功后仍继续打开画像窗口', async () => {
+    setup('/')
+    fireEvent.click(screen.getByRole('button', { name: '按我的画像推荐' }))
+    await screen.findByRole('heading', { name: '登录 Inkpaw' })
+    continueWithEmail()
+    enterPassword()
+    submit('登录并继续')
+    expect(await screen.findByRole('dialog', { name: '连接到 GitHub' })).toBeTruthy()
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/')
+  })
+
   it('直接打开登录页，先填写邮箱，再输入密码', () => {
     const calls = setup()
     expect(screen.getByRole('heading', { name: '登录 Inkpaw' })).toBeTruthy()
