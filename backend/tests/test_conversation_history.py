@@ -11,6 +11,11 @@ from contest_detective.agent.loop import Investigator
 from contest_detective.agent.schemas import AskRequest
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 HISTORY = [
     {'role': 'user', 'content': '我是大学生，想找线上黑客松。'},
     {'role': 'assistant', 'content': '可以继续告诉我你的可用时间。'},

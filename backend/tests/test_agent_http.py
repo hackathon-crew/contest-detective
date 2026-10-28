@@ -14,6 +14,11 @@ from contest_detective.agent.models import Investigation
 from contest_detective.bootstrap.api.agent import get_investigator, limiter
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 @pytest.fixture(autouse=True)
 def clear_limits(monkeypatch):
     from contest_detective.framework.config.app import get_app_settings

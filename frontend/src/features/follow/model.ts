@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useCurrentUser } from '@/entities/user'
+import { useCurrentUser, useLoginGate } from '@/entities/user'
 import { apiClient } from '@/shared/api'
 import type { FollowRead } from '@/shared/api/generated'
 
@@ -46,11 +46,11 @@ function clearMigrated(ids: string[]) {
   }
 }
 export function useFollows() {
+  const requireLogin = useLoginGate()
   const auth = useCurrentUser(),
     user = auth.data,
     client = useQueryClient()
-  const [local, setLocal] = useState(readFollows),
-    [error, setError] = useState<string | null>(null),
+  const [error, setError] = useState<string | null>(null),
     [saving, setSaving] = useState(false)
   const busy = useRef(false),
     key = ['account-follows', user?.id]
@@ -68,7 +68,6 @@ export function useFollows() {
         await client.invalidateQueries({ queryKey: ['account-summary', user?.id] })
         try {
           clearMigrated(snapshot.ids)
-          setLocal(readFollows())
         } catch {
           setError('关注已同步，无法清理本机记录，请检查浏览器存储设置')
         }
@@ -77,6 +76,7 @@ export function useFollows() {
     },
   })
   async function setFollow(contestId: string, on: boolean, reminders?: boolean) {
+    if (!user) throw new Error('请先登录后继续关注')
     if (busy.current) return
     busy.current = true
     setSaving(true)
@@ -91,21 +91,9 @@ export function useFollows() {
           client.invalidateQueries({ queryKey: key }),
           client.invalidateQueries({ queryKey: ['account-summary', user.id] }),
         ])
-      } else {
-        const current = readFollows().ids,
-          next = on
-            ? [...new Set([...current, contestId])]
-            : current.filter((id) => id !== contestId)
-        localStorage.setItem(FOLLOW_STORAGE_KEY, JSON.stringify(next))
-        localStorage.removeItem('inkpaw-follows')
-        setLocal({ ids: next, error: null })
       }
     } catch (e) {
-      const text = user
-        ? e instanceof Error
-          ? e.message
-          : '无法同步关注，请重试'
-        : '无法保存关注，请检查浏览器存储设置'
+      const text = e instanceof Error ? e.message : '无法同步关注，请重试'
       setError(text)
       throw new Error(text)
     } finally {
@@ -133,8 +121,9 @@ export function useFollows() {
       setSaving(false)
     }
   }
-  const ids = user ? (query.data ?? []).map((row) => row.contest.id) : local.ids
+  const ids = user ? (query.data ?? []).map((row) => row.contest.id) : []
   const toggle = (contestId: string) => {
+    if (!requireLogin()) return
     void setFollow(contestId, !ids.includes(contestId)).catch(() => {})
   }
   return {
@@ -144,6 +133,6 @@ export function useFollows() {
     setFollow,
     setReminders,
     pending: auth.isPending || saving || (!!user && query.isPending),
-    error: error ?? (query.error instanceof Error ? query.error.message : local.error),
+    error: error ?? (query.error instanceof Error ? query.error.message : null),
   }
 }

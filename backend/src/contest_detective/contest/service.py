@@ -427,7 +427,7 @@ def _sql_deadline_available(field, now):
     return or_(upper > now, and_(upper == now, func.coalesce(precision, 'datetime') != 'day'))
 
 
-def query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()) -> tuple[list[ContestSummary], int]:
+def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()):
     now = _now()
     instant = _instant(now)
     details = ContestDetails
@@ -479,14 +479,25 @@ def query(session: Session, q: ContestQuery, *, attendable=False, blocked_domain
                 conditions.append(lower <= _instant(q.date_to))
             windows.append(and_(*conditions))
         statement = statement.where(or_(*windows))
-    total = session.scalar(select(func.count()).select_from(statement.subquery()))
     start = case((details.contest_id.is_not(None), details.start_at), else_=Contest.start_at)
     value = start if q.sort == 'start' else deadlines.c.value
     # Python 原先按 Unicode 码点比较；PG 的语言排序规则不能改变同时间赛事的先后。
     collation = 'C' if session.get_bind().dialect.name == 'postgresql' else 'BINARY'
-    page = statement.order_by(value.is_(None), func.coalesce(value, '').collate(collation),
+    return statement.order_by(value.is_(None), func.coalesce(value, '').collate(collation),
         func.coalesce(start, '').collate(collation), Contest.name.collate(collation), Contest.id.collate(collation)
-        ).limit(q.page_size).offset((q.page - 1) * q.page_size)
+        )
+
+
+def candidate_query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()):
+    """SQL-only candidate IDs share the same filters as paginated sourced results."""
+    return _query_statement(session, q, attendable=attendable, blocked_domains=blocked_domains).with_only_columns(Contest.id)
+
+
+def query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()) -> tuple[list[ContestSummary], int]:
+    statement = _query_statement(session, q, attendable=attendable, blocked_domains=blocked_domains)
+    total = session.scalar(select(func.count()).select_from(statement.order_by(None).subquery()))
+    page = statement.limit(q.page_size).offset((q.page - 1) * q.page_size)
+    now = _now()
     return [_summary(session, contest, now) for contest in session.scalars(page)], total
 
 

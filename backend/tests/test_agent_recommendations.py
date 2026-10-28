@@ -12,6 +12,11 @@ from contest_detective.contest.service import save
 from contest_detective.system.user.schemas import Profile
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 def seed(factory, name, slug):
     with factory() as session:
         return save(session, ContestDraft(

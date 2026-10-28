@@ -1,0 +1,340 @@
+{
+  "snapshot_date": "2026-10-28",
+  "snapshot_sha256": "77ae99ec42a642d3254e7ee926c64bed163d031d01ee2eefb373edebc12b120a",
+  "snapshot_contests": 332,
+  "label_policy": "在运行召回评测前固定标注。宽主题题按已存来源主题标签；具体需求题按已存简介及正文人工核对。相关性不等于参赛资格或来源已核实；纳入历史比赛，关闭默认截止过滤，以隔离召回能力。",
+  "cases": [
+    {
+      "query": "我以前没参加过这种比赛，想先找对新手友好的练练手",
+      "group": "semantic",
+      "relevant_ids": [
+        "01390e53-f3de-4f6d-a4f7-349ac171a5da",
+        "02aee8d9-321b-4108-a067-84a2789b3e8f",
+        "02d9e3be-b42e-48e8-97d3-3fb3cb88a2b2",
+        "031237bb-2346-4c0a-ba1e-274cb2e9b17c",
+        "0d341802-d3e7-4083-b917-1a270920f062",
+        "0e4c9526-26b1-416c-b430-ec64cd7423e9",
+        "182bdd15-97ac-4386-9844-03da6dfa3e6c",
+        "18e08bbb-06c5-427d-ae8f-a949cec96c3a",
+        "1e88f651-ad56-4e07-a13b-626aa75236a3",
+        "1f33d226-982a-4e3b-aae3-934144cd83c6",
+        "21b3697b-0e3b-4771-be86-e4fa30f1c216",
+        "2289e108-2db2-459f-b516-c65a50e28fc4",
+        "295dafe5-a0d9-4714-9621-9b7713584b1b",
+        "2b3c571e-dc48-468c-993c-dc02c65c2325",
+        "2d22395e-4aeb-4c3a-b6f3-a26b1492b60c",
+        "2ff2a0b1-0146-467f-8b4c-5767f01c59ee",
+        "3576438d-ba4e-4b31-a005-614ca63e0e7f",
+        "3a77adc4-e210-48be-a2ce-8ec4982fe1c9",
+        "3a960044-02e3-4e21-b38d-0fe17d925a99",
+        "3b7d5c61-2172-423f-8601-8f32d15ce432",
+        "3c7777b4-a4b5-4833-ba42-eedcae15dadb",
+        "3cc495b6-51d2-4840-a924-7148c467ca51",
+        "3d1ea41a-d7f3-4e26-9b12-d2e156acd115",
+        "3f8ee15e-19ec-4fdc-ab8c-9064fefd74a8",
+        "45c7ff27-d936-41f0-8503-c46f212896f3",
+        "483d120a-eccd-480c-8ca1-4c15d7b5c5e0",
+        "48905c95-3437-4847-8545-e2625e69dee1",
+        "4b6fac6d-4c94-49c9-a8ba-d32956f4efe6",
+        "4c944153-5c50-4ba5-9ed9-ea4c8be2aba4",
+        "4f7126ac-5fbd-4f19-b8b2-1d84b2c49532",
+        "5309ed15-b042-48f8-954b-1a9daabedea9",
+        "53f37221-2048-4b13-96f7-c6b539497c3a",
+        "59a06554-eeac-4a78-ae8c-e448cfd37543",
+        "5d883c63-e758-4b37-ab5e-d51ad623f122",
+        "6287ed6c-199a-4cb7-a33c-9f913cbae509",
+        "636979c2-7c9e-4b15-8ab3-dc44db3a354b",
+        "63b663c9-9150-4f26-8f67-2124f9b3e150",
+        "66f6f45a-26d5-48e7-bd64-5f288c0b6ae3",
+        "67e85d01-0369-4cfb-be5f-484776b0746c",
+        "6d881c14-e1bc-4f12-8dda-169d0f1a6aca",
+        "7038047a-5d6e-469e-83b2-e61c54e7d15b",
+        "717f71f2-9437-4f27-a6d4-614d7beddfde",
+        "761cdfb8-3f51-4982-b0a8-2050ae9ab885",
+        "7a26be45-1110-4f83-9b7f-c04f28fdcf11",
+        "7accd4a9-721d-4f25-af73-62503f94ba9d",
+        "7bd62b9c-b9cb-4edb-90b3-42a8cc6df083",
+        "7f00d20f-f7c9-4cf1-b269-a1e95470168c",
+        "7fe2237f-51e7-430e-bd23-271650345a0c",
+        "807c8c12-df95-4d4d-b0a2-f1e8a908b982",
+        "8227a5ff-ee76-4e1d-8802-649033b5e761",
+        "838f478a-001a-45f4-950b-3b5e10e9b27d",
+        "83cd681a-6436-402e-9c67-ba7629e455b7",
+        "886ca571-d33f-49d3-856a-883f4f07917a",
+        "88cabaf3-f4fb-4457-a30a-6af769744e50",
+        "89f36dfa-60cd-409d-88ee-d7f66c6eace6",
+        "8a9283f4-2b76-4b2e-93f8-af4f14b71c97",
+        "8b51a6c0-a027-49d4-90bc-adfbc4e1cda0",
+        "9133ccc8-4cfd-4bf8-8200-529434ff47a5",
+        "9258abeb-0897-4adb-bea2-9b05397b3e74",
+        "93856e4d-5860-44e5-8f61-9329c9780769",
+        "9450857d-b71d-42bc-962e-ea8f9c03fc6f",
+        "9d3e74b0-7433-4476-99e3-08238a9eb3d0",
+        "a0f12616-a706-4e96-bd10-49740a371b0b",
+        "a46860a2-212b-4387-ad23-4727461b7192",
+        "a47385b4-57ae-43ef-898b-280b2bf95ea2",
+        "a4a1705d-c705-484b-8697-556d60faff20",
+        "a573a4f8-4ba5-4ad5-8a6d-9f683432a352",
+        "a5c34d94-0a9c-4014-8b9d-a90517fa8caa",
+        "ae2ff65a-06f1-415f-bf78-32174e4ba0a8",
+        "af3f7489-adfe-4a20-9b4f-514972ad7b19",
+        "b5a803f3-010b-4df5-8f4b-81eba7086976",
+        "b5ab6919-7eed-4e0e-88d8-87e45ab2efe1",
+        "bc39803f-a1ec-4384-98f5-0e51a76892b8",
+        "bd733b03-4068-4dbb-b4b0-cf1a7db70cc4",
+        "bd9117e7-a097-4636-8ce4-6bb6b6070b7b",
+        "bfff6810-2025-404f-b08a-0b1e977913b5",
+        "c367e555-8b83-4632-8c5e-554da9879a4e",
+        "c460be55-cb07-406a-a27f-d539b6784d61",
+        "c5b39559-450f-4db0-b314-c3d70e9525f5",
+        "cb34a886-a5fd-4fed-876d-e146bbcdca3c",
+        "d26e191d-11e9-4524-8f31-e474a2a2ab9e",
+        "d35d6031-9aaa-41e1-b0d2-0e6255a5a19c",
+        "d450a2c2-ed88-4cb4-bd08-1c9bb15a453e",
+        "d65deec1-c547-43fc-a23e-80b043664cbf",
+        "d9155ba7-beab-4488-a582-8d7edbaaabc5",
+        "da84d19c-dac4-4588-a214-df2b299b7303",
+        "dc1b29bd-de73-4a01-84e3-398bbaab5881",
+        "dc2d0e1e-9c58-4326-aa07-080166ec4b96",
+        "dd01372e-7747-4ab5-9942-6fb8cc646695",
+        "ea30e53c-32aa-4d5f-9319-d91302e033d4",
+        "eacbbef1-1fac-4719-af75-cda99a16c07b",
+        "f2b4948e-0af0-45da-b7aa-d6ebf192b454",
+        "f566f09b-0a84-4bfd-be8a-40bcea8ec8f2",
+        "fad5cbfa-c5f7-4381-b248-c36bd2bd74c3"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Beginner Friendly"
+    },
+    {
+      "query": "我想做点能改善看病体验、帮助病人的东西",
+      "group": "semantic",
+      "relevant_ids": [
+        "0c10043d-bfea-4274-9ca9-e37ff26c640c",
+        "288b42cc-746b-4e63-8c86-314cd4b4cdce",
+        "44560c22-6bdc-47d8-975e-d2a944e3d314",
+        "4ddbd28b-2d53-4398-939e-cfaa9dc20d03",
+        "553ae93f-41c4-460f-8c0c-2c160ae2c1c2",
+        "7a26be45-1110-4f83-9b7f-c04f28fdcf11",
+        "7a6b9538-4577-4fca-9427-a4f6a7ccdbed",
+        "89f36dfa-60cd-409d-88ee-d7f66c6eace6",
+        "ae2ff65a-06f1-415f-bf78-32174e4ba0a8",
+        "b7f807ff-0d40-4d44-ba6b-112004cb790b",
+        "bc71422a-48a6-4efb-ad8c-36ea8e034f92",
+        "c639821b-94a6-47ce-9c33-6255a842b917",
+        "ea30e53c-32aa-4d5f-9319-d91302e033d4"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Health"
+    },
+    {
+      "query": "想做一个帮助别人学习的工具，有适合的比赛吗",
+      "group": "semantic",
+      "relevant_ids": [
+        "031237bb-2346-4c0a-ba1e-274cb2e9b17c",
+        "04fcfdc7-52af-4d81-856b-0c240c692aae",
+        "21b3697b-0e3b-4771-be86-e4fa30f1c216",
+        "2b3c571e-dc48-468c-993c-dc02c65c2325",
+        "3924f5e3-e5bb-4c84-b77d-d74bfee97a02",
+        "3cc495b6-51d2-4840-a924-7148c467ca51",
+        "3d1ea41a-d7f3-4e26-9b12-d2e156acd115",
+        "3f3da219-3662-4a48-a191-2ad2154e23bb",
+        "44560c22-6bdc-47d8-975e-d2a944e3d314",
+        "48905c95-3437-4847-8545-e2625e69dee1",
+        "4b6fac6d-4c94-49c9-a8ba-d32956f4efe6",
+        "5c531283-0698-4253-9f6b-ceb469fcce5a",
+        "67e85d01-0369-4cfb-be5f-484776b0746c",
+        "717f71f2-9437-4f27-a6d4-614d7beddfde",
+        "725af43d-2d5e-44cb-a460-89be3e6f8665",
+        "7a26be45-1110-4f83-9b7f-c04f28fdcf11",
+        "807c8c12-df95-4d4d-b0a2-f1e8a908b982",
+        "83cd681a-6436-402e-9c67-ba7629e455b7",
+        "86c10629-3497-4a6f-bef0-b073888fe097",
+        "8e473c30-57cf-4567-96c7-7ecac5f59751",
+        "93856e4d-5860-44e5-8f61-9329c9780769",
+        "9d3e74b0-7433-4476-99e3-08238a9eb3d0",
+        "a47385b4-57ae-43ef-898b-280b2bf95ea2",
+        "a573a4f8-4ba5-4ad5-8a6d-9f683432a352",
+        "ae2ff65a-06f1-415f-bf78-32174e4ba0a8",
+        "ae447384-a392-488d-9521-d5a80928c154",
+        "bc39803f-a1ec-4384-98f5-0e51a76892b8",
+        "be2debd3-2b17-401e-8c2a-0db64a2a34d8",
+        "bf83113f-3d52-4c3e-b5b6-4928815de50a",
+        "c0709d8f-e0a3-4cc1-b0f4-e753ab1eb280",
+        "c4174bff-d454-4a5f-841f-31c1075146df",
+        "eacbbef1-1fac-4719-af75-cda99a16c07b",
+        "f2b4948e-0af0-45da-b7aa-d6ebf192b454",
+        "f753719f-f9c6-47d7-bd3c-b9f704824628"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Education"
+    },
+    {
+      "query": "想做防止账号被黑、保护上网安全的项目",
+      "group": "semantic",
+      "relevant_ids": [
+        "1800d54d-e2a8-42dd-87ff-f71c703bde21",
+        "21b3697b-0e3b-4771-be86-e4fa30f1c216",
+        "295dafe5-a0d9-4714-9621-9b7713584b1b",
+        "2b3c571e-dc48-468c-993c-dc02c65c2325",
+        "53f37221-2048-4b13-96f7-c6b539497c3a",
+        "83cd681a-6436-402e-9c67-ba7629e455b7",
+        "8be121b3-467f-49bf-a637-64cca617fd9c",
+        "9450857d-b71d-42bc-962e-ea8f9c03fc6f",
+        "9c2a39ec-1d7c-4ff1-9290-89561e5ddbbb"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Cybersecurity"
+    },
+    {
+      "query": "我喜欢做游戏，想找能交游戏作品的比赛",
+      "group": "semantic",
+      "relevant_ids": [
+        "3b7d5c61-2172-423f-8601-8f32d15ce432",
+        "4c944153-5c50-4ba5-9ed9-ea4c8be2aba4",
+        "538bdbc1-01aa-4c23-a8e7-77d97c43a7a7",
+        "594c8190-dda5-467a-ac85-5335614bdaef",
+        "5d883c63-e758-4b37-ab5e-d51ad623f122",
+        "807c8c12-df95-4d4d-b0a2-f1e8a908b982",
+        "c1910b97-d19e-45e9-88cf-dfce33bd9d8d",
+        "f34503d3-7137-4c29-a0c1-7fda1bf59208",
+        "fad5cbfa-c5f7-4381-b248-c36bd2bd74c3"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Gaming"
+    },
+    {
+      "query": "有没有能玩虚拟现实、增强现实的比赛",
+      "group": "semantic",
+      "relevant_ids": [
+        "0c10043d-bfea-4274-9ca9-e37ff26c640c",
+        "2ff2a0b1-0146-467f-8b4c-5767f01c59ee",
+        "3dea56b1-c224-44f2-9aa7-c0f36a29c442",
+        "6109a1e4-9ef7-4cf4-88f4-36e3a75888d6",
+        "af15bd64-b22a-49a1-81e7-b223f04936ce",
+        "f3f21a95-b7df-44ba-9c1b-2f26a5d58d12"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 AR/VR"
+    },
+    {
+      "query": "我想把传感器和联网设备结合起来做东西",
+      "group": "semantic",
+      "relevant_ids": [
+        "399706a5-d78b-4e54-9537-20c9b5138991",
+        "50ba6322-f3fc-47ed-8793-1b671d2e99a3",
+        "8be121b3-467f-49bf-a637-64cca617fd9c",
+        "a0c95d42-7322-4155-98c4-5728e5a24d87",
+        "bd9117e7-a097-4636-8ce4-6bb6b6070b7b",
+        "c4174bff-d454-4a5f-841f-31c1075146df",
+        "d65deec1-c547-43fc-a23e-80b043664cbf",
+        "e0b4aa48-530b-41b1-b4fb-440ff31bbd4b",
+        "ee7b52ea-4297-4343-b16b-3fcf2a7a5d53"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 IoT"
+    },
+    {
+      "query": "想做支付或者理财相关的小产品",
+      "group": "semantic",
+      "relevant_ids": [
+        "16a2d7ba-3b09-4290-8888-35f74cc179f5",
+        "7a6b9538-4577-4fca-9427-a4f6a7ccdbed",
+        "d85ec0c8-3a5b-42b5-8e3a-498c4b1a2c08",
+        "f3f21a95-b7df-44ba-9c1b-2f26a5d58d12"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Fintech"
+    },
+    {
+      "query": "我想做点提高工作效率、少干重复活的东西",
+      "group": "semantic",
+      "relevant_ids": [
+        "14482b66-7242-4c4b-8365-3fdc1a52d3bb",
+        "232e2569-1e0c-4237-b4d2-820b19ff18cc",
+        "636979c2-7c9e-4b15-8ab3-dc44db3a354b",
+        "6399614c-22f8-4fb6-b175-3ec377766cac",
+        "838f478a-001a-45f4-950b-3b5e10e9b27d",
+        "8b51a6c0-a027-49d4-90bc-adfbc4e1cda0",
+        "8f0bebef-c748-466b-b258-87efdce7c10b",
+        "c460be55-cb07-406a-a27f-d539b6784d61",
+        "d7d1b706-6afc-4cb1-9095-b63971f6cdf2",
+        "dd01372e-7747-4ab5-9942-6fb8cc646695"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Productivity"
+    },
+    {
+      "query": "我更擅长分析数据，想找能做数据项目的比赛",
+      "group": "semantic",
+      "relevant_ids": [
+        "02aee8d9-321b-4108-a067-84a2789b3e8f",
+        "3b7d5c61-2172-423f-8601-8f32d15ce432",
+        "6302e249-9126-4873-8c45-476e757eac10",
+        "6399614c-22f8-4fb6-b175-3ec377766cac",
+        "761cdfb8-3f51-4982-b0a8-2050ae9ab885",
+        "765a306a-918d-47ab-b640-ada89fbcd513",
+        "9258abeb-0897-4adb-bea2-9b05397b3e74",
+        "bc71422a-48a6-4efb-ad8c-36ea8e034f92"
+      ],
+      "evidence": "比赛快照的来源主题标签包含 Databases"
+    },
+    {
+      "query": "有没有用技术帮助癌症患者的比赛",
+      "group": "semantic",
+      "relevant_ids": [
+        "ae2ff65a-06f1-415f-bf78-32174e4ba0a8"
+      ],
+      "evidence": "简介与赛事正文明确是癌症和肿瘤学，含患者体验与支持类别",
+      "evidence_urls": [
+        "https://codethecure-hackathon-26.devpost.com/"
+      ]
+    },
+    {
+      "query": "我想给创业者做个自动查市场、整理会议记录的助手",
+      "group": "semantic",
+      "relevant_ids": [
+        "d7d1b706-6afc-4cb1-9095-b63971f6cdf2"
+      ],
+      "evidence": "赛事正文要求为创始人开发自动处理市场扫描、线索和会议纪要的 AI agent",
+      "evidence_urls": [
+        "https://ai-agents-founders-hetic-26.devpost.com/"
+      ]
+    },
+    {
+      "query": "想做一个自己认路、能走迷宫的小机器人",
+      "group": "semantic",
+      "relevant_ids": [
+        "c4174bff-d454-4a5f-841f-31c1075146df"
+      ],
+      "evidence": "简介与正文要求机器人结合循线、迷宫求解和导航",
+      "evidence_urls": [
+        "https://hybrid-micro-mouse-challenge.devpost.com/"
+      ]
+    },
+    {
+      "query": "想开发可以在家用私有云存储上运行的智能小工具",
+      "group": "semantic",
+      "relevant_ids": [
+        "14482b66-7242-4c4b-8365-3fdc1a52d3bb"
+      ],
+      "evidence": "赛事正文要求开发在 UGREEN AI NAS 运行的 AI Skill",
+      "evidence_urls": [
+        "https://ugreenhackathon.devpost.com/"
+      ]
+    },
+    {
+      "query": "CodeTheCure",
+      "group": "keyword_control",
+      "relevant_ids": [
+        "ae2ff65a-06f1-415f-bf78-32174e4ba0a8"
+      ],
+      "evidence": "已知比赛名片段精确匹配，检查关键词路径保留",
+      "evidence_urls": [
+        "https://codethecure-hackathon-26.devpost.com/"
+      ]
+    },
+    {
+      "query": "UGREEN",
+      "group": "keyword_control",
+      "relevant_ids": [
+        "14482b66-7242-4c4b-8365-3fdc1a52d3bb"
+      ],
+      "evidence": "已知比赛名片段精确匹配，检查关键词路径保留",
+      "evidence_urls": [
+        "https://ugreenhackathon.devpost.com/"
+      ]
+    }
+  ]
+}

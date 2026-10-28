@@ -6,6 +6,11 @@ from pydantic import ValidationError
 from contest_detective.contest.schemas import ContestDraft, ContestQuery
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 def test_draft_preserves_deadline_kind():
     draft = ContestDraft(name='Hack', page={'url':'https://example.com','site':'主办方','title':'规则','published_at':None,'is_official':True}, claims=[{'field':'submission_deadline','value':'2026-10-25T08:00:00Z','excerpt':'16:00 提交截止'}])
     assert draft.claims[0].field == 'submission_deadline'

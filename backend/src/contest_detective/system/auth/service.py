@@ -49,6 +49,13 @@ async def current(request: Request) -> str | None:
     return str(user.id) if user else None
 
 
+async def require_user(request: Request) -> str:
+    user_id = await current(request)
+    if user_id is None:
+        raise BizException('请先登录后继续', code=401)
+    return user_id
+
+
 get_current_user_id = current
 
 

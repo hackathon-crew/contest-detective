@@ -15,6 +15,11 @@ from contest_detective.contest.schemas import ContestDraft
 from contest_detective.contest.service import save
 
 
+@pytest.fixture
+def client(authenticated_client):
+    return authenticated_client
+
+
 def seed(session_factory):
     with session_factory() as session:
         contest_id = save(session, ContestDraft(name='周末开源黑客松', page={
@@ -198,6 +203,8 @@ def test_local_server_factory_uses_database_and_stream_for_both_questions(sessio
     from contest_detective.bootstrap.api.agent import limiter
     limiter.reset()
     with TestClient(app) as client:
+        from account_helpers import authenticate_transport
+        authenticate_transport(app, session_factory)
         for question in ['这周末能线上参加的黑客松', '某场比赛的16:00是不是报名截止']:
             response = client.post('/agent/ask', json={'question': question})
             assert response.headers['content-type'].startswith('text/event-stream')

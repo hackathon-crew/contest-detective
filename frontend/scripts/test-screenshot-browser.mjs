@@ -140,6 +140,19 @@ try {
         contentType: 'text/event-stream',
         body: `event: plan\ndata: ${JSON.stringify(report.plan)}\n\nevent: answer\ndata: ${JSON.stringify({ content: '仅测试报告', sources: [], report })}\n\n`,
       })
+    } else if (url.pathname === '/api/auth/me' || url.pathname === '/api/account/conversations') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 200,
+          message: 'ok',
+          data:
+            url.pathname === '/api/auth/me'
+              ? { id: 'screenshot-test-account', username: 'test@example.org', profile: {} }
+              : [],
+        }),
+      })
     } else if (url.pathname.startsWith('/api/')) {
       await route.fulfill({
         status: 200,

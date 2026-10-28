@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { renderDetective } from './detective.test.utils'
+import { readRenderedSessions, renderDetective } from './detective.test.utils'
 import { reportFixture } from './verification-fixtures.test-utils'
-import { loadSessions } from './sessions'
 
 let streams: ReadableStreamDefaultController<Uint8Array>[]
 beforeEach(() => {
@@ -57,13 +56,14 @@ it('计划、真实执行和终态报告流式保存，重开仍使用同一份�
   expect(log().getByText('查证未完成')).toBeTruthy()
   expect(log().getByText('反驳')).toBeTruthy()
   expect(log().getByText('这一段不覆盖原始说法。')).toBeTruthy()
-  await waitFor(() => expect(loadSessions('guest')[0].turns[0].report).toEqual(report))
-  const session = loadSessions('guest')[0]
+  await waitFor(() => expect(readRenderedSessions()[0].turns[0].report).toEqual(report))
+  const session = readRenderedSessions()[0]
+
   expect(session.turns[0].plan).toEqual(report.plan)
   expect(session.turns[0].trace).toHaveLength(2)
   first.unmount()
-  renderDetective({}, `/detective/${session.id}`)
-  expect(log().getByText('查证未完成')).toBeTruthy()
+  renderDetective({ savedSessions: [session] }, `/detective/${session.id}`)
+  expect((await screen.findAllByText('查证未完成')).length).toBeGreaterThan(0)
   expect(log().getByRole('button', { name: '下载 JSON' })).toBeTruthy()
 })
 
@@ -108,7 +108,7 @@ it('取消已发出但未返回的查询不显示完成，也不生成报告', a
   await waitFor(() => expect(log().getByText('已停止，完成 0 项检索')).toBeTruthy())
   expect(log().queryByLabelText('已完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
-  expect(loadSessions('guest')[0].turns[0].status).toBe('stopped')
+  expect(readRenderedSessions()[0].turns[0].status).toBe('stopped')
 })
 
 it('附加报告关联异常时仍显示正文，不提供报告导出', async () => {

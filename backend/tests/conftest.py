@@ -31,7 +31,7 @@ def session(session_factory):
 
 
 @pytest.fixture
-def client(session_factory):
+def anonymous_client(session_factory):
     app = create_app(db_engine=session_factory.kw['bind'])
     def override():
         with session_factory() as session:
@@ -39,3 +39,23 @@ def client(session_factory):
     app.dependency_overrides[get_session] = override
     with TestClient(app) as client:
         yield client
+
+
+@pytest.fixture
+def client(anonymous_client):
+    return anonymous_client
+
+
+@pytest.fixture
+def authenticated_client(anonymous_client, session_factory):
+    from uuid import UUID
+    from contest_detective.system.auth.service import require_user
+    from contest_detective.system.user.models import User
+
+    user_id = UUID('00000000-0000-0000-0000-000000000001')
+    with session_factory() as session:
+        session.add(User(id=user_id, email='transport@example.com', hashed_password='unused', is_verified=True))
+        session.commit()
+    anonymous_client.app.dependency_overrides[require_user] = lambda: str(user_id)
+    yield anonymous_client
+    anonymous_client.app.dependency_overrides.pop(require_user, None)

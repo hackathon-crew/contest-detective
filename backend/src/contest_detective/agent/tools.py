@@ -27,6 +27,8 @@ from contest_detective.framework.exceptions import BizException
 from .extraction import create_page_extractor
 from .retry import WEB_ERRORS, retry_transient
 from .schemas import ToolSource
+from .rag.contracts import ContestRetriever
+from .rag.retrieval import HybridRetriever
 from .verification import VerificationState, safe_evidence_url, scope_check, public_search_site, public_payload
 from .verification_contracts import InvestigationPlan
 from contest_detective.research.contracts import SearchExecution
@@ -89,6 +91,7 @@ class ToolDeps:
     database_searched: bool = False
     web_searched: bool = False
     unavailable_sources: bool = False
+    retriever: ContestRetriever | None = None
 
     def observe_contest(self, item):
         self.observed_contests[item.id] = plain(item)
@@ -169,13 +172,18 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                               page_size: Annotated[int, Field(ge=1, le=20)] = 20) -> dict:
         """查询候选名片；未传 status 时遵循账户默认截止过滤开关，无账户时启用。显式 status 可查历史。
 
+        keyword 可用自然语言描述想找的比赛，Postgres 按关键词与语义相关性合并候选。
         page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。
         """
-        with ctx.deps.session_factory() as session:
-            items, total = contests.query(session, ContestQuery(keyword=keyword, status=status, mode=mode,
-                date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
-                attendable=status is None and (ctx.deps.preferences is None or ctx.deps.preferences.exclude_ended),
-                blocked_domains=ctx.deps.preferences.blocked_domains if ctx.deps.preferences else ())
+        def retrieve():
+            with ctx.deps.session_factory() as session:
+                return (ctx.deps.retriever or HybridRetriever()).search(session,
+                    ContestQuery(keyword=keyword, status=status, mode=mode,
+                        date_from=date_from, date_to=date_to, sort=sort, page=page, page_size=page_size),
+                    attendable=status is None and (ctx.deps.preferences is None or ctx.deps.preferences.exclude_ended),
+                    blocked_domains=ctx.deps.preferences.blocked_domains if ctx.deps.preferences else ())
+
+        items, total = await invoke(retrieve)
         ctx.deps.database_searched = True
         for item in items:
             ctx.deps.observe_contest(item)

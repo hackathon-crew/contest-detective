@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
+import { personalIntent, useLoginGate } from '@/entities/user'
 import type { Profile } from '@/shared/api'
 import type { VerificationOptions } from './verification-contracts'
 import { DetectiveComposer, type DetectiveContextAction } from './detective-composer'
@@ -13,13 +14,16 @@ export function DetectiveDock({
   profile?: Profile | null
   onAddProfile?: (section: DetectiveContextAction) => void
 }) {
-  const [question, setQuestion] = useState('')
+  const location = useLocation()
+  const [question, setQuestion] = useState(() => personalIntent(location).question ?? '')
   const { send } = useDetective()
+  const requireLogin = useLoginGate()
   const navigate = useNavigate()
   function submit(event: FormEvent, verification?: VerificationOptions) {
     event.preventDefault()
     if (!question.trim()) return
     const id = send(question, profile, undefined, verification)
+    if (!id) return
     setQuestion('')
     navigate(`/detective/${id}`)
   }
@@ -31,10 +35,12 @@ export function DetectiveDock({
         onChange={setQuestion}
         onSubmit={submit}
         onStop={() => {}}
-        onAddProfile={onAddProfile}
+        onAddProfile={(section) => {
+          if (requireLogin({ question, profileSection: section })) onAddProfile?.(section)
+        }}
         onVerifyScreenshot={({ question: screenshotQuestion, ...verification }) => {
           const id = send(screenshotQuestion, profile, undefined, verification)
-          navigate(`/detective/${id}`)
+          if (id) navigate(`/detective/${id}`)
         }}
       />
     </section>

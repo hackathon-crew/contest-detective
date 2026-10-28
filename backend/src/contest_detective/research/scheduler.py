@@ -66,9 +66,10 @@ def _already_ran(session_factory, ran_on: str) -> bool:
 
 
 def start_scheduler(session_factory, interval_minutes: int, *, extractor=None, normalizer=None, tavily=None,
-                    daily_at: str = "", window_minutes: int = 60, detail_fetcher=None) -> BackgroundScheduler | None:
+                    daily_at: str = "", window_minutes: int = 60, detail_fetcher=None,
+                    after_sync=None) -> BackgroundScheduler | None:
     if daily_at:
-        return _start_daily(session_factory, daily_at, window_minutes, extractor, normalizer, tavily, detail_fetcher)
+        return _start_daily(session_factory, daily_at, window_minutes, extractor, normalizer, tavily, detail_fetcher, after_sync)
     if interval_minutes <= 0:
         return None
     scheduler = BackgroundScheduler(timezone=timezone.utc)
@@ -82,6 +83,8 @@ def start_scheduler(session_factory, interval_minutes: int, *, extractor=None, n
         if detail_fetcher is not None:
             kwargs['detail_fetcher'] = detail_fetcher
         run_pipeline(session_factory, **kwargs)
+        if after_sync is not None:
+            after_sync()
 
     scheduler.add_job(
         sync, 'interval', minutes=interval_minutes, id=JOB_ID,
@@ -91,7 +94,7 @@ def start_scheduler(session_factory, interval_minutes: int, *, extractor=None, n
     return scheduler
 
 
-def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor, normalizer, tavily, detail_fetcher) -> BackgroundScheduler:
+def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor, normalizer, tavily, detail_fetcher, after_sync) -> BackgroundScheduler:
     clock = _clock(daily_at)
     scheduler = BackgroundScheduler(timezone=SHANGHAI)
 
@@ -107,6 +110,8 @@ def _start_daily(session_factory, daily_at: str, window_minutes: int, extractor,
         if detail_fetcher is not None:
             kwargs['detail_fetcher'] = detail_fetcher
         run_pipeline(session_factory, **kwargs)
+        if after_sync is not None:
+            after_sync()
 
     now = datetime.now(SHANGHAI)
     key = window_key(now, daily_at, window_minutes)

@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
+import { currentUserKey } from '@/entities/user'
 import { stubResizeObserver } from '@/features/detective/detective.test.utils'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
@@ -42,12 +43,16 @@ function renderAt(path: string) {
         }),
       ),
   )
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(currentUserKey, {
+    id: 'route-user',
+    username: 'route@example.org',
+    profile: {},
+  })
   render(
     <MemoryRouter initialEntries={[path]}>
       <NuqsAdapter>
-        <QueryClientProvider
-          client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-        >
+        <QueryClientProvider client={client}>
           <AppRoutes />
         </QueryClientProvider>
       </NuqsAdapter>

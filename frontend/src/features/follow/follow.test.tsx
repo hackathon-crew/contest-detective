@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, expect, it, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter, Route, Routes } from 'react-router'
 import { FollowButton, FOLLOW_STORAGE_KEY, useFollows } from './index'
+import { currentUserKey } from '@/entities/user'
 
 function Harness() {
   const follows = useFollows()
@@ -14,56 +16,72 @@ function Harness() {
     </>
   )
 }
-
-function setup() {
+function setup(signedIn = false) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  client.setQueryData(
+    currentUserKey,
+    signedIn ? { id: 'owner', username: 'owner@example.com', profile: {} } : null,
+  )
   return render(
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
-    >
-      <Harness />
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <Routes>
+          <Route path="/" element={<Harness />} />
+          <Route path="/login" element={<h1>登录后继续关注</h1>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
-beforeEach(() => {
-  vi.stubGlobal(
-    'fetch',
-    async () => new Response(JSON.stringify({ code: 200, message: 'ok', data: null })),
-  )
-})
 afterEach(() => {
-  vi.unstubAllGlobals()
   cleanup()
+  vi.unstubAllGlobals()
   vi.restoreAllMocks()
   localStorage.clear()
 })
 
-it('关注集合去重、切换并在重新打开后恢复', async () => {
-  localStorage.setItem(FOLLOW_STORAGE_KEY, JSON.stringify(['one', 'one', null, 3, 'two']))
+it('游客关注先登录，保留旧本地记录并且不新增匿名关注', async () => {
+  const saved = JSON.stringify(['old'])
+  localStorage.setItem(FOLLOW_STORAGE_KEY, saved)
+  vi.stubGlobal('fetch', async () => Response.json({ code: 200, message: 'ok', data: null }))
   setup()
-  expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('true')
-  await waitFor(() => expect(screen.getByRole('button')).toHaveProperty('disabled', false))
-  fireEvent.click(screen.getByRole('button'))
-  expect(JSON.parse(localStorage.getItem(FOLLOW_STORAGE_KEY)!)).toEqual(['two'])
-  cleanup()
-  setup()
-  expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('false')
-  expect(screen.getByRole('status').textContent).toBe('two')
+  fireEvent.click(screen.getByRole('button', { name: '关注' }))
+  expect(await screen.findByRole('heading', { name: '登录后继续关注' })).toBeTruthy()
+  expect(localStorage.getItem(FOLLOW_STORAGE_KEY)).toBe(saved)
 })
 
-it('存储写入失败时保留原状态并给出错误', async () => {
-  setup()
-  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-    throw new Error('blocked')
+it('登录后的关注通过账号接口保存并在重新打开后恢复', async () => {
+  let followed = false
+  vi.stubGlobal('fetch', async (_input: RequestInfo | URL, init?: RequestInit) => {
+    if (init?.method === 'PUT') followed = true
+    if (init?.method === 'DELETE') followed = false
+    const data = followed
+      ? [
+          {
+            contest: { id: 'one', name: 'One', status: 'upcoming', cover_url: null, fields: {} },
+            reminders: true,
+            created_at: '2026-10-28T00:00:00Z',
+          },
+        ]
+      : []
+    return Response.json({ code: 200, message: 'ok', data })
   })
+  const first = setup(true)
   await waitFor(() => expect(screen.getByRole('button')).toHaveProperty('disabled', false))
-  fireEvent.click(screen.getByRole('button'))
-  expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('false')
-  expect(screen.getByRole('alert').textContent).toContain('无法保存关注')
+  fireEvent.click(screen.getByRole('button', { name: '关注' }))
+  expect(await screen.findByRole('button', { name: '已关注' })).toBeTruthy()
+  first.unmount()
+  setup(true)
+  expect(await screen.findByRole('button', { name: '已关注' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: '已关注' }))
+  expect(await screen.findByRole('button', { name: '关注' })).toBeTruthy()
+  expect(localStorage.getItem(FOLLOW_STORAGE_KEY)).toBeNull()
 })
 
-it('损坏的浏览器数据不会让页面崩溃', () => {
+it('游客浏览不读取或展示旧的匿名关注数据', () => {
   localStorage.setItem(FOLLOW_STORAGE_KEY, '{invalid')
+  vi.stubGlobal('fetch', async () => Response.json({ code: 200, message: 'ok', data: null }))
   setup()
-  expect(screen.getByRole('button').getAttribute('aria-pressed')).toBe('false')
-  expect(screen.getByRole('alert').textContent).toContain('无法读取关注')
+  expect(screen.getByRole('status').textContent).toBe('')
+  expect(screen.queryByRole('alert')).toBeNull()
 })

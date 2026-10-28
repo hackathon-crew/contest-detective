@@ -15,7 +15,7 @@ MERGE = '0012_merge_content_notifications'
 MAIL = '0012_mail_delivery'
 ACCOUNT_MERGE = '0013_merge_account_mail'
 WATCH = '0014_private_watch'
-HEAD = '0019_account_conversations'
+HEAD = '0020_contest_embeddings'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -145,7 +145,8 @@ def assert_integrity(engine):
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
-    assert scripts.get_revision(HEAD).down_revision == '0018_retrieval_windows'
+    assert scripts.get_revision(HEAD).down_revision == '0019_account_conversations'
+    assert scripts.get_revision('0019_account_conversations').down_revision == '0018_retrieval_windows'
     assert scripts.get_revision('0018_retrieval_windows').down_revision == '0017_widen_question'
     assert scripts.get_revision('0017_widen_question').down_revision == '0016_pgvector_extension'
     assert scripts.get_revision('0016_pgvector_extension').down_revision == '0015_registration_codes'

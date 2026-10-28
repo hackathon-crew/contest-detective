@@ -9,7 +9,7 @@ from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
 
-from contest_detective.framework.db import SessionLocal
+from contest_detective.framework.db import SessionLocal, get_session
 from contest_detective.agent.loop import Investigator
 from contest_detective.system.user import service as users
 from contest_detective.bootstrap.api.agent import get_investigator
@@ -63,6 +63,10 @@ def respond(messages, info):
 
 def create_fake_app(*, db_engine=None, session_factory=SessionLocal):
     app = create_app(db_engine=db_engine)
+    def session_override():
+        with session_factory() as session:
+            yield session
+    app.dependency_overrides[get_session] = session_override
     def profile_reader(user_id):
         with session_factory() as session:
             user = users.get(session, user_id)

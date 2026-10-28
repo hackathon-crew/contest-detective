@@ -9,6 +9,7 @@ from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.config.search import get_search_settings
 from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.agent.config import get_llm_settings
+from contest_detective.agent.rag.index import refresh_index
 from contest_detective.research.pipeline.execute import reconcile_existing, run_pipeline
 
 logger = logging.getLogger(__name__)
@@ -78,4 +79,5 @@ def main(argv=None) -> None:
     if tavily is not None and normalizer is not None:
         kwargs['tavily'] = tavily
     report = run_pipeline(SessionLocal, **kwargs)
+    refresh_index(SessionLocal)
     print(report.model_dump_json())
