@@ -8,14 +8,14 @@ from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.result import Response
 from contest_detective.framework.db import get_session
 from contest_detective.system.account.providers import runtime_for
-from contest_detective.system.auth.service import current as query_user
+from contest_detective.system.auth.service import current as query_user, require_user
 from contest_detective.agent.llm import create_model
 from contest_detective.system.user.github import build_github_profile
 from contest_detective.system.user.matching import match
 from contest_detective.system.user.resume import MAX_BYTES, create_profile_extractor, parse_resume
 from contest_detective.system.user.schemas import GitHubUsername, MatchItem, Profile
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_user)])
 
 
 class GitHubInput(BaseModel):
