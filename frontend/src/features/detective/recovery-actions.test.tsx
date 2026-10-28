@@ -1,3 +1,4 @@
+import type { DetectiveSession } from './sessions'
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -46,30 +47,27 @@ it.each(['stream', 'preflight'])(
 )
 
 it('one-click retry after restart keeps the question and preferences without retyping', async () => {
-  localStorage.setItem(
-    'contest-detective.sessions.guest',
-    JSON.stringify([
-      {
-        id: 'conversation',
-        title: '查原问题的报名时间',
-        createdAt: 1,
-        updatedAt: 1,
-        turns: [
-          {
-            id: 'turn',
-            investigationId: 'old-run',
-            lastSeq: 0,
-            question: '查原问题的报名时间',
-            content: '',
-            request: { profile: { skills: ['Python'] } },
-            trace: [],
-            sources: [],
-            status: 'running',
-          },
-        ],
-      },
-    ]),
-  )
+  const savedSessions: DetectiveSession[] = [
+    {
+      id: 'conversation',
+      title: '查原问题的报名时间',
+      createdAt: 1,
+      updatedAt: 1,
+      turns: [
+        {
+          id: 'turn',
+          investigationId: 'old-run',
+          lastSeq: 0,
+          question: '查原问题的报名时间',
+          content: '',
+          request: { profile: { skills: ['Python'] } },
+          trace: [],
+          sources: [],
+          status: 'running',
+        },
+      ],
+    },
+  ]
   const fetch = vi.fn(
     async (input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(
@@ -83,7 +81,7 @@ it('one-click retry after restart keeps the question and preferences without ret
       ),
   )
   vi.stubGlobal('fetch', fetch)
-  renderDetective({}, '/detective/conversation')
+  renderDetective({ savedSessions }, '/detective/conversation')
   fireEvent.click(await screen.findByRole('button', { name: '一键重查' }))
   expect(await screen.findByText('重查后得到完整答案。')).toBeTruthy()
   const request = fetch.mock.calls.find(([url]) => String(url).endsWith('/agent/ask'))!
