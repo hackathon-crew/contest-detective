@@ -1,5 +1,5 @@
 import { ArrowUp, ImagePlus, Plus, Square, X } from 'lucide-react'
-import { useRef, useState, type FormEvent, type Ref } from 'react'
+import { useRef, useState, type FormEvent, type Ref, type ReactNode } from 'react'
 import { DropdownMenu, Popover } from 'radix-ui'
 import githubMark from '@/shared/assets/github-mark.svg'
 import { ContestFilterIcon, ProfileIcon } from '@/shared/ui/context-icons'
@@ -21,6 +21,7 @@ export function DetectiveComposer({
   inputRef,
   placeholder = '问一个问题',
   profileGuide,
+  attachment,
 }: {
   value: string
   pending: boolean
@@ -32,6 +33,7 @@ export function DetectiveComposer({
   inputRef?: Ref<HTMLTextAreaElement>
   placeholder?: string
   profileGuide?: { onDismiss: () => void; onCreate: () => void }
+  attachment?: ReactNode
 }) {
   const [screenshotOpen, setScreenshotOpen] = useState(false)
   const addButton = useRef<HTMLButtonElement>(null)
@@ -41,8 +43,10 @@ export function DetectiveComposer({
         className="detective-composer"
         data-multiline={value.includes('\n') || value.length > 40}
         data-filled={value.length > 0}
+        data-attachment={!!attachment}
         onSubmit={(event) => onSubmit(event)}
       >
+        {attachment && <div className="detective-composer__attachment">{attachment}</div>}
         <Popover.Root
           open={!!profileGuide}
           onOpenChange={(open) => {

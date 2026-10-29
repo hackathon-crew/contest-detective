@@ -33,7 +33,7 @@ export interface ContestDetailProps {
   open?: boolean
   onClose: () => void
   action?: ReactNode
-  onAsk?: (question: string) => void
+  onAsk?: (contest: Contest) => void
   variant?: 'default' | 'library'
 }
 
@@ -298,7 +298,7 @@ export function ContestDetail({
               <button
                 type="button"
                 className="site-button site-button--outline"
-                onClick={() => onAsk(`帮我核实一下「${contest.name}」的截止时间`)}
+                onClick={() => onAsk(contest)}
               >
                 问侦探这场比赛
               </button>

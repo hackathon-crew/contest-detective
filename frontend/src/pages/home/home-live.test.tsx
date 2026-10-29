@@ -276,19 +276,44 @@ it('temporarily disables the deep investigation entry without starting a request
   fireEvent.click(button)
   expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
 })
-it('asks the detective about the opened contest instead of replaying the demo', async () => {
+it('attaches the opened contest and waits for a user question before sending', async () => {
   const calls = show('/contests/python')
   fireEvent.click(await screen.findByRole('button', { name: '问侦探这场比赛' }))
+  const input = await screen.findByRole('textbox', { name: '问侦探' })
+  expect((input as HTMLTextAreaElement).value).toBe('')
+  expect(await screen.findByRole('link', { name: '查看比赛：Python Hack' })).toBeTruthy()
+  expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
+  fireEvent.change(input, { target: { value: '大学生可以参加吗？' } })
+  fireEvent.keyDown(input, { key: 'Enter' })
   await waitFor(() =>
     expect(
       calls.some(
         ({ url, init }) =>
           url.pathname.endsWith('/agent/ask') &&
-          JSON.parse(String(init?.body)).question === '帮我核实一下「Python Hack」的截止时间',
+          JSON.parse(String(init?.body)).question === '大学生可以参加吗？' &&
+          JSON.parse(String(init?.body)).contest_id === 'python',
       ),
     ).toBe(true),
   )
-  expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
+  await screen.findByText('已核实出处。')
+  const followup = screen.getByRole('textbox', { name: '问侦探' })
+  fireEvent.change(followup, { target: { value: '需要组队吗？' } })
+  fireEvent.keyDown(followup, { key: 'Enter' })
+  await waitFor(() =>
+    expect(calls.filter(({ url }) => url.pathname.endsWith('/agent/ask'))).toHaveLength(2),
+  )
+  const second = calls.filter(({ url }) => url.pathname.endsWith('/agent/ask'))[1]!
+  expect(JSON.parse(String(second.init?.body)).contest_id).toBe('python')
+  await waitFor(() => expect((followup as HTMLTextAreaElement).disabled).toBe(false))
+  fireEvent.change(followup, { target: { value: '找其他线上比赛' } })
+  fireEvent.click(screen.getByRole('button', { name: '移除比赛引用' }))
+  expect((followup as HTMLTextAreaElement).value).toBe('找其他线上比赛')
+  fireEvent.keyDown(followup, { key: 'Enter' })
+  await waitFor(() =>
+    expect(calls.filter(({ url }) => url.pathname.endsWith('/agent/ask'))).toHaveLength(3),
+  )
+  const third = calls.filter(({ url }) => url.pathname.endsWith('/agent/ask'))[2]!
+  expect(JSON.parse(String(third.init?.body)).contest_id).toBeNull()
 })
 it('returns from a catalog detail to the same filtered catalog instance', async () => {
   show('/contests')

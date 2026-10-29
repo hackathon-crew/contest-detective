@@ -1,6 +1,6 @@
 import json
 from collections.abc import AsyncIterator
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Header, Query, Request
 from fastapi.responses import JSONResponse
@@ -18,8 +18,12 @@ from contest_detective.framework.config.app import get_app_settings
 from contest_detective.system.account.providers import runtime_for
 from contest_detective.agent.loop import Investigator, create_investigator
 from contest_detective.agent.models import Investigation
-from contest_detective.agent.schemas import AskRequest, TraceEvent
+from contest_detective.agent.schemas import AskRequest, ContestReference
+from contest_detective.contest import service as contests
+from contest_detective.agent.schemas import TraceEvent
 from contest_detective.agent.chat.service import SqlConversationStore
+from contest_detective.agent.chat.models import ChatConversation
+from contest_detective.agent.chat.contracts import SavedTurn
 from contest_detective.agent.schemas import ContestRecommendation, ResolveRecommendations
 from contest_detective.agent.recommendations import resolve_previous
 from contest_detective.system.auth.service import require_user
@@ -50,9 +54,21 @@ def prepare_chat_turn(body: AskRequest = Depends(get_ask_request), user_id: str 
             body.conversation_id = previous.conversation_id
         if 'turn_id' not in body.model_fields_set:
             body.turn_id = previous.id
+    context_turn = previous or (store.find_investigation(str(body.retry_of)) if body.retry_of else None)
+    if 'contest_id' not in body.model_fields_set:
+        if session.get(ChatConversation, (UUID(user_id), body.conversation_id)):
+            saved = store.get(body.conversation_id)
+            last_request = saved.turns[-1].request if saved.turns else None
+            if context_turn is not None:
+                last_request = SavedTurn.model_validate(context_turn.data).request
+            body.contest_id = last_request.contest.id if last_request and last_request.contest else None
+    selected = contests.get(session, body.contest_id) if body.contest_id else None
+    if body.contest_id and selected is None:
+        raise BizException('所选比赛不存在，请重新选择比赛。', code=404)
+    reference = ContestReference(id=selected.id, name=selected.name, cover_url=selected.cover_url) if selected else None
     store.start(body.conversation_id, body.turn_id, body.question, investigation_id=str(body.investigation_id),
                 retry_of=str(body.retry_of) if body.retry_of else None,
-                saved_request={'profile': body.profile, 'verificationOptions': {'mode': body.mode, 'confirmed_claims': body.confirmed_claims}})
+                saved_request={'contest': reference, 'profile': body.profile, 'verificationOptions': {'mode': body.mode, 'confirmed_claims': body.confirmed_claims}})
     session.commit()
 
 

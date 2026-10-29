@@ -9,6 +9,11 @@ import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
+import { useContest } from '@/entities/contest'
+import {
+  ContestReference,
+  type ContestReferenceValue,
+} from '@/features/detective/contest-reference'
 import readingFrame from '@/shared/assets/mascot/octo-read.png'
 import {
   DetectiveComposer,
@@ -29,6 +34,10 @@ export function DetectivePage() {
   const { conversationId } = useParams()
   const { sessions, loading, storageError, reload, send, stop } = useDetective()
   const session = sessions.find((item) => item.id === conversationId)
+  const savedReference = session?.turns.at(-1)?.request?.contest
+  const selectedId = new URLSearchParams(location.search).get('contest') ?? savedReference?.id ?? ''
+  const selected = useContest(selectedId)
+  const reference = selected.data ?? savedReference ?? null
   const [researchState, setResearchState] = useState<{
     conversationId?: string
     mode: 'auto' | 'open' | 'closed'
@@ -129,15 +138,18 @@ export function DetectivePage() {
             </Collapsible.Trigger>
           </header>
           <Conversation
-            key={conversationId ?? 'new'}
+            key={`${conversationId ?? 'new'}:${new URLSearchParams(location.search).get('contest') ?? ''}`}
             session={session}
             missing={!!conversationId && !session && !loading && !storageError}
             loading={loading && !!conversationId}
             storageError={storageError}
             onReload={() => void reload()}
             initialQuestion={personalIntent(location).question}
-            onSubmit={(text, verification) => {
-              const id = send(text, user?.profile, session?.id, verification)
+            reference={reference}
+            referenceLoading={!!selectedId && !reference && selected.isPending}
+            referenceError={!!selectedId && !reference && selected.isError}
+            onSubmit={(text, verification, contest) => {
+              const id = send(text, user?.profile, session?.id, verification, contest)
               if (id && id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
@@ -155,7 +167,7 @@ export function DetectivePage() {
             }}
           >
             <ResearchPanel
-              key={conversationId ?? 'new'}
+              key={`${conversationId ?? 'new'}:${new URLSearchParams(location.search).get('contest') ?? ''}`}
               turns={session?.turns ?? []}
               onClose={closeResearch}
             />
@@ -236,6 +248,9 @@ function Conversation({
   storageError,
   onReload,
   initialQuestion,
+  reference,
+  referenceLoading,
+  referenceError,
   onSubmit,
   onStop,
   onAddProfile,
@@ -248,19 +263,29 @@ function Conversation({
   storageError: boolean
   onReload: () => void
   initialQuestion?: string
-  onSubmit: (question: string, verification?: VerificationOptions) => void
+  reference: ContestReferenceValue | null
+  referenceLoading: boolean
+  referenceError: boolean
+  onSubmit: (
+    question: string,
+    verification?: VerificationOptions,
+    contest?: ContestReferenceValue | null,
+  ) => void
   onStop: () => void
   onAddProfile: (section: ProfileMatchSection) => void
   showProfileGuide: boolean
   onDismissProfileGuide: () => void
 }) {
   const [question, setQuestion] = useState(initialQuestion ?? '')
+  const [referenceRemoved, setReferenceRemoved] = useState(false)
+  const attached = referenceRemoved ? null : reference
   const input = useRef<HTMLTextAreaElement>(null)
   const scroll = useRef<HTMLDivElement>(null)
   const pinned = useRef(true)
   const turns = session?.turns ?? []
   const lastTurn = turns.at(-1)
-  const pending = loading || lastTurn?.status === 'running'
+  const pending =
+    loading || (!referenceRemoved && referenceLoading) || lastTurn?.status === 'running'
   useEffect(() => {
     if (!pending) input.current?.focus({ preventScroll: true })
   }, [pending])
@@ -280,9 +305,9 @@ function Conversation({
   }, [])
   function submit(event: FormEvent, verification?: VerificationOptions) {
     event.preventDefault()
-    if (!question.trim() || pending) return
+    if (!question.trim() || pending || (!referenceRemoved && referenceError)) return
     pinned.current = true
-    onSubmit(question.trim(), verification)
+    onSubmit(question.trim(), verification, attached)
     setQuestion('')
   }
   return (
@@ -326,7 +351,13 @@ function Conversation({
               </div>
             )}
             <h2>
-              {loading ? '正在读取对话…' : missing ? '没有找到这段对话' : '想找什么样的比赛？'}
+              {loading
+                ? '正在读取对话…'
+                : missing
+                  ? '没有找到这段对话'
+                  : attached
+                    ? '关于这场比赛，想了解什么？'
+                    : '想找什么样的比赛？'}
             </h2>
             {missing && <p>从左侧选择已有记录，或发起一段新对话。</p>}
           </div>
@@ -340,7 +371,24 @@ function Conversation({
               </button>
             </p>
           )}
+          {referenceError && !referenceRemoved && (
+            <p role="alert" className="detective-turn__error">
+              比赛资料暂时无法读取，请返回赛事库重新选择。
+            </p>
+          )}
           <DetectiveComposer
+            placeholder={attached ? '输入你想问的问题' : '问一个问题'}
+            attachment={
+              attached && (
+                <ContestReference
+                  contest={attached}
+                  onRemove={() => {
+                    setReferenceRemoved(true)
+                    input.current?.focus()
+                  }}
+                />
+              )
+            }
             value={question}
             pending={pending}
             onChange={setQuestion}
@@ -348,9 +396,16 @@ function Conversation({
             onStop={onStop}
             inputRef={input}
             onAddProfile={onAddProfile}
-            onVerifyScreenshot={({ question, ...verification }) => onSubmit(question, verification)}
+            onVerifyScreenshot={({ question, ...verification }) =>
+              onSubmit(question, verification, attached)
+            }
             profileGuide={
-              showProfileGuide && !missing && !turns.length
+              showProfileGuide &&
+              !missing &&
+              !loading &&
+              !referenceLoading &&
+              !turns.length &&
+              !attached
                 ? {
                     onDismiss: onDismissProfileGuide,
                     onCreate: () => {

@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-from contest_detective.agent.schemas import ContestRecommendation, Observation, Step, ToolSource
+from contest_detective.agent.schemas import ContestReference, ContestRecommendation, Observation, Step, ToolSource
 from contest_detective.agent.verification_contracts import ConfirmedClaim, VerificationMode, InvestigationPlan, InvestigationReport
 from contest_detective.system.user.schemas import MatchItem, Profile
 
@@ -53,6 +53,7 @@ class SavedVerificationOptions(BaseModel):
 
 
 class SavedRequest(BaseModel):
+    contest: ContestReference | None = None
     profile: Profile | None = None
     verificationOptions: SavedVerificationOptions | None = None
 

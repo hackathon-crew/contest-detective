@@ -2,6 +2,7 @@ import { Check, ChevronRight, LoaderCircle, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Link } from 'react-router'
 import { Button } from '@/shared/ui/button'
+import { ContestReference } from './contest-reference'
 import { useDetective } from './detective-context'
 import { safeUrl } from '@/entities/contest'
 import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
@@ -153,6 +154,11 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
     <article className="detective-turn" aria-label={`关于${turn.question}的对话`}>
       <div className="detective-turn__question">
         {turn.profileFile && <ProfileFileAttachment file={turn.profileFile} />}
+        {turn.request?.contest && (
+          <div className="w-80 max-w-full">
+            <ContestReference contest={turn.request.contest} />
+          </div>
+        )}
         <p>{turn.question}</p>
       </div>
       <div className="detective-turn__answer">

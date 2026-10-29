@@ -21,7 +21,7 @@ import { apiClient, type MatchItem } from '@/shared/api'
 import type { TrackMatches } from '@/shared/api/generated'
 import { ContestCalendar, ContestDatePicker } from '@/features/contest-calendar'
 import { ContestDetail } from '@/features/contest-detail'
-import { DetectiveDock, useDetective } from '@/features/detective'
+import { DetectiveDock } from '@/features/detective'
 import { WeeklyPicks } from '@/features/weekly-picks'
 import { FollowButton, useFollows } from '@/features/follow'
 import { ErrorState } from '@/shared/ui'
@@ -87,7 +87,6 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   if (contestId && contestId !== lastContestId) setLastContestId(contestId)
   const detailId = contestId ?? lastContestId ?? ''
   const navigate = useNavigate()
-  const { send } = useDetective()
   const closeDetail = useCallback(
     () => navigate({ pathname: '/contests', search }),
     [navigate, search],
@@ -442,10 +441,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
         open={!!contestId}
         contestId={detailId}
         onClose={closeDetail}
-        onAsk={(question) => {
-          const id = send(question, profile)
-          if (id) navigate('/detective/' + id)
-        }}
+        onAsk={(contest) => navigate(`/detective?contest=${encodeURIComponent(contest.id)}`)}
         action={<FollowButton contestId={detailId} follows={follows} />}
       />
     </div>

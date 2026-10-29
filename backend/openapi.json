@@ -2204,6 +2204,19 @@
             "minLength": 1,
             "title": "Question"
           },
+          "contest_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contest Id"
+          },
           "profile": {
             "anyOf": [
               {
@@ -2710,6 +2723,35 @@
           "reason"
         ],
         "title": "ContestRecommendation"
+      },
+      "ContestReference": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ContestReference"
       },
       "ContestSnapshot": {
         "properties": {
@@ -6180,6 +6222,16 @@
       },
       "SavedRequest": {
         "properties": {
+          "contest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContestReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "profile": {
             "anyOf": [
               {

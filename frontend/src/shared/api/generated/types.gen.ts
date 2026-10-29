@@ -54,6 +54,10 @@ export type AskRequest = {
      * Question
      */
     question: string;
+    /**
+     * Contest Id
+     */
+    contest_id?: string | null;
     profile?: Profile | null;
     /**
      * History
@@ -319,6 +323,24 @@ export type ContestRecommendation = {
      * Reason
      */
     reason: string;
+};
+
+/**
+ * ContestReference
+ */
+export type ContestReference = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Cover Url
+     */
+    cover_url?: string | null;
 };
 
 /**
@@ -2381,6 +2403,7 @@ export type SavedObservation = {
  * SavedRequest
  */
 export type SavedRequest = {
+    contest?: ContestReference | null;
     profile?: Profile | null;
     verificationOptions?: SavedVerificationOptions | null;
 };

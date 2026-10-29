@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { DetectiveComposer } from './detective-composer'
 import { renderDetective } from './detective.test.utils'
 
 afterEach(() => {
@@ -89,4 +90,26 @@ describe('侦探输入口', () => {
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(fetch).toHaveBeenCalledOnce())
   })
+})
+
+it('keeps a contest reference above an empty editable question without sending it', () => {
+  const onSubmit = vi.fn((event) => event.preventDefault())
+  const props = {
+    pending: false,
+    onChange: vi.fn(),
+    onSubmit,
+    onStop: vi.fn(),
+    attachment: <a href="/contests/sustain">SUSTAIN-A-THON 2.0</a>,
+  }
+  const { rerender } = render(<DetectiveComposer {...props} value="" />)
+  expect(screen.getByRole('link', { name: 'SUSTAIN-A-THON 2.0' }).getAttribute('href')).toBe(
+    '/contests/sustain',
+  )
+  const input = screen.getByRole('textbox', { name: '问侦探' }) as HTMLTextAreaElement
+  expect(input.value).toBe('')
+  expect((screen.getByRole('button', { name: '查证' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(onSubmit).not.toHaveBeenCalled()
+  rerender(<DetectiveComposer {...props} value="大学生可以参加吗？" />)
+  fireEvent.keyDown(input, { key: 'Enter' })
+  expect(onSubmit).toHaveBeenCalledOnce()
 })
