@@ -261,7 +261,10 @@ def test_unconfigured_optional_tools_do_not_open_network_connections(session_fac
     events = run(Investigator(model, session_factory=session_factory))
     assert events[-1].type == 'answer'
     summaries = [event.payload['summary'] for event in events if event.type == 'observation']
-    assert summaries.count('正在查找其他来源。') == 2
+    unread = next(event.payload for event in events if event.type == 'observation' and event.payload['tool'] == 'fetch_page')
+    assert '无法读取' in unread['summary'] and unread['sources'] == []
+    assert unread['status'] == 'continuing'
+    assert summaries.count('正在查找其他来源。') == 1
     assert '比赛未找到' in summaries
 
 

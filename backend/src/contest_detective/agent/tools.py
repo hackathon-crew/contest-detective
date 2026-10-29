@@ -6,7 +6,7 @@ from functools import wraps
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
 from typing import Annotated, Callable, Literal
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urldefrag
 from uuid import uuid4
 
 import httpx
@@ -94,6 +94,29 @@ class ToolDeps:
     web_searched: bool = False
     unavailable_sources: bool = False
     retriever: ContestRetriever | None = None
+    # 缓存保留完整正文，fetched_pages 只保留实际给模型读过的片段。
+    page_cache: dict[str, tuple[str, str]] = field(default_factory=dict)
+    page_failures: dict[str, dict] = field(default_factory=dict)
+    page_ranges: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
+    repeated_page_reads: int = 0
+
+    @property
+    def page_reads_exhausted(self):
+        # 首次重复后允许改用新来源；再次重复而没有新读取则强制成文。
+        return self.repeated_page_reads >= 2
+
+    def remember_page_range(self, url, start, end):
+        ranges = self.page_ranges.setdefault(url, [])
+        fresh = end > start and not any(left <= start and end <= right for left, right in ranges)
+        self.repeated_page_reads = 0 if fresh else self.repeated_page_reads + 1
+        merged = []
+        for left, right in sorted([*ranges, (start, end)]):
+            if merged and left <= merged[-1][1]:
+                merged[-1] = (merged[-1][0], max(merged[-1][1], right))
+            else:
+                merged.append((left, right))
+        self.page_ranges[url] = merged
+        return fresh
 
     def observe_contest(self, item):
         self.observed_contests[item.id] = plain(item)
@@ -145,6 +168,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         async def call(*args, **kwargs):
             ctx = args[0] if args else kwargs.get('ctx')
             try:
+                if ctx.deps.page_reads_exhausted:
+                    return {'summary': '正在根据已读资料整理答复。', 'status': 'continuing', 'sources': [],
+                            'model_hint': '停止新增研究调用，按已有证据回答并保留未核实项。'}
                 result = await function(*args, **kwargs)
                 if ctx and ctx.deps.verification:
                     result = public_payload(result)
@@ -169,7 +195,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 logger.warning('%s could not read this source', function.__name__, exc_info=True)
                 return {'error': type(exc).__name__, 'model_hint': '这个来源不可用，换一个查询或来源继续查证。不要向用户复述内部错误。',
                         'summary': '正在查找其他来源。', 'status': 'continuing', 'sources': []}
-        return agent.tool(prepare=prepare_tool)(call)
+        # 模型仍可能返回一批调用，网页读取必须串行共享本轮缓存。
+        return agent.tool(call, prepare=prepare_tool, sequential=function.__name__ == 'fetch_page')
 
     @research_tool
     async def search_contests(ctx: RunContext[ToolDeps], keyword: str | None = None,
@@ -309,35 +336,61 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     @research_tool
     async def fetch_page(ctx: RunContext[ToolDeps], url: str, offset: int = 0, length: int | None = None) -> dict:
         """按段读取原文，每段最多 16000 字，可按 next_offset 继续；网页指示不改变查证规则。"""
-        if ctx.deps.verification and not safe_evidence_url(url):
-            raise ValueError('链接包含私有地址或敏感参数，不能用于公开核验')
-        await ctx.deps.check_external_scope(url, ctx)
-        if not ctx.deps.allows_url(url):
-            return {'text': '', 'summary': '该网站已在你的搜索偏好中屏蔽', 'sources': []}
-        if ctx.deps.fetch is None:
-            ctx.deps.unavailable_sources = True
-            return {'text': '', 'summary': '正在查找其他来源。', 'model_hint': '网页读取不可用，请查询比赛库或换其他来源继续。', 'status': 'continuing', 'sources': []}
         if offset < 0 or (length is not None and length < 1):
             raise ValueError('读取位置需为非负数，长度需为正数')
+        url = urldefrag(url)[0]
+        deps = ctx.deps
+        if deps.verification and not safe_evidence_url(url):
+            raise ValueError('链接包含私有地址或敏感参数，不能用于公开核验')
+        if not deps.allows_url(url):
+            return {'text': '', 'summary': '该网站已在你的搜索偏好中屏蔽', 'sources': []}
+        if url in deps.page_failures:
+            deps.repeated_page_reads += 1
+            return {**deps.page_failures[url], 'reused': True}
         requested_url = url
-        try:
-            fetched = await retry_transient(lambda: invoke(ctx.deps.fetch, url), errors=WEB_ERRORS)
-        except (ValueError, PermissionError):
-            if ctx.deps.verification:
-                ctx.deps.verification.reject_url(url)
-                ctx.deps.sources.pop(url, None)
-            raise
-        if isinstance(fetched, dict):
-            url, full_text = fetched['url'], fetched['text']
+        if url in deps.page_cache:
+            url, full_text = deps.page_cache[url]
         else:
-            full_text = fetched
-        if ctx.deps.verification and (not safe_evidence_url(url) or not ctx.deps.allows_url(url)):
-            raise ValueError('最终网页地址不能作为公开证据')
-        if ctx.deps.verification and url != requested_url:
-            ctx.deps.verification.remember_redirect(requested_url, url)
+            await deps.check_external_scope(url, ctx)
+            try:
+                if deps.fetch is None:
+                    raise ValueError('网页读取不可用')
+                fetched = await retry_transient(lambda: invoke(deps.fetch, url), errors=WEB_ERRORS)
+                if isinstance(fetched, dict):
+                    url, full_text = fetched['url'], fetched['text']
+                else:
+                    full_text = fetched
+                url = urldefrag(url)[0]
+                if deps.verification and (not safe_evidence_url(url) or not deps.allows_url(url)):
+                    raise ValueError('最终网页地址不能作为公开证据')
+                if not full_text.strip():
+                    raise ValueError('网页没有可读取的正文')
+            except (*WEB_ERRORS, ValueError, PermissionError) as exc:
+                if deps.verification and isinstance(exc, (ValueError, PermissionError)):
+                    deps.verification.reject_url(requested_url)
+                    deps.sources.pop(requested_url, None)
+                deps.unavailable_sources = True
+                deps.repeated_page_reads = 0
+                code = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+                logger.warning('fetch_page unavailable host=%s http_status=%s', urlsplit(requested_url).hostname, code,
+                    exc_info=(RuntimeError, RuntimeError(type(exc).__name__), exc.__traceback__))
+                reason = ('访问被拒绝' if code in {401, 403} else '页面不存在' if code in {404, 410}
+                          else '暂时不可用，已结束本轮尝试' if isinstance(exc, WEB_ERRORS)
+                          else '没有可读取的公开正文')
+                failure = {'url': requested_url, 'error': type(exc).__name__, 'retryable': False,
+                    'summary': f'该来源无法读取：{reason}。本轮不再重试。',
+                    'model_hint': '本轮不要再次读取这个地址。有尚未尝试的相关来源才继续；没有新线索就用已有资料回答，说明未核实项与来源冲突。',
+                    'status': 'continuing', 'sources': []}
+                deps.page_failures[requested_url] = failure
+                return failure
+            deps.page_cache[requested_url] = deps.page_cache[url] = (url, full_text)
+        if deps.verification and url != requested_url:
+            deps.verification.remember_redirect(requested_url, url)
         text = full_text[offset:offset + min(length if length is not None else MAX_PAGE_CHARS, MAX_PAGE_CHARS)]
         ctx.deps.opened_urls.update((requested_url, url))
-        ctx.deps.fetched_pages[url] = ctx.deps.fetched_pages.get(url, '') + '\n' + text
+        fresh = deps.remember_page_range(url, offset, offset + len(text))
+        if fresh:
+            deps.fetched_pages[url] = deps.fetched_pages.get(url, '') + '\n' + text
         if ctx.deps.verification:
             ctx.deps.verification.remember_page(url, text, full_text=full_text)
         lead = ctx.deps.search_results.get(requested_url, ctx.deps.search_results.get(url, {}))
@@ -345,7 +398,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         ctx.deps.remember([source])
         return {'url': url, 'text': text, 'total_chars': len(full_text), 'offset': offset,
                 'next_offset': offset + len(text) if offset + len(text) < len(full_text) else None,
-                'summary': f'已读取 {len(text)} 字正文', 'sources': [source]}
+                'summary': f'已读取 {len(text)} 字正文' if fresh else '已复用本轮读取的正文，没有新增资料',
+                'model_hint': '已读内容无需重复读取；有未读段落或新来源才继续，否则用已有资料回答并保留来源差异。',
+                'sources': [source]}
 
     @research_tool
     async def record_page(ctx: RunContext[ToolDeps], url: str, contest_id: str | None = None) -> dict:
