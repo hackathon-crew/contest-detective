@@ -127,7 +127,7 @@ describe('连续侦探对话', () => {
     show()
     send('保留这个问题')
     await waitFor(() => expect(stream).toBeTruthy())
-    fireEvent.click(screen.getByRole('link', { name: '浏览赛事' }))
+    fireEvent.click(screen.getByRole('link', { name: '赛事库' }))
     expect(signal?.aborted).toBe(false)
     await act(async () => {
       stream.enqueue(

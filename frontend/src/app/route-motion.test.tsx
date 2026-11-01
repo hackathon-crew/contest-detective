@@ -78,7 +78,7 @@ describe('全局页面动效边界', () => {
     expect(detective).not.toBe(home)
     expect(document.documentElement.scrollTop).toBe(0)
 
-    fireEvent.click(screen.getByRole('link', { name: '浏览赛事' }))
+    fireEvent.click(screen.getByRole('link', { name: '赛事库' }))
     const catalog = container.querySelector('[data-route-motion="contests"]')
     expect(catalog).not.toBeNull()
     expect(catalog).not.toBe(home)
