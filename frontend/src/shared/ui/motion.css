@@ -3,6 +3,8 @@
   --motion-fast: 140ms;
   --motion-surface: 240ms;
   --motion-page: 420ms;
+  --motion-press-scale: 0.97;
+  --motion-send-scale: 0.92;
   --motion-dialog-offset: 0.75rem;
   --motion-surface-scale: 0.98;
   --motion-exit-ease: cubic-bezier(0.4, 0, 1, 1);
@@ -102,6 +104,6 @@
   }
 
   :is([data-slot='dialog-overlay'], [data-slot='dialog-content'], [data-slot='select-content']) {
-    animation-duration: var(--motion-fast) !important;
+    animation-duration: 1ms !important;
   }
 }
