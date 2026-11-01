@@ -9,13 +9,17 @@ import { stubResizeObserver } from './detective.test.utils'
 import { currentUserKey, type PublicUser } from '@/entities/user'
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
+let visitTime = Date.now()
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime((visitTime += 60_000))
   localStorage.clear()
   stubResizeObserver()
 })
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 const event = (type: string, data: unknown) => `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`
 const json = (data: unknown) =>
@@ -86,13 +90,17 @@ it('新对话用捧书章鱼引导建立画像，点加号后收起提示并进�
   expect(screen.getByLabelText('上传简历')).toBeTruthy()
 })
 
-it('画像提示可以关闭，建立画像按钮打开现有画像表单', async () => {
+it('画像提示关闭后遵守冷却，冷却后可打开现有画像表单', async () => {
   vi.stubGlobal('fetch', async () => json(null))
   const first = show('/detective')
   const guide = await screen.findByRole('dialog', { name: '建立参赛画像' })
   fireEvent.click(within(guide).getByRole('button', { name: '关闭画像提示' }))
   expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
   first.unmount()
+  const duringCooldown = show('/detective')
+  expect(screen.queryByRole('dialog', { name: '建立参赛画像' })).toBeNull()
+  duringCooldown.unmount()
+  vi.setSystemTime(Date.now() + 45_000)
   show('/detective')
   const nextGuide = await screen.findByRole('dialog', { name: '建立参赛画像' })
   fireEvent.click(within(nextGuide).getByRole('button', { name: '建立画像' }))

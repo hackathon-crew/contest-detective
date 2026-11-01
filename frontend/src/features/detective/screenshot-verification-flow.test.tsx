@@ -61,6 +61,7 @@ it('截图核验入口暂不可用，不发送深度请求且保留手写草稿'
   renderDetective({}, '/detective')
   const composer = screen.getByRole('textbox', { name: '问侦探' })
   fireEvent.change(composer, { target: { value: '保留手写草稿' } })
+  await screen.findByRole('dialog', { name: '建立参赛画像' })
   fireEvent.keyDown(screen.getByRole('button', { name: '添加简历或参赛资料' }), { key: 'Enter' })
   const entry = await screen.findByRole('menuitem', { name: '截图查证（暂不可用）' })
   expect(entry.getAttribute('aria-disabled')).toBe('true')

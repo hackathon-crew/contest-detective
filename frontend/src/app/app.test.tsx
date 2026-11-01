@@ -148,7 +148,7 @@ describe('路由', () => {
   it('首页展示新入口，完整浏览保留在独立赛事库', () => {
     renderAt('/home')
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
-    expect(screen.getByRole('heading', { name: '两周内截止' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '一句话，查清一场比赛' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
   })

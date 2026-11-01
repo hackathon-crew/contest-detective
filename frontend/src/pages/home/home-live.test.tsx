@@ -40,6 +40,7 @@ function show(
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
 ) {
   stubResizeObserver()
+  vi.stubGlobal('scrollTo', vi.fn())
   window.history.replaceState(null, '', path)
   client.setQueryData(currentUserKey, {
     id: 'home-user',
@@ -188,36 +189,16 @@ it('keeps cached gallery covers visible during a refresh and resets a replaced i
   )
   expect(document.querySelector<HTMLImageElement>('.wall img')?.dataset.loaded).toBe('false')
 })
-it('reads live totals and passes mode, deadline range and keyword to the list API', async () => {
-  const calls = show()
-  await waitFor(() =>
-    expect(screen.getByText('场比赛在库').parentElement?.querySelector('b')?.textContent).toBe('2'),
-  )
-  expect(
-    screen.getByText('场的截止时间对过官方原文').parentElement?.querySelector('b')?.textContent,
-  ).toBe('1')
-  fireEvent.click(
-    within(screen.getByRole('group', { name: '参赛形式' })).getByRole('button', { name: '线上' }),
-  )
-  fireEvent.click(
-    within(screen.getByRole('group', { name: '截止时间' })).getByRole('button', { name: '一周内' }),
-  )
-  fireEvent.change(screen.getByRole('searchbox', { name: '关键词' }), {
-    target: { value: 'Python' },
-  })
-  await waitFor(() =>
-    expect(
-      calls.some(
-        ({ url }) =>
-          url.searchParams.get('mode') === 'online' &&
-          url.searchParams.get('keyword') === 'Python' &&
-          !!url.searchParams.get('date_from') &&
-          !!url.searchParams.get('date_to'),
-      ),
-    ).toBe(true),
-  )
-  expect(await screen.findByText('找到 1 场')).toBeTruthy()
+it('shows the live total and delegates filtering to the contest library', async () => {
+  show()
+  const library = await screen.findByRole('link', { name: /已收录 2 场比赛/ })
+  fireEvent.click(library)
+  const search = screen.getByRole('searchbox', { name: '搜索赛事' })
+  fireEvent.change(search, { target: { value: 'Python' } })
+  expect(await screen.findAllByRole('link', { name: 'Python Hack' })).not.toHaveLength(0)
+  expect((search as HTMLInputElement).value).toBe('Python')
 })
+
 it('sends the exact hero question into a real conversation route', async () => {
   const calls = show()
   fireEvent.change(screen.getAllByRole('textbox', { name: '问侦探' })[0], {
@@ -236,46 +217,51 @@ it('sends the exact hero question into a real conversation route', async () => {
   )
   expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
 })
-it('keeps the original detective demo composer alongside the added research preview', async () => {
+it('sends a suggested question unchanged through the normal detective request', async () => {
   const calls = show()
-  expect(screen.getByRole('button', { name: '再查一遍' })).toBeTruthy()
-  const originalComposer = screen.getAllByRole('textbox', { name: '问侦探' })[1]
-  fireEvent.change(originalComposer, { target: { value: '继续查这场比赛的参赛资格' } })
-  fireEvent.keyDown(originalComposer, { key: 'Enter' })
+  const question = '怀柔科学城黑客松的报名截止是哪天？'
+  fireEvent.click(screen.getByRole('button', { name: question }))
   await waitFor(() =>
     expect(
       calls.some(
         ({ url, init }) =>
           url.pathname.endsWith('/agent/ask') &&
-          JSON.parse(String(init?.body)).question === '继续查这场比赛的参赛资格',
+          JSON.parse(String(init?.body)).question === question &&
+          JSON.parse(String(init?.body)).mode === undefined,
       ),
     ).toBe(true),
   )
   expect(screen.getByRole('button', { name: '打开会话列表' })).toBeTruthy()
 })
-it('opens the detective workspace from the secondary action without starting a search', async () => {
+
+it('returns from the feature action to the main composer without starting a search', () => {
   const calls = show()
-  fireEvent.click(screen.getByRole('link', { name: '和侦探聊聊' }))
-  expect(await screen.findByRole('button', { name: '打开会话列表' })).toBeTruthy()
+  fireEvent.click(screen.getAllByRole('button', { name: '问侦探' })[0])
+  expect(document.activeElement).toBe(screen.getByRole('textbox', { name: '问侦探' }))
   expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
 })
-it('opens GitHub profile import from the primary personalized recommendation action', async () => {
+
+it('opens the existing GitHub import from the project matching action', async () => {
   show()
-  fireEvent.click(screen.getByRole('button', { name: '按我的画像推荐' }))
+  fireEvent.click(screen.getByRole('button', { name: '读取我的 GitHub' }))
   const dialog = await screen.findByRole('dialog', { name: '连接到 GitHub' })
   expect(within(dialog).getByRole('textbox', { name: 'GitHub 用户名' })).toBeTruthy()
 })
-it('temporarily disables the deep investigation entry without starting a request', async () => {
+it('keeps the feature demonstrations local and retains the full MCP instructions', async () => {
   const calls = show()
-  fireEvent.change(screen.getByRole('textbox', { name: '深度检索问题' }), {
-    target: { value: '帮我核对 Python Hack 的报名条件和作品提交截止时间' },
-  })
-  expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
-  const button = screen.getByRole('button', { name: '深度检索暂不可用' })
-  expect((button as HTMLButtonElement).disabled).toBe(true)
-  fireEvent.click(button)
+  expect(screen.getByRole('link', { name: /设置邮件盯梢/ }).getAttribute('href')).toBe(
+    '/account/push',
+  )
+  expect(screen.getByRole('link', { name: '查看我的关注' }).getAttribute('href')).toBe(
+    '/account/follows',
+  )
+  fireEvent.click(screen.getByRole('link', { name: /查看接入说明/ }))
+  const dialog = await screen.findByRole('dialog', { name: '接入 MCP' })
+  expect(within(dialog).getByText('get_contest')).toBeTruthy()
+  expect(within(dialog).getAllByText(/Authorization/)).not.toHaveLength(0)
   expect(calls.some(({ url }) => url.pathname.endsWith('/agent/ask'))).toBe(false)
 })
+
 it('attaches the opened contest and waits for a user question before sending', async () => {
   const calls = show('/contests/python')
   fireEvent.click(await screen.findByRole('button', { name: '问侦探这场比赛' }))
@@ -338,6 +324,7 @@ it('shows first-page cards before the rest arrives and preserves them when the n
     ...contests[0],
     id: 'first-' + index,
     name: '首批赛事 ' + index,
+    cover_url: 'https://example.com/first-' + index + '.jpg',
     fields: {
       submission_deadline: {
         value: deadline,
@@ -359,14 +346,15 @@ it('shows first-page cards before the rest arrives and preserves them when the n
           page_size: 100,
         }),
   )
-  const section = within(screen.getByRole('heading', { name: '两周内截止' }).closest('section')!)
+  let firstCard!: HTMLElement
   try {
-    expect(await section.findByRole('link', { name: /首批赛事 0/ })).toBeTruthy()
+    firstCard = (await screen.findAllByTitle('首批赛事 0'))[0]!
+    expect(firstCard.querySelector('img')?.getAttribute('src')).toBe(first[0]!.cover_url)
     expect(screen.getByText(/已加载 100/)).toBeTruthy()
   } finally {
     finish(Response.json({ code: 503, message: '后续赛事暂时不可用', data: null }, { status: 503 }))
   }
   await screen.findByRole('alert')
-  expect(section.getByRole('link', { name: /首批赛事 0/ })).toBeTruthy()
+  expect(firstCard.isConnected).toBe(true)
   expect(screen.getByRole('button', { name: '重试' })).toBeTruthy()
 })
