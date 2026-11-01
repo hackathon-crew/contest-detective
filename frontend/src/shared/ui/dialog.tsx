@@ -50,7 +50,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 flex w-10/12 max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-3xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 outline-none sm:max-w-3xl',
+          'fixed top-1/2 left-1/2 z-50 flex w-10/12 max-w-3xl -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-3xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-rule outline-none sm:max-w-3xl',
           className,
         )}
         {...props}
