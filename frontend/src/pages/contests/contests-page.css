@@ -123,8 +123,8 @@
     box-shadow 140ms var(--ease-out);
 }
 .contests-page .search:focus-within {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  border-color: var(--color-accent-line);
+  box-shadow: var(--shadow-focus);
 }
 .contests-page .search input {
   flex: 1;
@@ -698,7 +698,7 @@
   display: inline-flex;
   padding: 3px;
   gap: 2px;
-  border-radius: 10px;
+  border-radius: var(--r-m);
   background: var(--color-surface-strong);
 }
 .contests-page .seg button {
@@ -786,7 +786,7 @@
 .contests-page .item-cover {
   width: 128px;
   aspect-ratio: 4 / 3;
-  border-radius: 10px;
+  border-radius: var(--r-m);
   object-fit: cover;
   background: var(--color-surface-strong);
 }
@@ -1111,7 +1111,7 @@
   height: 36px;
   padding-inline: 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--r-m);
   background: transparent;
   font-size: 14px;
   color: var(--color-ink-soft);
