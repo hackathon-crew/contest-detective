@@ -218,7 +218,7 @@ export function ScreenshotDialog({
                   value={claim.text}
                   rows={2}
                   maxLength={MAX_SCREENSHOT_TEXT}
-                  className="w-full resize-y rounded-xl border border-rule bg-surface px-3 py-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                  className="w-full resize-y rounded-xl border border-rule bg-surface px-3 py-2 text-sm text-ink outline-none focus-visible:border-accent-line focus-visible:ring-4 focus-visible:ring-accent-soft focus-visible:outline-none"
                   onChange={(event) =>
                     setClaims((items) =>
                       items.map((item) =>
