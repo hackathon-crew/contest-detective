@@ -36,6 +36,32 @@
   animation: none;
 }
 
+.hero-octo > div,
+.detective-greeting__mascot > div,
+.detective-mascot__holder > div {
+  view-transition-name: inkpaw-octopus;
+}
+
+::view-transition-group(inkpaw-octopus) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-old(root) {
+  animation: route-content-leave 240ms var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: route-content-fade 240ms var(--ease-out) both;
+}
+
+@keyframes route-content-leave {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
 @keyframes route-content-enter {
   from {
     opacity: 0;
@@ -59,6 +85,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(inkpaw-octopus) {
+    animation-duration: var(--motion-fast);
+  }
+  ::view-transition-old(root) {
+    animation-name: route-content-fade-out;
+  }
   .route-motion-surface:not([data-route-motion='detective']):not([data-route-motion='account'])
     > *
     > main
@@ -68,5 +100,11 @@
     animation-name: route-content-fade;
     animation-duration: var(--page-motion-reduced-duration) !important;
     animation-delay: 0ms;
+  }
+}
+
+@keyframes route-content-fade-out {
+  to {
+    opacity: 0;
   }
 }

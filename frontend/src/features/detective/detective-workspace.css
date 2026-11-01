@@ -305,6 +305,84 @@
   background: var(--color-scrim);
   animation: detective-page-in 140ms var(--ease-out) both;
 }
+.detective-workspace__main:has(.detective-conversation[data-empty='false']) {
+  margin-top: 0;
+}
+.detective-workspace__main:has(.detective-conversation[data-empty='false'])
+  .detective-workspace__header {
+  position: relative;
+  inset: auto;
+}
+.detective-conversation[data-empty='false'] {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  gap: 24px;
+  width: min(100%, calc(var(--chat-measure) + 160px));
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+.detective-conversation[data-empty='false'] .detective-conversation__scroll {
+  padding-top: 0;
+  scroll-padding-top: var(--chat-padding);
+}
+.detective-mascot {
+  min-width: 0;
+}
+.detective-mascot__inner {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.detective-mascot__holder {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 120px;
+}
+.detective-mascot__holder img {
+  image-rendering: pixelated;
+}
+.detective-mascot__holder[data-happy='true'] {
+  animation: detective-mascot-jump 420ms var(--ease-out);
+}
+.detective-mascot__state {
+  min-height: 22px;
+  font-size: 13px;
+  color: var(--color-muted);
+}
+.detective-profile-request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.detective-profile-request p {
+  flex: 1 1 280px;
+  margin: 0;
+}
+.detective-watch-notice {
+  position: fixed;
+  z-index: 70;
+  bottom: 96px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 48px);
+  padding: 8px 14px;
+  border-radius: var(--r-m);
+  background: var(--color-ink);
+  color: var(--color-canvas);
+  font-size: 14px;
+  text-align: center;
+  animation: detective-page-in 240ms var(--ease-out) both;
+}
+@keyframes detective-mascot-jump {
+  40% {
+    transform: translateY(-12px);
+  }
+}
 .detective-sidebar-overlay[data-state='closed'] {
   animation: detective-page-out 140ms var(--ease-out) both;
 }
@@ -344,6 +422,35 @@
   }
 }
 @media (max-width: 760px) {
+  .detective-conversation[data-empty='false'] {
+    display: flex;
+    gap: 0;
+    padding-inline: 0;
+  }
+  .detective-mascot {
+    position: sticky;
+    z-index: 6;
+    top: 0;
+    flex: none;
+  }
+  .detective-mascot__inner {
+    position: static;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 4px 24px;
+    border-bottom: 1px solid var(--color-rule);
+    background: var(--color-canvas);
+  }
+  .detective-mascot__holder {
+    width: 120px;
+    height: 88px;
+  }
+  .detective-mascot__holder > div {
+    margin-block: -16px;
+  }
+  .detective-conversation[data-empty='false'] .detective-thread {
+    padding-top: 20px;
+  }
   .detective-workspace {
     --chat-header: 3.75rem;
     grid-template-columns: minmax(0, 1fr);
@@ -383,6 +490,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .detective-mascot__holder[data-happy='true'] {
+    animation: detective-page-in 140ms ease both;
+  }
   .detective-workspace,
   .detective-sidebar {
     animation: detective-page-in 140ms ease both;

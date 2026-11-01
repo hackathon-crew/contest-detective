@@ -169,6 +169,8 @@ export function Preview() {
         loading: false,
         reload: async () => {},
         storageError: false,
+        profileRequest: null,
+        resumeWithProfile: () => null,
         send(question, value, sessionId) {
           const previous = sessions.find((session) => session.id === sessionId)
           const answer = makeTurn(question, withProfile && value ? profileFile(value) : undefined)

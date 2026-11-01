@@ -4,7 +4,16 @@ import type { DetectiveSession } from './sessions'
 import type { ContestReferenceValue } from './contest-reference'
 import type { VerificationOptions } from './verification-contracts'
 
+export interface ProfileRequest {
+  conversationId: string
+  question: string
+  verification?: VerificationOptions
+  contest?: ContestReferenceValue | null
+}
+
 interface DetectiveStore {
+  profileRequest: ProfileRequest | null
+  resumeWithProfile: (profile: Profile) => string | null
   sessions: DetectiveSession[]
   loading: boolean
   storageError: boolean

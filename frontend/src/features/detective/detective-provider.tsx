@@ -8,11 +8,27 @@ import { loadSessions, sessionWithTurn, type DetectiveSession } from './sessions
 import { readAccountSessions } from './sessions-api'
 import { parseTrace, recoveryAction, type RecoveryAction } from './events'
 
-import { DetectiveContext } from './detective-context'
+import { DetectiveContext, type ProfileRequest } from './detective-context'
 import { createId } from './id'
 import { cancelInvestigation, investigationStream } from './investigation-stream'
 import type { ContestReferenceValue } from './contest-reference'
 import type { VerificationOptions } from './verification-contracts'
+
+function needsProfile(question: string, profile?: Profile | null) {
+  const known =
+    profile?.github ||
+    profile?.skills?.length ||
+    profile?.topics?.length ||
+    profile?.identity ||
+    profile?.identity_kind ||
+    profile?.city ||
+    profile?.available_time ||
+    profile?.preferred_modes?.length ||
+    profile?.availability?.weekdays?.length ||
+    profile?.availability?.windows?.length ||
+    profile?.availability?.max_consecutive_days
+  return !known && /适合我|我适合|按我的|根据我的|匹配我的/.test(question)
+}
 
 export function DetectiveProvider({ scope, children }: { scope: string; children: ReactNode }) {
   const client = useQueryClient()
@@ -36,6 +52,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   const requests = useRef(new Map<string, AbortController>())
   const recovering = useRef(new Set<string>())
   const [storageError, setStorageError] = useState(false)
+  const [profileRequest, setProfileRequest] = useState<ProfileRequest | null>(null)
   const activeId = useMatch('/detective/:conversationId')?.params.conversationId
 
   const reload = useCallback(
@@ -197,6 +214,11 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
     const selected = contest === undefined ? existing?.turns.at(-1)?.request?.contest : contest
+    if (!verificationOptions && needsProfile(text, profile)) {
+      const conversationId = existing?.id ?? createId()
+      setProfileRequest({ conversationId, question: text, contest: selected })
+      return conversationId
+    }
     const turnId = createId()
     const turn: DetectiveTurn = {
       id: turnId,
@@ -214,6 +236,9 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       status: 'running',
     }
     const next = sessionWithTurn(text, turn, existing)
+    if (!existing && profileRequest && profileRequest.conversationId === sessionId)
+      next.id = profileRequest.conversationId
+    setProfileRequest(null)
     const id = next.id
     if (!text) return id
     const controller = new AbortController()
@@ -232,6 +257,16 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       verificationOptions,
     )
     return id
+  }
+  function resumeWithProfile(profile: Profile) {
+    if (!profileRequest) return null
+    return send(
+      profileRequest.question,
+      profile,
+      profileRequest.conversationId,
+      profileRequest.verification,
+      profileRequest.contest,
+    )
   }
   function retry(turnId: string) {
     const session = snapshot.current.find((item) => item.turns.some((turn) => turn.id === turnId))
@@ -367,7 +402,19 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     }
   }
   return (
-    <DetectiveContext value={{ sessions, loading, storageError, reload, send, stop, retry }}>
+    <DetectiveContext
+      value={{
+        sessions,
+        loading,
+        storageError,
+        reload,
+        send,
+        stop,
+        retry,
+        profileRequest,
+        resumeWithProfile,
+      }}
+    >
       {children}
     </DetectiveContext>
   )
