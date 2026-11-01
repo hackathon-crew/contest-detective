@@ -35,7 +35,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 function show(
-  path = '/',
+  path = '/home',
   collectionResponse?: (url: URL) => Promise<Response>,
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
 ) {
@@ -112,7 +112,7 @@ it('reserves both gallery rows before the first page arrives, then replaces plac
   const firstPage = new Promise<Response>((resolve) => {
     finish = resolve
   })
-  show('/', () => firstPage)
+  show('/home', () => firstPage)
   try {
     const rows = document.querySelectorAll('.wall-row')
     expect(rows).toHaveLength(2)
@@ -126,7 +126,7 @@ it('reserves both gallery rows before the first page arrives, then replaces plac
 })
 
 it('keeps each cover frame while its image loads', async () => {
-  show('/', async () => collectionEnvelope())
+  show('/home', async () => collectionEnvelope())
   await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
   const image = document.querySelector<HTMLImageElement>('.wall img')!
   const frame = image.closest('.wall-card')
@@ -138,7 +138,7 @@ it('keeps each cover frame while its image loads', async () => {
 })
 
 it('removes failed cover frames while keeping healthy covers in the gallery', async () => {
-  show('/', async () => collectionEnvelope())
+  show('/home', async () => collectionEnvelope())
   await waitFor(() => expect(document.querySelectorAll('.wall img')).toHaveLength(4))
   const failedImages = document.querySelectorAll<HTMLImageElement>(
     '.wall img[src="https://example.com/python.jpg"]',
@@ -167,7 +167,7 @@ it('keeps cached gallery covers visible during a refresh and resets a replaced i
   const refresh = new Promise<Response>((resolve) => {
     finish = resolve
   })
-  show('/', () => refresh, client)
+  show('/home', () => refresh, client)
   const image = document.querySelector<HTMLImageElement>('.wall img')!
   try {
     expect(image.src).toBe('https://example.com/python.jpg')
@@ -347,7 +347,7 @@ it('shows first-page cards before the rest arrives and preserves them when the n
       },
     },
   }))
-  show('/', async (url) =>
+  show('/home', async (url) =>
     url.searchParams.get('page') === '2'
       ? remaining
       : Response.json({

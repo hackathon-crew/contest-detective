@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, parsePath, useLocation } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { AppRoutes } from './app'
@@ -15,7 +15,14 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderAt(path: string) {
+function Address() {
+  const location = useLocation()
+  return (
+    <output aria-label="当前地址">{location.pathname + location.search + location.hash}</output>
+  )
+}
+
+function renderAt(path: string, signedIn = true, state?: unknown) {
   stubResizeObserver()
   window.history.replaceState(null, '', path)
   vi.stubGlobal(
@@ -44,15 +51,21 @@ function renderAt(path: string) {
       ),
   )
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  client.setQueryData(currentUserKey, {
-    id: 'route-user',
-    username: 'route@example.org',
-    profile: {},
-  })
+  client.setQueryData(
+    currentUserKey,
+    signedIn
+      ? {
+          id: 'route-user',
+          username: 'route@example.org',
+          profile: {},
+        }
+      : null,
+  )
   render(
-    <MemoryRouter initialEntries={[path]}>
+    <MemoryRouter initialEntries={[{ ...parsePath(path), state }]}>
       <NuqsAdapter>
         <QueryClientProvider client={client}>
+          <Address />
           <AppRoutes />
         </QueryClientProvider>
       </NuqsAdapter>
@@ -61,8 +74,33 @@ function renderAt(path: string) {
 }
 
 describe('路由', () => {
+  it('已登录根地址进入工作台，保留查询、MCP 和提问草稿', async () => {
+    renderAt('/?keyword=AI#mcp', true, { personalIntent: { question: '想找线上 AI 比赛' } })
+    expect(await screen.findByRole('dialog', { name: '接入 MCP' })).toBeTruthy()
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/detective?keyword=AI#mcp')
+    fireEvent.click(screen.getByRole('button', { name: '关闭' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('textbox', { name: '问侦探' })).toHaveProperty(
+      'value',
+      '想找线上 AI 比赛',
+    )
+  })
+
+  it('访客根地址仍显示首页', () => {
+    renderAt('/', false)
+    expect(screen.getByRole('heading', { name: /按你的兴趣和优势/ })).toBeTruthy()
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/')
+  })
+
+  it('已登录用户可通过页脚进入显式首页', async () => {
+    renderAt('/contests')
+    fireEvent.click(screen.getByRole('link', { name: '首页' }))
+    expect(await screen.findByRole('heading', { name: /按你的兴趣和优势/ })).toBeTruthy()
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/home')
+  })
+
   it.each([
-    ['/', /按你的兴趣和优势/],
+    ['/home', /按你的兴趣和优势/],
     ['/contests?q=AI', '赛事库'],
     ['/detective', '想找什么样的比赛？'],
   ])('MCP 接入在当前页面打开并保留页面状态：%s', async (path, title) => {
@@ -89,11 +127,11 @@ describe('路由', () => {
     expect(await screen.findByRole('dialog', { name: '接入 MCP' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: '关闭' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '想找什么样的比赛？' })).toBeTruthy()
   })
 
   it('首页可打开画像确认入口', async () => {
-    renderAt('/')
+    renderAt('/home')
     fireEvent.keyDown(screen.getAllByRole('button', { name: '添加简历或参赛资料' })[0], {
       key: 'Enter',
     })
@@ -108,7 +146,7 @@ describe('路由', () => {
     expect(await screen.findByText('没有符合条件的比赛')).toBeTruthy()
   })
   it('首页展示新入口，完整浏览保留在独立赛事库', () => {
-    renderAt('/')
+    renderAt('/home')
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
     expect(screen.getByRole('heading', { name: '两周内截止' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: '全部赛事' })).toBeNull()
@@ -139,7 +177,7 @@ describe('路由', () => {
   })
 
   it('未知地址回到首页', () => {
-    renderAt('/no-such-page')
+    renderAt('/no-such-page', false)
 
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy()
   })

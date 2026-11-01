@@ -50,6 +50,15 @@ export function AppRoutes() {
       />
     )
   }
+  if (location.pathname === '/' && user) {
+    return (
+      <Navigate
+        to={{ pathname: '/detective', search: location.search, hash: location.hash }}
+        state={location.state}
+        replace
+      />
+    )
+  }
   if (/^\/detective(?:\/|$)/.test(location.pathname) && !user) {
     if (isPending)
       return (
@@ -68,6 +77,7 @@ export function AppRoutes() {
           <Route path="/detective" element={<DetectivePage />} />
           <Route path="/detective/:conversationId" element={<DetectivePage />} />
           <Route path="/contests" element={<ContestsPage contestId={contestId} />} />
+          <Route path="/home" element={<HomePage contestId={contestId} />} />
           <Route path="/" element={<HomePage contestId={contestId} />}>
             {/*
              * 分享的详情地址落在首页；从卡片进入时，background 保留首页或赛事库的实例。

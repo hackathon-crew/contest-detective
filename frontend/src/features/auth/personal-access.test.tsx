@@ -69,7 +69,8 @@ it('游客发送问题先登录，切换注册再回来仍能恢复原页面的�
   fireEvent.click(screen.getByRole('link', { name: '返回登录' }))
   await logIn()
   await waitFor(() =>
-    expect(document.querySelector<HTMLTextAreaElement>('#top-ask textarea')?.value).toBe(
+    expect(screen.getByRole('textbox', { name: '问侦探' })).toHaveProperty(
+      'value',
       '帮我找能线上参加的比赛',
     ),
   )

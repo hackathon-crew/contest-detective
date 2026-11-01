@@ -54,7 +54,7 @@ function renderAt(path: string) {
       <MemoryRouter initialEntries={[path]}>
         <NuqsAdapter>
           <QueryClientProvider client={client}>
-            <Link to="/?q=robot#explore">筛选赛事</Link>
+            <Link to="/home?q=robot#explore">筛选赛事</Link>
             <Link to="/contests/example">赛事详情地址</Link>
             <Link to="/detective/saved-conversation">另一段对话</Link>
             <AppRoutes />
@@ -67,7 +67,7 @@ function renderAt(path: string) {
 
 describe('全局页面动效边界', () => {
   it('只在浏览与侦探之间换页时更新入场容器', () => {
-    const { container } = renderAt('/')
+    const { container } = renderAt('/home')
     const home = container.querySelector('[data-route-motion="home"]')
     expect(home).not.toBeNull()
     document.documentElement.scrollTop = 400
@@ -85,7 +85,7 @@ describe('全局页面动效边界', () => {
   })
 
   it('筛选、锚点与详情地址保持首页容器和关注状态', () => {
-    const { container } = renderAt('/')
+    const { container } = renderAt('/home')
     fireEvent.click(screen.getByRole('button', { name: '按我的情况' }))
     document.documentElement.scrollTop = 400
     const home = container.querySelector('[data-route-motion="home"]')

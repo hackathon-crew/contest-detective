@@ -9,6 +9,7 @@ const groups = [
   [
     '产品',
     [
+      ['首页', '/home'],
       ['赛事库', '/contests'],
       ['问侦探', '/detective'],
       ['画像匹配', '/#filter'],

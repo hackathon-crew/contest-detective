@@ -5,6 +5,7 @@ import { MemoryRouter, useLocation } from 'react-router'
 import { NuqsAdapter } from 'nuqs/adapters/react-router/v8'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AppRoutes } from '@/app/app'
+import { stubResizeObserver } from '@/features/detective/detective.test.utils'
 
 vi.mock('@/shared/ui/octopus/inkpaw-octopus', () => ({ mountOctopus: () => null }))
 
@@ -25,6 +26,7 @@ function setup(
   path = '/login',
   options: { failLoginOnce?: boolean; holdLogin?: Promise<void> } = {},
 ) {
+  stubResizeObserver()
   const calls: { path: string; body?: unknown }[] = []
   let loginCount = 0
   const user = { id: 'user-one', username: 'night@example.com', profile: { skills: [] } }
@@ -130,7 +132,7 @@ describe('全屏账户流程', () => {
     enterPassword()
     submit('登录并继续')
     expect(await screen.findByRole('dialog', { name: '连接到 GitHub' })).toBeTruthy()
-    expect(screen.getByLabelText('当前地址').textContent).toBe('/')
+    expect(screen.getByLabelText('当前地址').textContent).toBe('/detective')
   })
 
   it('直接打开登录页，先填写邮箱，再输入密码', () => {
