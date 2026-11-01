@@ -47,20 +47,24 @@
   gap: 6px;
   height: 40px;
   padding-inline: 16px;
-  border-radius: 12px;
+  border-radius: var(--r-m);
   border: 1px solid transparent;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background-color 140ms var(--ease-out),
-    border-color 140ms var(--ease-out),
-    color 140ms var(--ease-out),
-    transform 140ms var(--ease-out);
+    background-color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
 }
-.site-button:active {
-  transform: scale(0.98);
+.site-button:active:not(:disabled, [aria-disabled='true']) {
+  transform: scale(var(--motion-press-scale));
+}
+.site-button:is(:disabled, [aria-disabled='true']) {
+  opacity: 0.5;
+  pointer-events: none;
 }
 .site-button--primary {
   background: var(--color-accent);
@@ -123,22 +127,22 @@
   display: inline-flex;
   padding: 3px;
   gap: 2px;
-  border-radius: 10px;
+  border-radius: var(--r-m);
   background: var(--color-surface-strong);
 }
 .site-seg button {
   height: 28px;
   padding-inline: 10px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-s);
   background: transparent;
   font-size: 13px;
   color: var(--color-muted);
   cursor: pointer;
   white-space: nowrap;
   transition:
-    background-color 140ms var(--ease-out),
-    color 140ms var(--ease-out);
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out);
 }
 .site-seg button:hover {
   color: var(--color-ink);
@@ -194,7 +198,7 @@
 }
 .site-foot-col a {
   color: var(--color-ink-soft);
-  transition: color 140ms var(--ease-out);
+  transition: color var(--motion-fast) var(--ease-out);
 }
 .site-foot-col a:hover {
   color: var(--color-accent);
