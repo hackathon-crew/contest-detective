@@ -45,7 +45,7 @@ export function AuthControls({ compact = false }: { compact?: boolean }) {
         <>
           <Button
             variant={compact ? 'default' : 'ghost'}
-            className={compact ? 'px-4 hover:bg-accent-hover' : undefined}
+            className={compact ? 'auth-login' : undefined}
             asChild
           >
             <Link to="/login" state={{ returnTo: location }}>

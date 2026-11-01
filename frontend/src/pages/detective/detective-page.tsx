@@ -7,7 +7,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, personalIntent, useCurrentUser } from '@/entities/user'
 import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile-match'
 import { SiteHeader } from '@/shared/ui/site-header'
-import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import { useContest } from '@/entities/contest'
 import {
@@ -88,22 +87,7 @@ export function DetectivePage() {
 
   return (
     <div className="detective-workspace">
-      <SiteHeader
-        utilities={
-          <>
-            <AppearanceControl />
-            <AuthControls />
-          </>
-        }
-        actions={
-          <Link
-            to="/contests"
-            className="inline-flex min-h-10 items-center rounded-xl px-2.5 text-sm font-medium text-ink transition-colors duration-140 hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
-          >
-            浏览赛事
-          </Link>
-        }
-      />
+      <SiteHeader utilities={<AuthControls compact />} />
       <Collapsible.Root
         className="detective-workspace__body"
         open={researchOpen}

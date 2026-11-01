@@ -239,7 +239,7 @@ it('离开聊天页不取消流，返回原会话后继续显示完成的回复'
   show('/detective')
   send('保留正在输出的计划')
   await waitFor(() => expect(stream).toBeTruthy())
-  fireEvent.click(screen.getByRole('link', { name: '浏览赛事' }))
+  fireEvent.click(screen.getByRole('link', { name: '赛事库' }))
   expect(signal?.aborted).toBe(false)
   await act(async () => {
     stream.enqueue(

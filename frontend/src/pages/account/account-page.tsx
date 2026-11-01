@@ -4,6 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { AppearanceControl } from '@/features/appearance'
 import { apiClient } from '@/shared/api'
+import { SiteHeader } from '@/shared/ui/site-header'
+import { Button } from '@/shared/ui'
+import { User } from 'lucide-react'
 import mark from '@/shared/assets/inkpaw-mark-56.webp'
 import folder from '@/shared/assets/stickers/folder.png'
 import { Ic, failure, NoticeContext, type NoticeAction } from './components'
@@ -13,6 +16,7 @@ import { PushPanel } from './push-panel'
 import { FollowsPanel } from './follows-panel'
 import { KeysPanel } from './keys-panel'
 import { SettingsPanel } from './settings-panel'
+import '@/features/auth/auth-controls.css'
 import './account.css'
 
 const panels = {
@@ -142,51 +146,19 @@ export function AccountPage() {
   return (
     <NoticeContext.Provider value={notify}>
       <div className="account-root">
-        <header className="top">
-          <div className="wrap">
-            <Brand />
-            <nav className="nav" aria-label="主导航">
-              <div className="links">
-                <Link className="btn btn-ghost" to="/contests">
-                  赛事库
-                </Link>
-                <Link className="btn btn-ghost" to="/detective">
-                  侦探
-                </Link>
-                <Link
-                  className="btn btn-ghost"
-                  to={{ pathname: location.pathname, hash: '#mcp' }}
-                  aria-haspopup="dialog"
-                >
-                  MCP
-                </Link>
-              </div>
-              <a
-                className="btn btn-ghost btn-icon"
-                href={github}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="GitHub 仓库"
-              >
-                <Ic name="github" large />
-              </a>
-              <Link
-                className="btn btn-ghost acct"
-                to="/account/profile"
-                aria-current="page"
-                aria-label="个人中心"
-              >
-                <span className="acct-mail">{user.username}</span>
-                <span className="acct-ic">
-                  <Ic name="user" large />
-                </span>
+        <SiteHeader
+          utilities={
+            <div className="flex items-center gap-2">
+              <Link to="/account/profile" aria-label="个人中心" className="auth-account-link">
+                <span>{user.username}</span>
+                <User aria-hidden="true" size={20} strokeWidth={1.75} />
               </Link>
-              <button className="btn btn-ghost" onClick={() => void logout()} disabled={loggingOut}>
+              <Button variant="ghost" onClick={() => void logout()} disabled={loggingOut}>
                 退出
-              </button>
-            </nav>
-          </div>
-        </header>
+              </Button>
+            </div>
+          }
+        />
         <main>
           <section className="wrap head">
             <h1>个人中心</h1>
