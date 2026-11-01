@@ -5,7 +5,13 @@ import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } f
 import { Collapsible, Dialog as PrimitiveDialog } from 'radix-ui'
 import { useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, personalIntent, useCurrentUser } from '@/entities/user'
-import { ProfileMatchDialog, type ProfileMatchSection } from '@/features/profile-match'
+import {
+  ProfileMatchDialog,
+  ProfileNudge,
+  useProfileNudge,
+  loadConfirmedProfile,
+  type ProfileMatchSection,
+} from '@/features/profile-match'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AuthControls } from '@/features/auth'
 import { useContest } from '@/entities/contest'
@@ -59,21 +65,13 @@ export function DetectivePage() {
     () => personalIntent(location).profileSection ?? null,
   )
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [profileGuideDismissed, setProfileGuideDismissed] = useState(false)
-  const profile = user?.profile
-  const hasProfile = Boolean(
-    profile?.github ||
-    profile?.skills?.length ||
-    profile?.topics?.length ||
-    profile?.identity ||
-    profile?.identity_kind ||
-    profile?.city ||
-    profile?.available_time ||
-    profile?.preferred_modes?.length ||
-    profile?.availability?.weekdays?.length ||
-    profile?.availability?.windows?.length ||
-    profile?.availability?.max_consecutive_days,
-  )
+  const nudge = useProfileNudge({
+    profile: user?.profile ?? loadConfirmedProfile(),
+    enabled: !userPending && !profileSection,
+    guideEligible:
+      !session?.turns.length && !selectedId && !loading && (!conversationId || !!session),
+    answerId: session?.turns.filter((turn) => turn.status === 'completed').at(-1)?.id,
+  })
   const sidebarButton = useRef<HTMLButtonElement>(null)
   const researchButton = useRef<HTMLButtonElement>(null)
   const closeSidebar = () => setSidebarOpen(false)
@@ -138,8 +136,9 @@ export function DetectivePage() {
             }}
             onStop={() => session && stop(session.id)}
             onAddProfile={setProfileSection}
-            showProfileGuide={!userPending && !hasProfile && !profileGuideDismissed}
-            onDismissProfileGuide={() => setProfileGuideDismissed(true)}
+            showProfileGuide={nudge.guideVisible}
+            onDismissProfileGuide={nudge.dismissGuide}
+            nudgeTalking={nudge.visible}
           />
         </div>
         <Collapsible.Content asChild>
@@ -214,6 +213,14 @@ export function DetectivePage() {
           </PrimitiveDialog.Content>
         </PrimitiveDialog.Root>
       </Collapsible.Root>
+      <ProfileNudge
+        open={nudge.visible}
+        onClose={nudge.dismiss}
+        onChoose={(section) => {
+          nudge.dismiss()
+          setProfileSection(section)
+        }}
+      />
       <ProfileMatchDialog
         open={!!profileSection}
         user={user}
@@ -240,6 +247,7 @@ function Conversation({
   onAddProfile,
   showProfileGuide,
   onDismissProfileGuide,
+  nudgeTalking,
 }: {
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
@@ -259,6 +267,7 @@ function Conversation({
   onAddProfile: (section: ProfileMatchSection) => void
   showProfileGuide: boolean
   onDismissProfileGuide: () => void
+  nudgeTalking: boolean
 }) {
   const [question, setQuestion] = useState(initialQuestion ?? '')
   const [referenceRemoved, setReferenceRemoved] = useState(false)
@@ -318,7 +327,10 @@ function Conversation({
         ) : (
           <div className="detective-greeting">
             {!missing && (
-              <div className="detective-greeting__mascot grid size-45 place-items-center">
+              <div
+                className="detective-greeting__mascot grid size-45 place-items-center"
+                data-speaking={nudgeTalking}
+              >
                 <Suspense
                   fallback={
                     <img
@@ -330,7 +342,12 @@ function Conversation({
                     />
                   }
                 >
-                  <Octopus size={180} mood="read" shadow={false} label="捧书的 Inkpaw 八爪鱼" />
+                  <Octopus
+                    size={180}
+                    mood={nudgeTalking ? 'talk' : 'read'}
+                    shadow={false}
+                    label="捧书的 Inkpaw 八爪鱼"
+                  />
                 </Suspense>
               </div>
             )}

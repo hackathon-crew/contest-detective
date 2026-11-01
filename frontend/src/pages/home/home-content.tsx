@@ -11,24 +11,24 @@ import read from '@/shared/assets/mascot/octo-read.png'
 
 type OpenProfile = (section: ProfileMatchSection) => void
 
-function usePreviewReveal() {
+export function usePreviewReveal() {
   const host = useRef<HTMLDivElement>(null)
   const [cycle, setCycle] = useState(0)
+  const [visible, setVisible] = useState(false)
   useEffect(() => {
     if (!host.current || typeof IntersectionObserver === 'undefined') return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setCycle((value) => value + 1)
-          observer.disconnect()
-        }
+        const entered = entries.some((entry) => entry.isIntersecting)
+        setVisible(entered)
+        if (entered) setCycle((value) => value + 1)
       },
       { threshold: 0.45 },
     )
     observer.observe(host.current)
     return () => observer.disconnect()
   }, [])
-  return { host, cycle, replay: () => setCycle((value) => value + 1) }
+  return { host, cycle, visible, replay: () => setCycle((value) => value + 1) }
 }
 
 export function PersonalizedIntro({ onAddProfile }: { onAddProfile: OpenProfile }) {

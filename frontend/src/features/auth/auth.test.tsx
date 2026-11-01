@@ -89,17 +89,23 @@ function submit(name: string) {
 
 describe('全屏账户流程', () => {
   it.each([false, true])('取消画像推荐登录回到首页并保留草稿（切换注册：%s）', async (register) => {
-    setup('/?mode=online#personalized')
+    setup(register ? '/home?mode=online#personalized' : '/?mode=online#personalized')
     const draft = '想找适合 Python 项目的比赛'
     fireEvent.change(screen.getAllByRole('textbox', { name: '问侦探' })[0], {
       target: { value: draft },
     })
-    fireEvent.click(screen.getByRole('button', { name: '按我的画像推荐' }))
+    fireEvent.click(
+      register
+        ? screen.getByRole('link', { name: '画像匹配' })
+        : screen.getByRole('button', { name: '读取我的 GitHub' }),
+    )
     await screen.findByRole('heading', { name: '登录 Inkpaw' })
     if (register) fireEvent.click(screen.getByRole('link', { name: '创建账号' }))
     fireEvent.click(screen.getByRole('button', { name: '返回原页面' }))
     await screen.findByRole('heading', { name: /按你的兴趣和优势/ })
-    expect(screen.getByLabelText('当前地址').textContent).toBe('/?mode=online#personalized')
+    expect(screen.getByLabelText('当前地址').textContent).toBe(
+      register ? '/home' : '/?mode=online#personalized',
+    )
     expect(screen.getAllByRole('textbox', { name: '问侦探' })[0]).toHaveProperty('value', draft)
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.queryByRole('heading', { name: /登录 Inkpaw|注册 Inkpaw/ })).toBeNull()
@@ -126,7 +132,7 @@ describe('全屏账户流程', () => {
 
   it('画像推荐登录成功后仍继续打开画像窗口', async () => {
     setup('/')
-    fireEvent.click(screen.getByRole('button', { name: '按我的画像推荐' }))
+    fireEvent.click(screen.getByRole('button', { name: '读取我的 GitHub' }))
     await screen.findByRole('heading', { name: '登录 Inkpaw' })
     continueWithEmail()
     enterPassword()

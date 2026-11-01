@@ -84,25 +84,27 @@ describe('全局页面动效边界', () => {
     expect(catalog).not.toBe(home)
   })
 
-  it('筛选、锚点与详情地址保持首页容器和关注状态', () => {
+  it('查询、锚点与详情地址保持首页容器和提问草稿', () => {
     const { container } = renderAt('/home')
-    fireEvent.click(screen.getByRole('button', { name: '按我的情况' }))
+    fireEvent.change(screen.getByRole('textbox', { name: '问侦探' }), {
+      target: { value: '我的比赛条件' },
+    })
     document.documentElement.scrollTop = 400
     const home = container.querySelector('[data-route-motion="home"]')
     expect(home).not.toBeNull()
 
     fireEvent.click(screen.getByRole('link', { name: '筛选赛事' }))
     expect(container.querySelector('[data-route-motion="home"]')).toBe(home)
-    expect(screen.getByRole('button', { name: '按我的情况' }).getAttribute('aria-pressed')).toBe(
-      'true',
+    expect((screen.getByRole('textbox', { name: '问侦探' }) as HTMLTextAreaElement).value).toBe(
+      '我的比赛条件',
     )
 
     fireEvent.click(screen.getByRole('link', { name: '赛事详情地址' }))
     expect(container.querySelector('[data-route-motion="home"]')).toBe(home)
     expect(document.documentElement.scrollTop).toBe(400)
     expect(
-      screen.getByRole('button', { name: '按我的情况', hidden: true }).getAttribute('aria-pressed'),
-    ).toBe('true')
+      (screen.getByRole('textbox', { name: '问侦探', hidden: true }) as HTMLTextAreaElement).value,
+    ).toBe('我的比赛条件')
   })
 
   it('会话地址变化不重建工作区，也不重播全页入场', () => {
