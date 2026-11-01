@@ -277,7 +277,7 @@ function ProfileMatchForm({
                     </span>
                     <Input
                       id={`${id}-github`}
-                      className="h-12 rounded-xl pl-28 focus-visible:border-ink/40 focus-visible:ring-2 focus-visible:ring-ink/15"
+                      className="h-12 rounded-xl pl-28"
                       value={username}
                       placeholder="octocat"
                       autoComplete="off"
@@ -303,7 +303,7 @@ function ProfileMatchForm({
             {showProfile && (
               <label
                 htmlFor={`${id}-resume`}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-rule-strong bg-surface-muted p-4 transition-colors duration-140 hover:bg-surface-strong has-focus-visible:outline-2 has-focus-visible:outline-ink has-focus-visible:outline-offset-2 has-disabled:cursor-wait has-disabled:opacity-60"
+                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-rule-strong bg-surface-muted p-4 transition-colors duration-140 hover:bg-surface-strong has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-2 has-disabled:cursor-wait has-disabled:opacity-60"
               >
                 <FileUp
                   aria-hidden="true"

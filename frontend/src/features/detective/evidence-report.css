@@ -69,7 +69,7 @@
   text-underline-offset: 0.15em;
 }
 .detective-report a:focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 .detective-report__references {

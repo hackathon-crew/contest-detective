@@ -86,7 +86,9 @@
 .auth-stage .auth-stage__input:focus-visible {
   outline: 0;
   background: var(--qx-color-surface);
-  box-shadow: 0 0 0 2px var(--qx-color-ink);
+  box-shadow:
+    inset 0 0 0 1px var(--color-accent-line),
+    var(--shadow-focus);
 }
 .auth-stage__password {
   position: relative;
@@ -152,15 +154,15 @@
   background: var(--qx-color-accent-hover);
 }
 .auth-stage .auth-stage__primary:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(var(--motion-press-scale));
 }
 .auth-stage .auth-stage__primary:disabled {
   cursor: wait;
   opacity: 0.45;
 }
 .auth-stage :is(button, a):focus-visible {
-  outline: 2px solid var(--qx-color-ink);
-  outline-offset: var(--qx-space-1);
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
   box-shadow: none;
 }
 .auth-stage__email {

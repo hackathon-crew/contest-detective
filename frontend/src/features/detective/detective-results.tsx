@@ -149,7 +149,7 @@ export function ProfileFileAttachment({ file }: { file: ProfileFile }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-rule bg-surface px-4 py-3 text-left font-sans transition-colors duration-140 hover:bg-surface-muted active:bg-surface-strong focus-visible:outline-2 focus-visible:outline-ink focus-visible:outline-offset-2"
+        className="inline-flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-rule bg-surface px-4 py-3 text-left font-sans transition-colors duration-140 hover:bg-surface-muted active:bg-surface-strong focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
       >
         <FileText aria-hidden="true" className="size-5 shrink-0 text-muted" strokeWidth={1.5} />
         <span className="min-w-0">

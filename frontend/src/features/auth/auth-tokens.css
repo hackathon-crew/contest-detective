@@ -8,9 +8,9 @@
   --qx-color-muted: var(--color-muted);
   --qx-color-faint: var(--color-faint);
   --qx-color-rule-strong: var(--color-rule-strong);
-  --qx-color-accent: light-dark(#111111, #e0e4db);
-  --qx-color-accent-hover: light-dark(#303030, #c9d0c4);
-  --qx-color-on-accent: light-dark(#ffffff, #20241f);
+  --qx-color-accent: var(--color-accent);
+  --qx-color-accent-hover: var(--color-accent-hover);
+  --qx-color-on-accent: var(--color-on-accent);
   --qx-color-danger: var(--color-danger);
   --qx-color-danger-soft: var(--color-danger-soft);
   --qx-font-ui: var(--font-sans);
@@ -32,7 +32,7 @@
   --qx-space-12: 48px;
   --qx-space-16: 64px;
   --qx-radius-pill: 999px;
-  --qx-radius-card: 20px;
+  --qx-radius-card: var(--r-l);
   --qx-action-height: 48px;
   --qx-control-height: 40px;
   --qx-icon-control-size: 36px;

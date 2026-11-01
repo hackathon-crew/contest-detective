@@ -89,7 +89,7 @@
       transform 140ms var(--ease);
   }
   .btn:active {
-    transform: scale(0.98);
+    transform: scale(var(--motion-press-scale));
   }
   .btn-primary {
     background: var(--accent);
@@ -707,7 +707,7 @@
     display: inline-flex;
     padding: 3px;
     gap: 2px;
-    border-radius: 10px;
+    border-radius: var(--r-m);
     background: var(--surface-strong);
   }
   .seg button {
@@ -751,11 +751,12 @@
     height: 34px;
     padding-inline: 10px;
     border: 1px solid var(--rule);
-    border-radius: 10px;
+    border-radius: var(--r-m);
     color: var(--muted);
   }
   .fsearch:focus-within {
-    border-color: var(--accent);
+    border-color: var(--accent-line);
+    box-shadow: var(--shadow-focus);
   }
   .fsearch input {
     flex: 1;

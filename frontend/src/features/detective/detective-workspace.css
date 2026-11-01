@@ -146,14 +146,14 @@
   background: var(--color-surface-strong);
 }
 .detective-icon:active {
-  transform: scale(0.94);
+  transform: scale(var(--motion-press-scale));
 }
 .detective-icon:disabled {
   cursor: default;
   opacity: 0.45;
 }
 .detective-workspace :is(button, a):focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 .detective-sidebar__new {
@@ -248,8 +248,8 @@
   flex: none;
 }
 .detective-conversation__scroll:focus-visible {
-  outline: 1px solid var(--color-rule-strong);
-  outline-offset: -1px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 .detective-conversation__compose {
   position: sticky;
