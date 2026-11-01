@@ -9,6 +9,6 @@
 @media (min-width: 640px) {
   .detective-recommendation-cover {
     width: 88px;
-    border-radius: 10px;
+    border-radius: var(--r-m);
   }
 }
