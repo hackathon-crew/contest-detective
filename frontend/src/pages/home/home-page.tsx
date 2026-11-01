@@ -98,9 +98,10 @@ export function HomePage({ contestId }: { contestId?: string }) {
   const [lastContestId, setLastContestId] = useState(contestId)
   if (contestId && contestId !== lastContestId) setLastContestId(contestId)
   const detailId = contestId ?? lastContestId ?? ''
+  const homePath = location.state?.backgroundLocation?.pathname ?? (user ? '/home' : '/')
   const closeDetail = useCallback(
-    () => navigate({ pathname: '/', search: location.search }),
-    [navigate, location.search],
+    () => navigate({ pathname: homePath, search: location.search }),
+    [navigate, homePath, location.search],
   )
   function confirmed() {
     void client.invalidateQueries({ queryKey: currentUserKey })
