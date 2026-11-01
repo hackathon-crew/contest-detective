@@ -218,21 +218,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   ].filter((value): value is string => !!value)
   return (
     <div className="contests-page">
-      <SiteHeader
-        utilities={<AuthControls compact />}
-        actions={
-          <button
-            className="site-button site-button--ghost nav-follows"
-            type="button"
-            onClick={() => {
-              if (requireLogin()) change({ mine: true })
-              scrollToLibrary()
-            }}
-          >
-            我的关注{follows.ids.length > 0 && <span className="badge">{follows.ids.length}</span>}
-          </button>
-        }
-      />
+      <SiteHeader utilities={<AuthControls compact />} />
       <main>
         <section className="site-wrap head">
           <div className="head-copy">
@@ -329,6 +315,20 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             open={sheet}
             onClose={closeSheet}
             calendar={<ContestDatePicker {...pickerProps} />}
+            actions={
+              <button
+                className="site-button site-button--outline"
+                type="button"
+                aria-pressed={browser.filters.mine}
+                onClick={() => {
+                  if (requireLogin()) change({ mine: true })
+                  scrollToLibrary()
+                }}
+              >
+                我的关注
+                {follows.ids.length > 0 && <span className="badge">{follows.ids.length}</span>}
+              </button>
+            }
           />
           <div className="library-results">
             <ContestDatePicker {...pickerProps} strip />

@@ -97,31 +97,100 @@
   position: sticky;
   top: env(safe-area-inset-top, 0px);
   z-index: 30;
-  background: color-mix(in srgb, var(--color-page) 78%, transparent);
-  backdrop-filter: blur(16px) saturate(1.4);
-  border-bottom: 1px solid var(--color-rule);
+  background: color-mix(in srgb, var(--color-page) 82%, transparent);
+  backdrop-filter: blur(12px);
 }
-/* 分开声明，避免构建压缩把标准属性合并成仅 WebKit 可用的前缀。 */
 @supports not (backdrop-filter: blur(0)) {
   .site-header {
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(12px);
   }
 }
 .site-header > .site-wrap {
-  min-height: 64px;
+  max-width: 1228px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
+.site-header .site-brand {
+  gap: 10px;
+  border-radius: var(--r-s);
+}
+.site-header .site-brand img {
+  width: 28px;
+  height: 28px;
+}
+.site-header .site-brand span {
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
 .site-nav,
 .site-links {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
-.site-links {
-  margin-right: 8px;
+.site-header .site-button,
+.site-header [data-slot='button'],
+.site-header .auth-account-link {
+  min-height: 36px;
+  height: 36px;
+  border-radius: var(--r-s);
+  font-weight: 400;
+}
+.site-header .site-button {
+  border: 0;
+  color: var(--color-muted);
+}
+.site-header .site-button:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
+}
+.site-header .site-button--icon {
+  width: 42px;
+}
+.site-header .ic,
+.site-mobile-menu .ic {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.75;
+}
+.site-header .auth-login {
+  margin-left: 6px;
+  padding-inline: 16px;
+  border-radius: var(--radius-pill);
+}
+.site-header .site-menu-toggle {
+  display: none;
+  width: 36px;
+  padding: 0;
+}
+.site-mobile-menu {
+  z-index: 40;
+  width: 232px;
+  padding: 8px;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--r-l);
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
+  box-shadow: var(--shadow-card);
+  transform-origin: var(--radix-popover-content-transform-origin);
+}
+.site-mobile-menu[data-state='open'] {
+  animation: popup-menu-in var(--motion-fast) var(--ease-out) both;
+}
+.site-mobile-menu[data-state='closed'] {
+  animation: popup-fade-out var(--motion-fast) var(--ease-out) both;
+}
+.site-mobile-menu .site-links {
+  display: grid;
+}
+.site-mobile-menu .site-button {
+  justify-content: flex-start;
+  width: 100%;
+  padding-inline: 12px;
+  border-radius: var(--r-s);
 }
 .site-seg {
   display: inline-flex;
@@ -234,9 +303,12 @@
     max-width: 420px;
   }
 }
-@media (max-width: 880px) {
-  .site-links {
+@media (max-width: 760px) {
+  .site-header .site-links {
     display: none;
+  }
+  .site-header .site-menu-toggle {
+    display: inline-flex;
   }
 }
 @media (max-width: 720px) {

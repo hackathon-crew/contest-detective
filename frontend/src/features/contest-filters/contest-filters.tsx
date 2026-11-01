@@ -19,6 +19,7 @@ export function ContestFilters({
   open,
   onClose,
   calendar,
+  actions,
 }: {
   contests: LibraryContest[]
   filters: LibraryFilters
@@ -31,6 +32,7 @@ export function ContestFilters({
   open: boolean
   onClose: () => void
   calendar: ReactNode
+  actions?: ReactNode
 }) {
   const aside = useRef<HTMLElement>(null)
   useEffect(() => {
@@ -131,6 +133,7 @@ export function ContestFilters({
             <X className="ic ic-20" />
           </button>
         </div>
+        {actions}
         <div className="groups">
           <div className="fg">
             <h3>状态</h3>
