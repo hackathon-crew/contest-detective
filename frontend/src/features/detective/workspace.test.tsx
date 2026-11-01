@@ -118,28 +118,62 @@ it('已有账号画像时保留章鱼但不再提示建立画像', async () => {
 })
 
 it('账号的空画像默认值仍显示引导', async () => {
-  vi.stubGlobal('fetch', async () =>
-    json({
-      id: 'new-user',
-      username: 'new@example.org',
-      profile: {
-        skills: [],
-        topics: [],
-        preferred_modes: [],
-        github_evidence: [],
-        language_repo_share: {},
-        availability: { weekdays: [], windows: [], max_consecutive_days: null },
-        identity: null,
-        identity_kind: null,
-        github: null,
-        city: null,
-        available_time: null,
-        github_last_active_at: null,
-      },
-    }),
+  vi.stubGlobal('fetch', async (input: RequestInfo | URL) =>
+    json(
+      String(input).endsWith('/auth/me')
+        ? {
+            id: 'new-user',
+            username: 'new@example.org',
+            profile: {
+              skills: [],
+              topics: [],
+              preferred_modes: [],
+              github_evidence: [],
+              language_repo_share: {},
+              availability: { weekdays: [], windows: [], max_consecutive_days: null },
+              identity: null,
+              identity_kind: null,
+              github: null,
+              city: null,
+              available_time: null,
+              github_last_active_at: null,
+            },
+          }
+        : [],
+    ),
   )
   show('/detective')
   expect(await screen.findByRole('dialog', { name: '建立参赛画像' })).toBeTruthy()
+})
+
+it('个人匹配先请求画像，确认后继续原问题且只显示一次提问', async () => {
+  const requests: { question: string; profile: { github: string } }[] = []
+  const profile = { github: 'finn', skills: ['Python'] }
+  vi.stubGlobal('fetch', async (url: RequestInfo | URL, init?: RequestInit) => {
+    if (String(url).endsWith('/profile/github')) return json(profile)
+    if (String(url).endsWith('/user/profile')) return json({ ...workspaceUser, profile })
+    if (String(url).endsWith('/agent/ask')) {
+      requests.push(JSON.parse(String(init?.body)))
+      return new Response(event('answer', { content: '按你的 Python 项目继续找。', sources: [] }), {
+        headers: { 'content-type': 'text/event-stream' },
+      })
+    }
+    return json(String(url).endsWith('/auth/me') ? { ...workspaceUser, profile } : [])
+  })
+  show('/detective')
+  send('适合我参加的线上比赛')
+  const connect = await screen.findByRole('button', { name: '连接 GitHub' })
+  expect(requests).toHaveLength(0)
+  fireEvent.click(connect)
+  fireEvent.change(await screen.findByRole('textbox', { name: 'GitHub 用户名' }), {
+    target: { value: 'finn' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: '读取 GitHub' }))
+  fireEvent.click(await screen.findByRole('button', { name: '确认并挑比赛' }))
+  expect(await screen.findByText('按你的 Python 项目继续找。')).toBeTruthy()
+  expect(requests).toHaveLength(1)
+  expect(requests[0]?.profile.github).toBe('finn')
+  expect(screen.getAllByText('适合我参加的线上比赛')).toHaveLength(1)
 })
 
 it('首页入口进入独立侦探页，发送后有独立会话记录', async () => {
