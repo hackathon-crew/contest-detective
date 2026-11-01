@@ -12,8 +12,8 @@ const groups = [
       ['首页', '/home'],
       ['赛事库', '/contests'],
       ['问侦探', '/detective'],
-      ['画像匹配', '/#filter'],
-      ['MCP 接入', '/#mcp'],
+      ['画像匹配', '/home?profile=github'],
+      ['MCP 接入', '/home#mcp'],
     ],
   ],
   [
