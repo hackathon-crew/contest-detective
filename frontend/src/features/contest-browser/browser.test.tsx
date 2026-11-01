@@ -149,7 +149,7 @@ it('restores multiple URL filters and keeps inactive alternatives countable', as
 })
 
 it('date survives in result links and can be toggled without erasing other day counts', async () => {
-  start('/contests?date=2026-10-24')
+  start('/contests?date=2026-10-24&month=2026-10')
   await screen.findByText('没有符合条件的比赛')
   const mini = screen.getByRole('group', { name: '小日历' })
   const day = within(mini).getByRole('button', { name: '10月25日，1 场' })
