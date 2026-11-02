@@ -1,5 +1,6 @@
 import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate, Link } from 'react-router'
 import { ChevronDown } from 'lucide-react'
@@ -21,6 +22,7 @@ import {
   ProfileNudge,
   useProfileNudge,
   loadConfirmedProfile,
+  hasProfileData,
   type ProfileMatchSection,
 } from '@/features/profile-match'
 import { ErrorState } from '@/shared/ui'
@@ -68,6 +70,7 @@ function WallCover({ url, name }: { url: string; name: string }) {
 export function HomePage({ contestId }: { contestId?: string }) {
   const location = useLocation()
   const { data: user, isPending: userPending } = useCurrentUser()
+  const profile = hasProfileData(user?.profile) ? user?.profile : loadConfirmedProfile()
   const client = useQueryClient()
   const requireLogin = useLoginGate()
   const profileQuery = new URLSearchParams(location.search).get('profile')
@@ -104,7 +107,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
     [navigate, homePath, location.search],
   )
   const nudge = useProfileNudge({
-    profile: user?.profile ?? loadConfirmedProfile(),
+    profile,
     enabled: !userPending && !activeProfileSection && !contestId,
   })
   useScrollProgress(wall, 'wall')
@@ -153,8 +156,12 @@ export function HomePage({ contestId }: { contestId?: string }) {
   function ask(text: string, verification?: VerificationOptions) {
     const value = text.trim()
     if (!value) return
-    const id = send(value, user?.profile, undefined, verification)
-    if (id) navigate('/detective/' + id)
+    const id = send(value, profile, undefined, verification)
+    if (id) {
+      const enter = () => flushSync(() => navigate('/detective/' + id))
+      if (document.startViewTransition) document.startViewTransition(enter)
+      else enter()
+    }
   }
   function focusAsk() {
     window.scrollTo({

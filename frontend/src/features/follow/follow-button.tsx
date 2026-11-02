@@ -1,19 +1,49 @@
 import { Button } from '@/shared/ui'
 import type { FollowController } from './model'
-import { Bookmark } from 'lucide-react'
-import { useState } from 'react'
+import { Bookmark, Eye } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import './follow-button.css'
 
 export function FollowButton({
   contestId,
   follows,
   iconOnly = false,
+  watch = false,
+  onFollow,
 }: {
   contestId: string
   follows: FollowController
   iconOnly?: boolean
+  watch?: boolean
+  onFollow?: () => void
 }) {
   const followed = follows.ids.includes(contestId)
   const [popping, setPopping] = useState(false)
+  const [requested, setRequested] = useState(false)
+  useEffect(() => {
+    if (!requested || !followed) return
+    setRequested(false)
+    setPopping(true)
+    onFollow?.()
+  }, [followed, requested, onFollow])
+  if (watch)
+    return (
+      <button
+        type="button"
+        className="detective-watch"
+        data-popping={popping}
+        aria-pressed={followed}
+        disabled={follows.pending}
+        onClick={() => {
+          setRequested(!followed)
+          follows.toggle(contestId)
+        }}
+        onAnimationEnd={() => setPopping(false)}
+      >
+        <Eye aria-hidden="true" strokeWidth={1.5} />
+        {followed ? '已盯上' : '帮我盯着'}
+      </button>
+    )
   if (iconOnly)
     return (
       <button

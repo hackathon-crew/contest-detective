@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { Check, FileText } from 'lucide-react'
 import {
@@ -19,7 +19,13 @@ import './detective-results.css'
 /* 推荐卡：照首页 mock 侦探回答里的 .picks，一组行共用一个描边容器，行间一条细线；
    左边 4:3 小封面，中间名称、主办方·形式·奖金、简介和带勾的建议，右边是截止日期一列。
    整行点开比赛详情，日期本身链到出处。 */
-export function RecommendationCards({ items }: { items: ContestRecommendation[] }) {
+export function RecommendationCards({
+  items,
+  action,
+}: {
+  items: ContestRecommendation[]
+  action?: (contest: ContestRecommendation['contest']) => ReactNode
+}) {
   if (!items.length) return null
   return (
     <section
@@ -135,6 +141,7 @@ export function RecommendationCards({ items }: { items: ContestRecommendation[] 
                 </span>
               )}
             </div>
+            {action && <div className="detective-recommendation-action">{action(contest)}</div>}
           </article>
         )
       })}

@@ -1,19 +1,32 @@
 import type { VerificationOptions } from '@/features/detective/verification-contracts'
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { MessageCircle, PanelLeftClose, PanelLeftOpen, PanelRight, SquarePen } from 'lucide-react'
 import { Collapsible, Dialog as PrimitiveDialog } from 'radix-ui'
 import { useQueryClient } from '@tanstack/react-query'
-import { currentUserKey, personalIntent, useCurrentUser } from '@/entities/user'
+import { currentUserKey, personalIntent, useCurrentUser, useLoginGate } from '@/entities/user'
 import {
   ProfileMatchDialog,
   ProfileNudge,
   useProfileNudge,
   loadConfirmedProfile,
+  hasProfileData,
   type ProfileMatchSection,
 } from '@/features/profile-match'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { AuthControls } from '@/features/auth'
+import { FollowButton, useFollows } from '@/features/follow'
+import type { ContestRecommendation, Profile } from '@/shared/api'
+import type { ProfileRequest } from '@/features/detective/detective-context'
 import { useContest } from '@/entities/contest'
 import {
   ContestReference,
@@ -24,6 +37,8 @@ import {
   DetectiveComposer,
   DetectiveMessage,
   ResearchPanel,
+  DetectiveMascot,
+  ProfileRequestMessage,
   useDetective,
 } from '@/features/detective'
 import '@/features/detective/detective-composer.css'
@@ -37,8 +52,10 @@ const Octopus = lazy(() =>
 export function DetectivePage() {
   const location = useLocation()
   const { conversationId } = useParams()
-  const { sessions, loading, storageError, reload, send, stop } = useDetective()
+  const { sessions, loading, storageError, reload, send, stop, profileRequest, resumeWithProfile } =
+    useDetective()
   const session = sessions.find((item) => item.id === conversationId)
+  const requestedProfile = profileRequest?.conversationId === conversationId ? profileRequest : null
   const savedReference = session?.turns.at(-1)?.request?.contest
   const selectedId = new URLSearchParams(location.search).get('contest') ?? savedReference?.id ?? ''
   const selected = useContest(selectedId)
@@ -60,14 +77,29 @@ export function DetectivePage() {
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
   const { data: user, isPending: userPending } = useCurrentUser()
+  const profile = hasProfileData(user?.profile) ? user?.profile : loadConfirmedProfile()
+  const requireLogin = useLoginGate()
   const client = useQueryClient()
   const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(
     () => personalIntent(location).profileSection ?? null,
   )
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const follows = useFollows()
+  const [celebrating, setCelebrating] = useState(false)
+  const [watchNotice, setWatchNotice] = useState(false)
+  const [followEvent, setFollowEvent] = useState(0)
+  useEffect(() => {
+    if (!watchNotice) return
+    const jump = setTimeout(() => setCelebrating(false), 900)
+    const notice = setTimeout(() => setWatchNotice(false), 3200)
+    return () => {
+      clearTimeout(jump)
+      clearTimeout(notice)
+    }
+  }, [watchNotice, followEvent])
   const nudge = useProfileNudge({
-    profile: user?.profile ?? loadConfirmedProfile(),
-    enabled: !userPending && !profileSection,
+    profile,
+    enabled: !userPending && !profileSection && !requestedProfile,
     guideEligible:
       !session?.turns.length && !selectedId && !loading && (!conversationId || !!session),
     answerId: session?.turns.filter((turn) => turn.status === 'completed').at(-1)?.id,
@@ -79,8 +111,13 @@ export function DetectivePage() {
     setResearchMode('closed')
     researchButton.current?.focus({ preventScroll: true })
   }
-  function confirmed() {
+  function confirmed(profile: Profile) {
     void client.invalidateQueries({ queryKey: currentUserKey })
+    if (requestedProfile) {
+      setProfileSection(null)
+      const id = resumeWithProfile(profile)
+      if (id && id !== conversationId) navigate(`/detective/${id}`)
+    }
   }
 
   return (
@@ -122,7 +159,7 @@ export function DetectivePage() {
           <Conversation
             key={`${conversationId ?? 'new'}:${new URLSearchParams(location.search).get('contest') ?? ''}`}
             session={session}
-            missing={!!conversationId && !session && !loading && !storageError}
+            missing={!!conversationId && !session && !requestedProfile && !loading && !storageError}
             loading={loading && !!conversationId}
             storageError={storageError}
             onReload={() => void reload()}
@@ -131,14 +168,31 @@ export function DetectivePage() {
             referenceLoading={!!selectedId && !reference && selected.isPending}
             referenceError={!!selectedId && !reference && selected.isError}
             onSubmit={(text, verification, contest) => {
-              const id = send(text, user?.profile, session?.id, verification, contest)
+              const id = send(text, profile, session?.id, verification, contest)
               if (id && id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
-            onAddProfile={setProfileSection}
+            onAddProfile={(section) => {
+              if (requireLogin({ question: requestedProfile?.question, profileSection: section }))
+                setProfileSection(section)
+            }}
             showProfileGuide={nudge.guideVisible}
             onDismissProfileGuide={nudge.dismissGuide}
             nudgeTalking={nudge.visible}
+            profileRequest={requestedProfile}
+            celebrating={celebrating}
+            recommendationAction={(contest) => (
+              <FollowButton
+                contestId={contest.id}
+                follows={follows}
+                watch
+                onFollow={() => {
+                  setCelebrating(true)
+                  setWatchNotice(true)
+                  setFollowEvent((event) => event + 1)
+                }}
+              />
+            )}
           />
         </div>
         <Collapsible.Content asChild>
@@ -228,6 +282,16 @@ export function DetectivePage() {
         onClose={() => setProfileSection(null)}
         onConfirmed={confirmed}
       />
+      {watchNotice && (
+        <p role="status" className="detective-watch-notice">
+          截止或规则一变，发邮件告诉你
+        </p>
+      )}
+      {follows.error && (
+        <p role="alert" className="detective-watch-notice">
+          {follows.error}
+        </p>
+      )}
     </div>
   )
 }
@@ -248,6 +312,9 @@ function Conversation({
   showProfileGuide,
   onDismissProfileGuide,
   nudgeTalking,
+  profileRequest,
+  celebrating,
+  recommendationAction,
 }: {
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
@@ -268,6 +335,9 @@ function Conversation({
   showProfileGuide: boolean
   onDismissProfileGuide: () => void
   nudgeTalking: boolean
+  profileRequest: ProfileRequest | null
+  celebrating: boolean
+  recommendationAction: (contest: ContestRecommendation['contest']) => ReactNode
 }) {
   const [question, setQuestion] = useState(initialQuestion ?? '')
   const [referenceRemoved, setReferenceRemoved] = useState(false)
@@ -277,6 +347,13 @@ function Conversation({
   const pinned = useRef(true)
   const turns = session?.turns ?? []
   const lastTurn = turns.at(-1)
+  const active = !!turns.length || !!profileRequest
+  const [mascotSize, setMascotSize] = useState(() => (window.innerWidth <= 760 ? 120 : 180))
+  useEffect(() => {
+    const resize = () => setMascotSize(window.innerWidth <= 760 ? 120 : 180)
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [])
   const pending =
     loading || (!referenceRemoved && referenceLoading) || lastTurn?.status === 'running'
   useEffect(() => {
@@ -304,13 +381,14 @@ function Conversation({
     setQuestion('')
   }
   return (
-    <main className="detective-conversation" data-empty={!turns.length}>
+    <main className="detective-conversation" data-empty={!active}>
+      {active && <DetectiveMascot turn={lastTurn} happy={celebrating} />}
       <div
         ref={scroll}
         className="detective-conversation__scroll"
-        role={turns.length ? 'log' : undefined}
-        tabIndex={turns.length ? 0 : undefined}
-        aria-label={turns.length ? '对话内容' : undefined}
+        role={active ? 'log' : undefined}
+        tabIndex={active ? 0 : undefined}
+        aria-label={active ? '对话内容' : undefined}
         aria-live={pending ? 'polite' : undefined}
         aria-busy={pending}
         onScroll={(event) => {
@@ -318,17 +396,27 @@ function Conversation({
           pinned.current = node.scrollHeight - node.scrollTop - node.clientHeight < 64
         }}
       >
-        {turns.length ? (
+        {active ? (
           <div ref={observeThread} className="detective-thread">
             {turns.map((turn) => (
-              <DetectiveMessage key={turn.id} turn={turn} />
+              <DetectiveMessage
+                key={turn.id}
+                turn={turn}
+                recommendationAction={recommendationAction}
+              />
             ))}
+            {profileRequest && (
+              <ProfileRequestMessage
+                question={profileRequest.question}
+                onConnect={() => onAddProfile('github')}
+              />
+            )}
           </div>
         ) : (
           <div className="detective-greeting">
             {!missing && (
               <div
-                className="detective-greeting__mascot grid size-45 place-items-center"
+                className="detective-greeting__mascot grid place-items-center"
                 data-speaking={nudgeTalking}
               >
                 <Suspense
@@ -343,7 +431,7 @@ function Conversation({
                   }
                 >
                   <Octopus
-                    size={180}
+                    size={mascotSize}
                     mood={nudgeTalking ? 'talk' : 'read'}
                     shadow={false}
                     label="捧书的 Inkpaw 八爪鱼"

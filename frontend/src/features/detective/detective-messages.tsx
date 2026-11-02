@@ -15,6 +15,8 @@ import { EvidenceReport, ExecutionDetails, InvestigationProgress } from './evide
 import type { SearchExecution } from './verification-contracts'
 import { reportStatusNames } from './verification-report'
 import { ProfileFileAttachment, RecommendationCards } from './detective-results'
+import type { ReactNode } from 'react'
+import type { ContestRecommendation } from './conversation'
 
 function Sources({ items }: { items: TraceSource[] }) {
   const trusted = [
@@ -148,7 +150,13 @@ function RetryInvestigation({ turnId }: { turnId: string }) {
   )
 }
 
-export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
+export function DetectiveMessage({
+  turn,
+  recommendationAction,
+}: {
+  turn: DetectiveTurn
+  recommendationAction?: (contest: ContestRecommendation['contest']) => ReactNode
+}) {
   const paced = useStreamPacer(turn.content, turn.status === 'running')
   return (
     <article className="detective-turn" aria-label={`关于${turn.question}的对话`}>
@@ -203,7 +211,9 @@ export function DetectiveMessage({ turn }: { turn: DetectiveTurn }) {
             </div>
           )}
           {turn.report && <EvidenceReport report={turn.report} />}
-          {!!turn.recommendations?.length && <RecommendationCards items={turn.recommendations} />}
+          {!!turn.recommendations?.length && (
+            <RecommendationCards items={turn.recommendations} action={recommendationAction} />
+          )}
           {!turn.report && <Sources items={turn.sources} />}
           {turn.error && (
             <p

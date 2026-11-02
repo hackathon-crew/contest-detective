@@ -6,6 +6,10 @@
   font-size: 13px;
   line-height: 1.5;
 }
+.detective-recommendation-action {
+  grid-column: 2 / -1;
+  margin-left: -8px;
+}
 @media (min-width: 640px) {
   .detective-recommendation-cover {
     width: 88px;

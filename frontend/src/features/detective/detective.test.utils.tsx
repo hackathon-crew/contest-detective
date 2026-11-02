@@ -52,6 +52,8 @@ export function renderDetective(
     }
     if (String(input).endsWith('/account/conversations'))
       return Response.json({ code: 200, message: 'ok', data: remote })
+    if (String(input).endsWith('/account/follows'))
+      return Response.json({ code: 200, message: 'ok', data: [] })
     return transport(input, init)
   })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

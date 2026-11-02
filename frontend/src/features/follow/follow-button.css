@@ -1,0 +1,46 @@
+.detective-watch {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--r-s);
+  background: none;
+  font-size: 13px;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition:
+    color var(--motion-fast),
+    background var(--motion-fast);
+}
+.detective-watch:hover {
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
+}
+.detective-watch:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.detective-watch[aria-pressed='true'] {
+  color: var(--color-accent);
+}
+.detective-watch svg {
+  width: 16px;
+  height: 16px;
+}
+.detective-watch[data-popping='true'] svg {
+  animation: detective-watch-pop var(--motion-page) var(--ease-out);
+}
+@keyframes detective-watch-pop {
+  40% {
+    transform: scale(1.35);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detective-watch[data-popping='true'] svg {
+    animation: none;
+  }
+}
