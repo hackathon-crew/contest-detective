@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseTrace } from './events'
+import { loadConversation } from './conversation'
 import { reportFixture } from './verification-fixtures.test-utils'
 import {
   parseInvestigationReport,
@@ -202,4 +203,52 @@ it('Markdown 证据链接中的括号正确编码，不截断原始 URL', () => 
   report.evidence[0].url = 'https://example.org/rules(2026)'
   expect(serializeReport(report, 'markdown')).toContain('https://example.org/rules%282026%29')
   expect(JSON.parse(serializeReport(report, 'json')).evidence[0].url).toBe(report.evidence[0].url)
+})
+
+it('冲突可选元数据保留原文和未裁决状态，损坏项不丢正文或本机历史', () => {
+  const conflict = {
+    statements: [
+      {
+        text: '每队最多4人。',
+        evidence: { ...reportFixture().evidence[0], content_hash: null, excerpt: '每队最多4人。' },
+      },
+      {
+        text: '每队最多6人。',
+        evidence: {
+          ...reportFixture().evidence[0],
+          id: 'second',
+          url: 'https://other.example.org/rules',
+          content_hash: null,
+          excerpt: '每队最多6人。',
+        },
+      },
+    ],
+    accepted_statement: null,
+    reason: '适用届次尚未确认。',
+    blocks_participation: false,
+  }
+  const answer = trace('answer', {
+    content: '仍需确认届次。',
+    sources: [],
+    conflicts: [conflict, { broken: true }],
+  })
+  expect(answer).toMatchObject({
+    content: '仍需确认届次。',
+    conflicts: [{ accepted_statement: null, reason: '适用届次尚未确认。' }],
+  })
+  const saved = loadConversation('guest', [
+    {
+      id: 'one',
+      question: '核对规则',
+      content: '仍需确认届次。',
+      status: 'completed',
+      trace: [],
+      sources: [],
+      conflicts: [conflict, { broken: true }],
+    },
+  ])
+  expect(saved[0]?.conflicts).toHaveLength(1)
+  expect(saved[0]?.conflicts?.[0]?.statements[1]?.evidence.url).toBe(
+    'https://other.example.org/rules',
+  )
 })

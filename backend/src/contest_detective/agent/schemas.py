@@ -4,7 +4,7 @@ from typing import Literal
 from datetime import datetime
 from uuid import UUID
 
-from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan, SourceConflict
+from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan, SourceConflict, ConflictDecision
 from contest_detective.research.contracts import SearchExecution
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
@@ -87,19 +87,20 @@ class RecommendationChoice(BaseModel):
 
 class DetectiveReply(BaseModel):
     assessments: list[ClaimAssessment] = Field(default_factory=list, description="实时/深度模式逐条引用 cite_evidence 返回的证据 ID；证据不足必须标 insufficient")
+    conflicts: list[ConflictDecision] = Field(default_factory=list, description='只列本轮已读原文中互相矛盾的说法；evidence_id 使用已读来源 URL，text 逐字引用，无法裁决时 accepted_statement 为空')
     content: str = Field(min_length=1, description='给用户的完整 Markdown 文字答复，保留介绍、比较和来源链接')
     recommendations: list[RecommendationChoice] = Field(
         default_factory=list, description='最终推荐的比赛，按推荐顺序排列；未推荐任何比赛时返回空数组',
     )
 
 
-    @field_validator('recommendations', 'assessments', mode='before')
+    @field_validator('recommendations', 'assessments', 'conflicts', mode='before')
     @classmethod
     def optional_metadata(cls, value, info: ValidationInfo):
         # 附加信息不完整时只放弃该项，不能让已经生成的正文再次请求模型后丢失。
         if not isinstance(value, list):
             return []
-        model = RecommendationChoice if info.field_name == 'recommendations' else ClaimAssessment
+        model = {'recommendations': RecommendationChoice, 'assessments': ClaimAssessment, 'conflicts': ConflictDecision}[info.field_name]
         items = []
         for item in value:
             try:

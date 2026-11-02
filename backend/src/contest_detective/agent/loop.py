@@ -26,6 +26,7 @@ from .chat.service import lock_chat_writes, record_investigation
 from .presentation import interrupted_answer
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
+from .conflicts import build_conflicts, conflict_evidence
 from .tools import ToolDeps, invoke, register_tools
 from .verification import VerificationState, render_report, scope_check, export_text, public_payload
 from .verification_contracts import VerificationMode, ConfirmedClaim
@@ -52,6 +53,8 @@ search_contests 和 match_contests 返回的名片只用来挑比赛，不是已
 最终答复同时包含完整文字 content 与推荐清单 recommendations。推荐清单只列最终建议参加的比赛，
 使用本轮工具返回的真实 contest_id，为每场填写 introduction 简介和 reason 推荐理由。
 正文继续自然地解释、比较并给出来源链接，不能只说“见卡片”。没有推荐比赛时清单为空。
+有来源分歧时在 conflicts 列出逐字原文与 evidence_id（本轮已读来源 URL），按 statements 的零起始下标填 accepted_statement，并解释采信理由；无法裁决时留空，不因来源官方就自动判真。
+blocks_participation 只在已采信的规则明确阻止当前用户参赛时为 true；普通来源分歧和未裁决都不能阻止参赛。没有分歧时 conflicts 为空。
 新发现的比赛先用 record_page 写入并取得真实 ID；卡片的封面、日期、奖金和出处由服务端读取，勿自行填造。
 '''
 LABELS = {'search_contests': '查询比赛库', 'get_contest': '读取赛事出处', 'web_search': '搜索主办方资料',
@@ -235,7 +238,10 @@ class Investigator:
             reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
                 content=result.output, recommendations=[])
             answer = reply.content
+            conflicts = build_conflicts(reply.conflicts, conflict_evidence(deps.read_contests.values(), deps.fetched_pages, deps.sources))
             report = state.build(reply.assessments) if state else None
+            if report and conflicts:
+                report.conflicts = conflicts
             answer = render_report(report) if report and confirmed_claims and not deps.wrapping_up else answer
             with self.session_factory() as session:
                 recommendations = materialize(session, [item for item in reply.recommendations
@@ -252,6 +258,7 @@ class Investigator:
             store(TraceEvent(type='answer', payload={
                 'content': answer, 'sources': [source.model_dump() for source in deps.sources.values()], 'action': action,
                 'recommendations': [public_payload(item.model_dump(mode='json')) if state else item.model_dump(mode='json') for item in recommendations],
+                **({'conflicts': [item.model_dump(mode='json') for item in conflicts]} if conflicts else {}),
                 **({'report': report.model_dump(mode='json')} if report else {}),
             }))
         except BizException as exc:

@@ -4,6 +4,7 @@ import type {
   InvestigationReport,
   ReportEvidence,
   SearchExecution,
+  SourceConflict,
 } from './verification-contracts'
 
 export const verdictNames = {
@@ -218,6 +219,41 @@ function parseClaim(value: unknown): ClaimAssessment {
   }
 }
 
+/** Optional conflict metadata is validated once at the stream/storage boundary. */
+export function parseSourceConflicts(value: unknown): SourceConflict[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((value) => {
+    try {
+      const input = object(value)
+      const statements = list(input.statements, (value) => {
+        const statement = object(value)
+        const quote = text(statement.text, true)
+        const evidence = parseEvidence(statement.evidence)
+        if (!evidence.excerpt.includes(quote)) return invalid()
+        return { text: quote, evidence }
+      })
+      const accepted =
+        input.accepted_statement == null ? null : integer(input.accepted_statement, 0)
+      if (
+        statements.length < 2 ||
+        (accepted !== null && accepted >= statements.length) ||
+        typeof input.blocks_participation !== 'boolean'
+      )
+        return invalid()
+      return [
+        {
+          statements,
+          accepted_statement: accepted,
+          reason: text(input.reason, true),
+          blocks_participation: accepted !== null && input.blocks_participation,
+        },
+      ]
+    } catch {
+      return []
+    }
+  })
+}
+
 /** Project only the public contract. Never spread model payloads or conversation/profile state. */
 export function parseInvestigationReport(value: unknown): InvestigationReport {
   const input = object(value)
@@ -232,6 +268,7 @@ export function parseInvestigationReport(value: unknown): InvestigationReport {
     claims: list(input.claims, parseClaim),
     evidence: list(input.evidence, parseEvidence),
     limitations: strings(input.limitations),
+    ...(input.conflicts != null ? { conflicts: parseSourceConflicts(input.conflicts) } : {}),
   }
   const claims = uniqueIds(report.claims)
   const queries = uniqueIds(report.queries)
@@ -256,7 +293,7 @@ function markdownText(value: string): string {
     .replace(/[\\`*_{}[\]()#+.!|~-]/gu, '\\$&')
     .replace(/\r?\n/gu, '  \n')
 }
-function markdownLink(evidence: ReportEvidence): string {
+function markdownLink(evidence: Pick<ReportEvidence, 'url' | 'title' | 'id'>): string {
   const url = evidence.url.replace(
     /[<>()"\s]/gu,
     (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
@@ -326,6 +363,15 @@ export function serializeReport(value: InvestigationReport, format: 'json' | 'ma
     )
   if (report.limitations.length)
     lines.push('## 限制', '', ...report.limitations.map((item) => `- ${markdownText(item)}`), '')
+  for (const conflict of report.conflicts ?? []) {
+    lines.push('## 来源分歧', '')
+    conflict.statements.forEach((statement, index) =>
+      lines.push(
+        `- ${index === conflict.accepted_statement ? '采信：' : ''}${markdownText(statement.text)}（${markdownLink(statement.evidence)}）`,
+      ),
+    )
+    lines.push('', markdownText(conflict.reason), '')
+  }
   return lines.join('\n')
 }
 

@@ -287,6 +287,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       action: undefined,
       recommendations: undefined,
       report: undefined,
+      conflicts: undefined,
       plan: undefined,
     }))
     void run(
@@ -357,6 +358,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
             sources: event.sources,
             recommendations: event.recommendations,
             report: event.report,
+            conflicts: event.conflicts,
             plan: event.report?.plan ?? turn.plan,
             action: event.action,
             error: undefined,

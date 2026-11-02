@@ -3,11 +3,13 @@ import type {
   InvestigationPlan,
   InvestigationReport,
   SearchExecution,
+  SourceConflict,
 } from './verification-contracts'
 import {
   parseInvestigationPlan,
   parseInvestigationReport,
   parseSearchExecution,
+  parseSourceConflicts,
 } from './verification-report'
 
 export interface TraceSource {
@@ -42,6 +44,7 @@ export type TraceEvent =
       sources: TraceSource[]
       recommendations?: ContestRecommendation[]
       report?: InvestigationReport
+      conflicts?: SourceConflict[]
       action?: RecoveryAction
     }
   | { type: 'error'; message: string; action?: RecoveryAction }
@@ -113,6 +116,7 @@ export function parseTrace(event: ServerSentEvent): TraceEvent | null {
         : undefined,
       action: recoveryAction(value.action),
       ...(report ? { report } : {}),
+      ...(value.conflicts != null ? { conflicts: parseSourceConflicts(value.conflicts) } : {}),
     }
   }
   if (event.event === 'error' && typeof value.message === 'string')
