@@ -54,6 +54,12 @@ export function renderDetective(
       return Response.json({ code: 200, message: 'ok', data: remote })
     if (String(input).endsWith('/account/follows'))
       return Response.json({ code: 200, message: 'ok', data: [] })
+    if (String(input).endsWith('/agent/guest-quota'))
+      return Response.json({
+        code: 200,
+        message: 'ok',
+        data: { limit: 3, remaining: 3, resets_at: '2026-11-03T00:00:00+08:00' },
+      })
     return transport(input, init)
   })
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation, useMatch, useNavigate } from 'react-router'
 import { apiClient, ApiError, type ContestRecommendation, type Profile } from '@/shared/api'
-import { currentUserKey, loginReturn, useLoginGate } from '@/entities/user'
+import { currentUserKey, loginReturn, personalIntent } from '@/entities/user'
 import { historyFor, type DetectiveTurn } from './conversation'
-import { loadSessions, sessionWithTurn, type DetectiveSession } from './sessions'
+import { loadSessions, sessionWithTurn, sessionsKey, type DetectiveSession } from './sessions'
 import { readAccountSessions } from './sessions-api'
 import { parseTrace, recoveryAction, type RecoveryAction } from './events'
 
@@ -13,6 +13,7 @@ import { createId } from './id'
 import { cancelInvestigation, investigationStream } from './investigation-stream'
 import type { ContestReferenceValue } from './contest-reference'
 import type { VerificationOptions } from './verification-contracts'
+import { guestQuotaKey } from './guest-access'
 
 function needsProfile(question: string, profile?: Profile | null) {
   const known =
@@ -34,8 +35,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   const client = useQueryClient()
   const location = useLocation()
   const navigate = useNavigate()
-  const requireLogin = useLoginGate()
-  const [sessions, setSessions] = useState(() => (scope === 'guest' ? [] : loadSessions(scope)))
+  const [sessions, setSessions] = useState(() => loadSessions(scope))
+  const guestImport = useRef(personalIntent(location).saveGuestConversation)
   const [loading, setLoading] = useState(scope !== 'guest')
   const snapshot = useRef(sessions)
   const revision = useRef(0)
@@ -53,6 +54,10 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   const recovering = useRef(new Set<string>())
   const [storageError, setStorageError] = useState(false)
   const [profileRequest, setProfileRequest] = useState<ProfileRequest | null>(null)
+  const [loginRequest, setLoginRequest] = useState<{
+    conversationId: string
+    question: string
+  } | null>(null)
   const activeId = useMatch('/detective/:conversationId')?.params.conversationId
 
   const reload = useCallback(
@@ -60,7 +65,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       if (scope === 'guest') return
       const started = revision.current
       try {
-        const saved = await readAccountSessions(scope, signal)
+        const saved = await readAccountSessions(scope, signal, guestImport.current)
         if (signal?.aborted) return
         const merged = new Map(saved.map((item) => [item.id, item]))
         for (const item of snapshot.current)
@@ -68,6 +73,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
             merged.set(item.id, item)
         change(() => [...merged.values()].sort((a, b) => b.updatedAt - a.updatedAt))
         setStorageError(false)
+        guestImport.current = undefined
       } catch {
         if (!signal?.aborted) setStorageError(true)
       } finally {
@@ -120,6 +126,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   }, [sessions])
 
   useEffect(() => {
+    if (scope === 'guest') return
     const active = sessions.find((session) => session.id === activeId)
     if (!active) return
     for (const turn of active.turns) {
@@ -150,6 +157,13 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   function change(transform: (sessions: DetectiveSession[]) => DetectiveSession[]) {
     snapshot.current = transform(snapshot.current)
     setSessions(snapshot.current)
+    if (scope === 'guest') {
+      try {
+        localStorage.setItem(sessionsKey(scope), JSON.stringify(snapshot.current))
+      } catch {
+        setStorageError(true)
+      }
+    }
   }
   function update(
     sessionId: string,
@@ -176,7 +190,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       ?.turns.find((item) => item.status === 'running')
     if (turn?.investigationId) {
       try {
-        await cancelInvestigation(turn.investigationId, controller.signal)
+        await cancelInvestigation(turn.investigationId, controller.signal, scope === 'guest')
       } catch {
         update(sessionId, turn.id, (current) => ({
           ...current,
@@ -210,7 +224,6 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     contest?: ContestReferenceValue | null,
   ) {
     const text = question.trim()
-    if (!requireLogin({ question: text })) return null
     const existing = snapshot.current.find((session) => session.id === sessionId)
     if (existing && requests.current.has(existing.id)) return existing.id
     const selected = contest === undefined ? existing?.turns.at(-1)?.request?.contest : contest
@@ -341,7 +354,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
           ...verificationOptions,
         },
         controller.signal,
-        { after: current?.lastSeq ?? 0, resume },
+        { after: current?.lastSeq ?? 0, resume, guest: scope === 'guest' },
       )) {
         if (controller.signal.aborted) break
         const event = parseTrace(raw)
@@ -386,6 +399,16 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
       if (!terminal && !controller.signal.aborted)
         fail('这次查证没能完成。点击一键重查，无需重新输入问题。', 'retry')
     } catch (cause) {
+      if (
+        scope === 'guest' &&
+        cause instanceof ApiError &&
+        cause.code === 429 &&
+        (cause.data as { action?: string } | null)?.action === 'login'
+      ) {
+        fail(cause.message, 'retry')
+        setLoginRequest({ conversationId: sessionId, question })
+        return
+      }
       if (cause instanceof ApiError && cause.code === 401) {
         client.setQueryData(currentUserKey, null)
         navigate('/login', { state: loginReturn(location, { question }) })
@@ -401,6 +424,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         )
     } finally {
       if (requests.current.get(sessionId) === controller) requests.current.delete(sessionId)
+      if (scope === 'guest') void client.invalidateQueries({ queryKey: guestQuotaKey })
     }
   }
   return (
@@ -415,6 +439,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         retry,
         profileRequest,
         resumeWithProfile,
+        loginRequest,
+        clearLoginRequest: () => setLoginRequest(null),
       }}
     >
       {children}

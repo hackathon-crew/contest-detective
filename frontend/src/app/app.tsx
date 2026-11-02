@@ -59,14 +59,12 @@ export function AppRoutes() {
       />
     )
   }
-  if (/^\/detective(?:\/|$)/.test(location.pathname) && !user) {
-    if (isPending)
-      return (
-        <main aria-busy="true">
-          <p role="status">正在确认登录状态…</p>
-        </main>
-      )
-    return <Navigate to="/login" state={{ returnTo: location }} replace />
+  if (/^\/detective(?:\/|$)/.test(location.pathname) && isPending) {
+    return (
+      <main aria-busy="true">
+        <p role="status">正在确认登录状态…</p>
+      </main>
+    )
   }
   return (
     <DetectiveProvider key={user?.id ?? 'guest'} scope={user?.id ?? 'guest'}>

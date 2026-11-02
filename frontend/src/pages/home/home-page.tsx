@@ -15,7 +15,7 @@ import {
 import { AppearanceControl } from '@/features/appearance'
 import { AuthControls } from '@/features/auth'
 import { ContestDetail } from '@/features/contest-detail'
-import { DetectiveComposer, useDetective } from '@/features/detective'
+import { DetectiveComposer, useDetective, useGuestQuota } from '@/features/detective'
 import { FollowButton, useFollows } from '@/features/follow'
 import {
   ProfileMatchDialog,
@@ -70,6 +70,7 @@ function WallCover({ url, name }: { url: string; name: string }) {
 export function HomePage({ contestId }: { contestId?: string }) {
   const location = useLocation()
   const { data: user, isPending: userPending } = useCurrentUser()
+  const guestQuota = useGuestQuota(!user && !userPending)
   const profile = hasProfileData(user?.profile) ? user?.profile : loadConfirmedProfile()
   const client = useQueryClient()
   const requireLogin = useLoginGate()
@@ -153,9 +154,10 @@ export function HomePage({ contestId }: { contestId?: string }) {
       )
     }
   }
-  function ask(text: string, verification?: VerificationOptions) {
+  async function ask(text: string, verification?: VerificationOptions) {
     const value = text.trim()
     if (!value) return
+    if (!user && guestQuota.isPending) await guestQuota.refetch()
     const id = send(value, profile, undefined, verification)
     if (id) {
       const enter = () => flushSync(() => navigate('/detective/' + id))

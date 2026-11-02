@@ -56,7 +56,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
   function back() {
     if (lock.current || sendingCode) return
     if (step === 'email') {
-      const protectedPage = /^\/(account|detective)(?:\/|$)/.test(returnTo?.pathname ?? '')
+      const protectedPage = /^\/account(?:\/|$)/.test(returnTo?.pathname ?? '')
       const state = returnTo?.state
       // 取消登录保留草稿，但不能重开需要登录的画像窗口，否则会再次跳回登录页。
       navigate(protectedPage ? '/' : destination, {
@@ -65,7 +65,12 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
           !protectedPage && state
             ? {
                 ...state,
-                personalIntent: { ...state.personalIntent, profileSection: undefined },
+                personalIntent: {
+                  ...state.personalIntent,
+                  profileSection: undefined,
+                  resumeProfileQuestion: undefined,
+                  saveGuestConversation: undefined,
+                },
               }
             : undefined,
       })

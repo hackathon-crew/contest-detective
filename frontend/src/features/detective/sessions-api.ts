@@ -2,8 +2,15 @@ import { apiClient } from '@/shared/api'
 import { conversationKey } from './conversation'
 import { loadSessions, sessionsKey, type DetectiveSession } from './sessions'
 
-export async function readAccountSessions(scope: string, signal?: AbortSignal) {
+export async function readAccountSessions(scope: string, signal?: AbortSignal, guestId?: string) {
   if (scope === 'guest') return []
+  const guest = guestId && loadSessions('guest').find((session) => session.id === guestId)
+  if (guest)
+    await apiClient.request('/account/conversations/import', {
+      method: 'POST',
+      json: { sessions: [guest] },
+      signal,
+    })
   const keys = [sessionsKey(scope), conversationKey(scope)]
   let before: (string | null)[] = []
   try {

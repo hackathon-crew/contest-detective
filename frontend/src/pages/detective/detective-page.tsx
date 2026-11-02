@@ -40,6 +40,7 @@ import {
   DetectiveMascot,
   ProfileRequestMessage,
   useDetective,
+  useGuestQuota,
 } from '@/features/detective'
 import '@/features/detective/detective-composer.css'
 import '@/features/detective/detective-conversation.css'
@@ -52,8 +53,18 @@ const Octopus = lazy(() =>
 export function DetectivePage() {
   const location = useLocation()
   const { conversationId } = useParams()
-  const { sessions, loading, storageError, reload, send, stop, profileRequest, resumeWithProfile } =
-    useDetective()
+  const {
+    sessions,
+    loading,
+    storageError,
+    reload,
+    send,
+    stop,
+    profileRequest,
+    resumeWithProfile,
+    loginRequest,
+    clearLoginRequest,
+  } = useDetective()
   const session = sessions.find((item) => item.id === conversationId)
   const requestedProfile = profileRequest?.conversationId === conversationId ? profileRequest : null
   const savedReference = session?.turns.at(-1)?.request?.contest
@@ -77,8 +88,31 @@ export function DetectivePage() {
   const researchOpen = researchMode === 'open' || (researchMode === 'auto' && hasResearch)
   const navigate = useNavigate()
   const { data: user, isPending: userPending } = useCurrentUser()
+  const guestQuota = useGuestQuota(!user && !userPending)
+  const intent = personalIntent(location)
   const profile = hasProfileData(user?.profile) ? user?.profile : loadConfirmedProfile()
   const requireLogin = useLoginGate()
+  useEffect(() => {
+    if (!loginRequest) return
+    clearLoginRequest()
+    requireLogin({
+      question: loginRequest.question,
+      saveGuestConversation: loginRequest.conversationId,
+    })
+  }, [loginRequest])
+  useEffect(() => {
+    if (!user || !intent.saveGuestConversation) return
+    navigate(
+      { pathname: location.pathname, search: location.search, hash: location.hash },
+      {
+        replace: true,
+        state: {
+          ...location.state,
+          personalIntent: { ...intent, saveGuestConversation: undefined },
+        },
+      },
+    )
+  }, [user, intent.saveGuestConversation])
   const client = useQueryClient()
   const [profileSection, setProfileSection] = useState<ProfileMatchSection | null>(
     () => personalIntent(location).profileSection ?? null,
@@ -113,10 +147,12 @@ export function DetectivePage() {
   }
   function confirmed(profile: Profile) {
     void client.invalidateQueries({ queryKey: currentUserKey })
-    if (requestedProfile) {
+    if (requestedProfile || intent.resumeProfileQuestion) {
       setProfileSection(null)
-      const id = resumeWithProfile(profile)
-      if (id && id !== conversationId) navigate(`/detective/${id}`)
+      const id = requestedProfile
+        ? resumeWithProfile(profile)
+        : send(intent.question!, profile, session?.id, undefined, reference)
+      if (id) navigate(`/detective/${id}`, { replace: true })
     }
   }
 
@@ -167,13 +203,20 @@ export function DetectivePage() {
             reference={reference}
             referenceLoading={!!selectedId && !reference && selected.isPending}
             referenceError={!!selectedId && !reference && selected.isError}
-            onSubmit={(text, verification, contest) => {
+            onSubmit={async (text, verification, contest) => {
+              if (!user && guestQuota.isPending) await guestQuota.refetch()
               const id = send(text, profile, session?.id, verification, contest)
               if (id && id !== conversationId) navigate(`/detective/${id}`)
             }}
             onStop={() => session && stop(session.id)}
             onAddProfile={(section) => {
-              if (requireLogin({ question: requestedProfile?.question, profileSection: section }))
+              if (
+                requireLogin({
+                  question: requestedProfile?.question,
+                  profileSection: section,
+                  resumeProfileQuestion: !!requestedProfile,
+                })
+              )
                 setProfileSection(section)
             }}
             showProfileGuide={nudge.guideVisible}
@@ -181,6 +224,8 @@ export function DetectivePage() {
             nudgeTalking={nudge.visible}
             profileRequest={requestedProfile}
             celebrating={celebrating}
+            guestRemaining={!user ? guestQuota.data?.remaining : undefined}
+            onSave={(question) => requireLogin({ question, saveGuestConversation: session?.id })}
             recommendationAction={(contest) => (
               <FollowButton
                 contestId={contest.id}
@@ -279,7 +324,24 @@ export function DetectivePage() {
         open={!!profileSection}
         user={user}
         initialSection={profileSection ?? 'all'}
-        onClose={() => setProfileSection(null)}
+        onClose={() => {
+          setProfileSection(null)
+          if (intent.resumeProfileQuestion)
+            navigate(
+              { pathname: location.pathname, search: location.search, hash: location.hash },
+              {
+                replace: true,
+                state: {
+                  ...location.state,
+                  personalIntent: {
+                    ...intent,
+                    resumeProfileQuestion: undefined,
+                    profileSection: undefined,
+                  },
+                },
+              },
+            )
+        }}
         onConfirmed={confirmed}
       />
       {watchNotice && (
@@ -315,6 +377,8 @@ function Conversation({
   profileRequest,
   celebrating,
   recommendationAction,
+  guestRemaining,
+  onSave,
 }: {
   session: ReturnType<typeof useDetective>['sessions'][number] | undefined
   missing: boolean
@@ -338,6 +402,8 @@ function Conversation({
   profileRequest: ProfileRequest | null
   celebrating: boolean
   recommendationAction: (contest: ContestRecommendation['contest']) => ReactNode
+  guestRemaining?: number
+  onSave: (question: string) => void
 }) {
   const [question, setQuestion] = useState(initialQuestion ?? '')
   const [referenceRemoved, setReferenceRemoved] = useState(false)
@@ -403,6 +469,18 @@ function Conversation({
                 key={turn.id}
                 turn={turn}
                 recommendationAction={recommendationAction}
+                saveAction={
+                  guestRemaining !== undefined &&
+                  turn.status === 'completed' && (
+                    <button
+                      type="button"
+                      className="detective-guest-save"
+                      onClick={() => onSave(question)}
+                    >
+                      登录后保存这次查证
+                    </button>
+                  )
+                }
               />
             ))}
             {profileRequest && (
@@ -452,6 +530,9 @@ function Conversation({
           </div>
         )}
         <div className="detective-conversation__compose">
+          {guestRemaining !== undefined && (
+            <p className="detective-guest-quota">今天还剩 {guestRemaining} 次提问</p>
+          )}
           {storageError && (
             <p role="alert" className="detective-turn__error">
               聊天记录暂时无法读取。

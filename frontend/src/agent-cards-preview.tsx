@@ -171,6 +171,8 @@ export function Preview() {
         storageError: false,
         profileRequest: null,
         resumeWithProfile: () => null,
+        loginRequest: null,
+        clearLoginRequest: () => {},
         send(question, value, sessionId) {
           const previous = sessions.find((session) => session.id === sessionId)
           const answer = makeTurn(question, withProfile && value ? profileFile(value) : undefined)

@@ -20,9 +20,8 @@ from contest_detective.contest import service as contests
 from contest_detective.system.user.schemas import Profile
 from contest_detective.system.user.matching import has_preferences
 
-from .models import Investigation, TraceRecord
-from .investigations import Investigations, INTERRUPTED
-from .chat.service import lock_chat_writes, record_investigation
+from .investigations import Investigations, SqlInvestigationJournal, INTERRUPTED
+from .guest import InvestigationJournal
 from .presentation import interrupted_answer
 from .schemas import AskRequest, ConversationMessage, DetectiveReply, TraceEvent
 from .recommendations import materialize
@@ -108,8 +107,10 @@ class Investigator:
             yield event
 
     async def _execute(self, investigation_id: str, question: str, user_id: str | None, profile: Profile | None,
-                       history: list[ConversationMessage], confirmed_claims: list[ConfirmedClaim], *, owner_id: str | None = None, contest_id: str | None = None):
+                       history: list[ConversationMessage], confirmed_claims: list[ConfirmedClaim], *, owner_id: str | None = None, contest_id: str | None = None,
+                       journal: InvestigationJournal | None = None):
         owner_id = user_id if owner_id is None else owner_id
+        journal = journal if journal is not None else SqlInvestigationJournal(self.session_factory, investigation_id, owner_id)
         state = VerificationState(self.mode, question, confirmed_claims) if self.mode in {'realtime', 'deep'} else None
         deps = ToolDeps(self.session_factory, self.model, self.fetch, self.search, self.record,
                         preferences=self.preferences, verification=state, search_provider=self.search_provider,
@@ -121,20 +122,8 @@ class Investigator:
         def store(event):
             nonlocal seq
             seq += 1
-            with self.session_factory() as session:
-                # Account deletion shares this lock, so an erased run cannot write a later trace.
-                lock_chat_writes(session)
-                record = session.get(Investigation, investigation_id)
-                if record is None or record.user_id != owner_id or record.status != 'running':
-                    raise asyncio.CancelledError
-                event.seq = seq
-                session.add(TraceRecord(investigation_id=investigation_id, seq=seq, type=event.type, payload=event.payload))
-                record_investigation(session, investigation_id, record.user_id, event)
-                if event.type in {'answer', 'error'}:
-                    record.status, record.answer = status, answer
-                    record.finished_at = datetime.now(timezone.utc)
-                session.commit()
-            return event
+            event.seq = seq
+            return journal.append(event, status=status, answer=answer)
 
         def finish_interrupted(message=INTERRUPTED['message'], action='retry', terminal_status='failed'):
             nonlocal status, answer
@@ -269,10 +258,7 @@ class Investigator:
             if answer is None:
                 finish_interrupted()
         finally:
-            with self.session_factory() as session:
-                record = session.get(Investigation, investigation_id)
-                active = record is not None and record.user_id == owner_id and record.status == 'running'
-            if active and status == 'running':
+            if journal.active() and status == 'running':
                 if answer is not None:
                     # 已生成的正文直接交付；附加卡片不可用时不让用户再查一次。
                     status = 'completed'

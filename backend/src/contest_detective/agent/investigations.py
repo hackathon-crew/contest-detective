@@ -16,6 +16,31 @@ logger = logging.getLogger(__name__)
 INTERRUPTED = {'message': '这次查证已中断。点击一键重查，无需重新输入问题。', 'action': 'retry'}
 
 
+class SqlInvestigationJournal:
+    def __init__(self, session_factory, investigation_id, owner_id):
+        self.session_factory, self.investigation_id, self.owner_id = session_factory, investigation_id, owner_id
+
+    def append(self, event, *, status, answer):
+        with self.session_factory() as session:
+            # Account deletion shares this lock, so an erased run cannot write a later trace.
+            lock_chat_writes(session)
+            record = session.get(Investigation, self.investigation_id)
+            if record is None or record.user_id != self.owner_id or record.status != 'running':
+                raise asyncio.CancelledError
+            session.add(TraceRecord(investigation_id=record.id, seq=event.seq, type=event.type, payload=event.payload))
+            record_investigation(session, record.id, record.user_id, event)
+            if event.type in {'answer', 'error'}:
+                record.status, record.answer = status, answer
+                record.finished_at = datetime.now(timezone.utc)
+            session.commit()
+        return event
+
+    def active(self):
+        with self.session_factory() as session:
+            record = session.get(Investigation, self.investigation_id)
+            return record is not None and record.user_id == self.owner_id and record.status == 'running'
+
+
 class Investigations:
     def __init__(self, session_factory):
         self.session_factory = session_factory

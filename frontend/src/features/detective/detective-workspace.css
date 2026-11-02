@@ -245,6 +245,7 @@
   scroll-padding-top: calc(var(--chat-site-header) + var(--chat-header) + var(--chat-padding));
 }
 .detective-conversation__scroll > .detective-thread {
+  isolation: isolate;
   flex: none;
 }
 .detective-conversation__scroll:focus-visible {
@@ -377,6 +378,25 @@
   font-size: 14px;
   text-align: center;
   animation: detective-page-in 240ms var(--ease-out) both;
+}
+.detective-guest-save,
+.detective-guest-quota {
+  color: var(--color-muted);
+  font-size: 13px;
+}
+.detective-guest-save {
+  display: block;
+  margin-top: 12px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.detective-guest-quota {
+  margin: 0 0 8px;
+  text-align: center;
 }
 @keyframes detective-mascot-jump {
   40% {
