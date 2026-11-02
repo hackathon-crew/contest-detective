@@ -4442,6 +4442,98 @@ export type GuestQuotaAgentGuestQuotaGetResponses = {
 
 export type GuestQuotaAgentGuestQuotaGetResponse = GuestQuotaAgentGuestQuotaGetResponses[keyof GuestQuotaAgentGuestQuotaGetResponses];
 
+export type AskGuestQuestionAgentGuestAskPostData = {
+    body: AskRequest;
+    path?: never;
+    query?: never;
+    url: '/agent/guest/ask';
+};
+
+export type AskGuestQuestionAgentGuestAskPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type AskGuestQuestionAgentGuestAskPostError = AskGuestQuestionAgentGuestAskPostErrors[keyof AskGuestQuestionAgentGuestAskPostErrors];
+
+export type AskGuestQuestionAgentGuestAskPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetData = {
+    body?: never;
+    headers?: {
+        /**
+         * Last-Event-Id
+         */
+        'Last-Event-ID'?: number;
+    };
+    path: {
+        /**
+         * Investigation Id
+         */
+        investigation_id: string;
+    };
+    query?: {
+        /**
+         * After
+         */
+        after?: number;
+    };
+    url: '/agent/guest/investigations/{investigation_id}/events';
+};
+
+export type GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetError = GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetErrors[keyof GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetErrors];
+
+export type GuestEventsAgentGuestInvestigationsInvestigationIdEventsGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostData = {
+    body?: never;
+    path: {
+        /**
+         * Investigation Id
+         */
+        investigation_id: string;
+    };
+    query?: never;
+    url: '/agent/guest/investigations/{investigation_id}/cancel';
+};
+
+export type CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostError = CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostErrors[keyof CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostErrors];
+
+export type CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostResponse = CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostResponses[keyof CancelGuestAgentGuestInvestigationsInvestigationIdCancelPostResponses];
+
 export type AskDocumentCompanionDocumentsAskPostData = {
     body: DocumentQuestion;
     path?: never;

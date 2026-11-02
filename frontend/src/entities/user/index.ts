@@ -9,6 +9,8 @@ export const currentUserKey = ['current-user'] as const
 export interface PersonalIntent {
   question?: string
   profileSection?: 'all' | 'github' | 'profile' | 'filters'
+  resumeProfileQuestion?: boolean
+  saveGuestConversation?: string
 }
 
 export function personalIntent(location: Location): PersonalIntent {

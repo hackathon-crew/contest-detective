@@ -11,6 +11,7 @@ from contest_detective.framework.db import SessionLocal, init_db
 from contest_detective.agent.chat.service import recover_interrupted
 from contest_detective.research.scheduler import start_scheduler
 from contest_detective.agent.investigations import Investigations
+from contest_detective.agent.guest import GuestInvestigations
 
 from contest_detective.system.notifications.service import start_account_scheduler
 from contest_detective.system.notifications.watch.scheduler import start_watch_scheduler
@@ -32,6 +33,7 @@ def create_app(*, db_engine=None, async_session_factory=None,
         init_db(db_engine)
         factory = sessionmaker(bind=db_engine, expire_on_commit=False) if db_engine is not None else SessionLocal
         _app.state.investigations = Investigations(factory)
+        _app.state.guest_investigations = GuestInvestigations()
         _app.state.investigations.recover_interrupted()
         _app.state.chat_session_factory = factory
         with factory() as session:
@@ -72,6 +74,7 @@ def create_app(*, db_engine=None, async_session_factory=None,
             yield
         finally:
             await _app.state.investigations.shutdown()
+            await _app.state.guest_investigations.shutdown()
             if watch_scheduler is not None:
                 watch_scheduler.shutdown(wait=True)
             if account_scheduler is not None:

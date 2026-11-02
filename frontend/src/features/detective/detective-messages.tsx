@@ -158,9 +158,11 @@ function RetryInvestigation({ turnId }: { turnId: string }) {
 export function DetectiveMessage({
   turn,
   recommendationAction,
+  saveAction,
 }: {
   turn: DetectiveTurn
   recommendationAction?: (contest: ContestRecommendation['contest']) => ReactNode
+  saveAction?: ReactNode
 }) {
   const paced = useStreamPacer(turn.content, turn.status === 'running')
   return (
@@ -221,6 +223,7 @@ export function DetectiveMessage({
             <RecommendationCards items={turn.recommendations} action={recommendationAction} />
           )}
           {!turn.report && <Sources items={turn.sources} />}
+          {saveAction}
           {turn.error && (
             <p
               className="detective-turn__error"

@@ -18,8 +18,9 @@ function pause(milliseconds: number, signal: AbortSignal) {
 export async function* investigationStream(
   body: { investigation_id: string; question: string; [key: string]: unknown },
   signal: AbortSignal,
-  { after = 0, resume = false } = {},
+  { after = 0, resume = false, guest = false } = {},
 ) {
+  const prefix = guest ? '/agent/guest' : '/agent'
   for (let attempt = 0; attempt < 8; attempt++) {
     signal.throwIfAborted()
     const connection = new AbortController()
@@ -27,8 +28,8 @@ export async function* investigationStream(
     try {
       const reconnect = resume || after > 0
       const path = reconnect
-        ? `/agent/investigations/${body.investigation_id}/events`
-        : '/agent/ask'
+        ? `${prefix}/investigations/${body.investigation_id}/events`
+        : `${prefix}/ask`
       for await (const event of apiClient.stream(path, {
         ...(reconnect
           ? { headers: { 'Last-Event-ID': String(after) } }
@@ -59,10 +60,13 @@ export async function* investigationStream(
   throw new Error('自动恢复未能完成。点击一键重查，无需重新输入问题。')
 }
 
-export async function cancelInvestigation(id: string, signal: AbortSignal) {
+export async function cancelInvestigation(id: string, signal: AbortSignal, guest = false) {
   for (let attempt = 0; ; attempt++) {
     try {
-      await apiClient.request(`/agent/investigations/${id}/cancel`, { method: 'POST', signal })
+      await apiClient.request(`${guest ? '/agent/guest' : '/agent'}/investigations/${id}/cancel`, {
+        method: 'POST',
+        signal,
+      })
       return
     } catch (cause) {
       if (!(cause instanceof ApiError && cause.retryable) || attempt === 7) throw cause
