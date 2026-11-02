@@ -111,10 +111,24 @@ def test_saved_turn_keeps_public_sources_steps_and_recommendations(tmp_path):
     source = {'title': '规则', 'url': 'https://organizer.example/rules', 'site': '主办方', 'is_official': True}
 
     from contest_detective.agent.chat.service import SqlConversationStore
+    statements = [
+        {'text': '每队最多 4 人', 'evidence': {
+            'id': 'reposted-team', 'title': '转载规则', 'url': 'https://news.example/rules',
+            'excerpt': '每队最多 4 人', 'evidence_kind': 'database_record', 'source_level': 'reposted',
+        }},
+        {'text': '每队最多 6 人', 'evidence': {
+            'id': 'official-team', 'title': '官方规则', 'url': source['url'],
+            'excerpt': '每队最多 6 人', 'evidence_kind': 'fetched_page', 'source_level': 'official',
+        }},
+    ]
+    conflicts = [
+        {'statements': statements, 'accepted_statement': 1, 'reason': '本届官方规则明确公布 6 人上限。', 'blocks_participation': False},
+        {'statements': statements, 'accepted_statement': None, 'reason': '两份规则的适用届次尚未确认。', 'blocks_participation': False},
+    ]
     events = [
         TraceEvent(type='step', payload={'tool': 'get_contest', 'label': '读取赛事规则'}),
         TraceEvent(type='observation', payload={'tool': 'get_contest', 'summary': '已找到报名规则', 'sources': [source]}),
-        TraceEvent(type='answer', payload={'content': '可以参加。', 'sources': [source], 'recommendations': [{
+        TraceEvent(type='answer', payload={'content': '可以参加。', 'sources': [source], 'conflicts': conflicts, 'recommendations': [{
             'contest': {'id': 'weekend', 'name': '周末赛', 'status': 'upcoming', 'fields': {}, 'cover_url': None, 'summary': None},
             'introduction': '线上参赛', 'reason': '时间适合',
         }]}),
@@ -133,6 +147,10 @@ def test_saved_turn_keeps_public_sources_steps_and_recommendations(tmp_path):
         assert turn['sources'][0]['url'] == source['url']
         assert turn['recommendations'][0]['contest']['id'] == 'weekend'
         assert turn['recommendations'][0]['reason'] == '时间适合'
+        assert turn['conflicts'][0]['accepted_statement'] == 1
+        assert turn['conflicts'][0]['statements'][1]['evidence']['url'] == source['url']
+        assert turn['conflicts'][1]['accepted_statement'] is None
+        assert turn['conflicts'][1]['reason'] == '两份规则的适用届次尚未确认。'
 
 
 def test_preflight_failure_is_saved_as_a_failed_message(tmp_path):
