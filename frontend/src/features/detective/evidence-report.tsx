@@ -4,6 +4,7 @@ import type {
   InvestigationPlan,
   InvestigationReport,
   SearchExecution,
+  SourceConflict,
 } from './verification-contracts'
 import {
   downloadReport,
@@ -14,6 +15,48 @@ import {
   verdictNames,
 } from './verification-report'
 import './evidence-report.css'
+
+export function SourceConflicts({ items }: { items: SourceConflict[] }) {
+  return items.map((conflict, index) => {
+    const selected = conflict.accepted_statement ?? null
+    const ordered = conflict.statements
+      .map((statement, index) => ({ statement, index }))
+      .sort((a, b) => Number(a.index === selected) - Number(b.index === selected))
+    return (
+      <section className="detective-clash" aria-label="来源分歧" key={index}>
+        {ordered.map(({ statement, index }) => (
+          <div
+            className="detective-clash__row"
+            data-superseded={selected !== null && index !== selected}
+            key={index}
+          >
+            <small>
+              {sourceLevelNames[statement.evidence.source_level]}
+              {selected === index ? ' · 采信原文' : ''}
+            </small>
+            <span className="detective-clash__quote">「{statement.text}」</span>
+            <a href={statement.evidence.url} target="_blank" rel="noreferrer">
+              原文 ↗
+            </a>
+          </div>
+        ))}
+        <div
+          className="detective-clash__verdict"
+          data-blocking={selected !== null && conflict.blocks_participation}
+        >
+          <b>
+            {selected === null
+              ? '仍有分歧'
+              : conflict.blocks_participation
+                ? '不能参赛'
+                : '核对结果'}
+          </b>
+          <span>{conflict.reason}</span>
+        </div>
+      </section>
+    )
+  })
+}
 
 export function ExecutionDetails({ execution }: { execution: SearchExecution }) {
   return (
@@ -100,6 +143,7 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
           生成时间：<time dateTime={report.generated_at}>{report.generated_at}</time>
         </p>
       </header>
+      <SourceConflicts items={report.conflicts ?? []} />
       <div className="detective-report__claims">
         {report.claims.length ? (
           report.claims.map((claim) => (

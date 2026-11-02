@@ -1,3 +1,6 @@
+import type { SourceConflict } from '@/shared/api/generated'
+export type { SourceConflict } from '@/shared/api/generated'
+
 /** Explicit modes are opt-in; omitted/null retains the ordinary mixed workflow. */
 export type VerificationMode = 'database' | 'realtime' | 'deep'
 export type LiveVerificationMode = 'realtime' | 'deep'
@@ -68,4 +71,5 @@ export interface InvestigationReport {
   claims: ClaimAssessment[]
   evidence: ReportEvidence[]
   limitations: string[]
+  conflicts?: SourceConflict[] | null
 }

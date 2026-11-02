@@ -250,7 +250,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         ctx.deps.remember(sources)
         payload = selected.model_dump(mode='json',
             exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
-        ctx.deps.read_contests[item.id] = payload
+        read = ctx.deps.read_contests.setdefault(item.id, {'fields': {}})
+        read.update({**payload, 'fields': {**read['fields'], **payload['fields']}})
         return {'contest': payload, 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}
 
     @research_tool

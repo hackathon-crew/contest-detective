@@ -11,7 +11,12 @@ import type { TraceSource } from './events'
 import { rehypeStreamReveal } from './rehype-stream-reveal'
 import { useStreamPacer } from './use-stream-pacer'
 import { SourceIcon } from './source-icon'
-import { EvidenceReport, ExecutionDetails, InvestigationProgress } from './evidence-report'
+import {
+  EvidenceReport,
+  ExecutionDetails,
+  InvestigationProgress,
+  SourceConflicts,
+} from './evidence-report'
 import type { SearchExecution } from './verification-contracts'
 import { reportStatusNames } from './verification-report'
 import { ProfileFileAttachment, RecommendationCards } from './detective-results'
@@ -211,6 +216,7 @@ export function DetectiveMessage({
             </div>
           )}
           {turn.report && <EvidenceReport report={turn.report} />}
+          {!turn.report && <SourceConflicts items={turn.conflicts ?? []} />}
           {!!turn.recommendations?.length && (
             <RecommendationCards items={turn.recommendations} action={recommendationAction} />
           )}
