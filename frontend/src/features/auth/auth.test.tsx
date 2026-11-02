@@ -112,13 +112,18 @@ describe('全屏账户流程', () => {
   })
 
   it.each(['/account/profile', '/detective'])(
-    '直接访问受保护页面后取消登录可回首页：%s',
+    '取消登录回到访客可访问的原页面：%s',
     async (path) => {
       setup(path)
+      if (path === '/detective') fireEvent.click(await screen.findByRole('link', { name: '登录' }))
       await screen.findByRole('heading', { name: '登录 Inkpaw' })
       fireEvent.click(screen.getByRole('button', { name: '返回原页面' }))
-      await screen.findByRole('heading', { name: /按你的兴趣和优势/ })
-      expect(screen.getByLabelText('当前地址').textContent).toBe('/')
+      if (path === '/account/profile')
+        await screen.findByRole('heading', { name: /按你的兴趣和优势/ })
+      else await screen.findByRole('textbox', { name: '问侦探' })
+      expect(screen.getByLabelText('当前地址').textContent).toBe(
+        path === '/detective' ? '/detective' : '/',
+      )
     },
   )
 

@@ -45,7 +45,8 @@ def test_event_payload_matches_event_type():
         TraceEvent(type='step',payload={'content':'wrong payload'})
 
 
-def test_guest_quota_contract_does_not_open_guest_questions(anonymous_client):
+def test_guest_quota_starts_with_three_questions(anonymous_client):
     quota = anonymous_client.get('/agent/guest-quota')
-    assert quota.json()['code'] == 503
+    assert quota.json()['code'] == 200
+    assert quota.json()['data']['remaining'] == 3
     assert anonymous_client.post('/agent/ask', json={'question': '找线上比赛'}).json()['code'] == 401
