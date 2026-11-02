@@ -662,6 +662,28 @@ export type GroundedClaim = {
 };
 
 /**
+ * GuestQuestionQuota
+ */
+export type GuestQuestionQuota = {
+    /**
+     * Limit
+     */
+    limit?: 3;
+    /**
+     * Remaining
+     */
+    remaining: number;
+    /**
+     * Resets At
+     */
+    resets_at: string;
+    /**
+     * Action
+     */
+    action?: 'login' | null;
+};
+
+/**
  * HTTPValidationError
  */
 export type HttpValidationError = {
@@ -1603,6 +1625,34 @@ export type ResponseFollowRead = {
      * 业务数据
      */
     data?: FollowRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[GuestQuestionQuota]
+ */
+export type ResponseGuestQuestionQuota = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: GuestQuestionQuota | null;
     /**
      * Timestamp
      *
@@ -4375,6 +4425,22 @@ export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostRespo
 };
 
 export type CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponse = CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponses[keyof CancelInvestigationAgentInvestigationsInvestigationIdCancelPostResponses];
+
+export type GuestQuotaAgentGuestQuotaGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/agent/guest-quota';
+};
+
+export type GuestQuotaAgentGuestQuotaGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseGuestQuestionQuota;
+};
+
+export type GuestQuotaAgentGuestQuotaGetResponse = GuestQuotaAgentGuestQuotaGetResponses[keyof GuestQuotaAgentGuestQuotaGetResponses];
 
 export type AskDocumentCompanionDocumentsAskPostData = {
     body: DocumentQuestion;
