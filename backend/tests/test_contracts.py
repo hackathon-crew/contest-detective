@@ -43,3 +43,9 @@ def test_event_payload_matches_event_type():
     assert event.payload['sources'] == []
     with pytest.raises(ValidationError):
         TraceEvent(type='step',payload={'content':'wrong payload'})
+
+
+def test_guest_quota_contract_does_not_open_guest_questions(anonymous_client):
+    quota = anonymous_client.get('/agent/guest-quota')
+    assert quota.json()['code'] == 503
+    assert anonymous_client.post('/agent/ask', json={'question': '找线上比赛'}).json()['code'] == 401
