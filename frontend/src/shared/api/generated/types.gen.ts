@@ -178,6 +178,17 @@ export type ConfirmedClaim = {
 };
 
 /**
+ * ConflictStatement
+ */
+export type ConflictStatement = {
+    /**
+     * Text
+     */
+    text: string;
+    evidence: ReportEvidence;
+};
+
+/**
  * ConnectionRead
  */
 export type ConnectionRead = {
@@ -711,6 +722,10 @@ export type InvestigationReport = {
      * Limitations
      */
     limitations?: Array<string>;
+    /**
+     * Conflicts
+     */
+    conflicts?: Array<SourceConflict> | null;
 };
 
 /**
@@ -2474,6 +2489,10 @@ export type SavedTurn = {
     plan?: InvestigationPlan | null;
     report?: InvestigationReport | null;
     /**
+     * Conflicts
+     */
+    conflicts?: Array<SourceConflict> | null;
+    /**
      * Recommendations
      */
     recommendations?: Array<ContestRecommendation> | null;
@@ -2622,6 +2641,30 @@ export type SourceCitation = {
      * Quote
      */
     quote: string;
+};
+
+/**
+ * SourceConflict
+ *
+ * An unresolved conflict has no accepted statement; source level is not a verdict.
+ */
+export type SourceConflict = {
+    /**
+     * Statements
+     */
+    statements: Array<ConflictStatement>;
+    /**
+     * Accepted Statement
+     */
+    accepted_statement?: number | null;
+    /**
+     * Reason
+     */
+    reason: string;
+    /**
+     * Blocks Participation
+     */
+    blocks_participation?: boolean;
 };
 
 /**

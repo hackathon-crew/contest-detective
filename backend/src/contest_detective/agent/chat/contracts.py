@@ -4,7 +4,7 @@ from copy import deepcopy
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
 from contest_detective.agent.schemas import ContestReference, ContestRecommendation, Observation, Step, ToolSource
-from contest_detective.agent.verification_contracts import ConfirmedClaim, VerificationMode, InvestigationPlan, InvestigationReport
+from contest_detective.agent.verification_contracts import ConfirmedClaim, VerificationMode, InvestigationPlan, InvestigationReport, SourceConflict
 from contest_detective.system.user.schemas import MatchItem, Profile
 
 ClientId = Annotated[str, StringConstraints(min_length=1, max_length=64, pattern=r'^[A-Za-z0-9_.:-]+$')]
@@ -74,6 +74,7 @@ class SavedTurn(BaseModel):
     request: SavedRequest | None = None
     plan: InvestigationPlan | None = None
     report: InvestigationReport | None = None
+    conflicts: list[SourceConflict] | None = None
     recommendations: list[ContestRecommendation] | None = None
     profileFile: ProfileAttachment | None = None
 

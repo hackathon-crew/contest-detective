@@ -4,7 +4,7 @@ from typing import Literal
 from datetime import datetime
 from uuid import UUID
 
-from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan
+from .verification_contracts import ConfirmedClaim, VerificationMode, ClaimAssessment, InvestigationReport, InvestigationPlan, SourceConflict
 from contest_detective.research.contracts import SearchExecution
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
@@ -126,6 +126,7 @@ class Answer(BaseModel):
     content: str
     sources: list[ToolSource] = Field(default_factory=list)
     recommendations: list[ContestRecommendation] = Field(default_factory=list)
+    conflicts: list[SourceConflict] | None = None
 
 
 class Error(BaseModel):
