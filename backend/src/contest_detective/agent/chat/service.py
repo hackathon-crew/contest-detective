@@ -164,6 +164,7 @@ class SqlConversationStore:
             turn['sources'] = data.get('sources', [])
             turn['recommendations'] = data.get('recommendations', [])
             turn['report'] = data.get('report')
+            turn['conflicts'] = data.get('conflicts')
             if turn['report']:
                 turn['plan'] = turn['report'].get('plan')
             turn['status'] = 'stopped' if data.get('action') in {'retry', 'settings'} else 'completed'

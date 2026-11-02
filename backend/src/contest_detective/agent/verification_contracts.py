@@ -55,6 +55,34 @@ class ReportEvidence(Contract):
     historical: bool = False
 
 
+class ConflictStatementChoice(Contract):
+    text: str = Field(min_length=1)
+    evidence_id: str = Field(min_length=1)
+
+
+class ConflictDecision(Contract):
+    """A proposed decision still needs to be bound to evidence from this run."""
+
+    statements: list[ConflictStatementChoice] = Field(min_length=2)
+    accepted_statement: int | None = Field(default=None, ge=0)
+    reason: str = Field(min_length=1)
+    blocks_participation: bool = False
+
+
+class ConflictStatement(Contract):
+    text: str = Field(min_length=1)
+    evidence: ReportEvidence
+
+
+class SourceConflict(Contract):
+    """An unresolved conflict has no accepted statement; source level is not a verdict."""
+
+    statements: list[ConflictStatement] = Field(min_length=2)
+    accepted_statement: int | None = Field(default=None, ge=0)
+    reason: str = Field(min_length=1)
+    blocks_participation: bool = False
+
+
 class ClaimAssessment(Contract):
     id: str
     text: str
@@ -75,6 +103,7 @@ class InvestigationReport(Contract):
     claims: list[ClaimAssessment] = Field(default_factory=list)
     evidence: list[ReportEvidence] = Field(default_factory=list)
     limitations: list[str] = Field(default_factory=list)
+    conflicts: list[SourceConflict] | None = None
 
 
 class ScopeDecision(Contract):

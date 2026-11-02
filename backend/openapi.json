@@ -2438,6 +2438,25 @@
         ],
         "title": "ConfirmedClaim"
       },
+      "ConflictStatement": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/ReportEvidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "text",
+          "evidence"
+        ],
+        "title": "ConflictStatement"
+      },
       "ConnectionRead": {
         "properties": {
           "message": {
@@ -3458,6 +3477,20 @@
             },
             "type": "array",
             "title": "Limitations"
+          },
+          "conflicts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SourceConflict"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicts"
           }
         },
         "additionalProperties": false,
@@ -6407,6 +6440,20 @@
               }
             ]
           },
+          "conflicts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/SourceConflict"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conflicts"
+          },
           "recommendations": {
             "anyOf": [
               {
@@ -6674,6 +6721,48 @@
           "quote"
         ],
         "title": "SourceCitation"
+      },
+      "SourceConflict": {
+        "properties": {
+          "statements": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictStatement"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Statements"
+          },
+          "accepted_statement": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted Statement"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "blocks_participation": {
+            "type": "boolean",
+            "title": "Blocks Participation",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "statements",
+          "reason"
+        ],
+        "title": "SourceConflict",
+        "description": "An unresolved conflict has no accepted statement; source level is not a verdict."
       },
       "StatusRead": {
         "properties": {
