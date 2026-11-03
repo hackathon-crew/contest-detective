@@ -10,7 +10,8 @@ from pydantic_ai import Agent, ToolOutput
 from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior, UsageLimitExceeded
 
 from contest_detective.contest import service as contests
-from contest_detective.contest.schemas import ContestQuery, DEADLINE_FIELDS
+from contest_detective.contest.identity import normalized_name
+from contest_detective.contest.schemas import ContestQuery, DATE_FIELDS, DEADLINE_FIELDS
 from contest_detective.system.user.matching import eligible, rank_and_reason
 from contest_detective.system.user.schemas import Profile
 
@@ -24,15 +25,16 @@ MODEL_ERRORS = (ModelAPIError, UnexpectedModelBehavior, UsageLimitExceeded, http
 FIELD_LABELS = {'mode': '参赛形式', 'city': '地点', 'registration_deadline': '报名截止',
                 'submission_deadline': '作品提交截止', 'deadline_unspecified': '截止（类型未注明）',
                 'start_at': '开始日期', 'end_at': '结束日期', 'eligibility': '参赛资格',
-                'entry_requirements': '到场或作品要求'}
+                'entry_requirements': '到场或作品要求', 'prize': '奖金', 'venue': '场地'}
 BEIJING = timezone(timedelta(hours=8))
 
 
 def requested_count(question):
-    match = re.search(r'(\d+)\s*(?:场|个|项|种)', question)
+    unit = r'(?:场|种|个(?=比赛|赛事|竞赛|选择)|项(?=比赛|赛事|竞赛))'
+    match = re.search(r'(\d+)\s*' + unit, question)
     if match:
         return max(1, int(match[1]))
-    chinese = re.search(r'([一二两三四五六七八九十]+)\s*(?:场|个|项|种)', question)
+    chinese = re.search(r'([一二两三四五六七八九十]+)\s*' + unit, question)
     if chinese:
         digits = {text: index for index, text in enumerate('零一二三四五六七八九')}
         text = chinese[1].replace('两', '二')
@@ -73,6 +75,7 @@ class Workflow:
             '资料较少就说先找到这些，不要求用户重选或先完善画像。')
         self.details = {}
         self.ranks = {}
+        self.missing_objects = []
 
     async def prepare(self, deps, question, history, usage, limits):
         self.question = question
@@ -128,9 +131,15 @@ class Workflow:
                 for keyword in self.state.intent.comparison_queries:
                     items, _ = retriever.search(session, ContestQuery(keyword=keyword, page_size=5),
                         blocked_domains=self.filters(deps)['blocked_domains'])
-                    for item in items:
+                    key = normalized_name(keyword)
+                    named = [item for item in items if key in normalized_name(item.name)]
+                    named.sort(key=lambda item: (normalized_name(item.name) != key, len(item.name)))
+                    if named:
+                        item = named[0]
                         self.state.comparison_ids.add(item.id)
                         self.assess(deps, contests.get(session, item.id))
+                    else:
+                        self.missing_objects.append(keyword)
                 return
             if deps.selected_contest:
                 return
@@ -166,6 +175,10 @@ class Workflow:
         deps.read_contests[detail.id] = evidence
         deps.remember(contest_sources(detail))
         gaps = []
+        for field in ('eligibility', 'entry_requirements'):
+            value = detail.fields[field]
+            if value.level == 'conflict' or (value.sources and not value.value):
+                gaps.append('报名前到官网确认' + FIELD_LABELS[field])
         if self.discovery:
             if not eligible(detail, self.profile, datetime.now(timezone.utc), attendable=self.state.intent.status != 'ended'):
                 gaps.append('资格或可投入时间不符合已确认条件')
@@ -186,7 +199,7 @@ class Workflow:
         if detail.id in self.state.qualified_ids:
             self.state.qualified_ids.remove(detail.id)
         if gaps:
-            self.state.nearby[detail.id] = gaps
+            self.state.nearby[detail.id] = list(dict.fromkeys(gaps))
         else:
             self.state.qualified_ids.append(detail.id)
             self.ranks[detail.id] = rank_and_reason(detail, self.profile)
@@ -196,7 +209,7 @@ class Workflow:
     def covered(self):
         if not self.discovery:
             expected = 1 + len(self.state.intent.comparison_queries)
-            return len(self.details) >= expected and not self.state.nearby
+            return len(self.details) >= expected and not self.state.nearby and not self.missing_objects
         return len(self.state.qualified_ids) >= self.state.intent.count
 
     def selected_ids(self):
@@ -212,7 +225,7 @@ class Workflow:
                 continue
             value = item.fields[field]
             if value.value and value.sources and value.level != 'conflict':
-                text = value.value[:10] if field in DEADLINE_FIELDS and value.precision == 'day' else value.value
+                text = value.value[:10] if field in DATE_FIELDS and value.precision == 'day' else value.value
                 text = {'online': '线上', 'offline': '线下', 'hybrid': '线上线下结合'}.get(text, text)
                 facts.append(FIELD_LABELS.get(field, field) + '：' + text)
         return '- ' + title + '。' + '；'.join(dict.fromkeys([*facts, *gaps])) + '。'
@@ -220,10 +233,12 @@ class Workflow:
     def fallback(self):
         lines = [self.fact_line(self.details[key]) for key in self.selected_ids()]
         nearby = [self.fact_line(self.details[key], gaps) for key, gaps in list(self.state.nearby.items())[:5]
-                  if len(gaps) == 1]
+                  if not self.discovery or len(gaps) == 1]
         content = ('先找到这些：\n\n' + '\n'.join(lines)) if lines else '按当前条件，暂未找到已经确认适合参加的比赛。'
         if nearby:
             content += '\n\n另外几场可供考虑，关键条件需要留意：\n\n' + '\n'.join(nearby)
+        if self.missing_objects:
+            content += '\n\n你提到的' + '、'.join(self.missing_objects) + '，目前还没有对应的赛事资料；先按以上已查到的来源比较。'
         return content
 
     async def complete(self, deps, usage, limits):
@@ -243,7 +258,8 @@ class Workflow:
             reply = DetectiveReply(content=fallback)
         if any(self.details[key].name not in reply.content for key in keys) or (keys and 'http' not in reply.content):
             reply.content += '\n\n' + fallback
-        selected = self.selected_ids()
+        selected = [key for key in self.selected_ids() if self.discovery or eligible(
+            self.details[key], self.profile, datetime.now(timezone.utc))]
         choices = {item.contest_id: item for item in reply.recommendations if item.contest_id in selected}
         reply.recommendations = [choices.get(key) or RecommendationChoice(contest_id=key,
             introduction=self.details[key].summary or '', reason=self.ranks[key][1]) for key in selected]

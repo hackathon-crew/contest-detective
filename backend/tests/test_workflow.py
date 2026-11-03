@@ -26,7 +26,7 @@ def seed(factory, name, *, mode='online', deadline='2026-10-30', summary='AI 应
 
 def run(factory, question, intent=None, *, profile=None, contest_id=None, fail=False):
     def respond(messages, info):
-        if fail:
+        if fail is True or (fail == 'writer' and info.output_tools[0].name == 'respond_to_user'):
             raise ModelConnectionError('test', 'provider unavailable')
         name = info.output_tools[0].name
         if name == 'interpret_query':
@@ -57,7 +57,8 @@ def test_explicit_mode_overrides_preference_but_identity_still_applies(session_f
     assert '资格' in result['content']
 
 
-@pytest.mark.parametrize(('question', 'count'), [('找比赛', 3), ('多找几个比赛', 5), ('找 7 场比赛', 7)])
+@pytest.mark.parametrize(('question', 'count'), [('找比赛', 3), ('多找几个比赛', 5), ('找 7 场比赛', 7),
+    ('我们3个人组队，推荐5场比赛', 5), ('找七场比赛', 7)])
 def test_recommendation_count_is_a_product_rule(session_factory, question, count):
     for index in range(9):
         seed(session_factory, f'AI 比赛{index}')
@@ -109,3 +110,31 @@ def test_model_failure_still_returns_facts_cards_and_next_action(session_factory
     assert 'AI 公开赛' in result['content'] and '2026-10-30' in result['content']
     assert 'https://events.example/' in result['content']
     assert all(word not in result['content'] for word in ['重试', '预算', '停滞', '工具', '未完成'])
+
+
+def test_specific_contest_with_several_unknowns_stays_in_fallback(session_factory):
+    main = seed(session_factory, '具体赛事', extra={'start_at': '2026-11-01'})
+    result = run(session_factory, '这场比赛何时开始，奖金和场地呢',
+        {'kind': 'detail', 'fields': ['start_at', 'prize', 'venue']}, contest_id=main, fail='writer')
+    assert '具体赛事' in result['content'] and '2026-11-01' in result['content']
+    assert 'T00:00' not in result['content']
+    assert '奖金' in result['content'] and '场地' in result['content']
+
+
+def test_specific_contest_does_not_force_an_ineligible_recommendation(session_factory):
+    main = seed(session_factory, '学生专场', extra={'eligibility': '仅限在校生'})
+    result = run(session_factory, '我能参加这场吗', {'kind': 'detail', 'fields': ['eligibility']},
+        contest_id=main, profile=Profile(identity_kind='professional'))
+    assert result['recommendations'] == []
+    assert '学生专场' in result['content']
+
+
+def test_unresolved_eligibility_sources_never_become_qualified_cards(session_factory):
+    main = seed(session_factory, '资格待确认', extra={'eligibility': '仅限在校生'})
+    with session_factory() as session:
+        service.save(session, ContestDraft(name='资格待确认',
+            page={'url': 'https://events.example/rules', 'title': '规则', 'site': '官网', 'is_official': True},
+            claims=[{'field': 'eligibility', 'value': '仅限职场开发者', 'excerpt': '仅限职场开发者'}]), contest_id=main)
+    result = run(session_factory, '找比赛', profile=Profile(identity_kind='student'))
+    assert result['recommendations'] == []
+    assert '资格待确认' in result['content'] and '资格' in result['content']
