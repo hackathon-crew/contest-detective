@@ -85,7 +85,7 @@ class Workflow:
             '默认发现数量3；多找几个或越多越好5；明确数字照用。具体赛事查询用detail，比较用comparison。'
             '已绑定赛事就是主对象；新增比较对象名称放comparison_queries，只读。'
             '未绑定赛事的比较，keyword填首个明确赛事名，comparison_queries填其余赛事名，不把共同主题当主对象。'
-            '历史回顾可以ended；找能参加的比赛不能ended。分清报名/提交截止和开始/结束日期。'
+            '只有用户明确要求尚未开始、进行中或已结束时才填写status，否则为null；近期截止不代表尚未开始。历史回顾可以ended；找能参加的比赛不能ended。分清报名/提交截止和开始/结束日期。'
             'date_kind=deadline代表任一种截止。日期窗口用北京时间边界。'
             'fields只列用户本轮明确要求回答的事实。不要为了介绍比赛顺手加入奖金、报名入口、场地、开始或结束日期。'
             'requested_facts用数组逐项记录field和quote；quote摘录用户要求该事实的最短原话。未列入requested_facts的fields只是可选探索，不影响完成判断。'
