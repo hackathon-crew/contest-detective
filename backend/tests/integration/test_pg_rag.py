@@ -91,7 +91,8 @@ def test_workflow_finds_eligible_candidate_beyond_semantic_top_hundred(pg_factor
 
     ids = [f'{index:036d}' for index in range(100)] + ['f' * 36]
     with pg_factory() as session:
-        session.add_all(Contest(id=contest_id, name='待补充赛事', normalized_name='pending-' + contest_id) for contest_id in ids)
+        session.add_all(Contest(id=contest_id, name=f'仅限职场开发者 {index}' if index < 100 else '学生公开赛',
+            normalized_name='workflow-' + contest_id) for index, contest_id in enumerate(ids))
         session.commit()
     for index in range(100):
         save(pg_factory, f'仅限职场开发者 {index}', contest_id=f'{index:036d}')
