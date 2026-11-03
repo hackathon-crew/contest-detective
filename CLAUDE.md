@@ -29,13 +29,11 @@ The default local database is `backend/contest_detective.db` when `DETECTIVE_DB_
 ### Backend verification
 
 ```bash
-uv run --directory backend pytest
 uv run --directory backend pytest tests/test_mcp.py
 uv run --directory backend pytest tests/test_mcp.py -k search
-uv run --directory backend lint-imports
 ```
 
-The import-linter contracts are part of the architecture and must pass. The backend CI runs migrations, all pytest tests, and `lint-imports`.
+Locally, run only the test files you are changing. The backend CI runs migrations, the full pytest suite, and `lint-imports` (the import-linter contracts are part of the architecture) on every PR.
 
 ### Frontend setup, development, and checks
 
@@ -44,12 +42,7 @@ Run frontend commands from `frontend`:
 ```bash
 npm ci
 npm run dev
-npm run format:check
-npm run lint
-npm run typecheck
-npm test
 npm test -- src/features/detective/conversation.test.tsx
-npm run build
 ```
 
 The Vite dev server proxies `/api` to `http://127.0.0.1:8000` and removes the `/api` prefix. Set `VITE_API_PROXY_TARGET` when the backend runs elsewhere. `npm test` runs Vitest; tests needing a DOM opt into jsdom at the top of the test file. Frontend CI runs formatting, linting, type checking, tests, build, and generated API comparison in that order.
