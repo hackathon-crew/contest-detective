@@ -89,6 +89,7 @@ class Workflow:
             'fields只列用户本轮明确要求回答的事实。不要为了介绍比赛顺手加入奖金、报名入口、场地、开始或结束日期。'
             'requested_facts用数组逐项记录field和quote；quote摘录用户要求该事实的最短原话。未列入requested_facts的fields只是可选探索，不影响完成判断。'
             '例如“说明报名和作品提交截止”对应 requested_facts=[{"field":"registration_deadline","quote":"报名"},{"field":"submission_deadline","quote":"作品提交截止"}]。'
+            '例如“说明资格与必须到场要求”需要eligibility和entry_requirements，不是venue；只有要了解具体场馆或地址才研究venue。'
             'conditions只表示用户额外明确的硬筛选要求，并用quote逐字摘录用户条件；日期/形式/城市继续用原有字段。'
             '例如只要免费：entry_fee equals 0；必须有奖金：prize positive；奖金至少10000元：prize minimum 10000 currency=CNY。'
             '含金量、可信度等分析问题可以列出支撑该分析的必要事实，不要求用户逐字说出字段名。'

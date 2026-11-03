@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class RequestedFact(BaseModel):
-    field: EvidenceField
+    field: EvidenceField = Field(description='到场义务或参赛要求用 entry_requirements；venue 只表示具体场馆或地址。不能把“必须到场”映射成场馆地址。')
     quote: str = Field(min_length=1)
 
 
