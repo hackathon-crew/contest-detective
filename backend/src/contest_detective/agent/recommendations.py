@@ -12,14 +12,14 @@ from contest_detective.contest.models import ContestClaim, ContestPage, ContestP
 from .schemas import ContestRecommendation, RecommendationChoice, ResolveRecommendations
 
 
-def materialize(session: Session, choices: list[RecommendationChoice]) -> list[ContestRecommendation]:
+def materialize(session: Session, choices: list[RecommendationChoice], *, snapshots=None) -> list[ContestRecommendation]:
     items = []
     seen = set()
     for choice in choices:
         if choice.contest_id in seen:
             continue
         seen.add(choice.contest_id)
-        contest = service.get(session, choice.contest_id)
+        contest = snapshots[choice.contest_id] if snapshots is not None else service.get(session, choice.contest_id)
         if contest is not None:
             items.append(ContestRecommendation(contest=contest, introduction=choice.introduction,
                                                reason=choice.reason))

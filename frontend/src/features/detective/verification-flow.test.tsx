@@ -108,7 +108,7 @@ it('取消已发出但未返回的查询不显示完成，也不生成报告', a
   await waitFor(() => expect(log().getByText('已停止，完成 0 项检索')).toBeTruthy())
   expect(log().queryByLabelText('已完成')).toBeNull()
   expect(log().queryByRole('button', { name: '下载 JSON' })).toBeNull()
-  expect(readRenderedSessions()[0].turns[0].status).toBe('stopped')
+  await waitFor(() => expect(readRenderedSessions()[0].turns[0].status).toBe('stopped'))
 })
 
 it('附加报告关联异常时仍显示正文，不提供报告导出', async () => {

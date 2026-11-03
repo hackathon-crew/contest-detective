@@ -30,7 +30,9 @@ def run(factory, question, intent=None, *, profile=None, contest_id=None, fail=F
             raise ModelConnectionError('test', 'provider unavailable')
         name = info.output_tools[0].name
         if name == 'interpret_query':
-            return ModelResponse([ToolCallPart(name, intent or {})])
+            parsed = dict(intent or {})
+            parsed.setdefault('requested_facts', [{'field': field, 'quote': question} for field in parsed.get('fields', [])])
+            return ModelResponse([ToolCallPart(name, parsed)])
         return ModelResponse([ToolCallPart(name, {'content': '已按参赛条件整理，来源见各项。'})])
 
     async def consume():
@@ -58,7 +60,7 @@ def test_explicit_mode_overrides_preference_but_identity_still_applies(session_f
 
 
 @pytest.mark.parametrize(('question', 'count'), [('找比赛', 3), ('多找几个比赛', 5), ('找 7 场比赛', 7),
-    ('我们3个人组队，推荐5场比赛', 5), ('找七场比赛', 7)])
+    ('我们3个人组队，推荐5场比赛', 5), ('找七场比赛', 7), ('找四五场比赛', 5)])
 def test_recommendation_count_is_a_product_rule(session_factory, question, count):
     for index in range(9):
         seed(session_factory, f'AI 比赛{index}')
@@ -103,9 +105,20 @@ def test_bound_contest_can_read_comparison_without_changing_main(session_factory
     assert other in [item['contest']['id'] for item in result['recommendations']]
 
 
-def test_model_failure_still_returns_facts_cards_and_next_action(session_factory):
+def test_comparison_without_a_bound_card_keeps_both_named_objects(session_factory):
+    main = seed(session_factory, '甲赛事')
+    other = seed(session_factory, '乙赛事')
+    result = run(session_factory, '比较甲赛事和乙赛事',
+        {'kind': 'comparison', 'keyword': '甲赛事', 'comparison_queries': ['乙赛事']})
+    assert {item['contest']['id'] for item in result['recommendations']} == {main, other}
+    assert '甲赛事' in result['content'] and '乙赛事' in result['content']
+
+
+@pytest.mark.parametrize('question', ['两周内截止的线上 AI 比赛', '两周内截止的线上AI比赛'])
+def test_model_failure_still_returns_facts_cards_and_next_action(session_factory, question):
     target = seed(session_factory, 'AI 公开赛')
-    result = run(session_factory, '两周内截止的线上 AI 比赛', fail=True)
+    seed(session_factory, '手工雕刻赛', summary='传统手工雕刻作品竞赛')
+    result = run(session_factory, question, fail=True)
     assert [item['contest']['id'] for item in result['recommendations']] == [target]
     assert 'AI 公开赛' in result['content'] and '2026-10-30' in result['content']
     assert 'https://events.example/' in result['content']
@@ -119,6 +132,41 @@ def test_specific_contest_with_several_unknowns_stays_in_fallback(session_factor
     assert '具体赛事' in result['content'] and '2026-11-01' in result['content']
     assert 'T00:00' not in result['content']
     assert '奖金' in result['content'] and '场地' in result['content']
+
+
+def test_comparison_keeps_computed_calendar_gaps_when_writer_fails(session_factory):
+    main = seed(session_factory, '甲赛事', deadline='2026-10-27',
+                extra={'registration_deadline': '2026-10-25'})
+    seed(session_factory, '乙赛事', deadline='2026-10-29',
+         extra={'registration_deadline': '2026-10-26'})
+    result = run(session_factory, '比较甲赛事与乙赛事的报名和提交截止',
+        {'kind': 'comparison', 'comparison_queries': ['乙赛事'],
+         'fields': ['registration_deadline', 'submission_deadline']}, contest_id=main, fail='writer')
+    content = result['content']
+    assert '甲赛事的报名截止到作品提交截止相隔2个日历日' in content
+    assert '乙赛事的报名截止到作品提交截止相隔3个日历日' in content
+    assert '乙赛事的作品提交截止比甲赛事晚2个日历日' in content
+    assert 'T00:00' not in content
+    assert 'AI 应用比赛' in content
+
+
+@pytest.mark.parametrize('comparison_mode', ['online', None])
+def test_comparison_preserves_exact_times_even_when_other_facts_are_unknown(session_factory, comparison_mode):
+    ids = []
+    with session_factory() as session:
+        for name, deadline, mode in [('甲赛事', '2026-10-27T10:00:00Z', 'online'),
+                                     ('乙赛事', '2026-10-27T01:00:00Z', comparison_mode)]:
+            values = {'submission_deadline': deadline, **({'mode': mode} if mode else {})}
+            ids.append(service.save(session, ContestDraft(name=name,
+                page={'url': f'https://events.example/{name}', 'title': name, 'site': '官网', 'is_official': True},
+                claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in values.items()])))
+    result = run(session_factory, '比较甲赛事与乙赛事的提交截止和参赛形式',
+        {'kind': 'comparison', 'comparison_queries': ['乙赛事'],
+         'fields': ['submission_deadline', 'mode']}, contest_id=ids[0], fail='writer')
+    content = result['content']
+    assert '乙赛事的作品提交截止早于甲赛事' in content
+    assert '2026-10-27 09:00' in content and '2026-10-27 18:00' in content
+    assert ('乙赛事' in [item['contest']['name'] for item in result['recommendations']]) == bool(comparison_mode)
 
 
 def test_specific_contest_does_not_force_an_ineligible_recommendation(session_factory):
@@ -138,3 +186,65 @@ def test_unresolved_eligibility_sources_never_become_qualified_cards(session_fac
     result = run(session_factory, '找比赛', profile=Profile(identity_kind='student'))
     assert result['recommendations'] == []
     assert '资格待确认' in result['content'] and '资格' in result['content']
+
+
+def test_unverified_candidate_with_several_missing_fields_stays_in_prose(session_factory):
+    with session_factory() as session:
+        service.save(session, ContestDraft(name='待核实新赛',
+            page={'url': 'https://events.example/pending', 'title': '赛事公告', 'site': '官网', 'is_official': True},
+            claims=[{'field': 'prize', 'value': '2000元', 'excerpt': '奖金2000元'}]))
+    result = run(session_factory, '推荐比赛')
+    assert not result['recommendations']
+    assert '待核实新赛' in result['content'] and '形式' in result['content'] and '截止' in result['content']
+
+
+def test_interpreter_cannot_turn_unasked_bonus_fields_into_participation_gates(session_factory):
+    for name in ('甲AI赛', '乙AI赛', '丙AI赛'):
+        seed(session_factory, name)
+    result = run(session_factory, '两周内截止的线上AI比赛，推荐3场', {'mode': 'online',
+        'fields': ['registration_deadline', 'prize', 'venue', 'registration_url', 'start_at', 'end_at'], 'requested_facts': []})
+    assert len(result['recommendations']) == 3
+
+
+def test_explicit_free_condition_excludes_paid_and_unverified_fees(session_factory):
+    free = seed(session_factory, '免费AI赛', extra={'entry_fee': '免费'})
+    seed(session_factory, '收费AI赛', extra={'entry_fee': '100元'})
+    seed(session_factory, '费用未知AI赛')
+    result = run(session_factory, '只推荐免费参赛的比赛', {'conditions': [
+        {'field': 'entry_fee', 'operator': 'equals', 'value': 0, 'quote': '免费'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [free]
+    assert '报名费用' in result['content']
+
+
+def test_explicit_prize_threshold_is_checked_against_sourced_numbers(session_factory):
+    target = seed(session_factory, '有奖AI赛', extra={'prize': '2万元'})
+    seed(session_factory, '小奖AI赛', extra={'prize': '5000元'})
+    seed(session_factory, '奖金未知AI赛')
+    result = run(session_factory, '奖金至少1万元，推荐比赛', {'conditions': [
+        {'field': 'prize', 'operator': 'minimum', 'value': 10000, 'currency': 'CNY', 'quote': '奖金至少1万元'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
+
+
+def test_free_condition_survives_model_interpretation_failure(session_factory):
+    target = seed(session_factory, '免费AI赛', extra={'entry_fee': '免费'})
+    seed(session_factory, '收费AI赛', extra={'entry_fee': '100元'})
+    result = run(session_factory, '只找免费的AI比赛', fail=True)
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
+
+
+@pytest.mark.parametrize(('fee', 'operator', 'limit', 'question'), [
+    ('不免费', 'equals', 0, '只要免费参赛的比赛'),
+    ('100元起', 'maximum', 100, '报名费不超过100元，推荐比赛'),
+])
+def test_fee_negation_and_open_upper_bound_do_not_pass_hard_conditions(session_factory, fee, operator, limit, question):
+    seed(session_factory, '费用需留意', extra={'entry_fee': fee})
+    result = run(session_factory, question, {'conditions': [
+        {'field': 'entry_fee', 'operator': operator, 'value': limit, 'quote': question}]})
+    assert not result['recommendations']
+
+
+def test_known_prize_lower_bound_can_satisfy_a_minimum_requirement(session_factory):
+    target = seed(session_factory, '奖金下限已知', extra={'prize': '10000元起'})
+    result = run(session_factory, '奖金至少10000元的比赛', {'conditions': [
+        {'field': 'prize', 'operator': 'minimum', 'value': 10000, 'quote': '奖金至少10000元'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
