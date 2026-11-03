@@ -45,14 +45,19 @@ def requested_count(question):
     match = re.search(r'(\d+)\s*' + unit, question)
     if match:
         return max(1, int(match[1]))
-    chinese = re.search(r'([一二两三四五六七八九十]+)\s*' + unit, question)
+    chinese = re.search(r'([零一二两三四五六七八九十百千万]+)\s*' + unit, question)
     if chinese:
         digits = {text: index for index, text in enumerate('零一二三四五六七八九')}
         text = chinese[1].replace('两', '二')
-        if '十' in text:
-            first, last = text.split('十')
-            return digits.get(first, 1) * 10 + digits.get(last, 0)
-        return digits[text]
+        value, digit = 0, 0
+        for character in text:
+            if character in digits:
+                digit = digits[character]
+            elif character == '万':
+                value, digit = (value + digit) * 10000, 0
+            else:
+                value, digit = value + (digit or 1) * {'十': 10, '百': 100, '千': 1000}[character], 0
+        return max(1, value + digit)
     return 5 if any(text in question for text in ('多找几', '越多越好', '尽量多')) else 3
 
 

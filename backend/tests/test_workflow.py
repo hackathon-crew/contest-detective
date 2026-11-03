@@ -58,7 +58,7 @@ def test_explicit_mode_overrides_preference_but_identity_still_applies(session_f
 
 
 @pytest.mark.parametrize(('question', 'count'), [('找比赛', 3), ('多找几个比赛', 5), ('找 7 场比赛', 7),
-    ('我们3个人组队，推荐5场比赛', 5), ('找七场比赛', 7)])
+    ('我们3个人组队，推荐5场比赛', 5), ('找七场比赛', 7), ('找四五场比赛', 5)])
 def test_recommendation_count_is_a_product_rule(session_factory, question, count):
     for index in range(9):
         seed(session_factory, f'AI 比赛{index}')
