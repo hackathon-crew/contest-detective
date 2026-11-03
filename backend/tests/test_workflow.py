@@ -125,6 +125,22 @@ def test_specific_contest_with_several_unknowns_stays_in_fallback(session_factor
     assert '奖金' in result['content'] and '场地' in result['content']
 
 
+def test_comparison_keeps_computed_calendar_gaps_when_writer_fails(session_factory):
+    main = seed(session_factory, '甲赛事', deadline='2026-10-27',
+                extra={'registration_deadline': '2026-10-25'})
+    seed(session_factory, '乙赛事', deadline='2026-10-29',
+         extra={'registration_deadline': '2026-10-26'})
+    result = run(session_factory, '比较甲赛事与乙赛事的报名和提交截止',
+        {'kind': 'comparison', 'comparison_queries': ['乙赛事'],
+         'fields': ['registration_deadline', 'submission_deadline']}, contest_id=main, fail='writer')
+    content = result['content']
+    assert '甲赛事的报名截止到作品提交截止相隔2个日历日' in content
+    assert '乙赛事的报名截止到作品提交截止相隔3个日历日' in content
+    assert '乙赛事的作品提交截止比甲赛事晚2个日历日' in content
+    assert 'T00:00' not in content
+    assert 'AI 应用比赛' in content
+
+
 def test_specific_contest_does_not_force_an_ineligible_recommendation(session_factory):
     main = seed(session_factory, '学生专场', extra={'eligibility': '仅限在校生'})
     result = run(session_factory, '我能参加这场吗', {'kind': 'detail', 'fields': ['eligibility']},
