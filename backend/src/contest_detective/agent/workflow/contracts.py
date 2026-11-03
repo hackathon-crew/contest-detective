@@ -1,15 +1,39 @@
 """本轮意图与工作状态；这些对象不作为新的聊天或赛事存储。"""
 from dataclasses import dataclass, field
+from math import isfinite
 from typing import Literal, Protocol, TYPE_CHECKING
 
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
-from contest_detective.contest.schemas import EvidenceField
+from contest_detective.contest.schemas import ContestField, EvidenceField
 
 if TYPE_CHECKING:
     from pydantic_ai.usage import RunUsage, UsageLimits
     from contest_detective.agent.schemas import ConversationMessage, DetectiveReply
     from contest_detective.agent.tools import ToolDeps
+
+
+class FactCondition(BaseModel):
+    field: ContestField
+    operator: Literal['known', 'equals', 'contains', 'minimum', 'maximum', 'positive']
+    value: str | float | None = None
+    currency: Literal['CNY', 'USD'] | None = None
+    quote: str = Field(min_length=1)
+
+    @model_validator(mode='after')
+    def comparison_value(self):
+        if self.operator in {'equals', 'contains', 'minimum', 'maximum'} and self.value is None:
+            raise ValueError('比较条件必须给出值')
+        if self.operator in {'minimum', 'maximum'} and not isinstance(self.value, (int, float)):
+            raise ValueError('数值范围必须使用数值')
+        if isinstance(self.value, float) and not isfinite(self.value):
+            raise ValueError('比较值必须是有限数值')
+        if self.operator == 'contains' and not isinstance(self.value, str):
+            raise ValueError('包含条件必须使用文本')
+        if self.operator in {'minimum', 'maximum', 'positive'} and self.field not in {
+            'prize', 'entry_fee', 'team_size', 'past_statistics'}:
+            raise ValueError('日期窗口使用查询日期字段，数值条件只用于金额或人数')
+        return self
 
 
 class QueryIntent(BaseModel):
@@ -26,6 +50,8 @@ class QueryIntent(BaseModel):
     fresh: bool = False
     comparison_queries: list[str] = Field(default_factory=list)
     fields: list[EvidenceField] = Field(default_factory=list)
+    field_quotes: dict[EvidenceField, str] = Field(default_factory=dict)
+    conditions: list[FactCondition] = Field(default_factory=list)
 
 
 @dataclass

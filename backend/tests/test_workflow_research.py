@@ -25,7 +25,9 @@ def research(factory, question, intent, script, *, search=None, fetch=None, reco
     def respond(messages, info):
         prompts.append(str(messages))
         if info.output_tools[0].name == 'interpret_query':
-            return ModelResponse([ToolCallPart('interpret_query', intent)])
+            parsed = dict(intent)
+            parsed.setdefault('field_quotes', {field: question for field in parsed.get('fields', [])})
+            return ModelResponse([ToolCallPart('interpret_query', parsed)])
         if info.output_tools[0].name == 'final_result':
             return ModelResponse([ToolCallPart('final_result', {'name': '比较赛事', 'claims': [
                 {'field': 'prize', 'value': '2000元', 'excerpt': '奖金2000元'}]})])
@@ -281,3 +283,24 @@ def test_extraction_identity_is_checked_before_saving_a_mixed_contest_page(sessi
         prize = service.get(session, main).fields['prize']
         assert prize.value == '1000元'
         assert all(source.url != URL for source in prize.sources)
+
+
+def test_optional_answer_gap_is_researched_without_removing_qualified_cards(session_factory):
+    target = seed(session_factory, 'AI 比赛')
+    payload, calls, _, _ = research(session_factory, '推荐一场比赛，奖金是多少', {'fields': ['prize']},
+        [('web_search', {'query': 'AI 比赛 奖金'})] * 20, search=lambda *_, **__: [])
+    assert calls
+    assert [item['contest']['id'] for item in payload['recommendations']] == [target]
+    assert '奖金' in payload['content']
+
+
+def test_unasked_exploration_fields_cannot_force_extra_research(session_factory):
+    for name in ('甲AI赛', '乙AI赛', '丙AI赛'):
+        seed(session_factory, name)
+    def search(*args, **kwargs):
+        raise AssertionError('未问奖金和入口，不应为此额外研究')
+    payload, calls, _, _ = research(session_factory, '推荐3场比赛',
+        {'fields': ['prize', 'registration_url'], 'field_quotes': {}},
+        [('web_search', {'query': '额外奖金'})], search=search)
+    assert len(payload['recommendations']) == 3
+    assert not calls

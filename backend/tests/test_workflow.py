@@ -30,7 +30,9 @@ def run(factory, question, intent=None, *, profile=None, contest_id=None, fail=F
             raise ModelConnectionError('test', 'provider unavailable')
         name = info.output_tools[0].name
         if name == 'interpret_query':
-            return ModelResponse([ToolCallPart(name, intent or {})])
+            parsed = dict(intent or {})
+            parsed.setdefault('field_quotes', {field: question for field in parsed.get('fields', [])})
+            return ModelResponse([ToolCallPart(name, parsed)])
         return ModelResponse([ToolCallPart(name, {'content': '已按参赛条件整理，来源见各项。'})])
 
     async def consume():
@@ -148,3 +150,55 @@ def test_unverified_candidate_with_several_missing_fields_stays_in_prose(session
     result = run(session_factory, '推荐比赛')
     assert not result['recommendations']
     assert '待核实新赛' in result['content'] and '形式' in result['content'] and '截止' in result['content']
+
+
+def test_interpreter_cannot_turn_unasked_bonus_fields_into_participation_gates(session_factory):
+    for name in ('甲AI赛', '乙AI赛', '丙AI赛'):
+        seed(session_factory, name)
+    result = run(session_factory, '两周内截止的线上AI比赛，推荐3场', {'mode': 'online',
+        'fields': ['registration_deadline', 'prize', 'venue', 'registration_url', 'start_at', 'end_at'], 'field_quotes': {}})
+    assert len(result['recommendations']) == 3
+
+
+def test_explicit_free_condition_excludes_paid_and_unverified_fees(session_factory):
+    free = seed(session_factory, '免费AI赛', extra={'entry_fee': '免费'})
+    seed(session_factory, '收费AI赛', extra={'entry_fee': '100元'})
+    seed(session_factory, '费用未知AI赛')
+    result = run(session_factory, '只推荐免费参赛的比赛', {'conditions': [
+        {'field': 'entry_fee', 'operator': 'equals', 'value': 0, 'quote': '免费'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [free]
+    assert '报名费用' in result['content']
+
+
+def test_explicit_prize_threshold_is_checked_against_sourced_numbers(session_factory):
+    target = seed(session_factory, '有奖AI赛', extra={'prize': '2万元'})
+    seed(session_factory, '小奖AI赛', extra={'prize': '5000元'})
+    seed(session_factory, '奖金未知AI赛')
+    result = run(session_factory, '奖金至少1万元，推荐比赛', {'conditions': [
+        {'field': 'prize', 'operator': 'minimum', 'value': 10000, 'currency': 'CNY', 'quote': '奖金至少1万元'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
+
+
+def test_free_condition_survives_model_interpretation_failure(session_factory):
+    target = seed(session_factory, '免费AI赛', extra={'entry_fee': '免费'})
+    seed(session_factory, '收费AI赛', extra={'entry_fee': '100元'})
+    result = run(session_factory, '只找免费的AI比赛', fail=True)
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
+
+
+@pytest.mark.parametrize(('fee', 'operator', 'limit', 'question'), [
+    ('不免费', 'equals', 0, '只要免费参赛的比赛'),
+    ('100元起', 'maximum', 100, '报名费不超过100元，推荐比赛'),
+])
+def test_fee_negation_and_open_upper_bound_do_not_pass_hard_conditions(session_factory, fee, operator, limit, question):
+    seed(session_factory, '费用需留意', extra={'entry_fee': fee})
+    result = run(session_factory, question, {'conditions': [
+        {'field': 'entry_fee', 'operator': operator, 'value': limit, 'quote': question}]})
+    assert not result['recommendations']
+
+
+def test_known_prize_lower_bound_can_satisfy_a_minimum_requirement(session_factory):
+    target = seed(session_factory, '奖金下限已知', extra={'prize': '10000元起'})
+    result = run(session_factory, '奖金至少10000元的比赛', {'conditions': [
+        {'field': 'prize', 'operator': 'minimum', 'value': 10000, 'quote': '奖金至少10000元'}]})
+    assert [item['contest']['id'] for item in result['recommendations']] == [target]
