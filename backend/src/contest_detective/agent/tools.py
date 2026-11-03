@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import json
 from functools import wraps
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
@@ -109,7 +110,7 @@ class ToolDeps:
     @property
     def page_reads_exhausted(self):
         # 首次重复后允许改用新来源；再次重复而没有新读取则强制成文。
-        return self.repeated_page_reads >= 2
+        return self.workflow is None and self.repeated_page_reads >= 2
 
     def remember_page_range(self, url, start, end):
         ranges = self.page_ranges.setdefault(url, [])
@@ -164,14 +165,16 @@ class ToolDeps:
 
 def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = True, verification_enabled: bool = False):
     async def prepare_tool(ctx: RunContext[ToolDeps], definition: ToolDefinition):
+        if ctx.deps.workflow and definition.name == 'match_contests':
+            return None
         # 选定对象后不向模型提供候选发现工具，避免重复关键词和向量召回。
-        if ctx.deps.selected_contest and definition.name in {'search_contests', 'match_contests'}:
+        if ctx.deps.selected_contest and not ctx.deps.workflow and definition.name in {'search_contests', 'match_contests'}:
             return None
         return definition
 
     def research_tool(function):
         @wraps(function)
-        async def call(*args, **kwargs):
+        async def execute(*args, **kwargs):
             ctx = args[0] if args else kwargs.get('ctx')
             try:
                 if ctx.deps.page_reads_exhausted:
@@ -201,6 +204,28 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                 logger.warning('%s could not read this source', function.__name__, exc_info=True)
                 return {'error': type(exc).__name__, 'model_hint': '这个来源不可用，换一个查询或来源继续查证。不要向用户复述内部错误。',
                         'summary': '正在查找其他来源。', 'status': 'continuing', 'sources': []}
+        @wraps(function)
+        async def call(*args, **kwargs):
+            ctx = args[0] if args else kwargs['ctx']
+            workflow = ctx.deps.workflow
+            if workflow is None:
+                return await execute(*args, **kwargs)
+            arguments = inspect.signature(function).bind(*args, **kwargs)
+            arguments.apply_defaults()
+            values = {key: value for key, value in arguments.arguments.items() if key != 'ctx'}
+            if 'url' in values:
+                values['url'] = urldefrag(values['url'])[0]
+            key = function.__name__ + ':' + json.dumps(values, sort_keys=True, default=str)
+            async with workflow.tool_lock:
+                if key in workflow.cache:
+                    return workflow.cache[key]
+                if function.__name__ in {'fetch_page', 'record_page'} and not workflow.registered_url(ctx.deps, values['url']):
+                    return {'status': 'continuing', 'summary': '正在查找相关的公开来源。',
+                        'model_hint': '先搜索找到相关链接，再读取原文。也可跟进已读页中的链接。', 'sources': []}
+                result = await execute(*args, **kwargs)
+                await invoke(workflow.record_result, ctx.deps, function.__name__, values, result, key)
+                workflow.cache[key] = result
+                return result
         # 模型仍可能返回一批调用，网页读取必须串行共享本轮缓存。
         return agent.tool(call, prepare=prepare_tool, sequential=function.__name__ == 'fetch_page')
 
@@ -217,6 +242,10 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         page/page_size 翻页，每页最多 20 场。答复具体字段前先用 get_contest 读出处。
         """
         def retrieve():
+            if ctx.deps.workflow:
+                workflow = ctx.deps.workflow
+                workflow.retrieve(ctx.deps, keyword)
+                return list(workflow.details.values()), len(workflow.details)
             with ctx.deps.session_factory() as session:
                 return (ctx.deps.retriever or HybridRetriever()).search(session,
                     ContestQuery(keyword=keyword, status=status, mode=mode,
@@ -241,9 +270,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。precision=day 只有日期。
         """
         if ctx.deps.selected_contest:
-            if contest_id != ctx.deps.selected_contest.id:
+            if contest_id != ctx.deps.selected_contest.id and not (
+                ctx.deps.workflow and contest_id in ctx.deps.workflow.state.comparison_ids):
                 raise ValueError('本轮只读取已选定的比赛')
-            item = ctx.deps.selected_contest
+            with ctx.deps.session_factory() as session:
+                item = contests.get(session, contest_id)
         else:
             with ctx.deps.session_factory() as session:
                 item = contests.get(session, contest_id)
@@ -412,6 +443,9 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
     @research_tool
     async def record_page(ctx: RunContext[ToolDeps], url: str, contest_id: str | None = None) -> dict:
         """将网页送入核实流水线；已有赛事时传 contest_id，使用库中的报名域名核对官方来源。"""
+        if ctx.deps.workflow and ctx.deps.workflow.comparison_page(ctx.deps, url):
+            return {'contest_id': None, 'summary': '比较对象资料已保留用于回答。', 'status': 'continuing',
+                'model_hint': '比较对象只读，不把其规则写入主赛事。可继续读取比较资料。', 'sources': []}
         if ctx.deps.selected_contest:
             if contest_id is not None and contest_id != ctx.deps.selected_contest.id:
                 raise ValueError('补充资料必须归入已选定的比赛')
@@ -433,6 +467,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                                         usage=ctx.usage, usage_limits=limits)
 
         context = {}
+        if ctx.deps.workflow and url in ctx.deps.page_cache:
+            context['page_text'] = ctx.deps.page_cache[url][1]
         if ctx.deps.verification:
             if url not in ctx.deps.verification.fetched_pages:
                 raise ValueError('请先读取该页面原文，再保存已读取内容')

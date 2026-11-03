@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
-from pydantic_ai import Agent, ToolOutput
+from pydantic_ai import Agent, RunContext, ToolOutput
 from pydantic_ai.exceptions import UsageLimitExceeded, ModelAPIError, UnexpectedModelBehavior
 from pydantic_ai.messages import FunctionToolCallEvent, FunctionToolResultEvent, ModelRequest, ModelResponse, TextPart, UserPromptPart
 from pydantic_ai.models import Model
@@ -32,7 +32,7 @@ from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
 from .config import LLMSettings, get_llm_settings
 from .limits import WrapUpNearRequestLimit
-from .workflow.executor import Workflow
+from .workflow.executor import MODEL_ERRORS, Workflow
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,59 @@ class Investigator:
         register_tools(self.agent, web_enabled=search is not None, external_enabled=mode != 'database',
                        verification_enabled=mode in {'realtime', 'deep'})
 
+        @self.agent.instructions
+        def workflow_instructions(ctx: RunContext[ToolDeps]):
+            return ctx.deps.workflow.instructions() if ctx.deps.workflow else ''
+
+    async def _stream_tools(self, node, run, deps, store):
+        deps.round += 1
+        actual = False
+        async with node.stream(run.ctx) as events:
+            async for event in events:
+                if isinstance(event, FunctionToolCallEvent):
+                    tool = event.part.tool_name
+                    if tool == 'respond_to_user':
+                        continue
+                    actual = True
+                    store(TraceEvent(type='step', payload={'tool': tool,
+                        'label': '元宝搜索' if deps.verification and tool == 'web_search' else LABELS.get(tool, tool)}))
+                elif isinstance(event, FunctionToolResultEvent):
+                    if event.part.tool_name == 'respond_to_user':
+                        continue
+                    content = event.part.content if isinstance(event.part.content, dict) else {}
+                    if content.get('plan'):
+                        store(TraceEvent(type='plan', payload=content['plan']))
+                    payload = {'tool': event.part.tool_name,
+                        'summary': content.get('summary', '正在查找其他来源。'),
+                        'status': content.get('status', 'continuing'), 'sources': content.get('sources', [])}
+                    if content.get('execution'):
+                        payload['execution'] = content['execution']
+                    store(TraceEvent(type='observation', payload=payload))
+        return actual
+
+    async def _research(self, workflow, deps, question, messages, usage, limits, store):
+        workflow.state.phase = 'research'
+        try:
+            while not workflow.covered:
+                if limits.request_limit is not None and usage.requests >= limits.request_limit - 1:
+                    break
+                if limits.tool_calls_limit is not None and usage.tool_calls >= limits.tool_calls_limit - 1:
+                    break
+                stopped = False
+                async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
+                    instructions=workflow.instructions(), message_history=messages) as run:
+                    async for node in run:
+                        if Agent.is_call_tools_node(node):
+                            actual = await self._stream_tools(node, run, deps, store)
+                            if actual and workflow.after_round(deps, usage, limits):
+                                stopped = True
+                                break
+                    messages = run.all_messages()
+                if stopped or workflow.after_round(deps, usage, limits):
+                    break
+        except MODEL_ERRORS as error:
+            logger.warning('Research is using collected evidence: %s', type(error).__name__)
+
     async def ask(self, question: str, user_id: str | None = None,
                   profile: Profile | None = None,
                   history: list[ConversationMessage] | None = None, mode: VerificationMode | None = None,
@@ -128,6 +181,12 @@ class Investigator:
 
         def finish_interrupted(message=INTERRUPTED['message'], action='retry', terminal_status='failed'):
             nonlocal status, answer
+            if deps.workflow:
+                status = 'completed'
+                answer = deps.workflow.fallback(deps)
+                store(TraceEvent(type='answer', payload={'content': answer,
+                    'sources': [source.model_dump() for source in deps.sources.values()]}))
+                return
             status = terminal_status
             partial = interrupted_answer(deps)
             report = state.build([], interrupted=True) if state else None
@@ -197,12 +256,14 @@ class Investigator:
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
-            if self.settings.workflow_enabled and self.mode == 'database':
+            if self.settings.workflow_enabled and self.mode not in {'realtime', 'deep'}:
                 workflow = Workflow(self.model, self.settings)
                 store(TraceEvent(type='step', payload={'tool': 'workflow_retrieval', 'label': '查询比赛库'}))
                 await workflow.prepare(deps, question, history, usage, limits)
                 store(TraceEvent(type='observation', payload={'tool': 'workflow_retrieval',
                     'summary': f'找到 {len(workflow.state.qualified_ids)} 场符合条件的比赛', 'status': 'success'}))
+                if self.mode != 'database' and not workflow.covered and (self.search or deps.sources or 'http' in question):
+                    await self._research(workflow, deps, question, messages, usage, limits, store)
                 store(TraceEvent(type='step', payload={'tool': 'compose_answer', 'label': '整理回答'}))
                 reply = await workflow.complete(deps, usage, limits)
             else:
@@ -210,26 +271,7 @@ class Investigator:
                                            instructions=instructions, message_history=messages) as run:
                     async for node in run:
                         if Agent.is_call_tools_node(node):
-                            deps.round += 1
-                            async with node.stream(run.ctx) as events:
-                                async for event in events:
-                                    if isinstance(event, FunctionToolCallEvent):
-                                        tool = event.part.tool_name
-                                        if tool == 'respond_to_user':
-                                            continue
-                                        store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)}))
-                                    elif isinstance(event, FunctionToolResultEvent):
-                                        if event.part.tool_name == 'respond_to_user':
-                                            continue
-                                        content = event.part.content if isinstance(event.part.content, dict) else {}
-                                        if content.get('plan'):
-                                            store(TraceEvent(type='plan', payload=content['plan']))
-                                        payload = {'tool': event.part.tool_name,
-                                            'summary': content.get('summary', '正在查找其他来源。'),
-                                            'status': content.get('status', 'continuing'), 'sources': content.get('sources', [])}
-                                        if content.get('execution'):
-                                            payload['execution'] = content['execution']
-                                        store(TraceEvent(type='observation', payload=payload))
+                            await self._stream_tools(node, run, deps, store)
                     result = run.result
                 if result is None:
                     raise RuntimeError('查证没有完成结果')
