@@ -65,10 +65,10 @@ def _required_days(text):
     return max((int(value) for value in values), default=0)
 
 
-def _eligible(detail, profile, now):
-    if detail.status == 'ended':
+def eligible(detail, profile, now, *, attendable=True):
+    if attendable and detail.status == 'ended':
         return False
-    if any(_deadline_passed(detail, field, now) for field in DEADLINE_FIELDS):
+    if attendable and any(_deadline_passed(detail, field, now) for field in DEADLINE_FIELDS):
         return False
     mode, city = _value(detail, 'mode'), _value(detail, 'city')
     if profile.preferred_modes and mode not in profile.preferred_modes:
@@ -127,7 +127,7 @@ def _eligible(detail, profile, now):
     return True
 
 
-def _rank_and_reason(detail, profile):
+def rank_and_reason(detail, profile):
     text = (detail.name + ' ' + (detail.summary or '')).casefold()
     topics = [topic for topic in dict.fromkeys(profile.topics) if _contains(text, topic)]
     skills = [skill for skill in dict.fromkeys(profile.skills) if _contains(text, skill)]
@@ -160,9 +160,9 @@ def match(session, profile: Profile, *, limit: int | None = 20) -> list[MatchIte
     results = []
     for contest_id in session.scalars(select(Contest.id)):
         detail = contests.get(session, contest_id)
-        if not _eligible(detail, profile, now):
+        if not eligible(detail, profile, now):
             continue
-        score, reason = _rank_and_reason(detail, profile)
+        score, reason = rank_and_reason(detail, profile)
         summary = ContestSummary.model_validate(detail.model_dump())
         summary.fields = {key: value.model_copy(update={'sources': []}) for key, value in summary.fields.items()}
         results.append(MatchItem(contest=summary, score=score, reason=reason))

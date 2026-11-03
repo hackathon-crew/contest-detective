@@ -21,9 +21,10 @@ def merge_ranks(*lanes):
 class HybridRetriever:
     def __init__(self, provider=None):
         self.provider = provider
+        self._vectors = {}
 
-    def search(self, session, query, *, attendable=False, blocked_domains=()):
-        options = {'attendable': attendable, 'blocked_domains': blocked_domains}
+    def search(self, session, query, *, attendable=False, blocked_domains=(), recall_limit=None, **filters):
+        options = {'attendable': attendable, 'blocked_domains': blocked_domains, **filters}
         if not query.keyword or not query.keyword.strip() or session.get_bind().dialect.name != 'postgresql':
             try:
                 with session.begin_nested():
@@ -36,18 +37,25 @@ class HybridRetriever:
         # Keyword recall runs for every search, independently of the model lane.
         try:
             with session.begin_nested():
-                keywords = list(session.scalars(contests.candidate_query(session, query, **options)))
+                statement = contests.candidate_query(session, query, **options)
+                keywords = list(session.scalars(statement.limit(recall_limit) if recall_limit else statement))
         except Exception as error:
             logger.warning('Keyword retrieval unavailable error_type=%s', type(error).__name__, exc_info=True)
 
         try:
             provider = self.provider or configured_provider()
             if provider is not None:
-                vector = provider.embed(query.keyword.strip())
+                text = query.keyword.strip()
+                if recall_limit is None:
+                    vector = provider.embed(text)
+                else:
+                    if text not in self._vectors:
+                        self._vectors[text] = provider.embed(text)
+                    vector = self._vectors[text]
                 # A broken lane rolls back only its own SQL savepoint.
                 with session.begin_nested():
                     eligible = contests.candidate_query(session, query.model_copy(update={'keyword': None}), **options)
-                    semantic = store.nearest(session, eligible, vector)
+                    semantic = store.nearest(session, eligible, vector, **({'limit': recall_limit} if recall_limit else {}))
         except Exception as error:
             logger.warning('Semantic retrieval unavailable error_type=%s', type(error).__name__, exc_info=True)
 
