@@ -66,7 +66,7 @@ def fallback_intent(question):
     now = datetime.now(BEIJING)
     mode = 'offline' if '线下' in question else 'online' if '线上' in question else None
     values = {'mode': mode, 'count': requested_count(question),
-              'keyword': 'AI' if re.search(r'\bAI\b', question, re.I) else None}
+              'keyword': 'AI' if re.search(r'(?<![a-z0-9])AI(?![a-z0-9])', question, re.I) else None}
     if any(text in question for text in ('两周', '2周', '14天')):
         values.update(date_from=now, date_to=now + timedelta(days=14))
     if '免费' in question:
@@ -87,7 +87,8 @@ class Workflow:
             '历史回顾可以ended；找能参加的比赛不能ended。分清报名/提交截止和开始/结束日期。'
             'date_kind=deadline代表任一种截止。日期窗口用北京时间边界。'
             'fields只列用户本轮明确要求回答的事实。不要为了介绍比赛顺手加入奖金、报名入口、场地、开始或结束日期。'
-            'field_quotes逐项摘录用户要求该事实的最短原话；未附原话的fields只是可选探索，不影响完成判断。'
+            'requested_facts用数组逐项记录field和quote；quote摘录用户要求该事实的最短原话。未列入requested_facts的fields只是可选探索，不影响完成判断。'
+            '例如“说明报名和作品提交截止”对应 requested_facts=[{"field":"registration_deadline","quote":"报名"},{"field":"submission_deadline","quote":"作品提交截止"}]。'
             'conditions只表示用户额外明确的硬筛选要求，并用quote逐字摘录用户条件；日期/形式/城市继续用原有字段。'
             '例如只要免费：entry_fee equals 0；必须有奖金：prize positive；奖金至少10000元：prize minimum 10000 currency=CNY。'
             '含金量、可信度等分析问题可以列出支撑该分析的必要事实，不要求用户逐字说出字段名。'
@@ -95,9 +96,9 @@ class Workflow:
             '只有问题与画像无关时use_profile=false。只有明确要求最新或重新核验时fresh=true。')
         @self.interpreter.output_validator
         def quoted_intent(ctx: RunContext[str], intent: QueryIntent):
-            quotes = [*intent.field_quotes.values(), *(item.quote for item in intent.conditions)]
+            quotes = [*(item.quote for item in intent.requested_facts), *(item.quote for item in intent.conditions)]
             if any(not quote.strip() or quote not in ctx.deps for quote in quotes):
-                raise ModelRetry('只引用用户原话，不能为未提出的要求编造依据。可选探索不填field_quotes。')
+                raise ModelRetry('只引用用户原话，不能为未提出的要求编造依据。可选探索不填requested_facts。')
             return intent
         self.writer = Agent(model, output_type=ToolOutput(DetectiveReply, name='respond_to_user'), retries=1,
             instructions='你是比赛侦探，用已有证据直接回答本轮问题，保留介绍、比较、关键日期与来源链接。'
@@ -140,7 +141,7 @@ class Workflow:
             logger.warning('Query interpretation unavailable: %s', type(error).__name__)
             intent = fallback_intent(question)
         intent.count = requested_count(question)
-        intent.fields = list(dict.fromkeys([*intent.fields, *intent.field_quotes, *(item.field for item in intent.conditions)]))
+        intent.fields = list(dict.fromkeys([*intent.fields, *(item.field for item in intent.requested_facts), *(item.field for item in intent.conditions)]))
         if deps.selected_contest and intent.kind == 'discovery':
             intent.kind = 'detail'
         self.state = WorkflowState(intent, main_id=deps.selected_contest.id if deps.selected_contest else None)
@@ -276,7 +277,7 @@ class Workflow:
                 gaps.append('报名前到官网确认' + label + '是否符合本轮要求')
             elif not outcome:
                 gaps.append(label + '不符合本轮要求')
-        for field in self.state.intent.field_quotes:
+        for field in (item.field for item in self.state.intent.requested_facts):
             if field == 'summary':
                 continue
             value = detail.fields[field]

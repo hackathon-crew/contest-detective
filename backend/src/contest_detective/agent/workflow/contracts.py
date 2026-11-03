@@ -13,6 +13,11 @@ if TYPE_CHECKING:
     from contest_detective.agent.tools import ToolDeps
 
 
+class RequestedFact(BaseModel):
+    field: EvidenceField
+    quote: str = Field(min_length=1)
+
+
 class FactCondition(BaseModel):
     field: ContestField
     operator: Literal['known', 'equals', 'contains', 'minimum', 'maximum', 'positive']
@@ -50,7 +55,7 @@ class QueryIntent(BaseModel):
     fresh: bool = False
     comparison_queries: list[str] = Field(default_factory=list)
     fields: list[EvidenceField] = Field(default_factory=list)
-    field_quotes: dict[EvidenceField, str] = Field(default_factory=dict)
+    requested_facts: list[RequestedFact] = Field(default_factory=list)
     conditions: list[FactCondition] = Field(default_factory=list)
 
 

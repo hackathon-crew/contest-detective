@@ -31,7 +31,7 @@ def run(factory, question, intent=None, *, profile=None, contest_id=None, fail=F
         name = info.output_tools[0].name
         if name == 'interpret_query':
             parsed = dict(intent or {})
-            parsed.setdefault('field_quotes', {field: question for field in parsed.get('fields', [])})
+            parsed.setdefault('requested_facts', [{'field': field, 'quote': question} for field in parsed.get('fields', [])])
             return ModelResponse([ToolCallPart(name, parsed)])
         return ModelResponse([ToolCallPart(name, {'content': '已按参赛条件整理，来源见各项。'})])
 
@@ -105,9 +105,11 @@ def test_bound_contest_can_read_comparison_without_changing_main(session_factory
     assert other in [item['contest']['id'] for item in result['recommendations']]
 
 
-def test_model_failure_still_returns_facts_cards_and_next_action(session_factory):
+@pytest.mark.parametrize('question', ['两周内截止的线上 AI 比赛', '两周内截止的线上AI比赛'])
+def test_model_failure_still_returns_facts_cards_and_next_action(session_factory, question):
     target = seed(session_factory, 'AI 公开赛')
-    result = run(session_factory, '两周内截止的线上 AI 比赛', fail=True)
+    seed(session_factory, '手工雕刻赛', summary='传统手工雕刻作品竞赛')
+    result = run(session_factory, question, fail=True)
     assert [item['contest']['id'] for item in result['recommendations']] == [target]
     assert 'AI 公开赛' in result['content'] and '2026-10-30' in result['content']
     assert 'https://events.example/' in result['content']
@@ -156,7 +158,7 @@ def test_interpreter_cannot_turn_unasked_bonus_fields_into_participation_gates(s
     for name in ('甲AI赛', '乙AI赛', '丙AI赛'):
         seed(session_factory, name)
     result = run(session_factory, '两周内截止的线上AI比赛，推荐3场', {'mode': 'online',
-        'fields': ['registration_deadline', 'prize', 'venue', 'registration_url', 'start_at', 'end_at'], 'field_quotes': {}})
+        'fields': ['registration_deadline', 'prize', 'venue', 'registration_url', 'start_at', 'end_at'], 'requested_facts': []})
     assert len(result['recommendations']) == 3
 
 

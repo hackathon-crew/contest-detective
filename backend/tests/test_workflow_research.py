@@ -26,7 +26,7 @@ def research(factory, question, intent, script, *, search=None, fetch=None, reco
         prompts.append(str(messages))
         if info.output_tools[0].name == 'interpret_query':
             parsed = dict(intent)
-            parsed.setdefault('field_quotes', {field: question for field in parsed.get('fields', [])})
+            parsed.setdefault('requested_facts', [{'field': field, 'quote': question} for field in parsed.get('fields', [])])
             return ModelResponse([ToolCallPart('interpret_query', parsed)])
         if info.output_tools[0].name == 'final_result':
             return ModelResponse([ToolCallPart('final_result', {'name': '比较赛事', 'claims': [
@@ -300,7 +300,7 @@ def test_unasked_exploration_fields_cannot_force_extra_research(session_factory)
     def search(*args, **kwargs):
         raise AssertionError('未问奖金和入口，不应为此额外研究')
     payload, calls, _, _ = research(session_factory, '推荐3场比赛',
-        {'fields': ['prize', 'registration_url'], 'field_quotes': {}},
+        {'fields': ['prize', 'registration_url'], 'requested_facts': []},
         [('web_search', {'query': '额外奖金'})], search=search)
     assert len(payload['recommendations']) == 3
     assert not calls
