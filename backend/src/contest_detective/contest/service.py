@@ -207,6 +207,13 @@ def _status(contest, details, now):
     return 'ongoing' if now < end else 'ended'
 
 
+def status_for_fields(fields):
+    """本轮只读资料也使用与持久化赛事相同的日期和精度语义。"""
+    details = SimpleNamespace(start_at=fields['start_at'].value, end_at=fields['end_at'].value,
+        fields={field: value.model_dump() for field, value in fields.items()})
+    return _status(None, details, _now())
+
+
 def _read_details(session, contest):
     details = session.get(ContestDetails, contest.id)
     if details is not None:

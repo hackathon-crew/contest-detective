@@ -26,6 +26,9 @@ def research(factory, question, intent, script, *, search=None, fetch=None, reco
         prompts.append(str(messages))
         if info.output_tools[0].name == 'interpret_query':
             return ModelResponse([ToolCallPart('interpret_query', intent)])
+        if info.output_tools[0].name == 'final_result':
+            return ModelResponse([ToolCallPart('final_result', {'name': '比较赛事', 'claims': [
+                {'field': 'prize', 'value': '2000元', 'excerpt': '奖金2000元'}]})])
         if not info.function_tools:
             return ModelResponse([ToolCallPart('respond_to_user', {'content': '以下是根据来源整理的结果。'})])
         index = len(calls)
@@ -206,3 +209,75 @@ def test_interpretation_research_and_answer_share_one_request_budget(session_fac
         search=lambda *_, **__: [], request_limit=4)
     assert calls == ['web_search']
     assert len(prompts) == 3
+
+
+def test_fresh_related_official_leads_allow_research_to_continue(session_factory):
+    index = [0]
+    def search(*args, **kwargs):
+        index[0] += 1
+        return [{'title': 'AI 比赛官网', 'url': f'https://official{index[0]}.example/ai', 'site': '官网'}]
+    payload, calls, _, _ = research(session_factory, '推荐一场 AI 比赛', {'keyword': 'AI'}, [
+        *[('web_search', {'query': f'AI 比赛方向{number}'}) for number in range(4)],
+        ('record_page', {'url': 'https://official4.example/ai'})], search=search,
+        record=lambda *_, **__: seed(session_factory, 'AI 新比赛'))
+    assert len(calls) == 5
+    assert payload['recommendations']
+
+
+def test_unrelated_new_pages_do_not_keep_an_ai_investigation_alive(session_factory):
+    script = []
+    for index in range(10):
+        script += [('web_search', {'query': f'手工刺绣比赛 {index}'}),
+                   ('fetch_page', {'url': f'https://craft{index}.example/rules'})]
+    payload, calls, _, _ = research(session_factory, '推荐 AI 比赛', {'keyword': 'AI'}, script,
+        search=lambda query, **_: [{'title': '手工刺绣比赛', 'url': f'https://craft{query.split()[-1]}.example/rules', 'site': '官网'}],
+        fetch=lambda _: '手工刺绣比赛，只比较手工缝制的作品。')
+    assert len(calls) == 4
+    assert '手工刺绣' not in payload['content']
+
+
+def test_new_comparison_announcement_is_not_saved_into_main(session_factory):
+    main = seed(session_factory, '主赛事')
+    seed(session_factory, '比较赛事')
+    written = []
+    research(session_factory, '比较最新公告', {'kind': 'comparison', 'fresh': True,
+        'comparison_queries': ['比较赛事']}, [
+        ('web_search', {'query': '比较赛事 最新公告'}), ('record_page', {'url': URL})],
+        contest_id=main, search=lambda *_, **__: [{'title': '比较赛事新公告', 'url': URL, 'site': '官网'}],
+        record=lambda *args, **kwargs: written.append(kwargs))
+    assert not written
+
+
+def test_comparison_updates_runtime_facts_and_cards_without_writing_database(session_factory):
+    main = seed(session_factory, '主赛事', extra={'prize': '1000元'})
+    comparison = seed(session_factory, '比较赛事')
+    payload, calls, _, _ = research(session_factory, '比较两场的奖金',
+        {'kind': 'comparison', 'comparison_queries': ['比较赛事'], 'fields': ['prize']}, [
+        ('get_contest', {'contest_id': comparison, 'fields': ['prize']}),
+        ('web_search', {'query': '比较赛事 奖金'}), ('fetch_page', {'url': URL}),
+        ('get_contest', {'contest_id': comparison, 'fields': ['prize']}),
+        ('web_search', {'query': '不该继续'})], contest_id=main,
+        search=lambda *_, **__: [{'title': '比较赛事奖金公告', 'url': URL, 'site': '官网'}],
+        fetch=lambda _: '比较赛事，奖金2000元。')
+    assert calls == ['get_contest', 'web_search', 'fetch_page', 'get_contest']
+    card = next(item for item in payload['recommendations'] if item['contest']['id'] == comparison)
+    assert card['contest']['fields']['prize']['value'] == '2000元'
+    assert card['contest']['fields']['prize']['sources'][0]['url'] == URL
+    with session_factory() as session:
+        assert service.get(session, comparison).fields['prize'].value is None
+
+
+def test_extraction_identity_is_checked_before_saving_a_mixed_contest_page(session_factory):
+    from contest_detective.research.record import run
+    main = seed(session_factory, '主赛事', extra={'prize': '1000元'})
+    seed(session_factory, '比较赛事')
+    research(session_factory, '比较最新奖金规则', {'kind': 'comparison', 'fresh': True,
+        'comparison_queries': ['比较赛事']}, [
+        ('web_search', {'query': '比较赛事新公告'}), ('fetch_page', {'url': URL}),
+        ('record_page', {'url': URL})], contest_id=main,
+        search=lambda *_, **__: [{'title': '赛事公告', 'url': URL, 'site': '官网'}],
+        fetch=lambda _: '比较赛事奖金2000元，与主赛事同期举行。', record=run)
+    with session_factory() as session:
+        prize = service.get(session, main).fields['prize']
+        assert prize.value == '1000元'
+        assert all(source.url != URL for source in prize.sources)

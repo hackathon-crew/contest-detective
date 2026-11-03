@@ -21,6 +21,7 @@ from pydantic_ai.models import Model
 from pydantic_ai.tools import ToolDefinition
 
 from contest_detective.contest import service as contests
+from contest_detective.contest.identity import normalized_name
 from contest_detective.contest.schemas import ContestDetail, ContestQuery, EvidenceField
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
@@ -273,8 +274,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             if contest_id != ctx.deps.selected_contest.id and not (
                 ctx.deps.workflow and contest_id in ctx.deps.workflow.state.comparison_ids):
                 raise ValueError('本轮只读取已选定的比赛')
-            with ctx.deps.session_factory() as session:
-                item = contests.get(session, contest_id)
+            if ctx.deps.workflow and contest_id in ctx.deps.workflow.state.comparison_ids:
+                await ctx.deps.workflow.read_comparison(ctx.deps, contest_id, ctx.usage, ctx.usage_limits)
+                item = ctx.deps.workflow.details[contest_id]
+            else:
+                item = ctx.deps.selected_contest
         else:
             with ctx.deps.session_factory() as session:
                 item = contests.get(session, contest_id)
@@ -446,6 +450,13 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         if ctx.deps.workflow and ctx.deps.workflow.comparison_page(ctx.deps, url):
             return {'contest_id': None, 'summary': '比较对象资料已保留用于回答。', 'status': 'continuing',
                 'model_hint': '比较对象只读，不把其规则写入主赛事。可继续读取比较资料。', 'sources': []}
+        if ctx.deps.workflow and ctx.deps.selected_contest:
+            main = ctx.deps.selected_contest
+            main_urls = {source['url'] for source in contest_sources(main)}
+            body = ctx.deps.fetched_pages.get(urldefrag(url)[0], '')
+            if url not in main_urls and main.name not in body:
+                return {'contest_id': None, 'summary': '资料已保留用于回答。', 'status': 'continuing',
+                    'model_hint': '先读取原文，确认资料属于主赛事再保存；不能默认把其他赛事写入主赛事。', 'sources': []}
         if ctx.deps.selected_contest:
             if contest_id is not None and contest_id != ctx.deps.selected_contest.id:
                 raise ValueError('补充资料必须归入已选定的比赛')
@@ -465,6 +476,15 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
             limits = replace(limits, request_limit=limits.request_limit - 1)
         extract = create_page_extractor(model=ctx.deps.model, session_factory=ctx.deps.session_factory,
                                         usage=ctx.usage, usage_limits=limits)
+        if ctx.deps.workflow and ctx.deps.selected_contest:
+            extract_page = extract
+            target_name = normalized_name(ctx.deps.selected_contest.name)
+
+            async def extract(url, text):
+                draft = await extract_page(url, text)
+                if normalized_name(draft.name) != target_name:
+                    raise ValueError('抽取对象与主赛事不一致，保留原文用于比较，不写入主赛事')
+                return draft
 
         context = {}
         if ctx.deps.workflow and url in ctx.deps.page_cache:

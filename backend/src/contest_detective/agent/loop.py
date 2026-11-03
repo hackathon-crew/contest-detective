@@ -134,7 +134,7 @@ class Investigator:
                     break
                 stopped = False
                 async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
-                    instructions=workflow.instructions(), message_history=messages) as run:
+                    message_history=messages) as run:
                     async for node in run:
                         if Agent.is_call_tools_node(node):
                             actual = await self._stream_tools(node, run, deps, store)
@@ -266,6 +266,8 @@ class Investigator:
                     await self._research(workflow, deps, question, messages, usage, limits, store)
                 store(TraceEvent(type='step', payload={'tool': 'compose_answer', 'label': '整理回答'}))
                 reply = await workflow.complete(deps, usage, limits)
+                store(TraceEvent(type='observation', payload={'tool': 'compose_answer',
+                    'summary': '回答已整理', 'status': 'success'}))
             else:
                 async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
                                            instructions=instructions, message_history=messages) as run:
@@ -286,7 +288,7 @@ class Investigator:
             answer = render_report(report) if report and confirmed_claims and not deps.wrapping_up else answer
             with self.session_factory() as session:
                 recommendations = materialize(session, [item for item in reply.recommendations
-                    if item.contest_id in deps.contest_ids])
+                    if item.contest_id in deps.contest_ids], snapshots=deps.workflow.details if deps.workflow else None)
             status = report.status if report and report.status != 'complete' else 'completed'
             action = None
             if not deps.workflow and not deps.contest_ids and not deps.sources and not deps.search_results:

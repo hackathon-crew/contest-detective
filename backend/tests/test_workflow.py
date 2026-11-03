@@ -138,3 +138,13 @@ def test_unresolved_eligibility_sources_never_become_qualified_cards(session_fac
     result = run(session_factory, '找比赛', profile=Profile(identity_kind='student'))
     assert result['recommendations'] == []
     assert '资格待确认' in result['content'] and '资格' in result['content']
+
+
+def test_unverified_candidate_with_several_missing_fields_stays_in_prose(session_factory):
+    with session_factory() as session:
+        service.save(session, ContestDraft(name='待核实新赛',
+            page={'url': 'https://events.example/pending', 'title': '赛事公告', 'site': '官网', 'is_official': True},
+            claims=[{'field': 'prize', 'value': '2000元', 'excerpt': '奖金2000元'}]))
+    result = run(session_factory, '推荐比赛')
+    assert not result['recommendations']
+    assert '待核实新赛' in result['content'] and '形式' in result['content'] and '截止' in result['content']
