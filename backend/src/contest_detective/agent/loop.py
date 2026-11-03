@@ -32,6 +32,7 @@ from .verification_contracts import VerificationMode, ConfirmedClaim
 from .scope import classify_scope
 from .config import LLMSettings, get_llm_settings
 from .limits import WrapUpNearRequestLimit
+from .workflow.executor import Workflow
 
 logger = logging.getLogger(__name__)
 
@@ -196,36 +197,45 @@ class Investigator:
             if profile is not None and has_preferences(profile):
                 deps.profile = profile
                 instructions += '\n用户已确认的画像资料：' + json.dumps(profile.model_dump(mode='json'), ensure_ascii=False)
-            async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
-                                       instructions=instructions, message_history=messages) as run:
-                async for node in run:
-                    if Agent.is_call_tools_node(node):
-                        deps.round += 1
-                        async with node.stream(run.ctx) as events:
-                            async for event in events:
-                                if isinstance(event, FunctionToolCallEvent):
-                                    tool = event.part.tool_name
-                                    if tool == 'respond_to_user':
-                                        continue
-                                    store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)}))
-                                elif isinstance(event, FunctionToolResultEvent):
-                                    if event.part.tool_name == 'respond_to_user':
-                                        continue
-                                    content = event.part.content if isinstance(event.part.content, dict) else {}
-                                    if content.get('plan'):
-                                        store(TraceEvent(type='plan', payload=content['plan']))
-                                    payload = {'tool': event.part.tool_name,
-                                        'summary': content.get('summary', '正在查找其他来源。'),
-                                        'status': content.get('status', 'continuing'), 'sources': content.get('sources', [])}
-                                    if content.get('execution'):
-                                        payload['execution'] = content['execution']
-                                    store(TraceEvent(type='observation', payload=payload))
-                result = run.result
-            if result is None:
-                raise RuntimeError('查证没有完成结果')
-            # 正文是交付结果；卡片和核验元数据不能让已生成的回复进入重试后丢失。
-            reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
-                content=result.output, recommendations=[])
+            if self.settings.workflow_enabled and self.mode == 'database':
+                workflow = Workflow(self.model, self.settings)
+                store(TraceEvent(type='step', payload={'tool': 'workflow_retrieval', 'label': '查询比赛库'}))
+                await workflow.prepare(deps, question, history, usage, limits)
+                store(TraceEvent(type='observation', payload={'tool': 'workflow_retrieval',
+                    'summary': f'找到 {len(workflow.state.qualified_ids)} 场符合条件的比赛', 'status': 'success'}))
+                store(TraceEvent(type='step', payload={'tool': 'compose_answer', 'label': '整理回答'}))
+                reply = await workflow.complete(deps, usage, limits)
+            else:
+                async with self.agent.iter(question, deps=deps, usage=usage, usage_limits=limits,
+                                           instructions=instructions, message_history=messages) as run:
+                    async for node in run:
+                        if Agent.is_call_tools_node(node):
+                            deps.round += 1
+                            async with node.stream(run.ctx) as events:
+                                async for event in events:
+                                    if isinstance(event, FunctionToolCallEvent):
+                                        tool = event.part.tool_name
+                                        if tool == 'respond_to_user':
+                                            continue
+                                        store(TraceEvent(type='step', payload={'tool': tool, 'label': '元宝搜索' if state and tool == 'web_search' else LABELS.get(tool, tool)}))
+                                    elif isinstance(event, FunctionToolResultEvent):
+                                        if event.part.tool_name == 'respond_to_user':
+                                            continue
+                                        content = event.part.content if isinstance(event.part.content, dict) else {}
+                                        if content.get('plan'):
+                                            store(TraceEvent(type='plan', payload=content['plan']))
+                                        payload = {'tool': event.part.tool_name,
+                                            'summary': content.get('summary', '正在查找其他来源。'),
+                                            'status': content.get('status', 'continuing'), 'sources': content.get('sources', [])}
+                                        if content.get('execution'):
+                                            payload['execution'] = content['execution']
+                                        store(TraceEvent(type='observation', payload=payload))
+                    result = run.result
+                if result is None:
+                    raise RuntimeError('查证没有完成结果')
+                # 正文是交付结果；卡片和核验元数据不能让已生成的回复进入重试后丢失。
+                reply = result.output if isinstance(result.output, DetectiveReply) else DetectiveReply(
+                    content=result.output, recommendations=[])
             answer = reply.content
             conflicts = build_conflicts(reply.conflicts, conflict_evidence(deps.read_contests.values(), deps.fetched_pages, deps.sources))
             report = state.build(reply.assessments) if state else None
@@ -237,7 +247,7 @@ class Investigator:
                     if item.contest_id in deps.contest_ids])
             status = report.status if report and report.status != 'complete' else 'completed'
             action = None
-            if not deps.contest_ids and not deps.sources and not deps.search_results:
+            if not deps.workflow and not deps.contest_ids and not deps.sources and not deps.search_results:
                 if deps.unavailable_sources:
                     action = 'retry'
                     answer += '\n\n' + INTERRUPTED['message']

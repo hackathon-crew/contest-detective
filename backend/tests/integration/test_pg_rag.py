@@ -79,6 +79,31 @@ def test_pg_semantic_recall_merges_keyword_candidates_and_paginates(pg_factory):
         assert items[0].id == semantic
 
 
+def test_workflow_finds_eligible_candidate_beyond_semantic_top_hundred(pg_factory, monkeypatch):
+    import asyncio
+    from pydantic_ai.messages import ModelResponse, ToolCallPart
+    from pydantic_ai.models.function import FunctionModel
+    from pydantic_ai.usage import RunUsage, UsageLimits
+    from contest_detective.agent.config import LLMSettings
+    from contest_detective.agent.tools import ToolDeps
+    from contest_detective.agent.workflow.executor import Workflow
+    from contest_detective.system.user.schemas import Profile
+
+    for index in range(100):
+        save(pg_factory, f'仅限职场开发者 {index}', contest_id=f'{index:036d}')
+    target = save(pg_factory, '学生公开赛', contest_id='f' * 36)
+    provider = Embeddings()
+    EmbeddingIndexer(provider).refresh(pg_factory)
+    monkeypatch.setattr('contest_detective.agent.rag.retrieval.configured_provider', lambda: provider)
+    model = FunctionModel(lambda messages, info: ModelResponse([
+        ToolCallPart('interpret_query', {'keyword': '帮助病人'})]))
+    deps = ToolDeps(pg_factory, model, profile=Profile(identity_kind='student'))
+    workflow = Workflow(model, LLMSettings(_env_file=None, workflow_recall_seconds=30))
+    state = asyncio.run(workflow.prepare(deps, '推荐适合我的比赛', [], RunUsage(), UsageLimits()))
+    assert state.qualified_ids == [target]
+    assert '学生公开赛' in workflow.fallback()
+
+
 @pytest.mark.parametrize('query,attendable,blocked', [
     (ContestQuery(keyword='帮助病人', mode='online'), False, ()),
     (ContestQuery(keyword='帮助病人', date_from='2026-11-01T00:00:00Z'), False, ()),

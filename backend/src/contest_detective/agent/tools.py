@@ -1,11 +1,13 @@
 """工具只调用各领域接口，网页和搜索内容始终视作不可信资料。"""
+from __future__ import annotations
+
 import asyncio
 import inspect
 import logging
 from functools import wraps
 from dataclasses import asdict, dataclass, field, is_dataclass, replace
 from datetime import datetime, timezone
-from typing import Annotated, Callable, Literal
+from typing import Annotated, Callable, Literal, TYPE_CHECKING
 from urllib.parse import urlsplit, urldefrag
 from uuid import uuid4
 
@@ -36,6 +38,9 @@ from contest_detective.research.contracts import SearchExecution
 
 logger = logging.getLogger(__name__)
 MAX_PAGE_CHARS = 16_000
+
+if TYPE_CHECKING:
+    from .workflow.executor import Workflow
 
 
 async def invoke(function, *args, **kwargs):
@@ -99,6 +104,7 @@ class ToolDeps:
     page_failures: dict[str, dict] = field(default_factory=dict)
     page_ranges: dict[str, list[tuple[int, int]]] = field(default_factory=dict)
     repeated_page_reads: int = 0
+    workflow: Workflow | None = None
 
     @property
     def page_reads_exhausted(self):

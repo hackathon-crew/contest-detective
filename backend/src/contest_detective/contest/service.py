@@ -427,7 +427,8 @@ def _sql_deadline_available(field, now):
     return or_(upper > now, and_(upper == now, func.coalesce(precision, 'datetime') != 'day'))
 
 
-def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()):
+def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=(),
+                     modes=(), local_city=None, date_fields=DATE_FIELDS):
     now = _now()
     instant = _instant(now)
     details = ContestDetails
@@ -456,6 +457,11 @@ def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blo
             details.city.ilike(f'%{keyword}%', escape='\\')))
     if q.mode:
         statement = statement.where(details.mode == q.mode)
+    if modes:
+        statement = statement.where(details.mode.in_(modes))
+    if local_city:
+        statement = statement.where(or_(details.mode == 'online', details.city.is_(None),
+            func.replace(details.city, '市', '') == local_city.removesuffix('市')))
     if q.status:
         statement = statement.where(status == q.status)
     if attendable:
@@ -468,7 +474,7 @@ def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blo
             ContestClaim.contest_id == Contest.id, blocked)))
     if q.date_from or q.date_to:
         windows = []
-        for field in DATE_FIELDS:
+        for field in date_fields:
             lower, upper = getattr(details, f'{field}_lower'), getattr(details, f'{field}_upper')
             conditions = [lower.is_not(None)]
             if q.date_from:
@@ -488,13 +494,13 @@ def _query_statement(session: Session, q: ContestQuery, *, attendable=False, blo
         )
 
 
-def candidate_query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()):
+def candidate_query(session: Session, q: ContestQuery, **options):
     """SQL-only candidate IDs share the same filters as paginated sourced results."""
-    return _query_statement(session, q, attendable=attendable, blocked_domains=blocked_domains).with_only_columns(Contest.id)
+    return _query_statement(session, q, **options).with_only_columns(Contest.id)
 
 
-def query(session: Session, q: ContestQuery, *, attendable=False, blocked_domains=()) -> tuple[list[ContestSummary], int]:
-    statement = _query_statement(session, q, attendable=attendable, blocked_domains=blocked_domains)
+def query(session: Session, q: ContestQuery, **options) -> tuple[list[ContestSummary], int]:
+    statement = _query_statement(session, q, **options)
     total = session.scalar(select(func.count()).select_from(statement.order_by(None).subquery()))
     page = statement.limit(q.page_size).offset((q.page - 1) * q.page_size)
     now = _now()

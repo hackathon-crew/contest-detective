@@ -27,7 +27,8 @@ class EmbeddingProvider(Protocol):
 
 class ContestRetriever(Protocol):
     def search(self, session: Session, query: ContestQuery, *, attendable: bool = False,
-               blocked_domains: tuple[str, ...] = ()) -> tuple[list[ContestSummary], int]: ...
+               blocked_domains: tuple[str, ...] = (), recall_limit: int | None = None,
+               **filters) -> tuple[list[ContestSummary], int]: ...
 
 
 class ContestIndexer(Protocol):
