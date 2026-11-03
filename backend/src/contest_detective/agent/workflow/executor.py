@@ -84,6 +84,7 @@ class Workflow:
             '当前明确条件覆盖画像默认偏好，不能改写身份事实。keyword 只取赛事名称或主题，不包含日期、形式、数量。'
             '默认发现数量3；多找几个或越多越好5；明确数字照用。具体赛事查询用detail，比较用comparison。'
             '已绑定赛事就是主对象；新增比较对象名称放comparison_queries，只读。'
+            '未绑定赛事的比较，keyword填首个明确赛事名，comparison_queries填其余赛事名，不把共同主题当主对象。'
             '历史回顾可以ended；找能参加的比赛不能ended。分清报名/提交截止和开始/结束日期。'
             'date_kind=deadline代表任一种截止。日期窗口用北京时间边界。'
             'fields只列用户本轮明确要求回答的事实。不要为了介绍比赛顺手加入奖金、报名入口、场地、开始或结束日期。'
@@ -195,7 +196,9 @@ class Workflow:
                 self.assess(deps, deps.selected_contest)
             if self.state.intent.comparison_queries:
                 self.missing_objects.clear()
-                for keyword in self.state.intent.comparison_queries:
+                primary = self.state.intent.keyword if not deps.selected_contest else None
+                queries = list(dict.fromkeys([*([primary] if primary else []), *self.state.intent.comparison_queries]))
+                for keyword in queries:
                     items, _ = retriever.search(session, ContestQuery(keyword=keyword, page_size=5),
                         blocked_domains=self.filters(deps)['blocked_domains'])
                     key = normalized_name(keyword)
@@ -203,7 +206,10 @@ class Workflow:
                     named.sort(key=lambda item: (normalized_name(item.name) != key, len(item.name)))
                     if named:
                         item = named[0]
-                        self.state.comparison_ids.add(item.id)
+                        if keyword == primary:
+                            self.state.main_id = item.id
+                        else:
+                            self.state.comparison_ids.add(item.id)
                         self.assess(deps, self.details[item.id] if item.id in self.readonly_ids else contests.get(session, item.id))
                     else:
                         self.missing_objects.append(keyword)
@@ -483,11 +489,15 @@ class Workflow:
     def selected_ids(self):
         return self.state.qualified_ids[:self.state.intent.count] if self.discovery else self.state.qualified_ids
 
+    def answer_ids(self):
+        nearby = list(self.state.nearby)
+        return list(dict.fromkeys([*self.selected_ids(), *(nearby[:5] if self.discovery else nearby)]))
+
     def date_facts(self):
         # day 是原文的日历日期；datetime 才换算北京时间，不能把排序锚点当成截止时刻。
         dates = {}
         lines = []
-        for key in self.selected_ids():
+        for key in self.answer_ids():
             item = self.details[key]
             dates[key] = {field: calendar_date(value.value, value.precision)
                 for field, value in item.fields.items() if field in DATE_FIELDS
@@ -497,17 +507,29 @@ class Workflow:
                 lines.append(f'{item.name}的报名截止到作品提交截止相隔{gap}个日历日（不代表开发工期）。')
         main = self.state.main_id
         if self.state.intent.kind == 'comparison':
-            timeline = sorted((day, self.details[key].name, FIELD_LABELS[field])
-                for key, fields in dates.items() for field, day in fields.items())
+            timeline = {}
+            for key, fields in dates.items():
+                for field, day in fields.items():
+                    value = self.details[key].fields[field]
+                    clock = '时刻未说明' if value.precision == 'day' else datetime.fromisoformat(value.value).astimezone(BEIJING).strftime('%H:%M:%S 北京时间')
+                    timeline.setdefault(day, []).append(f'{self.details[key].name}{FIELD_LABELS[field]}（{clock}）')
             if timeline:
-                lines.append('公布日期的先后顺序：' + ' → '.join(f'{day} {name}{label}' for day, name, label in timeline))
+                lines.append('按日历日排列（同日条目顺序不表示时刻先后）：' + ' → '.join(
+                    f'{day}：' + '；'.join(timeline[day]) for day in sorted(timeline)))
             if main in dates:
                 for key, fields in dates.items():
                     if key == main:
                         continue
                     for field in fields.keys() & dates[main].keys():
                         gap = (fields[field] - dates[main][field]).days
-                        relation = f'与{self.details[main].name}相同' if gap == 0 else f'比{self.details[main].name}{"晚" if gap > 0 else "早"}{abs(gap)}个日历日'
+                        other, primary = self.details[key].fields[field], self.details[main].fields[field]
+                        if gap:
+                            relation = f'比{self.details[main].name}{"晚" if gap > 0 else "早"}{abs(gap)}个日历日'
+                        elif other.precision == primary.precision == 'datetime':
+                            left, right = datetime.fromisoformat(other.value), datetime.fromisoformat(primary.value)
+                            relation = f'与{self.details[main].name}为同一时刻' if left == right else f'{"早于" if left < right else "晚于"}{self.details[main].name}'
+                        else:
+                            relation = f'与{self.details[main].name}为同一日历日，精确时刻先后尚不能确定'
                         lines.append(f'{self.details[key].name}的{FIELD_LABELS[field]}{relation}。')
         return lines
 
@@ -521,7 +543,9 @@ class Workflow:
                 continue
             value = item.fields[field]
             if value.value and value.sources and value.level != 'conflict':
-                text = value.value[:10] if field in DATE_FIELDS and value.precision == 'day' else value.value
+                text = value.value
+                if field in DATE_FIELDS:
+                    text = value.value[:10] if value.precision == 'day' else datetime.fromisoformat(value.value).astimezone(BEIJING).strftime('%Y-%m-%d %H:%M:%S（北京时间）')
                 text = {'online': '线上', 'offline': '线下', 'hybrid': '线上线下结合'}.get(text, text)
                 facts.append(FIELD_LABELS.get(field, field) + '：' + text)
         if not gaps and item.id in self.ranks:
@@ -530,7 +554,7 @@ class Workflow:
 
     def fallback(self, deps=None):
         lines = [self.fact_line(self.details[key]) for key in self.selected_ids()]
-        nearby = [self.fact_line(self.details[key], gaps) for key, gaps in list(self.state.nearby.items())[:5]]
+        nearby = [self.fact_line(self.details[key], self.state.nearby[key]) for key in self.answer_ids() if key in self.state.nearby]
         content = ('先找到这些：\n\n' + '\n'.join(lines)) if lines else '按当前条件，暂未找到已经确认适合参加的比赛。'
         if nearby:
             content += '\n\n另外几场可供考虑，关键条件需要留意：\n\n' + '\n'.join(nearby)
@@ -560,7 +584,7 @@ class Workflow:
                 self.state.qualified_ids.remove(key)
             self.state.nearby[key] = ['报名前核对官网最新报名、提交截止与参赛要求']
         fallback = self.fallback(deps)
-        keys = list(dict.fromkeys([*self.selected_ids(), *list(self.state.nearby)[:5]]))
+        keys = self.answer_ids()
         try:
             result = await self.writer.run(json.dumps({'question': self.question,
                 'intent': self.state.intent.model_dump(mode='json'), 'profile': self.profile.model_dump(mode='json'),

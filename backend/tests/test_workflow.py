@@ -105,6 +105,15 @@ def test_bound_contest_can_read_comparison_without_changing_main(session_factory
     assert other in [item['contest']['id'] for item in result['recommendations']]
 
 
+def test_comparison_without_a_bound_card_keeps_both_named_objects(session_factory):
+    main = seed(session_factory, '甲赛事')
+    other = seed(session_factory, '乙赛事')
+    result = run(session_factory, '比较甲赛事和乙赛事',
+        {'kind': 'comparison', 'keyword': '甲赛事', 'comparison_queries': ['乙赛事']})
+    assert {item['contest']['id'] for item in result['recommendations']} == {main, other}
+    assert '甲赛事' in result['content'] and '乙赛事' in result['content']
+
+
 @pytest.mark.parametrize('question', ['两周内截止的线上 AI 比赛', '两周内截止的线上AI比赛'])
 def test_model_failure_still_returns_facts_cards_and_next_action(session_factory, question):
     target = seed(session_factory, 'AI 公开赛')
@@ -139,6 +148,25 @@ def test_comparison_keeps_computed_calendar_gaps_when_writer_fails(session_facto
     assert '乙赛事的作品提交截止比甲赛事晚2个日历日' in content
     assert 'T00:00' not in content
     assert 'AI 应用比赛' in content
+
+
+@pytest.mark.parametrize('comparison_mode', ['online', None])
+def test_comparison_preserves_exact_times_even_when_other_facts_are_unknown(session_factory, comparison_mode):
+    ids = []
+    with session_factory() as session:
+        for name, deadline, mode in [('甲赛事', '2026-10-27T10:00:00Z', 'online'),
+                                     ('乙赛事', '2026-10-27T01:00:00Z', comparison_mode)]:
+            values = {'submission_deadline': deadline, **({'mode': mode} if mode else {})}
+            ids.append(service.save(session, ContestDraft(name=name,
+                page={'url': f'https://events.example/{name}', 'title': name, 'site': '官网', 'is_official': True},
+                claims=[{'field': field, 'value': value, 'excerpt': value} for field, value in values.items()])))
+    result = run(session_factory, '比较甲赛事与乙赛事的提交截止和参赛形式',
+        {'kind': 'comparison', 'comparison_queries': ['乙赛事'],
+         'fields': ['submission_deadline', 'mode']}, contest_id=ids[0], fail='writer')
+    content = result['content']
+    assert '乙赛事的作品提交截止早于甲赛事' in content
+    assert '2026-10-27 09:00' in content and '2026-10-27 18:00' in content
+    assert ('乙赛事' in [item['contest']['name'] for item in result['recommendations']]) == bool(comparison_mode)
 
 
 def test_specific_contest_does_not_force_an_ineligible_recommendation(session_factory):
