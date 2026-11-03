@@ -101,7 +101,7 @@ The local and remote MCP entry points expose read-only contest search, contest d
 
 ### Frontend layers and state
 
-The React app is assembled in `frontend/src/app`, with routes under `pages`, user-facing capabilities under `features`, domain models/API under `entities`, and reusable infrastructure under `shared`. The enforced dependency direction is `app → pages → features → entities → shared`; `pages`, `features`, and `entities` are sliced, so slices at the same layer must not import each other. `frontend/src/architecture.test.ts` is the executable rule—run it through `npm test` when changing module placement or imports.
+The React app is assembled in `frontend/src/app`, with routes under `pages`, user-facing capabilities under `features`, domain models/API under `entities`, and reusable infrastructure under `shared`. The enforced dependency direction is `app → pages → features → entities → shared`; `pages`, `features`, and `entities` are sliced, so slices at the same layer must not import each other. `frontend/src/architecture.test.ts` is the executable rule—run `npm test -- src/architecture.test.ts` when changing module placement or imports.
 
 `shared/api` owns the HTTP and SSE clients and the generated OpenAPI types. Contest entities provide contest queries, date/status formatting, calendar data, and evidence-oriented UI primitives. The detective feature consumes the real `/api/agent/ask` SSE stream and stores conversations in the current browser, scoped by login identity; it is not server-side shared conversation state. App routing preserves background locations so contest details can open as overlays without losing page filters or scroll state.
 
