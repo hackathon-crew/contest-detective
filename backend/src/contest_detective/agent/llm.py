@@ -47,8 +47,9 @@ class GuardedModel(WrapperModel):
             await self.aclose()
 
     async def request(self, messages, model_settings, model_request_parameters):
-        tools_size = len(json.dumps(model_request_parameters.declared_tool_defs, default=str, ensure_ascii=False).encode())
-        messages = fit_messages(messages, self.budget.settings.max_input_tokens - tools_size - 4096)
+        if self.budget.settings.limits_mode == 'local':
+            tools_size = len(json.dumps(model_request_parameters.declared_tool_defs, default=str, ensure_ascii=False).encode())
+            messages = fit_messages(messages, self.budget.settings.max_input_tokens - tools_size - 4096)
         if model_request_parameters.instruction_parts is not None:
             instructions = next(item.instructions for item in reversed(messages) if isinstance(item, ModelRequest))
             model_request_parameters = replace(model_request_parameters,
