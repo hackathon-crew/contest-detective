@@ -235,8 +235,8 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                 </>
               ) : (
                 <>
-                  收录 <b>{browser.all.length}</b> 场黑客松，按截止时间排好。<b>{official}</b>{' '}
-                  场的截止时间对过主办方原文，其余每个日期都标明了出处。
+                  收录 <b>{browser.all.length}</b> 场黑客松，优先展示至少还有 7 天准备时间的比赛。
+                  <b>{official}</b> 场的截止时间对过主办方原文，其余每个日期都标明了出处。
                 </>
               )}
             </p>

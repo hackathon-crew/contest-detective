@@ -1,12 +1,9 @@
-import { addDays, startOfDay } from 'date-fns'
-import { useQuery } from '@tanstack/react-query'
-import { TZDate } from '@date-fns/tz'
 import { Link, useLocation } from 'react-router'
 import {
   ContestCover,
   dateText,
   libraryDate,
-  listAllContests,
+  useContestLibrary,
   modeNames,
   normalizedPrize,
   type ContestSummary,
@@ -53,40 +50,33 @@ function Pick({ contest }: { contest: ContestSummary }) {
   )
 }
 export function WeeklyPicks() {
-  const today = startOfDay(TZDate.tz('Asia/Shanghai'))
-  const filters = {
-    date_from: today.toISOString(),
-    date_to: addDays(today, 7).toISOString(),
-    sort: 'deadline' as const,
-  }
-  const query = useQuery({
-    queryKey: ['weekly-picks', filters],
-    queryFn: () => listAllContests(filters),
-  })
+  const query = useContestLibrary()
   const items = (query.data ?? [])
     .filter((contest) => {
       const date = libraryDate(contest)
       return (
+        contest.status !== 'ended' &&
         normalizedPrize(contest.fields.prize?.value) &&
         date &&
+        date.info.level !== 'conflict' &&
         !date.start &&
-        date.left >= 0 &&
-        date.left <= 7
+        date.left >= 7
       )
     })
+    .sort((a, b) => libraryDate(a)!.left - libraryDate(b)!.left)
     .slice(0, 4)
   return (
     <section className="site-wrap picks" aria-labelledby="picks-title">
       <div className="sec-row">
-        <h2 id="picks-title">本周值得看</h2>
-        <span className="note">本周截止、奖金写明的几场</span>
+        <h2 id="picks-title">可以提前准备</h2>
+        <span className="note">至少还有 7 天、奖金写明的几场</span>
       </div>
       {query.isPending ? (
         <Skeleton />
       ) : query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : !items.length ? (
-        <EmptyState>本周没有比赛节点，去全部赛事看看。</EmptyState>
+        <EmptyState>暂时没有符合条件的比赛，去全部赛事看看。</EmptyState>
       ) : (
         <div className="pick-grid">
           {items.map((contest) => (
