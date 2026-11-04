@@ -147,6 +147,21 @@ describe('筛选计数', () => {
 })
 
 describe('系列', () => {
+  it('准备排序不把已结束或日期冲突的赛事当作有准备余量', () => {
+    const due = field('2026-10-31T00:00:00Z', 'day')
+    const values = [
+      contest('已结束', { submission_deadline: due }, { status: 'ended' }),
+      contest('日期冲突', { submission_deadline: { ...due, level: 'conflict' } }),
+      contest('有余量', { submission_deadline: due }),
+      contest('临期', { submission_deadline: field('2026-10-25T00:00:00Z', 'day') }),
+    ]
+    expect(groupSeries(values, 'preparation', now).map((row) => row.id)).toEqual([
+      '有余量',
+      '临期',
+      '日期冲突',
+      '已结束',
+    ])
+  })
   it('准备排序把至少剩七天的赛事放在临期赛事之前，并保留无日期和过期赛事', () => {
     const values = [
       contest('明天截止', { submission_deadline: field('2026-10-25T00:00:00Z', 'day') }),

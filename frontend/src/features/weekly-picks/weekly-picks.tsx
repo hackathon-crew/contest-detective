@@ -54,7 +54,14 @@ export function WeeklyPicks() {
   const items = (query.data ?? [])
     .filter((contest) => {
       const date = libraryDate(contest)
-      return normalizedPrize(contest.fields.prize?.value) && date && !date.start && date.left >= 7
+      return (
+        contest.status !== 'ended' &&
+        normalizedPrize(contest.fields.prize?.value) &&
+        date &&
+        date.info.level !== 'conflict' &&
+        !date.start &&
+        date.left >= 7
+      )
     })
     .sort((a, b) => libraryDate(a)!.left - libraryDate(b)!.left)
     .slice(0, 4)

@@ -312,8 +312,13 @@ export function groupSeries(
           .sort()[0] ?? null,
     })
   }
-  const rank = (row: LibraryRow) =>
-    !row.key ? 2 : row.key.left < 0 ? 3 : sort === 'preparation' && row.key.left >= 7 ? 0 : 1
+  const rank = (row: LibraryRow) => {
+    if (sort === 'preparation') {
+      if (row.contests.every((contest) => contest.status === 'ended')) return 3
+      if (row.key?.info.level === 'conflict') return 2
+    }
+    return !row.key ? 2 : row.key.left < 0 ? 3 : sort === 'preparation' && row.key.left >= 7 ? 0 : 1
+  }
   return rows.sort((a, b) =>
     sort === 'start'
       ? Number(!a.start) - Number(!b.start) || (a.start ?? '').localeCompare(b.start ?? '')
