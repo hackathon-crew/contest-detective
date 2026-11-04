@@ -13,6 +13,7 @@ class LLMSettings(BaseSettings):
     enabled: bool = False
     limits_mode: Literal['local', 'external'] = 'local'
     deepseek_options: bool = True
+    reasoning_effort: str | None = None
     api_key: SecretStr = SecretStr('')
     base_url: str = 'https://api.deepseek.com'
     model: str = 'deepseek-flash'

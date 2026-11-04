@@ -89,6 +89,8 @@ class GuardedModel(WrapperModel):
         settings.update(max_retries=0, timeout=120)
         if config.limits_mode == 'local':
             settings['max_tokens'] = config.max_tokens
+        if config.reasoning_effort is not None:
+            settings['openai_reasoning_effort'] = config.reasoning_effort
         if config.deepseek_options:
             settings['extra_body'] = {'thinking': {'type': 'disabled'}}
         response = await self.wrapped.request(messages, settings, model_request_parameters)
