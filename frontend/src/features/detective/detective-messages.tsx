@@ -158,10 +158,12 @@ export function DetectiveMessage({
   turn,
   recommendationAction,
   saveAction,
+  onProvideLink,
 }: {
   turn: DetectiveTurn
   recommendationAction?: (contest: ContestRecommendation['contest']) => ReactNode
   saveAction?: ReactNode
+  onProvideLink?: () => void
 }) {
   const paced = useStreamPacer(turn.content, turn.status === 'running')
   return (
@@ -244,10 +246,12 @@ export function DetectiveMessage({
             <Button
               variant="outline"
               size="sm"
-              onClick={() =>
-                document
-                  .querySelector<HTMLTextAreaElement>('textarea[aria-label="问侦探"]')
-                  ?.focus()
+              onClick={
+                onProvideLink ??
+                (() =>
+                  document
+                    .querySelector<HTMLTextAreaElement>('textarea[aria-label="问侦探"]')
+                    ?.focus())
               }
             >
               贴官网链接

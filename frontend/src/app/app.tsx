@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
   BrowserRouter,
@@ -22,6 +23,8 @@ import { AuthPage } from '@/features/auth'
 import { AppearanceControl } from '@/features/appearance'
 import { queryClient } from './query-client'
 import { RouteMotionSurface } from './route-motion'
+
+const LivePage = lazy(() => import('@/pages/live/live-page'))
 
 export function App() {
   return (
@@ -59,7 +62,7 @@ export function AppRoutes() {
       />
     )
   }
-  if (/^\/detective(?:\/|$)/.test(location.pathname) && isPending) {
+  if (/^\/(?:detective|live)(?:\/|$)/.test(location.pathname) && isPending) {
     return (
       <main aria-busy="true">
         <p role="status">正在确认登录状态…</p>
@@ -72,6 +75,22 @@ export function AppRoutes() {
         <Routes location={background ?? location}>
           <Route path="/account" element={<Navigate to="/account/profile" replace />} />
           <Route path="/account/:tab" element={<AccountPage />} />
+          <Route
+            path="/live"
+            element={
+              <Suspense fallback={<main aria-busy="true" />}>
+                <LivePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/live/:conversationId"
+            element={
+              <Suspense fallback={<main aria-busy="true" />}>
+                <LivePage />
+              </Suspense>
+            }
+          />
           <Route path="/detective" element={<DetectivePage />} />
           <Route path="/detective/:conversationId" element={<DetectivePage />} />
           <Route path="/contests" element={<ContestsPage contestId={contestId} />} />

@@ -170,6 +170,7 @@ export function Preview() {
         reload: async () => {},
         storageError: false,
         profileRequest: null,
+        clearProfileRequest: () => {},
         resumeWithProfile: () => null,
         loginRequest: null,
         clearLoginRequest: () => {},
