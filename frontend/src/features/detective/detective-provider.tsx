@@ -58,7 +58,9 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
     conversationId: string
     question: string
   } | null>(null)
-  const activeId = useMatch('/detective/:conversationId')?.params.conversationId
+  const textId = useMatch('/detective/:conversationId')?.params.conversationId
+  const liveId = useMatch('/live/:conversationId')?.params.conversationId
+  const activeId = textId ?? liveId
 
   const reload = useCallback(
     async (signal?: AbortSignal) => {
@@ -116,7 +118,8 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
   }, [remoteRunning, reload])
 
   useEffect(() => {
-    for (const session of sessions) {
+    // 渲染快照可能已过时；完成的回合不能再被旧的恢复效果启动。
+    for (const session of snapshot.current) {
       const turn = session.turns.find((item) => item.status === 'running' && item.investigationId)
       if (!turn || requests.current.has(session.id)) continue
       const controller = new AbortController()
@@ -438,6 +441,7 @@ export function DetectiveProvider({ scope, children }: { scope: string; children
         stop,
         retry,
         profileRequest,
+        clearProfileRequest: () => setProfileRequest(null),
         resumeWithProfile,
         loginRequest,
         clearLoginRequest: () => setLoginRequest(null),

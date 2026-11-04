@@ -11,9 +11,11 @@ export function RouteMotionSurface({ children }: { children: ReactNode }) {
     ? 'account'
     : /^\/detective(?:\/|$)/.test(pathname)
       ? 'detective'
-      : pathname === '/contests'
-        ? 'contests'
-        : 'home'
+      : /^\/live(?:\/|$)/.test(pathname)
+        ? 'live'
+        : pathname === '/contests'
+          ? 'contests'
+          : 'home'
   useEffect(() => {
     // 换页面从顶部开始；详情和查询条件仍属于原页，保留它们的滚动位置。
     document.documentElement.scrollTop = 0

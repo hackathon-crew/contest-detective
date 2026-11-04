@@ -14,6 +14,7 @@ export interface ProfileRequest {
 interface DetectiveStore {
   loginRequest: { conversationId: string; question: string } | null
   clearLoginRequest: () => void
+  clearProfileRequest: () => void
   profileRequest: ProfileRequest | null
   resumeWithProfile: (profile: Profile) => string | null
   sessions: DetectiveSession[]

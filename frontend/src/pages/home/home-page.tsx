@@ -86,7 +86,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
   const [scrolled, setScrolled] = useState(window.scrollY > 40)
   const [speaking, setSpeaking] = useState(false)
   const input = useRef<HTMLTextAreaElement>(null)
-  const octopus = useRef<HTMLDivElement>(null)
+  const octopus = useRef<HTMLAnchorElement>(null)
   const wall = useRef<HTMLElement>(null)
   const navigate = useNavigate()
   const { send } = useDetective()
@@ -219,13 +219,19 @@ export function HomePage({ contestId }: { contestId?: string }) {
                   >
                     按我的画像推荐
                   </button>
+                  <Link className="chip" to="/live" state={{ liveQuestion: question }}>
+                    和它面对面聊
+                  </Link>
                 </div>
               </div>
-              <div
+              <Link
+                to="/live"
+                state={{ liveQuestion: question }}
+                aria-label="和八爪鱼面对面聊"
                 className="octo-slot hero-octo"
                 ref={octopus}
                 data-speaking={speaking}
-                title="点一下它"
+                title="和它面对面聊"
               >
                 <Suspense
                   fallback={
@@ -240,7 +246,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 >
                   <Octopus size={size} mood={speaking ? 'talk' : 'search'} />
                 </Suspense>
-              </div>
+              </Link>
             </div>
             <button
               type="button"
