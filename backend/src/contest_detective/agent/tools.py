@@ -201,7 +201,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                               page_size: Annotated[int, Field(ge=1, le=100)] = 20) -> dict:
         """查询候选名片；未传 status 时遵循账户默认截止过滤开关，无账户时启用。显式 status 可查历史。
 
-        keyword 可用自然语言描述想找的比赛，Postgres 按关键词与语义相关性合并候选。
+        keyword 用赛事名称或一个主题词，广泛推荐时可留空；多个词可能要求同时匹配，空结果可去掉关键词。
+        Postgres 合并关键词与语义候选。报名推荐通常不用指定 status，进行中的比赛也可能仍可报名。
         page/page_size 翻页，每页最多 100 场。答复具体字段前先用 get_contest 读出处。
         """
         def retrieve():
