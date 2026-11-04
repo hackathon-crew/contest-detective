@@ -10,6 +10,7 @@ from contest_detective.agent.config import LLMSettings
 from contest_detective.agent.loop import Investigator
 from contest_detective.agent.guest import GuestInvestigations
 from contest_detective.agent.schemas import AskRequest
+from contest_detective.agent.rag.retrieval import HybridRetriever
 from contest_detective.contest.schemas import ContestDraft
 from contest_detective.contest import service
 from contest_detective.system.user.schemas import Profile
@@ -112,6 +113,19 @@ def test_comparison_without_a_bound_card_keeps_both_named_objects(session_factor
         {'kind': 'comparison', 'keyword': '甲赛事', 'comparison_queries': ['乙赛事']})
     assert {item['contest']['id'] for item in result['recommendations']} == {main, other}
     assert '甲赛事' in result['content'] and '乙赛事' in result['content']
+
+
+def test_named_detail_excludes_semantic_neighbors_without_a_bound_card(session_factory, monkeypatch):
+    monkeypatch.setattr(HybridRetriever, 'search', lambda self, session, query, **_: service.query(
+        session, query.model_copy(update={'keyword': None})))
+    main = seed(session_factory, 'Neural Storm')
+    seed(session_factory, 'Hack Storm', extra={'eligibility': '在校生'}, deadline=None)
+    seed(session_factory, '另一场 AI 比赛')
+    result = run(session_factory, '查 Neural Storm 的参赛形式和作品提交截止',
+        {'kind': 'detail', 'keyword': 'Neural Storm', 'fields': ['mode', 'submission_deadline']})
+    assert [item['contest']['id'] for item in result['recommendations']] == [main]
+    assert 'Hack Storm' not in result['content'] and '另一场 AI 比赛' not in result['content']
+    assert {source['title'] for source in result['sources']} == {'Neural Storm'}
 
 
 @pytest.mark.parametrize('question', ['两周内截止的线上 AI 比赛', '两周内截止的线上AI比赛'])

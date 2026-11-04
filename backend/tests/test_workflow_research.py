@@ -9,6 +9,7 @@ from contest_detective.agent.config import LLMSettings
 from contest_detective.agent.guest import GuestInvestigations
 from contest_detective.agent.loop import Investigator
 from contest_detective.agent.schemas import AskRequest
+from contest_detective.agent.rag.retrieval import HybridRetriever
 from contest_detective.contest import service
 from contest_detective.contest.schemas import ContestDraft
 from contest_detective.system.user.schemas import Profile
@@ -68,6 +69,23 @@ def test_empty_library_can_discover_and_save_a_new_contest(session_factory):
     assert '新发现的 AI 比赛' in payload['content']
     assert calls == ['web_search', 'fetch_page', 'record_page']
     assert [event.payload['tool'] for event in events if event.type == 'step'][-1] == 'compose_answer'
+
+
+def test_missing_named_detail_can_be_found_online_without_using_a_neighbor(session_factory, monkeypatch):
+    monkeypatch.setattr(HybridRetriever, 'search', lambda self, session, query, **_: service.query(
+        session, query.model_copy(update={'keyword': None})))
+    seed(session_factory, 'Hack Storm')
+    def record(url, **kwargs):
+        return seed(session_factory, 'Neural Storm')
+    payload, calls, _, _ = research(session_factory, '查 Neural Storm 的参赛形式和作品提交截止',
+        {'kind': 'detail', 'keyword': 'Neural Storm', 'fields': ['mode', 'submission_deadline']}, [
+        ('web_search', {'query': 'Neural Storm 官网'}), ('fetch_page', {'url': URL}),
+        ('record_page', {'url': URL})],
+        search=lambda *_, **__: [{'title': 'Neural Storm', 'url': URL, 'site': '官网'}],
+        fetch=lambda _: 'Neural Storm 线上举办，10月30日作品提交截止。', record=record)
+    assert [item['contest']['name'] for item in payload['recommendations']] == ['Neural Storm']
+    assert 'Hack Storm' not in payload['content']
+    assert calls == ['web_search', 'fetch_page', 'record_page']
 
 
 def test_one_complete_contest_does_not_stop_a_request_for_more_options(session_factory):

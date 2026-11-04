@@ -194,7 +194,7 @@ class Workflow:
         with deps.session_factory() as session:
             if deps.selected_contest:
                 self.assess(deps, deps.selected_contest)
-            if self.state.intent.comparison_queries:
+            if self.state.intent.comparison_queries or (self.state.intent.kind == 'detail' and self.state.intent.keyword):
                 self.missing_objects.clear()
                 primary = self.state.intent.keyword if not deps.selected_contest else None
                 queries = list(dict.fromkeys([*([primary] if primary else []), *self.state.intent.comparison_queries]))
@@ -246,6 +246,8 @@ class Workflow:
         if not deps.allows_contest(detail):
             return
         self.details[detail.id] = detail
+        self.missing_objects = [name for name in self.missing_objects
+            if normalized_name(name) not in normalized_name(detail.name)]
         deps.observe_contest(detail)
         deps.contest_ids.add(detail.id)
         evidence = contests.evidence(detail, list(detail.fields)).model_dump(mode='json')
@@ -341,6 +343,9 @@ class Workflow:
         for key in self.related_ids:
             if normalized_name(self.details[key].name) in normalized:
                 return key
+        for name in self.missing_objects:
+            if normalized_name(name) in normalized:
+                return 'named:' + normalized_name(name)
         if not self.discovery:
             return None
         keyword = self.state.intent.keyword
