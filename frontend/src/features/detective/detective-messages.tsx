@@ -201,8 +201,7 @@ export function DetectiveMessage({
           {turn.status === 'running' &&
             !turn.content &&
             !turn.plan &&
-            (!turn.trace.length ||
-              turn.trace.at(-1)?.type === 'observation') && (
+            (!turn.trace.length || turn.trace.at(-1)?.type === 'observation') && (
               <p className="detective-thinking" role="status">
                 {turn.trace.length ? '正在查找资料' : '正在看你的问题'}
               </p>
