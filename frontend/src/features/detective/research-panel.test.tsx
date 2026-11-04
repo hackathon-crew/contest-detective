@@ -72,7 +72,7 @@ it('工具步骤在流式回答期间自动展开，官网和网页线索保留�
   expect(within(clues).getByText('待核实')).toBeTruthy()
   expect(within(panel()).getByLabelText('已完成')).toBeTruthy()
   await emit('answer', { content: '已经核对报名要求。', sources: [official, clue] })
-  const footer = screen.getByRole('contentinfo', { name: '可信来源' })
+  const footer = screen.getByRole('contentinfo', { name: '引用来源' })
   expect(footer.querySelector('img')?.getAttribute('src')).toContain('ethglobal.com')
 })
 
@@ -88,6 +88,27 @@ it('手动收起后后续步骤不再打扰，同一对话仍能手动打开', a
   fireEvent.click(screen.getByRole('button', { name: '研究面板' }))
   expect(within(panel()).getByRole('link', { name: /ETHGlobal 官方规则/ })).toBeTruthy()
   expect(within(panel()).getByLabelText('进行中')).toBeTruthy()
+})
+
+it('回答完成后研究面板与正文下方只保留最终引用', async () => {
+  renderDetective({}, '/detective')
+  send()
+  await emit('step', { tool: 'get_contest', label: '读取赛事出处' })
+  const unused = { title: '未使用的原文', url: 'https://example.net/unused', site: '其他来源' }
+  await emit('observation', {
+    tool: 'get_contest',
+    summary: '已读来源',
+    sources: [official, clue, unused],
+  })
+  await emit('answer', {
+    content: `[官方规则](${official.url})和[活动报道](${clue.url})`,
+    sources: [official, clue],
+  })
+  expect(within(panel()).queryByRole('link', { name: /未使用的原文/ })).toBeNull()
+  expect(within(panel()).getAllByRole('link')).toHaveLength(2)
+  expect(
+    within(screen.getByRole('contentinfo', { name: '引用来源' })).getAllByRole('link'),
+  ).toHaveLength(2)
 })
 
 it('新对话重新允许自动展开且不带入上一段的来源', async () => {

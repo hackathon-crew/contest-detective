@@ -24,7 +24,7 @@ def test_bound_investigation_keeps_binding_and_stops_repeated_failed_pages(sessi
 
     def respond(messages, info):
         tools = {t.name for t in info.function_tools}
-        assert not tools & {'search_contests', 'match_contests'}
+        assert 'match_contests' not in tools
         rounds.append(tools)
         results = [p for m in messages for p in m.parts if isinstance(p, ToolReturnPart)]
         if not results:
@@ -33,7 +33,7 @@ def test_bound_investigation_keeps_binding_and_stops_repeated_failed_pages(sessi
             return ModelResponse([ToolCallPart('fetch_page', {'url': url}, tool_call_id=f'{len(rounds)}-{i}')
                                   for i in range(2 if batched else 1)])
         assert any(p.tool_name == 'get_contest' and p.content['contest']['id'] == contest_id for p in results)
-        return ModelResponse([TextPart('库内规则面向高校学生，官网本轮无法读取，最新资格尚未核实。')])
+        return ModelResponse([TextPart('库内[规则](https://host.example/rules)面向高校学生，官网本轮无法读取，最新资格尚未核实。')])
 
     async def consume():
         return [e async for e in Investigator(FunctionModel(respond), session_factory=session_factory,

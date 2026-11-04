@@ -5,7 +5,7 @@ import { DetectiveMessage } from './detective-messages'
 import { parseTrace } from './events'
 
 afterEach(cleanup)
-it('来源标签只在回复下方展示已核实的官方出处，过滤线索并去重', () => {
+it('回复下方保留最终引用中的官方、转载与过期出处并去重', () => {
   const official = {
     title: '活动规则',
     url: 'https://ethglobal.com/events/example',
@@ -54,12 +54,12 @@ it('来源标签只在回复下方展示已核实的官方出处，过滤线索�
       }}
     />,
   )
-  expect(screen.getAllByRole('link')).toHaveLength(1)
+  expect(screen.getAllByRole('link')).toHaveLength(4)
   const link = screen.getByRole('link', { name: /活动规则/ })
   expect(link.getAttribute('href')).toBe(official.url)
   expect(link.closest('details')).toBeNull()
-  expect(link.closest('footer')?.getAttribute('aria-label')).toBe('可信来源')
-  expect(screen.queryByText('转载活动')).toBeNull()
-  expect(screen.queryByText('未知出处')).toBeNull()
-  expect(screen.queryByText('过期规则')).toBeNull()
+  expect(screen.getByRole('contentinfo', { name: '引用来源' }).contains(link)).toBe(true)
+  expect(screen.getByRole('link', { name: /转载活动/ })).toBeTruthy()
+  expect(screen.getByRole('link', { name: /未知出处/ })).toBeTruthy()
+  expect(screen.getByRole('link', { name: /过期规则/ })).toBeTruthy()
 })

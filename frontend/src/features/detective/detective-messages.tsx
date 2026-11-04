@@ -24,18 +24,16 @@ import type { ReactNode } from 'react'
 import type { ContestRecommendation } from './conversation'
 
 function Sources({ items }: { items: TraceSource[] }) {
-  const trusted = [
+  const cited = [
     ...new Map(
-      items
-        .filter((source) => source.is_official === true && !source.stale && safeUrl(source.url))
-        .map((source) => [source.url, source]),
+      items.filter((source) => safeUrl(source.url)).map((source) => [source.url, source]),
     ).values(),
   ]
-  if (!trusted.length) return null
+  if (!cited.length) return null
   return (
-    <footer aria-label="可信来源">
+    <footer aria-label="引用来源">
       <ul className="detective-sources">
-        {trusted.map((source, index) => (
+        {cited.map((source, index) => (
           <li key={`${source.url}-${index}`}>
             <a href={source.url} target="_blank" rel="noreferrer">
               <SourceIcon url={source.url} />
@@ -201,19 +199,9 @@ export function DetectiveMessage({
           {turn.status === 'running' &&
             !turn.content &&
             !turn.plan &&
-            (!turn.trace.length ||
-              turn.trace.at(-1)?.type === 'observation' ||
-              turn.trace.some(
-                (event) => event.type === 'step' && event.tool === 'compose_answer',
-              )) && (
+            (!turn.trace.length || turn.trace.at(-1)?.type === 'observation') && (
               <p className="detective-thinking" role="status">
-                {turn.trace.some(
-                  (event) => event.type === 'step' && event.tool === 'compose_answer',
-                )
-                  ? '正在整理回复'
-                  : turn.trace.length
-                    ? '正在查找资料'
-                    : '正在看你的问题'}
+                {turn.trace.length ? '正在查找资料' : '正在看你的问题'}
               </p>
             )}
           {(!turn.report || turn.report.status !== 'complete') && paced.visible && (

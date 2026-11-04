@@ -65,7 +65,8 @@ def test_external_context_reaches_provider_intact_and_records_actual_usage(sessi
         assert row.status == 'settled' and row.cache_miss_tokens == 24000 and row.output_tokens == 500
 
 
-def test_external_wire_request_leaves_output_capacity_to_the_provider(session_factory, monkeypatch):
+@pytest.mark.parametrize('reasoning_effort', [None, 'medium'])
+def test_external_wire_request_leaves_output_capacity_to_the_provider(session_factory, monkeypatch, reasoning_effort):
     import json
     import httpx
     from contest_detective.agent import llm
@@ -80,11 +81,13 @@ def test_external_wire_request_leaves_output_capacity_to_the_provider(session_fa
     async def exercise():
         async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
             monkeypatch.setattr(llm, 'AsyncOpenAI', lambda **kwargs: real_client(**kwargs, http_client=client))
-            model = llm.create_model(config(max_tokens=4096), session_factory=session_factory)
+            model = llm.create_model(config(max_tokens=4096, model='gpt-6-luna', deepseek_options=False,
+                                           reasoning_effort=reasoning_effort), session_factory=session_factory)
             model.balance_reader = no_balance_endpoint
             return await Agent(model, model_settings={'max_tokens': 8192}).run('整理完整的参赛信息')
     assert asyncio.run(exercise()).output == '资料已完整整理。'
     assert 'max_tokens' not in sent[0] and 'max_completion_tokens' not in sent[0]
+    assert sent[0].get('reasoning_effort') == reasoning_effort
     with session_factory() as session:
         row = session.scalars(select(LLMUsage)).one()
         assert row.status == 'settled' and row.output_tokens == 6000

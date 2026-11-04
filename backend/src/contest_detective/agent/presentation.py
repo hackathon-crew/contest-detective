@@ -1,6 +1,7 @@
 """查证中断时只使用实际读过的资料；模型指令不进入用户回答。"""
 from datetime import datetime
-from urllib.parse import quote
+import re
+from urllib.parse import quote, urlsplit
 
 from contest_detective.contest.schemas import BEIJING, DATE_FIELDS
 
@@ -18,6 +19,25 @@ FIELD_NAMES = {
 
 def link(title, url):
     return f'[{markdown_text(title)}]({quote(url, safe=":/?&=#%+;,@~.-_")})'
+
+
+def display_date(value, precision):
+    return (value[:10] + '（日精度）' if precision == 'day' else
+            datetime.fromisoformat(value.replace('Z', '+00:00')).astimezone(BEIJING).strftime('%Y-%m-%d %H:%M（北京时间）'))
+
+
+def answer_sources(deps, answer):
+    cited = {url.rstrip('。，,;.!?') for url in re.findall(r'https?://[^\s<>()\[\]"]+', answer)}
+    sources = []
+    for url, source in deps.sources.items():
+        page = urlsplit(url)
+        # 列表适配器的来源可以追溯卡片字段，但不能充作回答中的赛事原文。
+        directory = '/api/' in page.path or page.netloc.lower().startswith('api.') or (
+            page.hostname in {'devpost.com', 'www.devpost.com'} and page.path.rstrip('/') == '/hackathons') or (
+            page.hostname in {'mlh.com', 'mlh.io'} and page.path.startswith('/seasons/'))
+        if url in cited and url in deps.opened_urls and not directory:
+            sources.append(source.model_dump())
+    return sources
 
 
 def interrupted_answer(deps):

@@ -48,13 +48,13 @@ def response(parts):
     return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
 
 
-@pytest.mark.parametrize('answer,day', [
-    ('按北京时间2026-10-24计算，明天是10月25日。\n' + CITED, False),
-    (f'作品提交截止是2026-10-27 16:00，报名截止仍未核实。\n原文：{URL}', False),
-    (f'作品提交截止为10月27日；16:00是否为报名截止，目前无法确认。\n[原文]({URL})', True),
-    ('报名截止未核实，[报名页](https://organizer.example/registration)尚未读取。', False),
+@pytest.mark.parametrize('answer,day,sources', [
+    ('按北京时间2026-10-24计算，明天是10月25日。\n' + CITED, False, [URL]),
+    (f'作品提交截止是2026-10-27 16:00，报名截止仍未核实。\n原文：{URL}', False, [URL]),
+    (f'作品提交截止为10月27日；16:00是否为报名截止，目前无法确认。\n[原文]({URL})', True, [URL]),
+    ('报名截止未核实，[报名页](https://organizer.example/registration)尚未读取。', False, []),
 ])
-def test_partial_answers_complete_without_format_corrections(session_factory, answer, day):
+def test_partial_answers_complete_without_format_corrections(session_factory, answer, day, sources):
     contest_id = seed(session_factory, day=day)
     calls = 0
     def respond(_, info):
@@ -67,7 +67,7 @@ def test_partial_answers_complete_without_format_corrections(session_factory, an
 
     assert [event.type for event in events] == ['step', 'observation', 'answer']
     assert events[-1].payload['content'] == answer
-    assert [source['url'] for source in events[-1].payload['sources']] == [URL]
+    assert [source['url'] for source in events[-1].payload['sources']] == sources
     with session_factory() as session:
         record = session.scalars(select(Investigation)).one()
         assert record.status == 'completed' and record.answer == answer

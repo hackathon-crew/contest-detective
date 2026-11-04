@@ -174,7 +174,7 @@ class BriefDeadline(BriefDate):
 
 
 class ContestBrief(BaseModel):
-    """供挑选候选的有界名片；完整字段与出处仍从详情读取。"""
+    """供挑选候选的名片；资格保留原文，字段出处仍从详情读取。"""
     id: str
     name: str
     status: ContestStatus
@@ -184,6 +184,7 @@ class ContestBrief(BaseModel):
     city: str | None
     mode: Literal['online', 'offline', 'hybrid'] | None
     prize: str | None
+    eligibility: str | None = None
     themes: list[str]
 
 

@@ -37,71 +37,10 @@ def seed(session_factory):
     return ids
 
 
-def local_match_model(seen, *, arguments=None, instructions=None):
-    def respond(messages, info):
-        if instructions is not None:
-            instructions.append(info.instructions)
-        results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
-        if not results:
-            return ModelResponse([ToolCallPart('match_contests', arguments or {})])
-        result = results[-1].content
-        seen.append(result)
-        text = result['items'][0]['reason'] if result['items'] else result['summary']
-        return ModelResponse([answer_part(text)])
-    return FunctionModel(respond)
-
-
 def ask(investigator, **kwargs):
     async def collect():
         return [event async for event in investigator.ask('我适合哪场比赛', **kwargs)]
     return asyncio.run(collect())
-
-
-def test_anonymous_confirmed_profile_uses_real_matching_and_repository_evidence(session_factory):
-    ids, seen = seed(session_factory), []
-    profile = Profile(skills=['Python'], topics=['agent'], github_evidence=[{
-        'name': 'weekend-agent', 'url': 'https://github.com/person/weekend-agent', 'topics': ['agent'],
-    }])
-    events = ask(Investigator(local_match_model(seen), session_factory=session_factory), profile=profile)
-    assert events[-1].type == 'answer'
-    assert seen[0]['items'][0]['contest']['id'] == ids['Python agent 黑客松']
-    assert '1 个仓库' in events[-1].payload['content']
-    assert events[-1].payload['sources'] == [{
-        'title': 'weekend-agent', 'url': 'https://github.com/person/weekend-agent', 'site': 'GitHub',
-        'is_official': False, 'stale': False,
-    }]
-
-
-def test_explicit_tool_preferences_override_the_confirmed_account_profile(session_factory):
-    ids, seen = seed(session_factory), []
-    investigator = Investigator(local_match_model(seen, arguments={'profile': {'skills': ['Rust']}}),
-        session_factory=session_factory, profile_reader=lambda _: {'skills': ['Python']})
-    events = ask(investigator, user_id='confirmed-user')
-    assert events[-1].type == 'answer'
-    assert seen[0]['items'][0]['contest']['id'] == ids['Rust 黑客松']
-    assert 'Rust' in events[-1].payload['content']
-
-
-def test_confirmed_account_preferences_override_guest_request_preferences(session_factory):
-    ids, seen = seed(session_factory), []
-    investigator = Investigator(local_match_model(seen), session_factory=session_factory,
-                                profile_reader=lambda _: {'skills': ['Python']})
-    events = ask(investigator, user_id='confirmed-user', profile=Profile(skills=['Rust']))
-    assert events[-1].type == 'answer'
-    assert seen[0]['items'][0]['contest']['id'] == ids['Python agent 黑客松']
-
-
-def test_no_effective_profile_requests_confirmation_without_personalization(session_factory):
-    seed(session_factory)
-    seen, instructions = [], []
-    empty = Profile(github='person', available_time='周末有空')
-    investigator = Investigator(local_match_model(seen, instructions=instructions), session_factory=session_factory,
-                                profile_reader=lambda _: empty.model_dump(mode='json'))
-    events = ask(investigator, user_id='empty-account')
-    assert events[-1].type == 'answer'
-    assert seen[0]['items'] == []
-    assert '先确认画像' in events[-1].payload['content']
-    assert all('用户已确认的画像' not in text for text in instructions)
 
 
 def test_authenticated_http_profile_reaches_the_investigation(client, session_factory):
@@ -160,5 +99,5 @@ def test_local_function_model_factory_runs_the_profile_journey(session_factory):
         response = client.post('/agent/ask', json={
             'question': '我适合哪场比赛', 'profile': {'skills': ['Rust']},
         })
-    assert '"tool": "match_contests"' in response.text
+    assert '"tool": "search_contests"' in response.text
     assert 'event: answer' in response.text and 'Rust 黑客松' in response.text

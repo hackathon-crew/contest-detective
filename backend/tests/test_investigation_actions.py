@@ -40,7 +40,7 @@ def test_invalid_saved_key_is_not_retried_and_links_to_settings(session_factory)
     assert '重新保存' in events[-1].payload['message']
 
 
-def test_no_database_or_web_results_offers_official_link_action(session_factory):
+def test_no_database_or_web_results_delivers_the_models_answer_without_an_extra_action(session_factory):
     def respond(messages, _):
         results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
         if not results:
@@ -51,8 +51,8 @@ def test_no_database_or_web_results_offers_official_link_action(session_factory)
     async def search(*_, **__):
         return []
     events = collect(Investigator(FunctionModel(respond), session_factory=session_factory, search=search))
-    assert events[-1].payload['action'] == 'provide_link'
-    assert '官网链接' in events[-1].payload['content']
+    assert not events[-1].payload.get('action')
+    assert events[-1].payload['content'] == '尚未找到比赛资料。'
 
 
 def test_unexpected_failure_keeps_read_material_and_offers_retry_with_stack(session_factory, caplog):

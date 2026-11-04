@@ -23,12 +23,12 @@ def ask(investigator, **kwargs):
     return asyncio.run(collect())
 
 
-def test_selected_contest_skips_discovery_and_keeps_web_research(session_factory, selected_contest):
+def test_selected_contest_keeps_comparison_discovery_and_web_research(session_factory, selected_contest):
     calls = []
     def respond(messages, info):
         tools = {tool.name for tool in info.function_tools}
-        assert not tools.intersection({'search_contests', 'match_contests'})
-        assert {'get_contest', 'web_search', 'fetch_page', 'record_page'} <= tools
+        assert 'match_contests' not in tools
+        assert {'search_contests', 'get_contest', 'web_search', 'fetch_page', 'record_page'} <= tools
         if not calls:
             assert selected_contest in info.instructions
             calls.append('get_contest')
@@ -54,7 +54,8 @@ def test_invalid_selected_contest_fails_without_a_model_call(session_factory):
 
 def test_unbound_questions_keep_discovery_tools(session_factory):
     def respond(_, info):
-        assert {'search_contests', 'match_contests'} <= {tool.name for tool in info.function_tools}
+        assert 'search_contests' in {tool.name for tool in info.function_tools}
+        assert 'match_contests' not in {tool.name for tool in info.function_tools}
         return ModelResponse([TextPart('请看比赛资料')])
     assert ask(Investigator(FunctionModel(respond), session_factory=session_factory))[-1].type == 'answer'
 
@@ -104,26 +105,31 @@ def test_account_history_keeps_binding_in_followups_and_retries(authenticated_cl
         'question': '那需要组队吗？', 'conversation_id': 'selected', 'turn_id': 'two'}).text
     history = browser.get('/account/conversations/selected').json()['data']
     assert [turn['request']['contest']['id'] for turn in history['turns']] == [selected_contest, selected_contest]
-    assert all('search_contests' not in tools and 'match_contests' not in tools for tools in exposed)
+    assert all('search_contests' in tools and 'match_contests' not in tools for tools in exposed)
     assert 'event: answer' in browser.post('/agent/ask', json={
         'question': '找其他线上比赛', 'conversation_id': 'selected', 'turn_id': 'three', 'contest_id': None}).text
-    assert 'search_contests' in exposed[-1] and 'match_contests' in exposed[-1]
+    assert 'search_contests' in exposed[-1] and 'match_contests' not in exposed[-1]
     assert browser.get('/account/conversations/selected').json()['data']['turns'][-1]['request'].get('contest') is None
     retry = {**first, 'investigation_id': str(uuid4()), 'retry_of': retry_id}
     retry.pop('contest_id')
     assert 'event: answer' in browser.post('/agent/ask', json=retry).text
-    assert 'search_contests' not in exposed[-1]
+    assert 'search_contests' in exposed[-1]
     assert browser.get('/account/conversations/selected').json()['data']['turns'][0]['request']['contest']['id'] == selected_contest
 
 
-def test_get_contest_cannot_switch_away_from_selection(session_factory, selected_contest):
+def test_get_contest_can_read_a_comparison_without_changing_the_selection(session_factory, selected_contest):
+    with session_factory() as session:
+        other = service.save(session, ContestDraft(name='比较对象', page={
+            'url': 'https://other.example/rules', 'site': '主办方', 'title': '另一场规则', 'is_official': True,
+        }, claims=[{'field': 'prize', 'value': '五千元', 'excerpt': '奖金五千元'}]))
     attempted = False
     def respond(messages, _):
         nonlocal attempted
         if not attempted:
             attempted = True
-            return ModelResponse([ToolCallPart('get_contest', {'contest_id': 'another', 'fields': ['prize']})])
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': other, 'fields': ['prize']})])
         returned = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)][-1]
-        assert 'contest' not in returned.content
+        assert returned.content['contest']['id'] == other
+        assert returned.content['contest']['fields']['prize']['value'] == '五千元'
         return ModelResponse([TextPart('继续围绕已选比赛查证')])
     assert ask(Investigator(FunctionModel(respond), session_factory=session_factory), contest_id=selected_contest)[-1].type == 'answer'

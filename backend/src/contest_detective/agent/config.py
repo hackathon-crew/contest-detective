@@ -13,6 +13,7 @@ class LLMSettings(BaseSettings):
     enabled: bool = False
     limits_mode: Literal['local', 'external'] = 'local'
     deepseek_options: bool = True
+    reasoning_effort: str | None = None
     api_key: SecretStr = SecretStr('')
     base_url: str = 'https://api.deepseek.com'
     model: str = 'deepseek-flash'
@@ -22,11 +23,6 @@ class LLMSettings(BaseSettings):
     max_input_tokens: int = Field(default=65536, ge=8192, le=131072)
     request_limit: int = Field(default=48, ge=1)
     tool_calls_limit: int = Field(default=64, ge=1)
-    workflow_enabled: bool = False
-    workflow_stall_rounds: int = Field(default=2, ge=1)
-    workflow_recall_limit: int = Field(default=500, ge=1)
-    workflow_recall_steps: int = Field(default=3, ge=1)
-    workflow_recall_seconds: float = Field(default=5, gt=0)
     normalization_prompt_path: str = 'templates/contest_normalization.jinja2'
 
 
