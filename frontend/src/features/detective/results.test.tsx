@@ -131,3 +131,15 @@ it('keeps ordinary markdown replies unchanged', () => {
   )
   expect(screen.queryByRole('region', { name: '推荐比赛' })).toBeNull()
 })
+
+it('renders Chinese bold labels beside punctuation without changing code or escaped stars', () => {
+  show({
+    ...turn,
+    content:
+      '**我建议的选题：**做一个小产品。\n\n这是**“新项目”**要求。\n\n`**代码：**保持原样` 和 \\*\\*原样\\*\\*。',
+  })
+  expect(screen.getByText('我建议的选题：', { selector: 'strong' })).toBeTruthy()
+  expect(screen.getByText('“新项目”', { selector: 'strong' })).toBeTruthy()
+  expect(screen.getByText('**代码：**保持原样', { selector: 'code' })).toBeTruthy()
+  expect(screen.getByText(/和 \*\*原样\*\*/)).toBeTruthy()
+})

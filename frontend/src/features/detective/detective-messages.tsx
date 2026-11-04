@@ -1,5 +1,6 @@
 import { Check, ChevronRight, LoaderCircle, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import remarkCjkFriendly from 'remark-cjk-friendly'
 import { Link } from 'react-router'
 import { Button } from '@/shared/ui/button'
 import { ContestReference } from './contest-reference'
@@ -209,6 +210,7 @@ export function DetectiveMessage({
               <ReactMarkdown
                 urlTransform={(url) => safeUrl(url) ?? ''}
                 components={markdownComponents}
+                remarkPlugins={[remarkCjkFriendly]}
                 rehypePlugins={paced.revealedAt.length ? [[rehypeStreamReveal, paced]] : []}
               >
                 {paced.visible}
