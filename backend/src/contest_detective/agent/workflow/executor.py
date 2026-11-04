@@ -15,6 +15,7 @@ from pydantic_ai.exceptions import ModelAPIError, UnexpectedModelBehavior, Usage
 
 from contest_detective.contest import service as contests
 from contest_detective.contest.identity import normalized_name
+from contest_detective.contest.models import Contest
 from contest_detective.contest.schemas import ContestQuery, DATE_FIELDS, DEADLINE_FIELDS, Source, calendar_date
 from contest_detective.contest.verification import resolve
 from contest_detective.framework.exceptions import BizException
@@ -194,14 +195,19 @@ class Workflow:
         with deps.session_factory() as session:
             if deps.selected_contest:
                 self.assess(deps, deps.selected_contest)
-            if self.state.intent.comparison_queries:
+            if self.state.intent.comparison_queries or (self.state.intent.kind == 'detail' and self.state.intent.keyword):
                 self.missing_objects.clear()
                 primary = self.state.intent.keyword if not deps.selected_contest else None
                 queries = list(dict.fromkeys([*([primary] if primary else []), *self.state.intent.comparison_queries]))
                 for keyword in queries:
-                    items, _ = retriever.search(session, ContestQuery(keyword=keyword, page_size=5),
-                        blocked_domains=self.filters(deps)['blocked_domains'])
                     key = normalized_name(keyword)
+                    blocked = self.filters(deps)['blocked_domains']
+                    exact = session.scalar(contests.candidate_query(session, ContestQuery(), blocked_domains=blocked)
+                        .where(Contest.normalized_name == key).limit(1))
+                    if exact:
+                        items = [session.get(Contest, exact)]
+                    else:
+                        items, _ = retriever.search(session, ContestQuery(keyword=keyword, page_size=5), blocked_domains=blocked)
                     named = [item for item in items if key in normalized_name(item.name)]
                     named.sort(key=lambda item: (normalized_name(item.name) != key, len(item.name)))
                     if named:
@@ -246,6 +252,8 @@ class Workflow:
         if not deps.allows_contest(detail):
             return
         self.details[detail.id] = detail
+        self.missing_objects = [name for name in self.missing_objects
+            if normalized_name(name) not in normalized_name(detail.name)]
         deps.observe_contest(detail)
         deps.contest_ids.add(detail.id)
         evidence = contests.evidence(detail, list(detail.fields)).model_dump(mode='json')
@@ -341,6 +349,9 @@ class Workflow:
         for key in self.related_ids:
             if normalized_name(self.details[key].name) in normalized:
                 return key
+        for name in self.missing_objects:
+            if normalized_name(name) in normalized:
+                return 'named:' + normalized_name(name)
         if not self.discovery:
             return None
         keyword = self.state.intent.keyword

@@ -49,16 +49,17 @@ def test_external_request_errors_keep_the_unconfirmed_reservation(session_factor
         assert row.status == 'reserved' and row.cost_cny == row.reserved_cny > 0
 
 
-def test_external_context_is_trimmed_and_still_records_actual_usage(session_factory):
+def test_external_context_reaches_provider_intact_and_records_actual_usage(session_factory):
     question = '赛事原文：在校大学生可参加。' * 3000
+    instructions = '已取得的研究证据。' * 1000
     def respond(messages, info):
-        assert len(messages[0].parts[0].content.encode()) < 8192
-        assert messages[0].parts[0].content.startswith('赛事原文：')
+        assert messages[0].parts[0].content == question
+        assert info.instructions == instructions
         return ModelResponse([TextPart('已核对赛事出处。')],
                              usage=RequestUsage(input_tokens=24000, output_tokens=500))
     model = GuardedModel(FunctionModel(respond), Budget(session_factory, config(max_input_tokens=8192)),
                          balance_reader=no_balance_endpoint)
-    assert asyncio.run(Agent(model).run(question)).output == '已核对赛事出处。'
+    assert asyncio.run(Agent(model, instructions=instructions).run(question)).output == '已核对赛事出处。'
     with session_factory() as session:
         row = session.scalars(select(LLMUsage)).one()
         assert row.status == 'settled' and row.cache_miss_tokens == 24000 and row.output_tokens == 500
