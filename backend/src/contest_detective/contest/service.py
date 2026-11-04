@@ -148,7 +148,7 @@ def brief(item: ContestSummary, *, now: datetime | None = None) -> ContestBrief:
         city=fields['city'].value[:80] if fields['city'].value is not None else None,
         mode=fields['mode'].value,
         prize=fields['prize'].value[:160] if fields['prize'].value is not None else None,
-        eligibility=fields['eligibility'].value[:500] if fields['eligibility'].value is not None else None,
+        eligibility=fields['eligibility'].value,
         themes=[theme[:40] for theme in item.themes[:6]])
 
 

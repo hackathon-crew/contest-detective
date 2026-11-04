@@ -239,7 +239,7 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
         elif calls == 1:
             parts = [ToolCallPart('record_page', {'url': url})]
         else:
-            parts = [answer_part('新赛事已入库。')]
+            parts = [answer_part(f'新赛事在杭州举办。[原文]({url})')]
         return ModelResponse(parts, usage=RequestUsage(input_tokens=100, output_tokens=20))
     async def enough():
         return Decimal('100')
@@ -248,7 +248,7 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
     events = run(Investigator(model, session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
     assert events[1].payload['summary'] == '赛事已写回比赛库'
-    assert events[-1].payload['sources'] == []
+    assert [source['url'] for source in events[-1].payload['sources']] == [url]
     with session_factory() as session:
         rows = session.scalars(select(LLMUsage)).all()
         assert len(rows) == 3 and all(row.status == 'settled' for row in rows)

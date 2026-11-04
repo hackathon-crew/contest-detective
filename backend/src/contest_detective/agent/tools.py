@@ -238,6 +238,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         sources = contest_sources(selected)
         ctx.deps.contest_ids.add(item.id)
         ctx.deps.remember(sources)
+        ctx.deps.opened_urls.update(source['url'] for source in sources)
         payload = selected.model_dump(mode='json',
             exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
         read = ctx.deps.read_contests.setdefault(item.id, {'fields': {}})
@@ -416,6 +417,7 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                     context['registration_url'] = registration.value
         contest_id = await retry_transient(lambda: invoke(ctx.deps.record, url, extractor=extract,
                                  session_factory=ctx.deps.session_factory, **context), errors=WEB_ERRORS)
+        ctx.deps.opened_urls.add(url)
         sources = []
         if contest_id:
             with ctx.deps.session_factory() as session:

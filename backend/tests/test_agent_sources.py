@@ -12,7 +12,12 @@ from contest_detective.contest.schemas import ContestDraft
 from contest_detective.contest.service import save
 
 
-def test_final_sources_only_keep_read_and_cited_event_pages(session_factory):
+@pytest.mark.parametrize('listing_url', [
+    'https://devpost.com/api/hackathons?page=2',
+    'https://api.organizer.example/events/42',
+    'https://organizer.example/api/events/42',
+])
+def test_final_sources_only_keep_read_and_cited_event_pages(session_factory, listing_url):
     with session_factory() as session:
         contest_id = save(session, ContestDraft(name='周末黑客松', page={
             'url': 'https://organizer.example/rules', 'title': '参赛规则', 'site': '主办方', 'is_official': True,
@@ -21,7 +26,7 @@ def test_final_sources_only_keep_read_and_cited_event_pages(session_factory):
             'url': 'https://hackertrip.space/event', 'title': '活动转载', 'site': 'HackerTrip', 'is_official': False,
         }, claims=[{'field': 'eligibility', 'value': '大学生', 'excerpt': '大学生可参加'}]), contest_id=contest_id)
         save(session, ContestDraft(name='周末黑客松', page={
-            'url': 'https://devpost.com/api/hackathons?page=2',
+            'url': listing_url,
             'title': 'Devpost official hackathon listing, page 2', 'site': 'Devpost', 'is_official': True,
         }, claims=[{'field': 'eligibility', 'value': '大学生', 'excerpt': '大学生可参加'}]), contest_id=contest_id)
         session.commit()
@@ -36,7 +41,7 @@ def test_final_sources_only_keep_read_and_cited_event_pages(session_factory):
             return ModelResponse([ToolCallPart('fetch_page', {'url': 'https://mlh.com/seasons/2027/events'})])
         return ModelResponse([answer_part('大学生可以参加：[参赛规则](https://organizer.example/rules)。'
             '[未读线索](https://directory.example/event) '
-            '[列表](https://devpost.com/api/hackathons?page=2) '
+            f'[列表]({listing_url}) '
             '[目录](https://mlh.com/seasons/2027/events)')])
 
     investigator = Investigator(FunctionModel(respond), session_factory=session_factory,

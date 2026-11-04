@@ -23,18 +23,14 @@ def link(title, url):
 
 def answer_sources(deps, answer):
     cited = {url.rstrip('。，,;.!?') for url in re.findall(r'https?://[^\s<>()\[\]"]+', answer)}
-    read = set(deps.fetched_pages) | {source['url'] for contest in deps.read_contests.values()
-        for value in contest['fields'].values() for source in value['sources']}
     sources = []
     for url, source in deps.sources.items():
         page = urlsplit(url)
         # 列表适配器的来源可以追溯卡片字段，但不能充作回答中的赛事原文。
-        directory = (page.hostname in {'devpost.com', 'www.devpost.com'}
-            and page.path.rstrip('/') in {'/api/hackathons', '/hackathons'}) or (
-            page.hostname in {'mlh.com', 'mlh.io'} and page.path.startswith('/seasons/')) or (
-            page.hostname == 'hackertrip.space' and page.path.rstrip('/') == '/api/hackathons') or (
-            page.hostname == 'events.waytoagi.com' and page.path.rstrip('/') == '/api/events')
-        if url in cited and url in read and not directory:
+        directory = '/api/' in page.path or page.netloc.lower().startswith('api.') or (
+            page.hostname in {'devpost.com', 'www.devpost.com'} and page.path.rstrip('/') == '/hackathons') or (
+            page.hostname in {'mlh.com', 'mlh.io'} and page.path.startswith('/seasons/'))
+        if url in cited and url in deps.opened_urls and not directory:
             sources.append(source.model_dump())
     return sources
 

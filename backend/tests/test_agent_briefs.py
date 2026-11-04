@@ -27,7 +27,7 @@ def deps(session_factory, monkeypatch):
                 {'field': 'start_at', 'value': (now + timedelta(days=index + 1)).date().isoformat(),
                  'precision': 'day', 'excerpt': '开赛日期'},
                 {'field': 'prize', 'value': '¥20,000', 'excerpt': '奖金两万元'},
-                {'field': 'eligibility', 'value': '仅限 McGill 和 UW 学生；' + '完整资格说明。' * 100,
+                {'field': 'eligibility', 'value': '完整资格说明。' * 100 + '仅限 McGill 和 UW 学生。',
                  'excerpt': '仅限 McGill 和 UW 学生'},
             ]))
     return ToolDeps(session_factory=session_factory, model=FunctionModel(lambda *_: ModelResponse([TextPart('完成')])),
@@ -61,8 +61,7 @@ def test_retrieval_returns_briefs_with_pagination_and_keeps_server_side_evidence
     assert all('fields' not in card and 'sources' not in card and 'coverage' not in card for card in cards)
     assert cards[0]['start_at'] == {'value': '2026-10-28', 'precision': 'day'}
     assert cards[0]['prize'] == '¥20,000'
-    assert cards[0]['eligibility'].startswith('仅限 McGill 和 UW 学生；')
-    assert len(cards[0]['eligibility']) == 500
+    assert cards[0]['eligibility'].endswith('仅限 McGill 和 UW 学生。')
     assert deps.contest_ids == {card['id'] for card in cards}
     assert all(len(item['fields']) == 17 for item in deps.observed_contests.values())
     assert all(item['fields']['prize']['value'] == '¥20,000' for item in deps.observed_contests.values())
