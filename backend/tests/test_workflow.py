@@ -128,6 +128,16 @@ def test_named_detail_excludes_semantic_neighbors_without_a_bound_card(session_f
     assert {source['title'] for source in result['sources']} == {'Neural Storm'}
 
 
+def test_exact_named_detail_is_not_hidden_by_earlier_summary_matches(session_factory):
+    for index in range(5):
+        seed(session_factory, f'交流会 {index}', summary='介绍 Neural Storm 的经验', deadline='2026-10-25')
+    main = seed(session_factory, 'Neural Storm')
+    result = run(session_factory, '查 Neural Storm 的作品提交截止',
+        {'kind': 'detail', 'keyword': 'Neural Storm', 'fields': ['submission_deadline']})
+    assert [item['contest']['id'] for item in result['recommendations']] == [main]
+    assert {source['title'] for source in result['sources']} == {'Neural Storm'}
+
+
 @pytest.mark.parametrize('question', ['两周内截止的线上 AI 比赛', '两周内截止的线上AI比赛'])
 def test_model_failure_still_returns_facts_cards_and_next_action(session_factory, question):
     target = seed(session_factory, 'AI 公开赛')
