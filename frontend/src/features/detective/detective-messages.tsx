@@ -202,18 +202,9 @@ export function DetectiveMessage({
             !turn.content &&
             !turn.plan &&
             (!turn.trace.length ||
-              turn.trace.at(-1)?.type === 'observation' ||
-              turn.trace.some(
-                (event) => event.type === 'step' && event.tool === 'compose_answer',
-              )) && (
+              turn.trace.at(-1)?.type === 'observation') && (
               <p className="detective-thinking" role="status">
-                {turn.trace.some(
-                  (event) => event.type === 'step' && event.tool === 'compose_answer',
-                )
-                  ? '正在整理回复'
-                  : turn.trace.length
-                    ? '正在查找资料'
-                    : '正在看你的问题'}
+                {turn.trace.length ? '正在查找资料' : '正在看你的问题'}
               </p>
             )}
           {(!turn.report || turn.report.status !== 'complete') && paced.visible && (

@@ -31,7 +31,9 @@ function researchFor(turns: readonly DetectiveTurn[]) {
             .filter((source) => publicReportUrl(source.url))
             .map((source) => source.url),
         ])
-      : undefined
+      : turn.status === 'completed'
+        ? new Set(turn.sources.map((source) => source.url))
+        : undefined
     for (const [index, event] of turn.trace.entries()) {
       if (event.type === 'step') {
         steps.push({
@@ -73,7 +75,6 @@ function researchFor(turns: readonly DetectiveTurn[]) {
             !safeUrl(source.url) ||
             (finalSources && (!publicReportUrl(source.url) || !finalSources.has(source.url)))
           ) {
-            if (finalSources) sources.delete(source.url)
             continue
           }
           // 搜索和正文读取没有核实身份，和后端 remember 一样保留已知来源的等级。

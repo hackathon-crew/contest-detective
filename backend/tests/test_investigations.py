@@ -97,19 +97,19 @@ def test_ten_contest_query_can_read_every_source_before_answering(session_factor
 
 
 @pytest.mark.parametrize('corrected', [True, False])
-def test_tool_argument_corrections_allow_a_real_match_but_stop_after_three_retries(session_factory, corrected):
+def test_tool_argument_corrections_allow_a_real_read_but_stop_after_three_retries(session_factory, corrected):
     contest_id = seed(session_factory)
     calls = 0
     def respond(messages, info):
         nonlocal calls
         calls += 1
         if calls <= 3 or not corrected:
-            return ModelResponse([ToolCallPart('match_contests', {'profile': {'identity_kind': '大学生'}},
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id, 'fields': ['大学生']},
                                                tool_call_id=f'bad-{calls}')])
         if calls == 4:
-            return ModelResponse([ToolCallPart('match_contests', {'profile': {'identity_kind': 'student'}})])
+            return ModelResponse([ToolCallPart('get_contest', {'contest_id': contest_id, 'fields': ['mode']})])
         results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
-        assert results[-1].content['items'][0]['contest']['id'] == contest_id
+        assert results[-1].content['contest']['fields']['mode']['value'] == 'online'
         return ModelResponse([answer_part('已按在校生条件筛选赛事。')])
     events = run(Investigator(FunctionModel(respond), session_factory=session_factory), '适合大学生的黑客松')
     assert events[-1].type == ('answer' if corrected else 'error'), events[-1].payload
@@ -248,7 +248,7 @@ def test_record_page_extracts_through_the_same_guarded_model(session_factory):
     events = run(Investigator(model, session_factory=session_factory, record=record))
     assert events[-1].type == 'answer'
     assert events[1].payload['summary'] == '赛事已写回比赛库'
-    assert events[-1].payload['sources'][0]['url'] == url
+    assert events[-1].payload['sources'] == []
     with session_factory() as session:
         rows = session.scalars(select(LLMUsage)).all()
         assert len(rows) == 3 and all(row.status == 'settled' for row in rows)

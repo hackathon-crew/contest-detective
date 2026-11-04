@@ -94,17 +94,6 @@ def test_explicit_history_still_respects_blocked_source_domains(session_factory,
     assert call_tool(session_factory, 'get_contest', {'contest_id': contest_id}, preferences=preferences)['contest'] is None
 
 
-@pytest.mark.parametrize('exclude_ended', [True, False])
-def test_matching_keeps_its_own_attendance_filter(session_factory, exclude_ended):
-    with session_factory() as session:
-        contest_id = seed(session, '未来 Python 赛事', start_at=('2026-10-29', 'day'))
-        seed(session, '往期比赛', start_at=('2026-10-01', 'day'), end_at=('2026-10-02', 'day'))
-        seed(session, '报名已过', start_at=('2026-10-29', 'day'), registration_deadline=('2026-10-23', 'day'))
-    result = call_tool(session_factory, 'match_contests', {'profile': {'skills': ['Python']}},
-                       preferences=SearchPreferences(exclude_ended=exclude_ended))
-    assert result['total'] == 1 and result['items'][0]['contest']['id'] == contest_id
-
-
 @pytest.mark.parametrize(('clock', 'total'), [('2026-10-27T15:59:59Z', 1), ('2026-10-27T16:00:00Z', 0)])
 def test_day_deadline_closes_at_the_end_of_its_beijing_day(session_factory, clock, total):
     with session_factory() as session:

@@ -36,7 +36,7 @@ def test_loop_limits_can_be_loaded_from_configuration(monkeypatch):
 def test_budget_boundary_returns_the_models_answer_from_read_evidence(session_factory, request_limit, tool_calls_limit, structured):
     contest_id = seed(session_factory)
     seen = []
-    answer = '规则已写明奖金为一万元；报名截止还没有核实。'
+    answer = '[规则](https://host.example/rules)已写明奖金为一万元；报名截止还没有核实。'
 
     def respond(messages, info):
         prompts = (info.instructions or '') + '\n'.join(

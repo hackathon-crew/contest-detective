@@ -90,6 +90,17 @@ it('手动收起后后续步骤不再打扰，同一对话仍能手动打开', a
   expect(within(panel()).getByLabelText('进行中')).toBeTruthy()
 })
 
+it('回答完成后研究面板与正文下方只保留最终引用', async () => {
+  renderDetective({}, '/detective')
+  send()
+  await emit('step', { tool: 'get_contest', label: '读取赛事出处' })
+  await emit('observation', { tool: 'get_contest', summary: '已读来源', sources: [official, clue] })
+  await emit('answer', { content: `[官方规则](${official.url})`, sources: [official] })
+  expect(within(panel()).queryByRole('link', { name: /活动报道/ })).toBeNull()
+  expect(within(panel()).getAllByRole('link')).toHaveLength(1)
+  expect(within(screen.getByRole('contentinfo', { name: '可信来源' })).getAllByRole('link')).toHaveLength(1)
+})
+
 it('新对话重新允许自动展开且不带入上一段的来源', async () => {
   renderDetective({}, '/detective')
   send('第一段查证')

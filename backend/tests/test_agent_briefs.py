@@ -27,6 +27,8 @@ def deps(session_factory, monkeypatch):
                 {'field': 'start_at', 'value': (now + timedelta(days=index + 1)).date().isoformat(),
                  'precision': 'day', 'excerpt': '开赛日期'},
                 {'field': 'prize', 'value': '¥20,000', 'excerpt': '奖金两万元'},
+                {'field': 'eligibility', 'value': '仅限 McGill 和 UW 学生；' + '完整资格说明。' * 100,
+                 'excerpt': '仅限 McGill 和 UW 学生'},
             ]))
     return ToolDeps(session_factory=session_factory, model=FunctionModel(lambda *_: ModelResponse([TextPart('完成')])),
                     profile=Profile(skills=['Python']))
@@ -48,32 +50,33 @@ def call_tool(deps, name, arguments):
             if isinstance(part, ToolReturnPart)]
 
 
-@pytest.mark.parametrize('tool', ['search_contests', 'match_contests'])
-def test_retrieval_returns_briefs_with_pagination_and_keeps_server_side_evidence(deps, tool):
-    first = call_tool(deps, tool, {'page': 1, 'page_size': 20})[-1].content
+def test_retrieval_returns_briefs_with_pagination_and_keeps_server_side_evidence(deps):
+    first = call_tool(deps, 'search_contests', {'page': 1, 'page_size': 20})[-1].content
     assert first['total'] == 21 and first['page'] == 1 and first['page_size'] == 20
     assert first['has_more'] is True and len(first['items']) == 20
-    second = call_tool(deps, tool, {'page': 2, 'page_size': 20})[-1].content
+    second = call_tool(deps, 'search_contests', {'page': 2, 'page_size': 20})[-1].content
     assert second['has_more'] is False and len(second['items']) == 1
-    cards = [item['contest'] if tool == 'match_contests' else item for item in first['items'] + second['items']]
+    cards = first['items'] + second['items']
     assert len({card['id'] for card in cards}) == 21
     assert all('fields' not in card and 'sources' not in card and 'coverage' not in card for card in cards)
     assert cards[0]['start_at'] == {'value': '2026-10-28', 'precision': 'day'}
     assert cards[0]['prize'] == '¥20,000'
+    assert cards[0]['eligibility'].startswith('仅限 McGill 和 UW 学生；')
+    assert len(cards[0]['eligibility']) == 500
     assert deps.contest_ids == {card['id'] for card in cards}
     assert all(len(item['fields']) == 17 for item in deps.observed_contests.values())
     assert all(item['fields']['prize']['value'] == '¥20,000' for item in deps.observed_contests.values())
     assert deps.sources == {}
-    if tool == 'search_contests':
-        assert all(item['fields']['prize']['sources'] for item in deps.observed_contests.values())
-    else:
-        assert first['items'][0]['score'] == 2
-        assert 'Python' in first['items'][0]['reason']
+    assert all(item['fields']['prize']['sources'] for item in deps.observed_contests.values())
 
 
-@pytest.mark.parametrize('tool', ['search_contests', 'match_contests'])
-def test_retrieval_rejects_page_size_above_twenty_before_observing_contests(deps, tool):
-    results = call_tool(deps, tool, {'page_size': 21})
+def test_retrieval_can_return_up_to_a_hundred_candidates(deps):
+    result = call_tool(deps, 'search_contests', {'page_size': 100})[-1].content
+    assert len(result['items']) == 21 and result['has_more'] is False
+
+
+def test_retrieval_rejects_page_size_above_a_hundred_before_observing_contests(deps):
+    results = call_tool(deps, 'search_contests', {'page_size': 101})
     assert len(results) == 1 and results[0].outcome == 'retried'
     assert results[0].content[0]['type'] == 'less_than_equal'
     assert deps.contest_ids == set() and deps.observed_contests == {} and deps.sources == {}

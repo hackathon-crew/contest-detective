@@ -25,9 +25,7 @@ def respond(messages, info):
     question = next((part.content for message in messages for part in message.parts if isinstance(part, UserPromptPart)), '')
     results = [part for message in messages for part in message.parts if isinstance(part, ToolReturnPart)]
     if not results:
-        if '适合' in question:
-            return ModelResponse([ToolCallPart('match_contests', {}, tool_call_id='match')])
-        args = {}
+        args = {'keyword': 'Rust'} if 'Rust' in info.instructions else {}
         if '线上' in question:
             args['mode'] = 'online'
         if '周末' in question:
@@ -36,20 +34,16 @@ def respond(messages, info):
             args.update(date_from=saturday.isoformat(), date_to=(saturday + timedelta(days=2, seconds=-1)).isoformat())
         return ModelResponse([ToolCallPart('search_contests', args, tool_call_id='list')])
     result = results[-1]
-    if result.tool_name in {'search_contests', 'match_contests'}:
-        matched = result.tool_name == 'match_contests'
+    if result.tool_name == 'search_contests':
         items = result.content['items']
         if not items:
-            return ModelResponse([answer_part(result.content['summary'] if matched else '比赛库中暂未找到符合条件的赛事。')])
-        first = items[0]['contest'] if matched else items[0]
+            return ModelResponse([answer_part('比赛库中暂未找到符合条件的赛事。')])
+        first = items[0]
         return ModelResponse([ToolCallPart('get_contest', {'contest_id': first['id']}, tool_call_id='detail')])
     detail = result.content.get('contest')
     if not detail:
         return ModelResponse([answer_part('比赛资料未找到。')])
     lines = [detail['name']]
-    matching = next((part for part in results if part.tool_name == 'match_contests'), None)
-    if matching and matching.content['items']:
-        lines.append(matching.content['items'][0]['reason'])
     for field, label in NAMES.items():
         value = detail['fields'].get(field, {})
         if value.get('value') and value.get('sources'):

@@ -184,6 +184,7 @@ class ContestBrief(BaseModel):
     city: str | None
     mode: Literal['online', 'offline', 'hybrid'] | None
     prize: str | None
+    eligibility: str | None = None
     themes: list[str]
 
 

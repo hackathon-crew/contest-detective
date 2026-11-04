@@ -1,6 +1,7 @@
 """查证中断时只使用实际读过的资料；模型指令不进入用户回答。"""
 from datetime import datetime
-from urllib.parse import quote
+import re
+from urllib.parse import quote, urlsplit
 
 from contest_detective.contest.schemas import BEIJING, DATE_FIELDS
 
@@ -18,6 +19,24 @@ FIELD_NAMES = {
 
 def link(title, url):
     return f'[{markdown_text(title)}]({quote(url, safe=":/?&=#%+;,@~.-_")})'
+
+
+def answer_sources(deps, answer):
+    cited = {url.rstrip('。，,;.!?') for url in re.findall(r'https?://[^\s<>()\[\]"]+', answer)}
+    read = set(deps.fetched_pages) | {source['url'] for contest in deps.read_contests.values()
+        for value in contest['fields'].values() for source in value['sources']}
+    sources = []
+    for url, source in deps.sources.items():
+        page = urlsplit(url)
+        # 列表适配器的来源可以追溯卡片字段，但不能充作回答中的赛事原文。
+        directory = (page.hostname in {'devpost.com', 'www.devpost.com'}
+            and page.path.rstrip('/') in {'/api/hackathons', '/hackathons'}) or (
+            page.hostname in {'mlh.com', 'mlh.io'} and page.path.startswith('/seasons/')) or (
+            page.hostname == 'hackertrip.space' and page.path.rstrip('/') == '/api/hackathons') or (
+            page.hostname == 'events.waytoagi.com' and page.path.rstrip('/') == '/api/events')
+        if url in cited and url in read and not directory:
+            sources.append(source.model_dump())
+    return sources
 
 
 def interrupted_answer(deps):
