@@ -85,7 +85,9 @@ export function useContestBrowser(
       date: parseAsString,
       date_from: parseAsString,
       date_to: parseAsString,
-      sort: parseAsStringLiteral(['deadline', 'start'] as const).withDefault('deadline'),
+      sort: parseAsStringLiteral(['preparation', 'deadline', 'start'] as const).withDefault(
+        'preparation',
+      ),
       view: parseAsStringLiteral(['list', 'calendar', 'cal'] as const).withDefault('list'),
       page: parseAsInteger.withDefault(1),
       month: parseAsString,

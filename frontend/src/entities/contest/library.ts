@@ -278,7 +278,7 @@ export function contestDayMap(
 }
 export function groupSeries(
   contests: LibraryContest[],
-  sort: 'deadline' | 'start',
+  sort: 'preparation' | 'deadline' | 'start',
   now = new Date(),
 ): LibraryRow[] {
   const groups = new Map<string, LibraryContest[]>(),
@@ -312,11 +312,12 @@ export function groupSeries(
           .sort()[0] ?? null,
     })
   }
-  const rank = (row: LibraryRow) => (!row.key ? 1 : row.key.left >= 0 ? 0 : 2)
+  const rank = (row: LibraryRow) =>
+    !row.key ? 2 : row.key.left < 0 ? 3 : sort === 'preparation' && row.key.left >= 7 ? 0 : 1
   return rows.sort((a, b) =>
     sort === 'start'
       ? Number(!a.start) - Number(!b.start) || (a.start ?? '').localeCompare(b.start ?? '')
       : rank(a) - rank(b) ||
-        (rank(a) === 2 ? b.key!.left - a.key!.left : rank(a) === 0 ? a.key!.left - b.key!.left : 0),
+        (rank(a) === 3 ? b.key!.left - a.key!.left : a.key && b.key ? a.key.left - b.key.left : 0),
   )
 }

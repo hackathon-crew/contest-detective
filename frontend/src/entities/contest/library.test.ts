@@ -147,6 +147,25 @@ describe('筛选计数', () => {
 })
 
 describe('系列', () => {
+  it('准备排序把至少剩七天的赛事放在临期赛事之前，并保留无日期和过期赛事', () => {
+    const values = [
+      contest('明天截止', { submission_deadline: field('2026-10-25T00:00:00Z', 'day') }),
+      contest('十天后截止', { submission_deadline: field('2026-11-03T00:00:00Z', 'day') }),
+      contest('六天后截止', { submission_deadline: field('2026-10-30T00:00:00Z', 'day') }),
+      contest('七天后截止', { submission_deadline: field('2026-10-31T00:00:00Z', 'day') }),
+      contest('日期未知'),
+      contest('已经截止', { submission_deadline: field('2026-10-23T00:00:00Z', 'day') }),
+    ]
+    expect(groupSeries(values, 'preparation', now).map((row) => row.id)).toEqual([
+      '七天后截止',
+      '十天后截止',
+      '明天截止',
+      '六天后截止',
+      '日期未知',
+      '已经截止',
+    ])
+    expect(groupSeries(values, 'deadline', now)[0]?.id).toBe('明天截止')
+  })
   it('只按临时主办方与标题规则归组，过滤后仍可显示单个城市', () => {
     const values = [
       contest(

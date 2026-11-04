@@ -89,6 +89,7 @@ export function ContestBrowser({
           </button>
           <div className="seg" role="group" aria-label="排序">
             {[
+              ['preparation', '准备时间优先'],
               ['deadline', '截止最近'],
               ['start', '开赛最早'],
             ].map(([sort, label]) => (
@@ -96,7 +97,9 @@ export function ContestBrowser({
                 type="button"
                 key={sort}
                 aria-pressed={params.sort === sort}
-                onClick={() => void setParams({ sort: sort as 'deadline' | 'start', page: 1 })}
+                onClick={() =>
+                  void setParams({ sort: sort as 'preparation' | 'deadline' | 'start', page: 1 })
+                }
               >
                 {label}
               </button>
