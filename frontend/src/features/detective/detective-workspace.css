@@ -306,32 +306,20 @@
   background: var(--color-scrim);
   animation: detective-page-in 140ms var(--ease-out) both;
 }
-.detective-workspace__main:has(.detective-conversation[data-empty='false']) {
-  margin-top: 0;
-}
-.detective-workspace__main:has(.detective-conversation[data-empty='false'])
-  .detective-workspace__header {
-  position: relative;
-  inset: auto;
-}
 .detective-conversation[data-empty='false'] {
   display: grid;
-  grid-template-columns: 136px minmax(0, 1fr);
+  grid-template-columns: 136px minmax(0, 1fr) 136px;
   gap: 24px;
-  width: min(100%, calc(var(--chat-measure) + 160px));
+  width: min(100%, calc(var(--chat-measure) + 320px));
   margin-inline: auto;
   padding-inline: 24px;
-}
-.detective-conversation[data-empty='false'] .detective-conversation__scroll {
-  padding-top: 0;
-  scroll-padding-top: var(--chat-padding);
 }
 .detective-mascot {
   min-width: 0;
 }
 .detective-mascot__inner {
   position: sticky;
-  top: 24px;
+  top: calc(var(--chat-site-header) + var(--chat-header) + 24px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -442,10 +430,22 @@
   }
 }
 @media (max-width: 760px) {
+  .detective-workspace__main:has(.detective-conversation[data-empty='false']) {
+    margin-top: 0;
+  }
+  .detective-workspace__main:has(.detective-conversation[data-empty='false'])
+    .detective-workspace__header {
+    position: relative;
+    inset: auto;
+  }
   .detective-conversation[data-empty='false'] {
     display: flex;
     gap: 0;
     padding-inline: 0;
+  }
+  .detective-conversation[data-empty='false'] .detective-conversation__scroll {
+    padding-top: 0;
+    scroll-padding-top: var(--chat-padding);
   }
   .detective-mascot {
     position: sticky;
