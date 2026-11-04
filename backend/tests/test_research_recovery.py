@@ -75,11 +75,15 @@ def test_eighty_thousand_character_rules_page_is_extracted_and_answered(session_
 
 
 @pytest.mark.parametrize('limits_mode', ['local', 'external'])
-def test_long_history_is_trimmed_before_dispatch_and_latest_question_is_kept(session_factory, limits_mode):
+def test_long_history_respects_quota_mode_and_keeps_latest_question(session_factory, limits_mode):
     received = []
     def respond(messages, _):
         received.extend(messages)
-        assert len(ModelMessagesTypeAdapter.dump_json(messages)) + 4096 <= 8192
+        if limits_mode == 'local':
+            assert len(ModelMessagesTypeAdapter.dump_json(messages)) + 4096 <= 8192
+        else:
+            assert [message.parts[0].content for message in messages[:-1]] == [
+                message.parts[0].content for message in history]
         assert messages[-1].parts[-1].content == '只看线上比赛的报名截止'
         return ModelResponse([TextPart('按线上比赛继续查证。')], usage=RequestUsage(input_tokens=100, output_tokens=20))
     async def balance():
@@ -89,4 +93,4 @@ def test_long_history_is_trimmed_before_dispatch_and_latest_question_is_kept(ses
     history = [message for i in range(20) for message in (
         ModelRequest([UserPromptPart(f'旧问题{i}：' + '比赛条件' * 1000)]), ModelResponse([TextPart('旧回答' * 1000)]))]
     assert asyncio.run(Agent(model).run('只看线上比赛的报名截止', message_history=history)).output == '按线上比赛继续查证。'
-    assert len(received) < len(history)
+    assert len(received) < len(history) if limits_mode == 'local' else len(received) == len(history) + 1
