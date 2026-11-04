@@ -21,6 +21,11 @@ def link(title, url):
     return f'[{markdown_text(title)}]({quote(url, safe=":/?&=#%+;,@~.-_")})'
 
 
+def display_date(value, precision):
+    return (value[:10] + '（日精度）' if precision == 'day' else
+            datetime.fromisoformat(value.replace('Z', '+00:00')).astimezone(BEIJING).strftime('%Y-%m-%d %H:%M（北京时间）'))
+
+
 def answer_sources(deps, answer):
     cited = {url.rstrip('。，,;.!?') for url in re.findall(r'https?://[^\s<>()\[\]"]+', answer)}
     sources = []

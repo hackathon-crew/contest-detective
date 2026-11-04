@@ -20,7 +20,7 @@ from pydantic_ai.models import Model
 
 from contest_detective.contest import service as contests
 from contest_detective.contest.identity import normalized_name
-from contest_detective.contest.schemas import ContestDetail, ContestQuery, EvidenceField
+from contest_detective.contest.schemas import ContestDetail, ContestQuery, EvidenceField, DATE_FIELDS
 from contest_detective.system.account.schemas import SearchPreferences
 from contest_detective.system.user.schemas import Profile
 
@@ -29,6 +29,7 @@ from contest_detective.framework.exceptions import BizException
 from .extraction import create_page_extractor
 from .retry import WEB_ERRORS, retry_transient
 from .schemas import ToolSource
+from .presentation import display_date
 from .rag.contracts import ContestRetriever
 from .rag.retrieval import HybridRetriever
 from .verification import VerificationState, safe_evidence_url, scope_check, public_search_site, public_payload
@@ -227,7 +228,8 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
                           fields: Annotated[list[EvidenceField], Field(min_length=1, max_length=6)] | None = None) -> dict:
         """按需读取最多 6 个字段的值、精度、等级和出处；省略 fields 时给五个日期字段和 city。
 
-        summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。precision=day 只有日期。
+        summary 可选，作为简介文本单列，不带字段核实等级；不返回 documents 或 introduction。
+        日期 display_value 按北京时间展示，precision=day 不补时刻；value 保留原存储值。
         """
         with ctx.deps.session_factory() as session:
             item = contests.get(session, contest_id)
@@ -241,6 +243,11 @@ def register_tools(agent: Agent, *, web_enabled: bool, external_enabled: bool = 
         ctx.deps.opened_urls.update(source['url'] for source in sources)
         payload = selected.model_dump(mode='json',
             exclude={'summary'} if 'summary' not in selected.model_fields_set else None)
+        for name, value in payload['fields'].items():
+            if name in DATE_FIELDS:
+                for date in [value, *value['sources']]:
+                    if date['value'] is not None:
+                        date['display_value'] = display_date(date['value'], date['precision'])
         read = ctx.deps.read_contests.setdefault(item.id, {'fields': {}})
         read.update({**payload, 'fields': {**read['fields'], **payload['fields']}})
         return {'contest': payload, 'summary': f'已读取 {item.name} 的字段与出处', 'sources': sources}

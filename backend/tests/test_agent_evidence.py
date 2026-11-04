@@ -65,6 +65,23 @@ def test_get_contest_uses_six_core_fields_when_fields_are_omitted(evidence_deps)
     assert 'summary' not in result
 
 
+@pytest.mark.parametrize('value,precision,expected,stored', [
+    ('2026-11-16T07:45:00Z', 'datetime', '2026-11-16 15:45（北京时间）', '2026-11-16T07:45:00Z'),
+    ('2026-11-15', 'day', '2026-11-15（日精度）', '2026-11-15T00:00:00Z'),
+])
+def test_date_evidence_displays_beijing_time_without_inventing_a_time_for_day_precision(evidence_deps, value, precision, expected, stored):
+    deps, _ = evidence_deps
+    with deps.session_factory() as session:
+        contest_id = service.save(session, ContestDraft(name='时区明确赛', page={
+            'url': 'https://host.example/timezone', 'site': '主办方', 'title': '时间规则', 'is_official': True,
+        }, claims=[{'field': 'registration_deadline', 'value': value, 'precision': precision,
+                    'excerpt': 'Registration closes November 15 at 11:45 pm Pacific Time' if precision == 'datetime' else '11月15日报名截止'}]))
+    deadline = read(deps, contest_id, fields=['registration_deadline']).content['contest']['fields']['registration_deadline']
+    assert deadline['display_value'] == expected
+    assert deadline['sources'][0]['display_value'] == expected
+    assert deadline['value'] == stored and deadline['precision'] == precision
+
+
 @pytest.mark.parametrize('fields', [[], ['documents'], ['introduction'], ['unknown'],
     ['start_at', 'end_at', 'city', 'mode', 'prize', 'organizer', 'eligibility']])
 def test_get_contest_rejects_invalid_field_selection_before_observation(evidence_deps, fields):
