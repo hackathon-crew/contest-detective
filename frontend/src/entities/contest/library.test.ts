@@ -151,6 +151,7 @@ describe('系列', () => {
     const due = field('2026-10-31T00:00:00Z', 'day')
     const values = [
       contest('已结束', { submission_deadline: due }, { status: 'ended' }),
+      contest('已结束且无日期', {}, { status: 'ended' }),
       contest('日期冲突', { submission_deadline: { ...due, level: 'conflict' } }),
       contest('有余量', { submission_deadline: due }),
       contest('临期', { submission_deadline: field('2026-10-25T00:00:00Z', 'day') }),
@@ -160,6 +161,7 @@ describe('系列', () => {
       '临期',
       '日期冲突',
       '已结束',
+      '已结束且无日期',
     ])
   })
   it('准备排序把至少剩七天的赛事放在临期赛事之前，并保留无日期和过期赛事', () => {

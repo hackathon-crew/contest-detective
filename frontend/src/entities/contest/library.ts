@@ -323,6 +323,10 @@ export function groupSeries(
     sort === 'start'
       ? Number(!a.start) - Number(!b.start) || (a.start ?? '').localeCompare(b.start ?? '')
       : rank(a) - rank(b) ||
-        (rank(a) === 3 ? b.key!.left - a.key!.left : a.key && b.key ? a.key.left - b.key.left : 0),
+        (a.key && b.key
+          ? rank(a) === 3
+            ? b.key.left - a.key.left
+            : a.key.left - b.key.left
+          : Number(!a.key) - Number(!b.key)),
   )
 }
