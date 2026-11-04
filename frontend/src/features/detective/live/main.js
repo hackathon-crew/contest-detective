@@ -7,14 +7,7 @@ import searchFrame from '@/shared/assets/mascot/octo-search.png'
 import readFrame from '@/shared/assets/mascot/octo-read.png'
 import happyFrame from '@/shared/assets/mascot/octo-happy.png'
 import peerFrame from '@/shared/assets/mascot/octo-peer.png'
-const FIRST_CHIPS = [
-  '两周内截止、线上能参加的 AI 比赛',
-  'PayPal 这场还能报吗',
-  '怀柔那场截止改了吗',
-  '高中生能参加 Meta 这场吗',
-  '支付宝 PAYATHON 现在什么情况',
-  '有没有水下摄影黑客松',
-]
+const FIRST_CHIPS = ['两周内截止、线上能参加的 AI 比赛']
 import { makeSound } from './sound.js'
 
 export function mountLive(root, callbacks, initial) {
