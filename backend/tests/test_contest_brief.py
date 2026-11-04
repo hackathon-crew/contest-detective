@@ -32,7 +32,7 @@ def test_brief_keeps_only_selection_fields_and_literal_date_precision():
         'start_at': {'value': '2026-10-27', 'precision': 'day'},
         'end_at': {'value': '2026-10-29T08:30:00Z', 'precision': 'datetime'},
         'next_deadline': {'field': 'submission_deadline', 'value': '2026-10-28', 'precision': 'day'},
-        'city': '上海', 'mode': 'online', 'prize': '¥20,000', 'themes': ['AI', 'Web'],
+        'city': '上海', 'mode': 'online', 'prize': '¥20,000', 'eligibility': None, 'themes': ['AI', 'Web'],
     }
 
 

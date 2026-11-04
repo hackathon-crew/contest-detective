@@ -24,18 +24,16 @@ import type { ReactNode } from 'react'
 import type { ContestRecommendation } from './conversation'
 
 function Sources({ items }: { items: TraceSource[] }) {
-  const trusted = [
+  const cited = [
     ...new Map(
-      items
-        .filter((source) => source.is_official === true && !source.stale && safeUrl(source.url))
-        .map((source) => [source.url, source]),
+      items.filter((source) => safeUrl(source.url)).map((source) => [source.url, source]),
     ).values(),
   ]
-  if (!trusted.length) return null
+  if (!cited.length) return null
   return (
-    <footer aria-label="可信来源">
+    <footer aria-label="引用来源">
       <ul className="detective-sources">
-        {trusted.map((source, index) => (
+        {cited.map((source, index) => (
           <li key={`${source.url}-${index}`}>
             <a href={source.url} target="_blank" rel="noreferrer">
               <SourceIcon url={source.url} />
