@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import type { ContestRecommendation } from '../src/shared/api'
+import type { ContestRecommendation } from '../src/shared/api/generated/types.gen.js'
 
 const recommendations: ContestRecommendation[] = Array.from({ length: 5 }, (_, index) => ({
   contest: {
@@ -37,48 +37,51 @@ async function intercept(
 ) {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.route('**/api/**', async (route) => {
-    const path = new URL(route.request().url()).pathname
-    if (path.endsWith('/guest/ask')) {
-      const events = [
-        ...(search
-          ? [
-              { type: 'step', data: { tool: 'search_contests', label: '查询比赛库' } },
-              {
-                type: 'observation',
-                data: {
-                  tool: 'search_contests',
-                  summary: `找到 ${cards.length} 场比赛，本页 ${cards.length} 场`,
-                  sources: [],
+  await page.route(
+    (url) => url.pathname.startsWith('/api/'),
+    async (route) => {
+      const path = new URL(route.request().url()).pathname
+      if (path.endsWith('/guest/ask')) {
+        const events = [
+          ...(search
+            ? [
+                { type: 'step', data: { tool: 'search_contests', label: '查询比赛库' } },
+                {
+                  type: 'observation',
+                  data: {
+                    tool: 'search_contests',
+                    summary: `找到 ${cards.length} 场比赛，本页 ${cards.length} 场`,
+                    sources: [],
+                  },
                 },
-              },
-            ]
-          : []),
-        { type: 'answer', data: { content, sources: [], recommendations: cards } },
-      ]
+              ]
+            : []),
+          { type: 'answer', data: { content, sources: [], recommendations: cards } },
+        ]
+        await route.fulfill({
+          contentType: 'text/event-stream',
+          body: events
+            .map(
+              (event, index) =>
+                `id: ${index + 1}\nevent: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`,
+            )
+            .join(''),
+        })
+        return
+      }
       await route.fulfill({
-        contentType: 'text/event-stream',
-        body: events
-          .map(
-            (event, index) =>
-              `id: ${index + 1}\nevent: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`,
-          )
-          .join(''),
+        json: {
+          code: 200,
+          message: 'ok',
+          data: path.endsWith('/auth/me')
+            ? null
+            : path.endsWith('/guest-quota')
+              ? { limit: 3, remaining: 3, resets_at: '2026-12-01T00:00:00+08:00' }
+              : [],
+        },
       })
-      return
-    }
-    await route.fulfill({
-      json: {
-        code: 200,
-        message: 'ok',
-        data: path.endsWith('/auth/me')
-          ? null
-          : path.endsWith('/guest-quota')
-            ? { limit: 3, remaining: 3, resets_at: '2026-12-01T00:00:00+08:00' }
-            : [],
-      },
-    })
-  })
+    },
+  )
   return errors
 }
 
