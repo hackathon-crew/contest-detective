@@ -12,24 +12,21 @@
 //
 // 颜色直接按十六进制传进着色器，不走 three 的色彩空间换算。
 import * as THREE from 'three'
-
-const hex = (h: string) =>
-  new THREE.Vector3(
-    parseInt(h.slice(1, 3), 16) / 255,
-    parseInt(h.slice(3, 5), 16) / 255,
-    parseInt(h.slice(5, 7), 16) / 255,
-  )
+import {
+  hex,
+  PAL,
+  ARMS,
+  SEG,
+  RING,
+  BASE_Y,
+  BASE_R,
+  DITHER,
+  SKIN_VERT,
+  mantleGeometry,
+  armGeometry,
+} from './octopus-model'
 
 // 蓝色一族；每组三档：暗、中、亮。sucker 和 skin 相同，等于不画吸盘
-const PAL = {
-  skin: ['#2f49b8', '#5878e6', '#8ea8f8'],
-  top: ['#2a40a6', '#4d6cdc', '#7f9cf4'],
-  sucker: ['#2f49b8', '#5878e6', '#8ea8f8'],
-  hi: '#f4f7ff',
-  ink: '#101735',
-  eye: ['#121a33', '#2a3766'],
-  beret: ['#1b1e27', '#363b4a'],
-}
 
 export type Mood = 'idle' | 'search' | 'read' | 'think' | 'talk' | 'happy'
 
@@ -55,23 +52,6 @@ export interface OctopusHandle {
 }
 
 // ---------- 造型 ----------
-const ARMS = 8
-const SEG = 22 // 每条腕足的节数
-const RING = 8 // 管子一圈几个点
-const BASE_Y = 0.06
-const BASE_R = 0.17
-
-const DITHER = `
-float bayer2(vec2 a){ a = floor(a); return fract(a.x / 2. + a.y * a.y * .75); }
-float bayer4(vec2 a){ return bayer2(.5 * a) * .25 + bayer2(a); }`
-
-const SKIN_VERT = `
-attribute float aS; attribute float aSuck; attribute float aTop;
-varying vec3 vN; varying vec3 vP; varying float vS; varying float vSuck; varying float vTop;
-void main(){
-  vN = normalize(normalMatrix * normal); vP = position; vS = aS; vSuck = aSuck; vTop = aTop;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.);
-}`
 
 const SKIN_FRAG = `
 uniform vec3 uL;
@@ -147,28 +127,6 @@ void main(){
   gl_FragColor = vec4(c.rgb, 1.);
 }`
 
-function mantleGeometry() {
-  const g = new THREE.SphereGeometry(1, 30, 22)
-  const p = g.attributes.position
-  const top = new Float32Array(p.count)
-  for (let i = 0; i < p.count; i++) {
-    let x = p.getX(i),
-      y = p.getY(i),
-      z = p.getZ(i)
-    top[i] = y
-    // 略扁的球：下半截再压扁一点，像坐在腕足上
-    x *= 0.31
-    z *= 0.3
-    y *= y < 0 ? 0.22 : 0.27
-    p.setXYZ(i, x, y + 0.24, z)
-  }
-  g.computeVertexNormals()
-  g.setAttribute('aS', new THREE.BufferAttribute(new Float32Array(p.count).fill(-1), 1))
-  g.setAttribute('aSuck', new THREE.BufferAttribute(new Float32Array(p.count), 1))
-  g.setAttribute('aTop', new THREE.BufferAttribute(top, 1))
-  return g
-}
-
 interface Arm {
   angle: number
   phase: number
@@ -176,37 +134,6 @@ interface Arm {
   geo: THREE.BufferGeometry
   tip: THREE.Vector3
   pts: THREE.Vector3[]
-}
-
-function armGeometry() {
-  const n = (SEG + 1) * RING + 1 // 最后一个点封住腕尖
-  const g = new THREE.BufferGeometry()
-  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3))
-  g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(n * 3), 3))
-  const aS = new Float32Array(n),
-    aSuck = new Float32Array(n)
-  for (let j = 0; j <= SEG; j++)
-    for (let k = 0; k < RING; k++) {
-      const i = j * RING + k
-      aS[i] = j / SEG
-      aSuck[i] = Math.cos((k / RING) * Math.PI * 2)
-    }
-  aS[n - 1] = 1
-  g.setAttribute('aS', new THREE.BufferAttribute(aS, 1))
-  g.setAttribute('aSuck', new THREE.BufferAttribute(aSuck, 1))
-  g.setAttribute('aTop', new THREE.BufferAttribute(new Float32Array(n), 1))
-  const idx: number[] = []
-  for (let j = 0; j < SEG; j++)
-    for (let k = 0; k < RING; k++) {
-      const a = j * RING + k,
-        b = j * RING + ((k + 1) % RING),
-        c = a + RING,
-        d = b + RING
-      idx.push(a, c, b, b, c, d)
-    }
-  for (let k = 0; k < RING; k++) idx.push(SEG * RING + k, n - 1, SEG * RING + ((k + 1) % RING))
-  g.setIndex(idx)
-  return g
 }
 
 export function mountOctopus(host: HTMLElement, opts: OctopusOptions): OctopusHandle | null {
@@ -461,6 +388,9 @@ export function mountOctopus(host: HTMLElement, opts: OctopusOptions): OctopusHa
   const st = {
     mood: (opts.mood ?? 'search') as Mood,
     t: 0,
+    wave: 0,
+    breath: 0,
+    breathRate: 1.6,
     yaw: 0,
     yawV: 0,
     pitch: 0,
@@ -505,21 +435,21 @@ export function mountOctopus(host: HTMLElement, opts: OctopusOptions): OctopusHa
   type Grip = { w: number; at: THREE.Vector3; dir: THREE.Vector3 }
   // 一条腕足：先按弯曲量逐段积分出自由摆动的中心线；要握东西时，再按权重把中心线拉向一条
   // 从根部到握点的三次贝塞尔曲线（dir 是腕尖到达握点时的朝向）。管子的截面用平行移动的标架，沿途不扭。
-  function buildArm(arm: Arm, t: number, grip: Grip | null) {
+  function buildArm(arm: Arm, grip: Grip | null) {
     const base = arm.angle
     let theta = cur.dip * 0.5
     const ds = arm.len / SEG
     P.set(Math.sin(base) * BASE_R, BASE_Y, Math.cos(base) * BASE_R)
     for (let j = 0; j <= SEG; j++) {
       const s = j / SEG
-      const ang = base + cur.sway * s * Math.sin(cur.w * 0.7 * t + arm.phase * 1.7 + 3 * s)
+      const ang = base + cur.sway * s * Math.sin(st.wave * 0.7 + arm.phase * 1.7 + 3 * s)
       o.set(Math.sin(ang), 0, Math.cos(ang))
       d.copy(o).multiplyScalar(Math.cos(theta)).addScaledVector(up, Math.sin(theta))
       arm.pts[j].copy(P)
       theta +=
         0.45 *
         (cur.curl * Math.pow(s, 1.3) * 5.2 +
-          cur.amp * (0.35 + s) * Math.sin(cur.w * t - 5.5 * s + arm.phase)) *
+          cur.amp * (0.35 + s) * Math.sin(st.wave - 5.5 * s + arm.phase)) *
         ds
       P.addScaledVector(d, ds)
     }
@@ -599,6 +529,10 @@ export function mountOctopus(host: HTMLElement, opts: OctopusOptions): OctopusHa
     ;(Object.keys(cur) as (keyof Coef)[]).forEach((k) => {
       cur[k] += (target[k] - cur[k]) * ease
     })
+    // 频率变了仍延续原相位，避免运行越久切心情时跳得越大。
+    st.wave += cur.w * dt
+    st.breathRate += ((st.mood === 'talk' ? 5 : 1.6) - st.breathRate) * (1 - Math.exp(-dt * 4))
+    st.breath += st.breathRate * dt
     const k = 1 - Math.exp(-dt * 2.5)
     st.book += ((st.mood === 'read' ? 1 : 0) - st.book) * k
     st.mag += ((st.mood === 'search' ? 1 : 0) - st.mag) * k
@@ -703,10 +637,10 @@ export function mountOctopus(host: HTMLElement, opts: OctopusOptions): OctopusHa
     }
     rightGrip.w = Math.max(wb, wm)
     for (let i = 0; i < ARMS; i++)
-      buildArm(arms[i], t, i === 7 ? bookGripL : i === 0 ? rightGrip : i === 6 ? hatGrip : null)
+      buildArm(arms[i], i === 7 ? bookGripL : i === 0 ? rightGrip : i === 6 ? hatGrip : null)
 
     // 呼吸
-    const breathe = 1 + 0.025 * Math.sin(t * (st.mood === 'talk' ? 5 : 1.6))
+    const breathe = 1 + 0.025 * Math.sin(st.breath)
     mantle.scale.set(breathe, 1 / Math.sqrt(breathe), breathe)
 
     // 眨眼
