@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { QueryClientProvider } from '@tanstack/react-query'
 import {
   BrowserRouter,
@@ -25,6 +25,7 @@ import { useLocale } from '@/shared/i18n/locale-context'
 import { LocaleProvider } from '@/shared/i18n/locale-provider'
 import { LanguageControl } from '@/shared/ui/language-control'
 import { queryClient } from './query-client'
+import { recordCampaignArrival } from './campaign-arrival'
 import { RouteMotionSurface } from './route-motion'
 
 const LivePage = lazy(() => import('@/pages/live/live-page'))
@@ -47,6 +48,9 @@ export function App() {
 export function AppRoutes() {
   const { t } = useLocale()
   const location = useLocation()
+  useEffect(() => {
+    void recordCampaignArrival(location.search)
+  }, [location.search])
   const background = location.state?.backgroundLocation as Location | undefined
   const contestId = matchPath('/contests/:contestId', location.pathname)?.params.contestId
   const { data: user, isPending } = useCurrentUser()

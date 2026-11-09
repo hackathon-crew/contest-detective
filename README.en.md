@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://inkpaw.windup.xin/">Try online: https://inkpaw.windup.xin/ ↗</a></strong>
-  &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests">Browse competitions</a>
+  <strong><a href="https://inkpaw.windup.xin/?utm_source=github&amp;utm_campaign=inkpaw_launch_202611&amp;utm_content=readme_en">Try online: https://inkpaw.windup.xin/ ↗</a></strong>
+  &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests?utm_source=github&amp;utm_campaign=inkpaw_launch_202611&amp;utm_content=readme_en">Browse contests without an account</a>
   &nbsp; · &nbsp; <a href="#deep-research-and-source-verification">Deep research</a>
   &nbsp; · &nbsp; <a href="#ongoing-watches-and-email-updates">Email updates</a>
   &nbsp; · &nbsp; <a href="README.md">简体中文</a>

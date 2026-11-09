@@ -11,7 +11,8 @@ from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.result import Response
 from contest_detective.framework.async_db import get_async_session
 from contest_detective.framework.db import get_session
-from contest_detective.system.auth import invites, registration, service
+from contest_detective.system.auth import campaign, invites, registration, service
+from contest_detective.system.auth.campaign_contracts import CampaignArrival
 from contest_detective.system.user import service as users
 from contest_detective.system.user.schemas import Profile, PublicUser
 from ..handler import SensitiveRoute
@@ -55,9 +56,21 @@ def request_register_code(body: CodeRequest, session: Session = Depends(get_sess
     return Response.success()
 
 
+@router.post('/auth/campaign-visit', response_model=Response[None])
+def record_campaign_visit(body: CampaignArrival, request: Request, response: HttpResponse,
+                          session: Session = Depends(get_session)):
+    visitor = campaign.record_arrival(session, body, request.cookies.get(campaign.COOKIE_NAME))
+    response.set_cookie(campaign.COOKIE_NAME, visitor, max_age=campaign.COOKIE_MAX_AGE,
+                        httponly=True, secure=True, samesite='lax')
+    return Response.success()
+
+
 @router.post('/auth/register', response_model=Response[PublicUser])
-async def register(body: RegisterCredentials, session: AsyncSession = Depends(get_async_session)):
-    return Response.success(await service.register(session, body.email, body.password, body.code, body.invite_code))
+async def register(body: RegisterCredentials, request: Request, session: AsyncSession = Depends(get_async_session)):
+    return Response.success(await service.register(
+        session, body.email, body.password, body.code, body.invite_code,
+        campaign_cookie=request.cookies.get(campaign.COOKIE_NAME),
+    ))
 
 
 @router.post('/auth/login', response_model=Response[PublicUser])
