@@ -29,7 +29,7 @@ def test_register_login_profile_and_logout(tmp_path):
         assert client.put('/user/profile',json={'skills':[]}).json()['code']==401
 
 
-def test_registration_requires_a_single_use_code(tmp_path):
+def test_registration_requires_a_single_use_email_code(tmp_path):
     with app_client(tmp_path) as client:
         email='code@example.com'
         invite = issue_invite(client)
@@ -39,7 +39,7 @@ def test_registration_requires_a_single_use_code(tmp_path):
         wrong='000000' if code!='000000' else '111111'
         assert client.post('/auth/register',json={**credentials,'code':wrong}).json()['code']==400
         assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==200
-        assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==403
+        assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==400
 
 
 def test_registration_code_cooldown_expiry_and_attempt_limit(tmp_path):

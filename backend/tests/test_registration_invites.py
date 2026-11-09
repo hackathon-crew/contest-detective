@@ -49,10 +49,12 @@ def test_only_the_configured_verified_account_can_issue_codes(tmp_path, configur
         first = client.post('/account/invites')
         second = client.post('/account/invites')
         assert first.headers['Cache-Control'] == 'no-store'
-        assert first.json()['data']['code'] != second.json()['data']['code']
+        first_code = first.json()['data']['code']
+        assert re.fullmatch(r'[2-9A-HJ-NP-Z]{6}', first_code)
+        assert first_code != second.json()['data']['code']
 
 
-def test_one_invite_can_only_create_one_account_even_in_parallel(tmp_path, configured_admin):
+def test_one_invite_can_create_multiple_accounts_even_in_parallel(tmp_path, configured_admin):
     with account_client(tmp_path) as client:
         login(client, 'admin@example.org')
         created = client.post('/account/invites').json()
@@ -71,9 +73,9 @@ def test_one_invite_can_only_create_one_account_even_in_parallel(tmp_path, confi
         assert client.post('/auth/register/invite', json=invitation).json()['code'] == 200
         with ThreadPoolExecutor(max_workers=2) as pool:
             results = list(pool.map(lambda body: client.post('/auth/register', json=body).json()['code'], payloads))
-        assert sorted(results) == [200, 403]
-        assert client.post('/auth/register/invite', json=invitation).json()['code'] == 403
-        assert client.post('/auth/register/code', json={**invitation, 'email': 'third@example.org'}).json()['code'] == 403
+        assert results == [200, 200]
+        assert client.post('/auth/register/invite', json=invitation).json()['code'] == 200
+        assert client.post('/auth/register/code', json={**invitation, 'email': 'third@example.org'}).json()['code'] == 200
 
 
 def test_invited_account_can_chat_past_the_platform_limit(tmp_path, monkeypatch):

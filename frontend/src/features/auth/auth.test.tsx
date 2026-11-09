@@ -44,7 +44,7 @@ function setup(
       JSON.stringify({
         code: invalidInvite ? 403 : rejected ? 401 : 200,
         message: invalidInvite
-          ? '邀请码无效或已使用，请检查邀请码。'
+          ? '邀请码无效，请检查后重新输入。'
           : rejected
             ? '邮箱或密码不正确'
             : 'success',
@@ -75,7 +75,7 @@ function setup(
   return calls
 }
 
-const testInvite = 'INK-TEST-INVITE'
+const testInvite = 'A2BCD3'
 
 async function continueWithInvite() {
   fireEvent.change(screen.getByLabelText('邀请码'), { target: { value: testInvite } })
@@ -192,7 +192,7 @@ describe('全屏账户流程', () => {
     submit('继续')
     expect(await screen.findByRole('alert')).toHaveProperty(
       'textContent',
-      '邀请码无效或已使用，请检查邀请码。',
+      '邀请码无效，请检查后重新输入。',
     )
     expect(screen.queryByLabelText('邮箱')).toBeNull()
     expect(calls.some((call) => call.path.endsWith('/auth/register/code'))).toBe(false)

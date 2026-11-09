@@ -43,7 +43,7 @@ export function InvitePanel() {
       <div className="arow">
         <div>
           <b>{t('邀请码')}</b>
-          <p>{t('每个邀请码可注册一个账号。')}</p>
+          <p>{t('邀请码可分享给多人，注册次数不限。')}</p>
         </div>
         <button
           className="btn btn-primary btn-sm"

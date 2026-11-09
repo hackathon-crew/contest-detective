@@ -71,8 +71,7 @@ export const english = {
   '请输入邀请码。': 'Enter an invite code.',
   '正在验证邀请码…': 'Checking invite code…',
   '未能验证邀请码。': 'Couldn’t verify the invite code.',
-  '邀请码无效或已使用，请检查邀请码。':
-    'This invite code is invalid or already used. Check the code.',
+  '邀请码无效，请检查后重新输入。': 'This invite code is invalid. Check it and enter it again.',
   '创建 Inkpaw 账号': 'Create an Inkpaw account',
   '登录到 Inkpaw': 'Sign in to Inkpaw',
   邮箱: 'Email',
@@ -757,7 +756,7 @@ export const english = {
   比赛推送: 'Email updates',
   搜索与密钥: 'Search & keys',
   账号: 'Account settings',
-  '每个邀请码可注册一个账号。': 'Each code can be used to create one account.',
+  '邀请码可分享给多人，注册次数不限。': 'Share the same code for unlimited registrations.',
   生成邀请码: 'Generate invite code',
   '正在生成…': 'Generating…',
   新邀请码: 'New invite code',
