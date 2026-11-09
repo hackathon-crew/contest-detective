@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowUpRight } from 'lucide-react'
 import { useCurrentUser } from '@/entities/user'
 import { apiClient } from '@/shared/api'
 import type {
@@ -210,9 +211,15 @@ export function KeysPanel() {
         </div>
       </div>
       <div className="quota">
-        <div className="sponsor">
-          <img src="/brand/yuanbao.svg" alt="" />
-          <span>{t('由 {provider} 提供技术支持', { provider: t('腾讯元宝') })}</span>
+        <div className="quota-heading">
+          <div className="sponsor">
+            <img src="/brand/unigate.svg" width={28} height={28} alt="" />
+            <span>{t('由 UniGate 提供算力支持')}</span>
+          </div>
+          <a className="sponsor-link" href="https://unigate.top/" target="_blank" rel="noopener">
+            unigate.top
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </a>
         </div>
         <p className="quota-big">
           {quota.data?.unlimited === false ? t('平台次数限制已开启') : t('限时无限次')}

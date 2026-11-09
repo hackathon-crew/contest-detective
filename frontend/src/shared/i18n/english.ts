@@ -802,8 +802,7 @@ export const english = {
   正在连: 'Connecting…',
   '侦探查比赛时用的模型和搜索服务，默认用平台的，也可以换成你自己的密钥。':
     'Choose which model and search services Detective uses. Use Inkpaw’s keys or add your own.',
-  腾讯元宝: 'Tencent Yuanbao',
-  '由 {provider} 提供技术支持': 'Technology from {provider}',
+  '由 UniGate 提供算力支持': 'Compute provided by UniGate',
   平台次数限制已开启: 'Platform usage limits are active',
   限时无限次: 'Unlimited access for a limited time',
   '问侦探现在走你自己的{provider}密钥。': 'Detective now uses your {provider} key.',
