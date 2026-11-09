@@ -119,7 +119,7 @@ test("URL gate rejects executable, private, credentialed and nonstandard-port UR
     isTrustedSourceUrl("https://eisociety.org/hackathon.php?slug=unverified"),
     false,
   );
-  assert.equal(TRUSTED_SOURCES.length, 3);
+  assert.equal(TRUSTED_SOURCES.length, 5);
   assert.ok(
     TRUSTED_SOURCES.every(
       (source) => source.basisUrl && !("deadline" in source),

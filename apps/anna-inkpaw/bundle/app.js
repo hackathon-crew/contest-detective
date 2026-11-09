@@ -46,7 +46,7 @@ const dictionary = {
     notConfirmed: "Please review and confirm. Changes need fresh confirmation.",
     explore: "Explore with evidence",
     sourceCoverage:
-      "Initial verified sources: CRASH, EIS and Mobile World Capital. Other live discoveries appear separately as unverified leads. Only search hits are fetched. Extracted facts and eligibility still need your review; missing evidence can mean fewer or no matches.",
+      "Verified organizer sources: CRASH, EIS, Mobile World Capital, Microsoft Imagine Cup and DOE GEMS. Only registered event URL scopes are covered. Other live discoveries appear separately as unverified leads. Only current search hits are fetched. Source identity does not establish eligibility; current facts and participation requirements still need your review. Missing evidence can mean fewer or no matches.",
     searchConsent:
       "Start a search using my Anna quota: up to 2 basic searches, 8 fetched pages and 1 extraction-model call. Pricing varies by provider; no automatic retries.",
     search: "Find opportunities ↗",
@@ -153,7 +153,7 @@ const dictionary = {
     notConfirmed: "请检查并确认；修改后需要再次确认。",
     explore: "带着证据找机会",
     sourceCoverage:
-      "首批已核实主办来源：CRASH、EIS、Mobile World Capital。其他实时发现单列为未核实线索。只抓取实际搜索命中的页面。抽取事实与资格仍需亲自复核，证据不足时可能少于三项或没有结果。",
+      "已核实主办来源：CRASH、EIS、Mobile World Capital、Microsoft Imagine Cup、DOE GEMS。仅覆盖已登记的活动网址范围，其他实时发现单列为未核实线索。只抓取当前实际搜索命中的页面。来源身份不代表参赛资格，当前事实与参与条件仍需亲自复核；证据不足时可能少于三项或没有结果。",
     searchConsent:
       "使用我的 Anna 额度开始检索：最多两次基础搜索、八个网页、一次抽取模型调用。实际价格随服务方变化，不自动重试。",
     search: "寻找机会 ↗",
