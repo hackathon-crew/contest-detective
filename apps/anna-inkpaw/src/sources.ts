@@ -30,6 +30,24 @@ export const TRUSTED_SOURCES: readonly TrustedSource[] = Object.freeze([
     organizer: "Mobile World Capital",
     basisUrl: "https://landing.mobileworldcapital.com/more-than-a-hack-2027",
   },
+  {
+    entryUrl: "https://imaginecup.microsoft.com/en-us",
+    hostname: "imaginecup.microsoft.com",
+    pathPrefix: "/en-us",
+    organizer: "Microsoft for Startups",
+    basisUrl:
+      "https://www.microsoft.com/en-us/startups/blog/imagine-cup-2027-why-this-is-an-opportunity-for-early-stage-founders/",
+  },
+  {
+    entryUrl:
+      "https://www.drivendata.org/competitions/306/competition-doe-gems/",
+    hostname: "www.drivendata.org",
+    pathPrefix: "/competitions/306/competition-doe-gems",
+    organizer:
+      "U.S. Department of Energy, Office of Geothermal; competition hosted by DrivenData",
+    basisUrl:
+      "https://www.energy.gov/hgeo/geothermal/articles/office-geothermal-announces-geologic-enhanced-mapping-system-gems-prize",
+  },
 ]);
 
 /** Exact organizer/event scope: redirects do not expand the approved registry. */
