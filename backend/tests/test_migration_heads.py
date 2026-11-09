@@ -16,7 +16,8 @@ MAIL = '0012_mail_delivery'
 ACCOUNT_MERGE = '0013_merge_account_mail'
 WATCH = '0014_private_watch'
 PREVIOUS = '0021_guest_question_usage'
-HEAD = '0022_registration_invites'
+INVITES = '0022_registration_invites'
+HEAD = '0023_campaign_visits'
 NOW = datetime(2026, 10, 24, tzinfo=timezone.utc)
 USER_ID = '00000000000000000000000000000001'
 
@@ -146,7 +147,8 @@ def assert_integrity(engine):
 def test_migration_graph_has_one_head_without_rewriting_published_parents():
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
-    assert scripts.get_revision(HEAD).down_revision == PREVIOUS
+    assert scripts.get_revision(HEAD).down_revision == INVITES
+    assert scripts.get_revision(INVITES).down_revision == PREVIOUS
     assert scripts.get_revision(PREVIOUS).down_revision == '0020_contest_embeddings'
     assert scripts.get_revision('0020_contest_embeddings').down_revision == '0019_account_conversations'
     assert scripts.get_revision('0019_account_conversations').down_revision == '0018_retrieval_windows'
@@ -163,7 +165,7 @@ def test_migration_graph_has_one_head_without_rewriting_published_parents():
 
 @pytest.mark.parametrize('starting_revisions', [
     (), (PARENT,), (CONTENT,), (NOTIFICATIONS,),
-    (CONTENT, NOTIFICATIONS), (NOTIFICATIONS, CONTENT), (MAIL,), (MAIL, MERGE), (MERGE, MAIL), (PREVIOUS,),
+    (CONTENT, NOTIFICATIONS), (NOTIFICATIONS, CONTENT), (MAIL,), (MAIL, MERGE), (MERGE, MAIL), (PREVIOUS,), (INVITES,),
 ])
 def test_upgrade_head_preserves_each_preexisting_branch(migration_engine, starting_revisions):
     engine = migration_engine
@@ -184,7 +186,7 @@ def test_upgrade_head_preserves_each_preexisting_branch(migration_engine, starti
     assert {'content_refresh_runs', 'content_refresh_entries', 'contest_events',
             'notification_pending', 'notification_seen', 'notification_cursors',
             'watch_subscriptions', 'watch_cursors', 'watch_notifications', 'watch_checks',
-            'registration_invites'} <= tables
+            'registration_invites', 'campaign_visits'} <= tables
     assert inspect(engine).get_pk_constraint('contest_claims')['constrained_columns'] == [
         'contest_id', 'page_id', 'field', 'value']
     assert {'introduction', 'documents', 'coverage', 'themes', 'theme_sources'} <= {
