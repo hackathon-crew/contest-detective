@@ -8,6 +8,8 @@ import type {
 } from './screenshot-contracts'
 import { MAX_SCREENSHOT_TEXT } from './screenshot-image'
 import { recognizeScreenshot } from './screenshot-recognizer'
+import { useLocale } from '@/shared/i18n/locale-context'
+import { translateSystemText } from '@/shared/i18n'
 
 export function ScreenshotDialog({
   onClose,
@@ -18,6 +20,7 @@ export function ScreenshotDialog({
   onConfirm: (value: ScreenshotConfirmation) => void
   recognizer?: ScreenshotRecognizer
 }) {
+  const { locale, t } = useLocale()
   const input = useRef<HTMLInputElement>(null)
   const request = useRef<AbortController | null>(null)
   const epoch = useRef(0)
@@ -100,21 +103,23 @@ export function ScreenshotDialog({
 
   return (
     <Dialog
-      title="截图查证"
+      title={t('截图查证')}
       onClose={close}
       icon={<ImagePlus strokeWidth={1.5} />}
-      description="图片只在当前浏览器识别，不上传。确认后，仅所选文字会用于联网查证公开赛事信息。"
+      description={t(
+        '图片只在当前浏览器识别，不上传。确认后，仅所选文字会用于联网查证公开赛事信息。',
+      )}
       footer={
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="ghost" onClick={close}>
-            取消
+            {t('取消')}
           </Button>
           <Button
             type="button"
             disabled={pending || !selected.length || selected.some((claim) => !claim.text.trim())}
             onClick={confirm}
           >
-            确认文字并查证
+            {t('确认文字并查证')}
           </Button>
         </div>
       }
@@ -125,7 +130,7 @@ export function ScreenshotDialog({
             ref={input}
             type="file"
             className="sr-only"
-            aria-label="选择截图"
+            aria-label={t('选择截图')}
             accept="image/png,image/jpeg,image/webp"
             onChange={(event) => {
               const file = event.currentTarget.files?.[0]
@@ -134,45 +139,47 @@ export function ScreenshotDialog({
             }}
           />
           <Button type="button" variant="outline" onClick={() => input.current?.click()}>
-            {pending ? '换一张截图' : result ? '重新选择截图' : '选择截图'}
+            {pending ? t('换一张截图') : result ? t('重新选择截图') : t('选择截图')}
           </Button>
-          <p className="text-sm text-muted">PNG、JPEG 或 WebP，最多 8 MiB。暂不支持视频。</p>
+          <p className="text-sm text-muted">{t('PNG、JPEG 或 WebP，最多 8 MiB。暂不支持视频。')}</p>
         </div>
         {pending && (
           <p role="status" className="text-sm text-muted">
-            正在当前浏览器识别中英文印刷文字，首次加载可能需要片刻…
+            {t('正在当前浏览器识别中英文印刷文字，首次加载可能需要片刻…')}
           </p>
         )}
         {error && (
           <p role="alert" className="text-sm text-danger">
-            {error}
+            {translateSystemText(locale, error)}
           </p>
         )}
         {preview && (
           <img
             src={preview}
-            alt="待查证的截图预览"
+            alt={t('待查证的截图预览')}
             className="max-h-40 max-w-full rounded-xl object-contain"
           />
         )}
         {result?.status === 'no_text' && (
           <p role="status" className="text-sm text-muted">
-            没有识别到可查证的文字。请换一张清晰截图，或关闭后直接输入说法。
+            {t('没有识别到可查证的文字。请换一张清晰截图，或关闭后直接输入说法。')}
           </p>
         )}
         {!!claims.length && (
           <>
             <p className="text-sm text-ink-soft">
-              识别文字可能有误，分数不代表真假。请核对、修改并勾选要查证的说法；不要提交时政或涉及个人的消息。
+              {t(
+                '识别文字可能有误，分数不代表真假。请核对、修改并勾选要查证的说法；不要提交时政或涉及个人的消息。',
+              )}
             </p>
             {result?.warnings.includes('low_confidence') && (
               <p role="status" className="text-sm text-muted">
-                部分文字辨识度较低，建议换一张清晰截图；若继续，请逐字核对。
+                {t('部分文字辨识度较低，建议换一张清晰截图；若继续，请逐字核对。')}
               </p>
             )}
             {result?.warnings.includes('small_text') && (
               <p role="status" className="text-sm text-muted">
-                截图中的文字较小，请重点核对日期、数字和名称。
+                {t('截图中的文字较小，请重点核对日期、数字和名称。')}
               </p>
             )}
             <div className="flex flex-wrap gap-2">
@@ -184,7 +191,7 @@ export function ScreenshotDialog({
                   setClaims((items) => items.map((item) => ({ ...item, selected: true })))
                 }
               >
-                全选
+                {t('全选')}
               </Button>
               <Button
                 type="button"
@@ -194,7 +201,7 @@ export function ScreenshotDialog({
                   setClaims((items) => items.map((item) => ({ ...item, selected: false })))
                 }
               >
-                取消全选
+                {t('取消全选')}
               </Button>
             </div>
             {claims.map((claim, index) => (
@@ -211,10 +218,10 @@ export function ScreenshotDialog({
                       )
                     }
                   />
-                  查证这条说法 {index + 1}
+                  {t('查证这条说法')} {index + 1}
                 </label>
                 <textarea
-                  aria-label={`说法 ${index + 1}`}
+                  aria-label={t('说法 {number}', { number: index + 1 })}
                   value={claim.text}
                   rows={2}
                   maxLength={MAX_SCREENSHOT_TEXT}

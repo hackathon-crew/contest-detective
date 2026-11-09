@@ -1,4 +1,6 @@
-export const fieldNames: Record<string, string> = {
+import type { Message } from '@/shared/i18n'
+
+export const fieldNames: Record<string, Message> = {
   start_at: '比赛开始',
   end_at: '比赛结束',
   registration_deadline: '报名截止',
@@ -17,8 +19,12 @@ export const fieldNames: Record<string, string> = {
   judging_criteria: '评审规则',
   past_statistics: '往届数据',
 }
-export const statusNames = { upcoming: '即将开始', ongoing: '进行中', ended: '已结束' }
-export const modeNames: Record<string, string> = { online: '线上', offline: '线下', hybrid: '混合' }
+export const statusNames = { upcoming: '即将开始', ongoing: '进行中', ended: '已结束' } as const
+export const modeNames: Record<string, Message> = {
+  online: '线上',
+  offline: '线下',
+  hybrid: '混合',
+}
 export const dateFields = [
   'start_at',
   'end_at',

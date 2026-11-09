@@ -1,6 +1,7 @@
 import { useId, useRef, type ReactNode } from 'react'
 import { cn } from 'cn'
 import { Button } from './button'
+import { translateSystemText } from '@/shared/i18n'
 import {
   Dialog as DialogRoot,
   DialogContent,
@@ -8,28 +9,31 @@ import {
   DialogHeader,
   DialogTitle,
 } from './dialog'
+import { useLocale } from '@/shared/i18n/locale-context'
 export { Button } from './button'
 export { Input } from './input'
 export * from './select'
 export { Badge } from './badge'
 export { Skeleton } from './skeleton'
 export { Calendar } from './calendar'
-export function EmptyState({
-  children = '没有找到赛事，换个条件再试试。',
-}: {
-  children?: ReactNode
-}) {
+export function EmptyState({ children }: { children?: ReactNode }) {
+  const { t } = useLocale()
   return (
     <p role="status" className="py-8 text-sm text-muted">
-      {children}
+      {children ?? t('没有找到赛事，换个条件再试试。')}
     </p>
   )
 }
 export function ErrorState({ error, retry }: { error: unknown; retry?: () => void }) {
+  const { locale, t } = useLocale()
   return (
     <div role="alert" className="flex flex-wrap items-center gap-3 py-6 text-sm text-muted">
-      <p>{error instanceof Error ? error.message : '加载失败，请重试。'}</p>
-      {retry && <Button onClick={retry}>重试</Button>}
+      <p>
+        {error instanceof Error
+          ? translateSystemText(locale, error.message)
+          : t('加载失败，请重试。')}
+      </p>
+      {retry && <Button onClick={retry}>{t('重试')}</Button>}
     </div>
   )
 }

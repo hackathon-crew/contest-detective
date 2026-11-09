@@ -1,10 +1,13 @@
 import type { DetectiveTurn } from '../conversation'
 import type { LiveCard } from './model'
+import type { Locale } from '@/shared/i18n'
 export interface LiveSnapshot {
+  locale: Locale
   textHref: string
   turn?: DetectiveTurn
   cards: LiveCard[]
   album: LiveCard[]
+  historyCards: LiveCard[]
   loggedIn: boolean
   remaining?: number
   watching: string[]

@@ -2,6 +2,7 @@ import type { ContestSummary, FieldValue } from './api'
 import { groundedIntroduction } from './content'
 import { cardDate } from './card-date'
 import { dateFields, formatDate } from './format'
+import { defaultLocale, translate, type Locale, type Message } from '@/shared/i18n'
 
 export type LibraryContest = ContestSummary & { summary?: string | null }
 export interface LibraryFilters {
@@ -52,7 +53,7 @@ export function normalizedPrize(value: string | null | undefined): string | null
   const short = value.split(/[（(：；，。\n]/)[0]!.trim()
   return short.length > 16 ? short.slice(0, 16) + '…' : short || null
 }
-const themeNames: Record<string, string> = {
+const themeNames: Record<string, Message> = {
   'Machine Learning/AI': 'AI',
   'Beginner Friendly': '新手友好',
   'Social Good': '公益',
@@ -76,9 +77,16 @@ const themeNames: Record<string, string> = {
   'E-commerce/Retail': '电商零售',
   Lifehacks: '生活工具',
 }
-export function contestThemes(contest: LibraryContest): string[] {
+export function contestThemes(contest: LibraryContest, locale: Locale = defaultLocale): string[] {
   // New summaries carry themes directly; only older payloads use the historical tag header.
-  if (contest.themes) return [...new Set(contest.themes.map((theme) => themeNames[theme] ?? theme))]
+  if (contest.themes)
+    return [
+      ...new Set(
+        contest.themes.map((theme) =>
+          themeNames[theme] ? translate(locale, themeNames[theme]) : theme,
+        ),
+      ),
+    ]
   const first = contest.summary?.split('\n')[0]?.trim()
   if (!first || !/^(?:主题|Themes?)\s*[:：]/i.test(first)) return []
   return first
@@ -113,13 +121,21 @@ export function todayKey(now = new Date()) {
     precision: 'datetime',
   })!
 }
-export function monthDay(day: string) {
+const englishMonthDay = new Intl.DateTimeFormat('en', {
+  month: 'short',
+  day: 'numeric',
+  timeZone: 'UTC',
+})
+export function monthDay(day: string, locale: Locale = defaultLocale) {
+  if (locale === 'en') return englishMonthDay.format(new Date(day))
   return Number(day.slice(5, 7)) + '月' + Number(day.slice(8, 10)) + '日'
 }
-export function dateText(info: FieldValue): string {
+export function dateText(info: FieldValue, locale: Locale = defaultLocale): string {
   const day = fieldDay(info)
-  if (!day) return '日期未核实'
-  return info.precision === 'day' ? monthDay(day) : formatDate(info.value, info.precision)
+  if (!day) return translate(locale, '日期未核实')
+  return info.precision === 'day'
+    ? monthDay(day, locale)
+    : formatDate(info.value, info.precision, false, locale)
 }
 export function libraryDate(contest: LibraryContest, now = new Date()): LibraryDate | null {
   const key = cardDate(contest, now)
@@ -168,6 +184,7 @@ export function filterLibrary(
         contest.fields.city?.value,
         contest.fields.venue?.value,
         ...contestThemes(contest),
+        ...contestThemes(contest, 'en'),
       ]
         .join(' ')
         .toLowerCase()

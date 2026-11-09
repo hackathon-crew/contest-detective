@@ -2,6 +2,7 @@ import { createEvents, type EventAttributes } from 'ics'
 import { addHours } from 'date-fns'
 import type { ContestSummary, FieldValue } from './api'
 import { fieldNames, safeUrl } from './format'
+import { defaultLocale, translate, type Locale } from '@/shared/i18n'
 
 const DEADLINES = ['registration_deadline', 'submission_deadline', 'deadline_unspecified']
 
@@ -22,7 +23,10 @@ function calendarDate(timestamp: number, offset = 0): [number, number, number] {
 }
 
 /** 只导出已知日期；两小时是日历占位长度，不补写任何赛事字段。 */
-export function createContestCalendar(contests: ContestSummary[]): string | null {
+export function createContestCalendar(
+  contests: ContestSummary[],
+  locale: Locale = defaultLocale,
+): string | null {
   const events: EventAttributes[] = []
   for (const contest of contests) {
     const nodes = DEADLINES.map((field) => ({
@@ -50,7 +54,7 @@ export function createContestCalendar(contests: ContestSummary[]): string | null
       const end = node.end ?? addHours(new Date(node.start), 2).getTime()
       events.push({
         uid: `${contest.id}-${node.field}@contest-detective`,
-        title: `${contest.name} · ${node.field === 'contest' ? '比赛' : fieldNames[node.field]}`,
+        title: `${contest.name} · ${translate(locale, node.field === 'contest' ? '比赛' : fieldNames[node.field])}`,
         // 全天区间的结束日期不包含在内；原文结束日仍属于比赛日。
         start: node.allDay ? calendarDate(node.start) : node.start,
         end: node.allDay ? calendarDate(node.end ?? node.start, 1) : end,
@@ -64,7 +68,7 @@ export function createContestCalendar(contests: ContestSummary[]): string | null
     }
   }
   if (!events.length) return null
-  const { error, value } = createEvents(events, { calName: '关注的比赛' })
+  const { error, value } = createEvents(events, { calName: translate(locale, '关注的比赛') })
   if (error || !value) throw new Error('日历生成失败，请重试')
   return value
 }

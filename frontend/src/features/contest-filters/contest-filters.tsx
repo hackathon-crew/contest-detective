@@ -6,6 +6,7 @@ import {
   type LibraryContest,
   type LibraryFilters,
 } from '@/entities/contest'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function ContestFilters({
   contests,
@@ -34,13 +35,14 @@ export function ContestFilters({
   calendar: ReactNode
   actions?: ReactNode
 }) {
+  const { t } = useLocale()
   const aside = useRef<HTMLElement>(null)
   useEffect(() => {
     if (!open) return
     const previous = document.activeElement as HTMLElement | null
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
-    aside.current?.querySelector<HTMLButtonElement>('.sheet-x')?.focus()
+    aside.current?.querySelector<HTMLButtonElement>('.sheet-x')?.focus({ preventScroll: true })
     function keydown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -64,7 +66,7 @@ export function ContestFilters({
     return () => {
       document.body.style.overflow = overflow
       document.removeEventListener('keydown', keydown)
-      previous?.focus()
+      previous?.focus({ preventScroll: true })
     }
   }, [open, onClose])
   function option(
@@ -117,70 +119,70 @@ export function ContestFilters({
       <aside
         ref={aside}
         className={'side' + (open ? ' open' : '')}
-        aria-label="筛选"
+        aria-label={t('筛选')}
         role={open ? 'dialog' : undefined}
         aria-modal={open ? true : undefined}
       >
         {calendar}
         <div className="side-head">
-          <h2>筛选</h2>
+          <h2>{t('筛选')}</h2>
           {activeCount > 0 && (
             <button className="linkbtn" type="button" onClick={onClear}>
-              清除全部
+              {t('清除全部')}
             </button>
           )}
-          <button className="sheet-x" type="button" aria-label="关闭筛选" onClick={onClose}>
+          <button className="sheet-x" type="button" aria-label={t('关闭筛选')} onClick={onClose}>
             <X className="ic ic-20" />
           </button>
         </div>
         {actions}
         <div className="groups">
           <div className="fg">
-            <h3>状态</h3>
+            <h3>{t('状态')}</h3>
             {[
-              ['all', '全部'],
-              ['upcoming', '即将开始'],
-              ['ongoing', '进行中'],
-              ['ended', '已结束'],
+              ['all', t('全部')],
+              ['upcoming', t('即将开始')],
+              ['ongoing', t('进行中')],
+              ['ended', t('已结束')],
             ].map(([value, label]) => option('status', value!, label!, 'radio'))}
           </div>
           <div className="fg">
-            <h3>截止时间</h3>
+            <h3>{t('截止时间')}</h3>
             {[
-              ['all', '不限'],
-              ['0', '今天截止'],
-              ['7', '7 天内'],
-              ['30', '30 天内'],
-              ['later', '30 天以后'],
-              ['none', '没写截止时间'],
+              ['all', t('不限')],
+              ['0', t('今天截止')],
+              ['7', t('7 天内')],
+              ['30', t('30 天内')],
+              ['later', t('30 天以后')],
+              ['none', t('没写截止时间')],
             ].map(([value, label]) => option('due', value!, label!, 'radio'))}
           </div>
           <div className="fg">
-            <h3>参赛形式</h3>
+            <h3>{t('参赛形式')}</h3>
             {[
-              ['online', '线上'],
-              ['offline', '线下'],
-              ['hybrid', '线上+线下'],
+              ['online', t('线上')],
+              ['offline', t('线下')],
+              ['hybrid', t('线上+线下')],
             ].map(([value, label]) => option('modes', value!, label!, 'multi'))}
           </div>
           {!!cities.length && (
             <div className="fg">
-              <h3>城市</h3>
+              <h3>{t('城市')}</h3>
               <div className="cities">
                 {cities.map((city) => option('cities', city, city, 'chips'))}
               </div>
             </div>
           )}
           <div className="fg">
-            <h3>其他</h3>
-            {option('prize', true, '写明了奖金', 'toggle')}
-            {option('official', true, '截止时间对过原文', 'toggle')}
-            {option('mine', true, '只看我关注的', 'toggle')}
+            <h3>{t('其他')}</h3>
+            {option('prize', true, t('写明了奖金'), 'toggle')}
+            {option('official', true, t('截止时间对过原文'), 'toggle')}
+            {option('mine', true, t('只看我关注的'), 'toggle')}
           </div>
         </div>
         <div className="sheet-foot">
           <button className="site-button site-button--primary" type="button" onClick={onClose}>
-            看 {total} 场
+            {t(total === 1 ? '看 1 场' : '看 {count} 场', { count: total })}
           </button>
         </div>
       </aside>

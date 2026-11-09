@@ -4,23 +4,27 @@ import { Icon } from '@/shared/ui/site-icon'
 import type { ContestSummary, FieldValue } from './api'
 import { formatDate, modeNames, safeUrl } from './format'
 import { displayDeadline, deadlineDays } from './deadline'
+import { useLocale } from '@/shared/i18n/locale-context'
+import { dateText } from './library'
+import type { Message } from '@/shared/i18n'
 const levels = {
   official: ['check', '官方原文'],
   reposted: ['dot', '转载'],
   conflict: ['alert', '说法不一'],
   not_found: ['minus', '未找到'],
-}
-const labels: Record<string, string> = {
+} as const
+const labels: Record<string, Message> = {
   registration_deadline: '报名截止',
   submission_deadline: '提交截止',
   deadline_unspecified: '截止（未注明类型）',
 }
 export function VerificationLevel({ level }: { level: FieldValue['level'] }) {
+  const { t } = useLocale()
   const [icon, label] = levels[level]
   return (
     <span className={'lv lv-' + level}>
       <Icon name={icon} />
-      {label}
+      {t(label)}
     </span>
   )
 }
@@ -54,28 +58,33 @@ export function ContestPreview({
   extra?: ReactNode
   card?: boolean
 }) {
+  const { locale, t } = useLocale()
   const location = useLocation()
   const deadline = displayDeadline(contest)
   const days = deadline ? deadlineDays(deadline) : null
   const mode = contest.fields.mode?.value
+  const modeLabel = mode === 'hybrid' ? '线上+线下' : modeNames[mode ?? '']
   const meta = [
     contest.fields.organizer?.value,
-    mode === 'hybrid' ? '线上+线下' : modeNames[mode ?? ''],
+    modeLabel && t(modeLabel),
     mode !== 'online' && !card ? contest.fields.city?.value : null,
     prizeText(contest),
   ]
     .filter(Boolean)
     .join(' · ')
-  const date = deadline ? formatDate(deadline.info.value, deadline.info.precision) : '日期未核实'
+  const date = deadline
+    ? formatDate(deadline.info.value, deadline.info.precision, false, locale)
+    : t('日期未核实')
   // 首页只展示原文公布的日期；未核实的钟点仍在提示和详情中标明。
-  const visibleDate =
-    deadline?.info.precision === 'day'
-      ? `${Number(deadline.info.value!.slice(5, 7))}月${Number(deadline.info.value!.slice(8, 10))}日`
-      : date
+  const visibleDate = deadline ? dateText(deadline.info, locale) : date
   const left =
     days === null ? null : (
       <span className={'soon-tag' + (days >= 0 && days <= 2 ? ' hot' : '')}>
-        {days < 0 ? '已截止' : days === 0 ? '今天截止' : `还有 ${days} 天`}
+        {days < 0
+          ? t('已截止')
+          : days === 0
+            ? t('今天截止')
+            : t(days === 1 ? '还有 1 天' : '还有 {days} 天', { days })}
       </span>
     )
   return (
@@ -97,7 +106,7 @@ export function ContestPreview({
           <span className="card-org">{meta}</span>
           <span className="card-dl">
             <b title={date}>{visibleDate}</b>
-            {deadline && labels[deadline.field]} {left}
+            {deadline && t(labels[deadline.field])} {left}
           </span>
         </>
       ) : (
@@ -114,7 +123,7 @@ export function ContestPreview({
             <span className="row-sub">
               {deadline && (
                 <>
-                  {labels[deadline.field]} <VerificationLevel level={deadline.info.level} />
+                  {t(labels[deadline.field])} <VerificationLevel level={deadline.info.level} />
                 </>
               )}
               {left}

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { currentUserKey, useCurrentUser } from '@/entities/user'
 import { AppearanceControl } from '@/features/appearance'
 import { apiClient } from '@/shared/api'
+import { translateSystemText } from '@/shared/i18n'
 import { SiteHeader } from '@/shared/ui/site-header'
 import { Button } from '@/shared/ui'
 import { User } from 'lucide-react'
@@ -18,6 +19,7 @@ import { KeysPanel } from './keys-panel'
 import { SettingsPanel } from './settings-panel'
 import '@/features/auth/auth-controls.css'
 import './account.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const panels = {
   profile: ProfilePanel,
@@ -29,8 +31,9 @@ const panels = {
 const year = new Date().getFullYear()
 const github = 'https://github.com/hackathon-crew/contest-detective'
 function Brand() {
+  const { t } = useLocale()
   return (
-    <Link className="brand" to="/" aria-label="Inkpaw 首页">
+    <Link className="brand" to="/" aria-label={t('Inkpaw 首页')}>
       <img className="px" src={mark} width={48} height={42} alt="" />
       <span className="wm">Inkpaw</span>
     </Link>
@@ -73,6 +76,7 @@ const groups = [
   ],
 ] as const
 export function AccountPage() {
+  const { locale, t } = useLocale()
   const { data: user, isPending, error } = useCurrentUser(),
     { tab = 'profile' } = useParams(),
     location = useLocation(),
@@ -82,11 +86,11 @@ export function AccountPage() {
     [loggingOut, setLoggingOut] = useState(false)
   useEffect(() => {
     const title = document.title
-    document.title = '个人中心 · Inkpaw'
+    document.title = t('个人中心 · Inkpaw')
     return () => {
       document.title = title
     }
-  }, [])
+  }, [t])
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
     panel = useRef<HTMLDivElement>(null)
   function notify(text: string, action?: NoticeAction) {
@@ -115,7 +119,7 @@ export function AccountPage() {
     return (
       <div className="account-root">
         <main className="wrap head">
-          <p>正在读取账号…</p>
+          <p>{t('正在读取账号…')}</p>
         </main>
       </div>
     )
@@ -123,7 +127,7 @@ export function AccountPage() {
     return (
       <div className="account-root">
         <main className="wrap head">
-          <p role="alert">{failure(error)}</p>
+          <p role="alert">{translateSystemText(locale, failure(error))}</p>
         </main>
       </div>
     )
@@ -149,30 +153,33 @@ export function AccountPage() {
         <SiteHeader
           utilities={
             <div className="flex items-center gap-2">
-              <Link to="/account/profile" aria-label="个人中心" className="auth-account-link">
+              <Link to="/account/profile" aria-label={t('个人中心')} className="auth-account-link">
                 <span>{user.username}</span>
                 <User aria-hidden="true" size={20} strokeWidth={1.75} />
               </Link>
               <Button variant="ghost" onClick={() => void logout()} disabled={loggingOut}>
-                退出
+                {t('退出')}
               </Button>
             </div>
           }
         />
         <main>
           <section className="wrap head">
-            <h1>个人中心</h1>
+            <h1>{t('个人中心')}</h1>
             <p className="head-lead">
-              {user.username} · 关注 <b>{summary.data?.follows ?? '—'}</b> 场 · 追踪{' '}
-              <b>{summary.data?.tracks ?? '—'}</b> 组条件
+              {user.username} ·{' '}
+              {t('关注 {follows} 场 · 追踪 {tracks} 组条件', {
+                follows: summary.data?.follows ?? '—',
+                tracks: summary.data?.tracks ?? '—',
+              })}
             </p>
           </section>
           <div className="wrap shell">
-            <nav className="tabs" aria-label="个人中心">
+            <nav className="tabs" aria-label={t('个人中心')}>
               {accountTabs.map(([key, text, icon]) => (
                 <NavLink className="tab" key={key} to={'/account/' + key}>
                   <Ic name={icon} />
-                  {text}
+                  {t(text)}
                   {key === 'follows' && !!summary.data?.follows && (
                     <span className="n">{summary.data.follows}</span>
                   )}
@@ -210,22 +217,30 @@ export function AccountPage() {
             <div className="foot">
               <div className="foot-brand">
                 <Brand />
-                <p>帮大学生找比赛、核对截止时间的侦探。每条信息都附原文链接。</p>
+                <p>{t('帮大学生找比赛、核对截止时间的侦探。每条信息都附原文链接。')}</p>
               </div>
               {groups.map(([title, links]) => (
                 <div className="foot-col" key={title}>
-                  <h3>{title}</h3>
+                  <h3>{t(title)}</h3>
                   <ul>
                     {links.map(([label, href]) => (
                       <li key={label}>
                         {href.startsWith('/') ? (
-                          <Link to={href}>{label}</Link>
+                          <Link to={href}>{translateSystemText(locale, label)}</Link>
                         ) : href ? (
-                          <a href={href} target="_blank" rel="noopener noreferrer">
-                            {label}
+                          <a
+                            href={
+                              locale === 'en' && label === '使用说明'
+                                ? github + '/blob/main/README.en.md'
+                                : href
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {translateSystemText(locale, label)}
                           </a>
                         ) : (
-                          <span className="sel-all">{label}</span>
+                          <span className="sel-all">{translateSystemText(locale, label)}</span>
                         )}
                       </li>
                     ))}
@@ -238,7 +253,7 @@ export function AccountPage() {
                 © {year} Inkpaw · {import.meta.env.VITE_BUILD_VERSION}
               </span>
               <span className="src">
-                赛事信息整理自 Devpost、HackerTrip、WaytoAGI 和主办方公众号
+                {t('赛事信息整理自 Devpost、HackerTrip、WaytoAGI 和主办方公众号')}
               </span>
               <AppearanceControl segmented />
             </div>
@@ -246,7 +261,7 @@ export function AccountPage() {
         </footer>
         <div className={'toast' + (notice ? ' show' : '')} role="status" aria-live="polite">
           <Ic name="check" />
-          <span>{notice?.text}</span>
+          <span>{notice && translateSystemText(locale, notice.text)}</span>
           {notice?.action && (
             <button
               className="linkbtn"
@@ -255,7 +270,7 @@ export function AccountPage() {
                 setNotice(null)
               }}
             >
-              {notice.action.label}
+              {translateSystemText(locale, notice.action.label)}
             </button>
           )}
         </div>

@@ -2336,13 +2336,20 @@ void main(){
       const c = cards.get(id)
       if (c) c.punchV = -2.4
     },
-    updateFace(id: string, face: HTMLCanvasElement) {
+    updateFace(id: string, face: HTMLCanvasElement, back?: HTMLCanvasElement) {
       const c = cards.get(id)
       if (!c) return
       shrink(face, c.faceLoC)
       c.tex[0].needsUpdate = true
       c.faceSrc = face
+      c.tex[2].image = face
       c.tex[2].needsUpdate = true
+      if (back) {
+        c.tex[1].image = shrink(back)
+        c.tex[1].needsUpdate = true
+        c.tex[3].image = back
+        c.tex[3].needsUpdate = true
+      }
     },
     // 指针在哪张卡上：返回手牌下标，顺便给焦点卡设倾斜
     hitCard(x: number, y: number) {

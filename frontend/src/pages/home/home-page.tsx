@@ -35,6 +35,7 @@ import { HomeFeatures, HomeClosing } from './home-features'
 import '@/features/detective/detective-composer.css'
 import './home-page.css'
 import './home-refresh.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
@@ -43,7 +44,7 @@ const questions = [
   '两周内截止、线上能参加的 AI 比赛',
   '怀柔科学城黑客松的报名截止是哪天？',
   '这场比赛收不收中国学生？',
-]
+] as const
 
 function WallCover({ url, name }: { url: string; name: string }) {
   const [loaded, setLoaded] = useState(false)
@@ -68,6 +69,7 @@ function WallCover({ url, name }: { url: string; name: string }) {
 }
 
 export function HomePage({ contestId }: { contestId?: string }) {
+  const { locale, t } = useLocale()
   const location = useLocation()
   const { data: user, isPending: userPending } = useCurrentUser()
   const guestQuota = useGuestQuota(!user && !userPending)
@@ -181,12 +183,15 @@ export function HomePage({ contestId }: { contestId?: string }) {
             <div className="hero-main">
               <div className="hero-copy">
                 <Link className="pill" to="/contests">
-                  已收录 <b>{total ?? '—'}</b> 场比赛 <Icon name="arrow-right" />
+                  {t('已收录')} <b>{total ?? '—'}</b>{' '}
+                  {locale === 'en' && total === 1 ? 'contest' : t('场比赛')}{' '}
+                  <Icon name="arrow-right" />
                 </Link>
                 <h1 className="hello">
-                  按你的兴趣和优势，
+                  {t('按你的兴趣和优势，')}
                   <br />
-                  找到<span className="hl">适合的比赛</span>
+                  {t('找到')}
+                  <span className="hl">{t('适合的比赛')}</span>
                 </h1>
                 <div id="top-ask">
                   <DetectiveComposer
@@ -203,13 +208,13 @@ export function HomePage({ contestId }: { contestId?: string }) {
                       ask(question, verification)
                     }
                     inputRef={input}
-                    placeholder="比如：我做过 Python 项目，想找线上能参加的 AI 比赛"
+                    placeholder={t('比如：我做过 Python 项目，想找线上能参加的 AI 比赛')}
                   />
                 </div>
-                <div className="chips" aria-label="建议问题">
+                <div className="chips" aria-label={t('建议问题')}>
                   {questions.map((text) => (
-                    <button className="chip" type="button" key={text} onClick={() => ask(text)}>
-                      {text}
+                    <button className="chip" type="button" key={text} onClick={() => ask(t(text))}>
+                      {t(text)}
                     </button>
                   ))}
                   <button
@@ -217,21 +222,21 @@ export function HomePage({ contestId }: { contestId?: string }) {
                     type="button"
                     onClick={() => (nudge.hasProfile ? addProfile('all') : nudge.request())}
                   >
-                    按我的画像推荐
+                    {t('按我的画像推荐')}
                   </button>
                   <Link className="chip" to="/live" state={{ liveQuestion: question }}>
-                    和它面对面聊
+                    {t('和它面对面聊')}
                   </Link>
                 </div>
               </div>
               <Link
                 to="/live"
                 state={{ liveQuestion: question }}
-                aria-label="和八爪鱼面对面聊"
+                aria-label={t('和八爪鱼面对面聊')}
                 className="octo-slot hero-octo"
                 ref={octopus}
                 data-speaking={speaking}
-                title="和它面对面聊"
+                title={t('和它面对面聊')}
               >
                 <Suspense
                   fallback={
@@ -240,7 +245,7 @@ export function HomePage({ contestId }: { contestId?: string }) {
                       src={searchFrame}
                       width={106 * (size / 120)}
                       height={85 * (size / 120)}
-                      alt="Inkpaw 八爪鱼"
+                      alt={t('Inkpaw 八爪鱼')}
                     />
                   }
                 >
@@ -260,11 +265,11 @@ export function HomePage({ contestId }: { contestId?: string }) {
                 })
               }
             >
-              往下看全部比赛
+              {t('往下看全部比赛')}
               <ChevronDown aria-hidden="true" />
             </button>
           </section>
-          <section className="wall" ref={wall} aria-label="最近收录的比赛">
+          <section className="wall" ref={wall} aria-label={t('最近收录的比赛')}>
             <div className="wall-tilt" aria-hidden="true">
               {[covers.slice(0, half), covers.slice(half)].map((row, rowIndex) => (
                 <div className={'wall-row' + (rowIndex ? ' rev soft' : '')} key={rowIndex}>
@@ -283,16 +288,20 @@ export function HomePage({ contestId }: { contestId?: string }) {
               ))}
             </div>
             <div className="wall-foot">
-              <h2>{total ?? '—'} 场比赛，按截止时间排好了</h2>
+              <h2>{t('{count} 场比赛，按截止时间排好了', { count: total ?? '—' })}</h2>
               <Link className="btn line" to="/contests">
-                进赛事库
+                {t('进赛事库')}
               </Link>
             </div>
             <div className="wall-state">
               {collection.data && !collection.data.complete && (
                 <p className="note" role="status">
-                  已加载 {contests.length} / {total} 场
-                  {collection.isFetching ? '，继续读取中。' : '。'}
+                  {t(
+                    collection.isFetching
+                      ? '已加载 {loaded} / {total} 场，继续读取中。'
+                      : '已加载 {loaded} / {total} 场。',
+                    { loaded: contests.length, total: collection.data.total },
+                  )}
                 </p>
               )}
               {collection.isError && (

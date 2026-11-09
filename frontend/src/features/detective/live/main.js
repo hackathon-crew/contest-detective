@@ -1,4 +1,5 @@
 // 已确认 Live 原型的编排；数据、权限和持久化由页面提供。
+import { translate, translateSystemText } from '@/shared/i18n'
 import { mountStage } from '@/shared/ui/octopus/live-stage'
 import { drawContest, drawBack, drawTicket, drawTicketBack } from './cards.js'
 import { speechLines, turnMood } from './model'
@@ -13,6 +14,9 @@ import { makeSound } from './sound.js'
 export function mountLive(root, callbacks, initial) {
   let disposed = false
   let snapshot = initial
+  let renderedLocale
+  const t = (message, values) => translate(snapshot.locale, message, values)
+  const systemText = (text) => translateSystemText(snapshot.locale, text)
   const frames = new Set(),
     timers = new Set(),
     intervals = new Set()
@@ -243,7 +247,13 @@ export function mountLive(root, callbacks, initial) {
         if (c) shown(b ? c.back : c.face)
       },
       punch: noop,
-      updateFace: noop,
+      updateFace(id, face, reverse) {
+        const card = hand.find((item) => item.id === id)
+        if (!card) return
+        card.face = face
+        if (reverse) card.back = reverse
+        if (this.focusId === id) shown(back ? card.back : card.face)
+      },
       hitCard: () => -1,
       cardRect: () => {
         const c = host.querySelector('.still-card')?.getBoundingClientRect()
@@ -423,9 +433,9 @@ export function mountLive(root, callbacks, initial) {
       const b = document.createElement('button')
       b.type = 'button'
       b.className = 'btn chip'
-      b.textContent = t
+      b.textContent = systemText(t)
       b.style.animationDelay = i * 50 + 'ms'
-      b.onclick = () => ask(t)
+      b.onclick = () => ask(b.textContent)
       chips.appendChild(b)
     })
     chips.classList.remove('off')
@@ -443,23 +453,68 @@ export function mountLive(root, callbacks, initial) {
   let left = initial.remaining ?? Infinity
   let pendingWatch = null
 
+  function drawCard(c, locale) {
+    return Promise.all([
+      drawContest(c, { watching: watching.has(c.id), locale }),
+      drawBack(c, locale),
+    ])
+  }
   async function makeSpec(c) {
-    const face = await drawContest(c, { watching: watching.has(c.id) })
-    const backC = await drawBack(c)
+    const locale = snapshot.locale
+    const [face, backC] = await drawCard(c, locale)
+    if (snapshot.locale !== locale) {
+      const latest = [...snapshot.cards, ...snapshot.album, ...snapshot.historyCards].find(
+        (card) => card.id === c.id,
+      )
+      return makeSpec(latest ?? c)
+    }
     const sp = { id: c.id, kind: 'contest', data: c, face, back: backC }
     specs.set(c.id, sp)
     return sp
   }
-  async function makeTicket(t) {
+  function ticketFace(ticket) {
+    return drawTicket({
+      ...ticket,
+      title: t(ticket.title),
+      lines: ticket.lines.map((line) => t(line)),
+    })
+  }
+  async function makeTicket(data) {
+    const locale = snapshot.locale
+    const [face, reverse] = await Promise.all([ticketFace(data), drawTicketBack()])
+    if (snapshot.locale !== locale) return makeTicket(data)
     const sp = {
-      id: t.id,
+      id: data.id,
       kind: 'ticket',
-      data: t,
-      face: await drawTicket(t),
-      back: await drawTicketBack(),
+      data,
+      face,
+      back: reverse,
     }
-    specs.set(t.id, sp)
+    specs.set(data.id, sp)
     return sp
+  }
+  async function redrawCards(next) {
+    const locale = next.locale
+    const cards = new Map(
+      [...next.historyCards, ...next.album, ...next.cards].map((card) => [card.id, card]),
+    )
+    const visible = new Set([...specs.values(), ...album.values()])
+    await Promise.all(
+      [...visible].map(async (spec) => {
+        const data = spec.kind === 'ticket' ? spec.data : cards.get(spec.id)
+        if (!data) return
+        const [face, reverse] =
+          spec.kind === 'ticket'
+            ? [await ticketFace(data), spec.back]
+            : await drawCard(data, locale)
+        if (disposed || snapshot.locale !== locale) return
+        Object.assign(spec, { data, face, back: reverse })
+        if (specs.get(spec.id) === spec) stage.updateFace(spec.id, face, reverse)
+      }),
+    )
+    if (disposed || snapshot.locale !== locale) return
+    renderActs()
+    if (albumEl.classList.contains('open')) renderAlbum()
   }
   function button(label, fn, cls = '') {
     const b = document.createElement('button')
@@ -478,27 +533,30 @@ export function mountLive(root, callbacks, initial) {
       return
     }
     if (sp.kind === 'ticket') {
-      acts.append(button(sp.data.yes, sp.data.onYes, 'primary'), button(sp.data.no, sp.data.onNo))
+      acts.append(
+        button(t(sp.data.yes), sp.data.onYes, 'primary'),
+        button(t(sp.data.no), sp.data.onNo),
+      )
     } else {
       const has = album.has(id)
-      if (inspect && has) acts.append(button('放回卡册', closeInspect, 'primary'))
-      else acts.append(button('收下', () => take(id), 'primary'))
-      acts.append(button(back ? '看正面' : '翻面', toggleFlip))
+      if (inspect && has) acts.append(button(t('放回卡册'), closeInspect, 'primary'))
+      else acts.append(button(t('收下'), () => take(id), 'primary'))
+      acts.append(button(t(back ? '看正面' : '翻面'), toggleFlip))
       if (!sp.data.blocked)
         acts.append(
           button(
-            watching.has(id) ? '已盯着' : '帮我盯着',
+            t(watching.has(id) ? '已盯着' : '帮我盯着'),
             () => watch(id),
             watching.has(id) ? 'on' : '',
           ),
         )
-      if (!has) acts.append(button('放回', () => file(id)))
-      if (stage.handIds.length > 1) acts.append(button('全部收下', takeAll))
+      if (!has) acts.append(button(t('放回'), () => file(id)))
+      if (stage.handIds.length > 1) acts.append(button(t('全部收下'), takeAll))
     }
     if (back && sp.kind === 'contest') {
       const links = document.createElement('div')
       links.className = 'live-source-links'
-      links.setAttribute('aria-label', '卡背来源')
+      links.setAttribute('aria-label', t('卡背来源'))
       for (const source of sp.data.sources) {
         const link = document.createElement('a')
         link.href = source.url
@@ -585,8 +643,8 @@ export function mountLive(root, callbacks, initial) {
     armIdle()
     if (album.size && !nudged) {
       nudged = true
-      say('收好了，都在右边那一摞里。')
-    } else say('还想查什么。', { log: false })
+      say(t('收好了，都在右边那一摞里。'))
+    } else say(t('还想查什么。'), { log: false })
     setChips(nextChips.length ? nextChips : FIRST_CHIPS)
   }
   let nudged = false
@@ -594,18 +652,18 @@ export function mountLive(root, callbacks, initial) {
     if (watching.has(id)) return
     if (!loggedIn) {
       pendingWatch = id
-      return dealLogin('要帮你盯着，我得知道该给谁发邮件。')
+      return dealLogin(t('要帮你盯着，我得知道该给谁发邮件。'))
     }
     const sp = specs.get(id)
     if (!(await callbacks.watch(id))) return
     watching.add(id)
-    sp.face = await drawContest(sp.data, { watching: true })
+    sp.face = await drawContest(sp.data, { watching: true, locale: snapshot.locale })
     if (disposed) return
     stage.updateFace(id, sp.face)
     stage.punch(id)
     sound.stamp()
     stage.hop(1.4)
-    say('盯上了。截止有变，我发邮件给你。', { log: false })
+    say(t('盯上了。截止有变，我发邮件给你。'), { log: false })
     renderActs()
   }
   async function dealLogin(line) {
@@ -635,7 +693,7 @@ export function mountLive(root, callbacks, initial) {
         callbacks.dismissTicket()
         pendingWatch = null
         await dropTicket('login')
-        say('好，这次的记录先留在这台设备上。', { log: false })
+        say(t('好，这次的记录先留在这台设备上。'), { log: false })
       },
     })
     if (disposed) return
@@ -646,7 +704,7 @@ export function mountLive(root, callbacks, initial) {
     phase = 'hand'
     setBusy(false)
     stage.set('hold')
-    say('我得先看看你做过什么。', { log: false })
+    say(t('我得先看看你做过什么。'), { log: false })
     const sp = await makeTicket({
       id: 'profile',
       title: '连接你的 GitHub',
@@ -657,7 +715,7 @@ export function mountLive(root, callbacks, initial) {
       onNo: async () => {
         callbacks.dismissTicket()
         await dropTicket('profile')
-        say('好。告诉我你写什么语言、想做什么方向，也能挑。', { log: false })
+        say(t('好。告诉我你写什么语言、想做什么方向，也能挑。'), { log: false })
       },
     })
     if (disposed) return
@@ -699,10 +757,14 @@ export function mountLive(root, callbacks, initial) {
   // ---- 卡册 ----
   const albumEl = $('#album'),
     grid = $('#grid')
-  function openAlbum() {
+  function renderAlbum() {
     grid.innerHTML = ''
-    if (!album.size)
-      grid.innerHTML = '<p class="empty">还没有收下的卡。问它一场比赛，递过来的卡收下就在这里。</p>'
+    if (!album.size) {
+      const empty = document.createElement('p')
+      empty.className = 'empty'
+      empty.textContent = t('还没有收下的卡。问它一场比赛，递过来的卡收下就在这里。')
+      grid.appendChild(empty)
+    }
     for (const [id, sp] of album) {
       const b = document.createElement('button')
       b.type = 'button'
@@ -716,6 +778,9 @@ export function mountLive(root, callbacks, initial) {
       b.onclick = () => reopenCard(id)
       grid.appendChild(b)
     }
+  }
+  function openAlbum() {
+    renderAlbum()
     albumEl.classList.add('open')
     $('#album-x').focus()
   }
@@ -744,14 +809,15 @@ export function mountLive(root, callbacks, initial) {
   sendBtn.innerHTML = SEND
   function setBusy(v) {
     sendBtn.innerHTML = v ? STOP : SEND
-    sendBtn.setAttribute('aria-label', v ? '让它停下' : '发送')
+    sendBtn.setAttribute('aria-label', t(v ? '让它停下' : '发送'))
     sendBtn.disabled = v ? false : !q.value.trim()
   }
   function renderQuota() {
     const el = $('#quota')
     const show = !loggedIn && left <= 2
     el.hidden = !show
-    if (show) el.textContent = left > 0 ? `今天还能问 ${left} 次` : '今天问完了'
+    if (show)
+      el.textContent = left > 0 ? t('今天还能问 {count} 次', { count: left }) : t('今天问完了')
   }
   const alive = (t) => !disposed && t === turn
 
@@ -801,7 +867,7 @@ export function mountLive(root, callbacks, initial) {
       if (!alive(token) || disposed) return
       stage.set('rummage')
       stage.startRummage(1)
-      sayStep('我拿给你')
+      sayStep(t('我拿给你'))
       const ready = await Promise.all(list.map(makeSpec))
       if (!alive(token) || disposed) return
       stage.set('hold')
@@ -834,7 +900,10 @@ export function mountLive(root, callbacks, initial) {
       stage.gesture('shrug')
       openLog(true)
       if (!lines.length)
-        void say(result.error || '已经找到的内容留在记录里，可以接着查。', { log: false })
+        void say(
+          result.error ? systemText(result.error) : t('已经找到的内容留在记录里，可以接着查。'),
+          { log: false },
+        )
     }
   }
   function update(next) {
@@ -846,6 +915,12 @@ export function mountLive(root, callbacks, initial) {
     renderQuota()
     watching.clear()
     next.watching.forEach((id) => watching.add(id))
+    if (renderedLocale !== next.locale) {
+      const previous = renderedLocale
+      renderedLocale = next.locale
+      paintCopy()
+      if (previous) void redrawCards(next)
+    }
     for (const card of next.album) {
       if (album.has(card.id)) continue
       void makeSpec(card).then((sp) => {
@@ -858,7 +933,7 @@ export function mountLive(root, callbacks, initial) {
     const current = next.turn
     if (next.ticket && ticket !== next.ticket) {
       ticket = next.ticket
-      if (ticket === 'login') void dealLogin('今天的 3 次问完了。登录之后不限次数。')
+      if (ticket === 'login') void dealLogin(t('今天的 3 次问完了。登录之后不限次数。'))
       else void dealProfile()
       return
     }
@@ -890,7 +965,7 @@ export function mountLive(root, callbacks, initial) {
       }
       for (const event of current.trace.slice(shownTrace)) {
         trail.querySelector('.now')?.classList.replace('now', 'done')
-        const line = event.type === 'step' ? event.label : event.summary
+        const line = event.type === 'step' ? systemText(event.label) : event.summary
         const li = document.createElement('li')
         li.className = 'now'
         li.textContent = line
@@ -985,7 +1060,7 @@ export function mountLive(root, callbacks, initial) {
     if (stage.mood === 'sleep') {
       stage.set('idle')
       stage.wake()
-      say('嗯……我没睡。', { log: false, keep: false })
+      say(t('嗯……我没睡。'), { log: false, keep: false })
     }
     armIdle()
   }
@@ -1037,7 +1112,7 @@ export function mountLive(root, callbacks, initial) {
       const n = stage.poke()
       sound.boop()
       const line = POKE[Math.min(n, 5)]
-      if (line && phase !== 'busy') say(line, { log: false, keep: false })
+      if (line && phase !== 'busy') say(t(line), { log: false, keep: false })
     }
   })
   addEventListener('keydown', (e) => {
@@ -1103,9 +1178,20 @@ export function mountLive(root, callbacks, initial) {
   const themeBtn = $('#b-theme'),
     soundBtn = $('#b-sound')
   const paintTheme = () => {
-    themeBtn.textContent = dark ? '浅色' : '深色'
+    themeBtn.textContent = t(dark ? '浅色' : '深色')
   }
-  paintTheme()
+  function paintCopy() {
+    for (const node of root.querySelectorAll('[data-copy]')) {
+      const message = t(node.dataset.copy)
+      if (node.dataset.copyAttr) node.setAttribute(node.dataset.copyAttr, message)
+      else node.textContent = message
+    }
+    paintTheme()
+    soundBtn.textContent = t(soundBtn.getAttribute('aria-pressed') === 'true' ? '声音开' : '声音关')
+    sendBtn.setAttribute('aria-label', t(phase === 'busy' ? '让它停下' : '发送'))
+    if (chips.children.length && !chips.classList.contains('off'))
+      setChips(nextChips.length ? nextChips : FIRST_CHIPS)
+  }
   themeBtn.onclick = () => {
     dark = !dark
     root.dataset.theme = dark ? 'dark' : 'light'
@@ -1115,7 +1201,7 @@ export function mountLive(root, callbacks, initial) {
   }
   soundBtn.onclick = () => {
     const on = sound.toggle()
-    soundBtn.textContent = on ? '声音开' : '声音关'
+    soundBtn.textContent = t(on ? '声音开' : '声音关')
     soundBtn.setAttribute('aria-pressed', on)
     store.set('sound', on ? '1' : '0')
     if (on) sound.pop()
@@ -1133,11 +1219,11 @@ export function mountLive(root, callbacks, initial) {
     if (disposed || snapshot.turn || snapshot.ticket) return
     stage.gesture('wave')
     await wait(240)
-    await say(['我是 Inkpaw 的侦探。', '想查哪场比赛，写在下面。'], { log: false })
+    await say([t('我是 Inkpaw 的侦探。'), t('想查哪场比赛，写在下面。')], { log: false })
     setChips(FIRST_CHIPS)
     armIdle()
   }
-  for (const link of root.querySelectorAll('a[href="/detective"]')) {
+  for (const link of root.querySelectorAll('a.logo, nav a')) {
     link.href = initial.textHref
     link.onclick = (event) => {
       event.preventDefault()

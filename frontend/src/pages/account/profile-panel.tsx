@@ -6,36 +6,41 @@ import { apiClient } from '@/shared/api'
 import type { MatchItem, Profile, PublicUser } from '@/shared/api/generated'
 import { Chips, Expand, failure, Ic, Row, Segments, Tags, useNotice } from './components'
 import { dirtyFields, mergeDraft, profileSummary } from './profile-state'
+import { translateSystemText, type Locale } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((m) => ({ default: m.Octopus })),
 )
-const wd = '一二三四五六日'
-const topics = ['教育', '公益', '健康', '金融科技', '区块链', '硬件', '设计']
+const weekdays = ['一', '二', '三', '四', '五', '六', '日'] as const
+const topics = ['教育', '公益', '健康', '金融科技', '区块链', '硬件', '设计'] as const
 const modes = [
   ['online', '线上'],
   ['offline', '线下'],
   ['hybrid', '线上+线下'],
 ] as const
-const md = (s: string | undefined | null) =>
+const md = (s: string | undefined | null, locale: Locale) =>
   s
-    ? new Intl.DateTimeFormat('zh-CN', {
-        month: 'numeric',
+    ? new Intl.DateTimeFormat(locale, {
+        month: locale === 'en' ? 'short' : 'numeric',
         day: 'numeric',
         timeZone: 'Asia/Shanghai',
       }).format(new Date(s))
     : ''
 export function ProfilePanel() {
+  const { t } = useLocale()
   const { data: user } = useCurrentUser()
   if (!user)
     return (
       <section className="panel" aria-busy="true">
-        <p className="p-lead">正在读取画像…</p>
+        <p className="p-lead">{t('正在读取画像…')}</p>
       </section>
     )
   return <ProfileEditor key={user.id} user={user} />
 }
 function ProfileEditor({ user }: { user: PublicUser }) {
+  const { locale, t } = useLocale()
+  const [matchPrefix, matchSuffix] = t('按这份画像，现在有 {count} 场合适').split('{count}')
   const client = useQueryClient(),
     notice = useNotice()
   const [draft, setDraft] = useState<Profile | null>(user.profile),
@@ -46,7 +51,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
     [error, setError] = useState('')
   const file = useRef<HTMLInputElement>(null)
   const dirty = draft && saved ? dirtyFields(draft, saved) : 0
-  const nextSummary = profileSummary(draft ?? {}),
+  const nextSummary = profileSummary(draft ?? {}, locale),
     [summary, setSummary] = useState(nextSummary),
     [fading, setFading] = useState(false)
   const [mood, setMood] = useState<'search' | 'think' | 'happy'>('search')
@@ -101,7 +106,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
   if (!draft)
     return (
       <section className="panel" aria-busy="true">
-        <p className="p-lead">正在读取画像…</p>
+        <p className="p-lead">{t('正在读取画像…')}</p>
       </section>
     )
   const p = draft,
@@ -167,31 +172,34 @@ function ProfileEditor({ user }: { user: PublicUser }) {
       <section className="panel" aria-labelledby="h-profile" id="p-profile">
         <div className="p-head">
           <div>
-            <h2 id="h-profile">我的画像</h2>
-            <p className="p-lead">侦探按这份画像挑比赛、写推荐理由、决定给你推送什么。</p>
+            <h2 id="h-profile">{t('我的画像')}</h2>
+            <p className="p-lead">{t('侦探按这份画像挑比赛、写推荐理由、决定给你推送什么。')}</p>
           </div>
         </div>
         <div className="hero">
           <div>
             <p className="hero-k">
-              侦探眼中的你{dirty > 0 && <span className="edited">· 有改动没保存</span>}
+              {t('侦探眼中的你')}
+              {dirty > 0 && <span className="edited">{t('· 有改动没保存')}</span>}
             </p>
             <p className={'hero-sum' + (fading ? ' fade' : '')}>{summary}</p>
             <div className="hero-meta">
               <span>
-                按这份画像，现在有 <b>{matches.data?.length ?? '—'}</b> 场合适
+                {matchPrefix}
+                <b>{matches.data?.length ?? '—'}</b>
+                {matchSuffix}
               </span>
               <Link to="/contests">
-                在赛事库里看 <Ic name="arrow-right" />
+                {t('在赛事库里看')} <Ic name="arrow-right" />
               </Link>
             </div>
             {matches.error && (
               <p className="field-msg" role="alert">
-                {failure(matches.error)}
+                {translateSystemText(locale, failure(matches.error))}
               </p>
             )}
           </div>
-          <div className="hero-octo" title="点一下它">
+          <div className="hero-octo" title={t('点一下它')}>
             <Suspense fallback={null}>
               <Octopus size={120} mood={busy === 'resume' ? 'read' : busy ? 'think' : mood} />
             </Suspense>
@@ -199,8 +207,8 @@ function ProfileEditor({ user }: { user: PublicUser }) {
         </div>
         <div className="grp">
           <div className="grp-head">
-            <h3>从哪里读</h3>
-            <span className="note">读出来的内容会合并到下面，保存前都能改</span>
+            <h3>{t('从哪里读')}</h3>
+            <span className="note">{t('读出来的内容会合并到下面，保存前都能改')}</span>
           </div>
           <div className="src-row">
             <div className="src-ic">
@@ -211,15 +219,21 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                 <>
                   <b>{p.github}</b>
                   <p>
-                    {p.github_public_repos ?? p.github_evidence?.length ?? 0} 个公开仓库
-                    {p.github_last_active_at ? ` · 最近活跃 ${md(p.github_last_active_at)}` : ''}
-                    {p.github_read_at ? ` · ${md(p.github_read_at)}读取` : ''}
+                    {t('{count} 个公开仓库', {
+                      count: p.github_public_repos ?? p.github_evidence?.length ?? 0,
+                    })}
+                    {p.github_last_active_at
+                      ? t(' · 最近活跃 {date}', { date: md(p.github_last_active_at, locale) })
+                      : ''}
+                    {p.github_read_at
+                      ? t(' · {date}读取', { date: md(p.github_read_at, locale) })
+                      : ''}
                   </p>
                 </>
               ) : (
                 <>
                   <b>GitHub</b>
-                  <p>读公开仓库的语言和项目，生成技能和方向</p>
+                  <p>{t('读公开仓库的语言和项目，生成技能和方向')}</p>
                 </>
               )}
             </div>
@@ -232,7 +246,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                     aria-expanded={evidence}
                     onClick={() => setEvidence(!evidence)}
                   >
-                    {evidence ? '收起依据' : '看依据'}
+                    {evidence ? t('收起依据') : t('看依据')}
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
@@ -240,17 +254,17 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                     onClick={() => void readGithub()}
                   >
                     <Ic name="refresh" />
-                    {busy === 'github' ? '正在读公开仓库…' : '重新读取'}
+                    {busy === 'github' ? t('正在读公开仓库…') : t('重新读取')}
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     onClick={() => {
                       field('github', null)
                       setEvidence(false)
-                      notice('已断开 GitHub，画像里读出来的技能还留着')
+                      notice(t('已断开 GitHub，画像里读出来的技能还留着'))
                     }}
                   >
-                    断开
+                    {t('断开')}
                   </button>
                 </>
               ) : (
@@ -265,13 +279,13 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                     className="inp"
                     value={github}
                     onChange={(e) => setGithub(e.target.value)}
-                    placeholder="GitHub 用户名"
-                    aria-label="GitHub 用户名"
+                    placeholder={t('GitHub 用户名')}
+                    aria-label={t('GitHub 用户名')}
                     autoComplete="off"
                     required
                   />
                   <button className="btn btn-outline btn-sm" disabled={!!busy || !github.trim()}>
-                    {busy === 'github' ? '正在读取…' : '读取'}
+                    {busy === 'github' ? t('正在读取…') : t('读取')}
                   </button>
                 </form>
               )}
@@ -279,7 +293,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
             <Expand open={evidence}>
               <div className="evid">
                 <div>
-                  <h4>仓库语言</h4>
+                  <h4>{t('仓库语言')}</h4>
                   <div className="langs">
                     {Object.entries(p.language_repo_share ?? {}).map(([lang, share]) => (
                       <div className="lang" key={lang}>
@@ -293,7 +307,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                   </div>
                 </div>
                 <div>
-                  <h4>最近更新的仓库</h4>
+                  <h4>{t('最近更新的仓库')}</h4>
                   <div className="repos">
                     {(p.github_evidence ?? []).slice(0, 5).map((repo) => (
                       <a
@@ -306,7 +320,9 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                         <div className="repo-top">
                           <b>{repo.name}</b>
                           <span>
-                            {[repo.language, md(repo.pushed_at)].filter(Boolean).join(' · ')}
+                            {[repo.language, md(repo.pushed_at, locale)]
+                              .filter(Boolean)
+                              .join(' · ')}
                           </span>
                         </div>
                         <p>{repo.description ?? repo.topics?.join(' · ')}</p>
@@ -322,13 +338,13 @@ function ProfileEditor({ user }: { user: PublicUser }) {
               <Ic name="file" large />
             </div>
             <div className="src-main">
-              <b>{p.resume_name ?? '简历'}</b>
+              <b>{p.resume_name ?? t('简历')}</b>
               <p>
                 {busy === 'resume'
-                  ? '正在读简历…'
+                  ? t('正在读简历…')
                   : p.resume_name
-                    ? '读出来的内容已经加到下面'
-                    : 'PDF 或 Word，读出技能、经历和获奖'}
+                    ? t('读出来的内容已经加到下面')
+                    : t('PDF 或 Word，读出技能、经历和获奖')}
               </p>
             </div>
             <div className="src-acts">
@@ -339,7 +355,7 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                 onClick={() => file.current?.click()}
               >
                 <Ic name="upload" />
-                {p.resume_name ? '换一份' : '导入简历'}
+                {p.resume_name ? t('换一份') : t('导入简历')}
               </button>
               <input
                 ref={file}
@@ -356,15 +372,15 @@ function ProfileEditor({ user }: { user: PublicUser }) {
         </div>
         <div className="grp">
           <div className="grp-head">
-            <h3>画像内容</h3>
+            <h3>{t('画像内容')}</h3>
           </div>
-          <Row label="身份">
+          <Row label={t('身份')}>
             <Segments
-              label="身份"
+              label={t('身份')}
               values={
                 [
-                  ['student', '学生'],
-                  ['professional', '在职'],
+                  ['student', t('学生')],
+                  ['professional', t('在职')],
                 ] as const
               }
               value={p.identity_kind}
@@ -372,18 +388,18 @@ function ProfileEditor({ user }: { user: PublicUser }) {
             />
             <input
               className="inp w-md"
-              aria-label="身份说明"
+              aria-label={t('身份说明')}
               maxLength={500}
-              placeholder="比如：大二，计算机专业"
+              placeholder={t('比如：大二，计算机专业')}
               value={p.identity ?? ''}
               onChange={(e) => field('identity', e.target.value)}
             />
           </Row>
-          <Row label="技能" small="带 GitHub 标的是从仓库读出来的">
+          <Row label={t('技能')} small={t('带 GitHub 标的是从仓库读出来的')}>
             <Tags
               values={p.skills ?? []}
               sources={p.skill_sources}
-              placeholder="加一项技能，回车"
+              placeholder={t('加一项技能，回车')}
               change={(skills) => {
                 setDraft((prev) => ({
                   ...prev!,
@@ -395,53 +411,53 @@ function ProfileEditor({ user }: { user: PublicUser }) {
               }}
             />
           </Row>
-          <Row label="感兴趣的方向">
+          <Row label={t('感兴趣的方向')}>
             <Tags
               values={p.topics ?? []}
               change={(v) => field('topics', v)}
-              placeholder="加一个方向，回车"
+              placeholder={t('加一个方向，回车')}
             />
             <div className="sugg">
-              <span>常见方向</span>
+              <span>{t('常见方向')}</span>
               {topics
-                .filter((t) => !p.topics?.includes(t))
-                .map((t) => (
-                  <button key={t} onClick={() => field('topics', [...(p.topics ?? []), t])}>
+                .filter((topic) => !p.topics?.includes(topic))
+                .map((topic) => (
+                  <button key={topic} onClick={() => field('topics', [...(p.topics ?? []), topic])}>
                     <Ic name="plus" />
-                    {t}
+                    {t(topic)}
                   </button>
                 ))}
             </div>
           </Row>
-          <Row label="所在城市" small="线下比赛按这里算远近">
+          <Row label={t('所在城市')} small={t('线下比赛按这里算远近')}>
             <input
               className="inp w-sm"
-              aria-label="所在城市"
+              aria-label={t('所在城市')}
               maxLength={80}
-              placeholder="比如：上海"
+              placeholder={t('比如：上海')}
               value={p.city ?? ''}
               onChange={(e) => field('city', e.target.value.trim() || null)}
             />
           </Row>
-          <Row label="参赛形式" small="可以多选">
+          <Row label={t('参赛形式')} small={t('可以多选')}>
             <Chips
-              values={modes}
+              values={modes.map(([value, label]) => [value, t(label)] as const)}
               selected={p.preferred_modes ?? []}
               change={(v) => field('preferred_modes', v)}
             />
           </Row>
-          <Row label="可投入时间">
+          <Row label={t('可投入时间')}>
             <Chips
-              label="哪几天有空"
-              values={[...wd].map((d, i) => [i, d] as const)}
+              label={t('哪几天有空')}
+              values={weekdays.map((day, i) => [i, t(day)] as const)}
               selected={availability.weekdays ?? []}
               change={(weekdays) => field('availability', { ...availability, weekdays })}
             />
             <div className="ctl-line">
-              <span>最多连续投入</span>
+              <span>{t('最多连续投入')}</span>
               <div className="step">
                 <button
-                  aria-label="少一天"
+                  aria-label={t('少一天')}
                   disabled={!n}
                   onClick={() =>
                     field('availability', {
@@ -452,9 +468,9 @@ function ProfileEditor({ user }: { user: PublicUser }) {
                 >
                   <Ic name="minus" />
                 </button>
-                <output>{n ? `${n} 天` : '不限'}</output>
+                <output>{n ? t(n === 1 ? '1 天' : '{days} 天', { days: n }) : t('不限')}</output>
                 <button
-                  aria-label="多一天"
+                  aria-label={t('多一天')}
                   disabled={n >= 30}
                   onClick={() =>
                     field('availability', {
@@ -469,9 +485,9 @@ function ProfileEditor({ user }: { user: PublicUser }) {
             </div>
             <input
               className="inp"
-              aria-label="可投入时间说明"
+              aria-label={t('可投入时间说明')}
               maxLength={500}
-              placeholder="补充说明，比如：12 月 22 日到 1 月 10 日期末，不参加"
+              placeholder={t('补充说明，比如：12 月 22 日到 1 月 10 日期末，不参加')}
               value={p.available_time ?? ''}
               onChange={(e) => field('available_time', e.target.value)}
             />
@@ -479,24 +495,24 @@ function ProfileEditor({ user }: { user: PublicUser }) {
         </div>
         {error && (
           <p role="alert" className="grp-note">
-            {error}
+            {translateSystemText(locale, error)}
           </p>
         )}
       </section>
       <div
         className={'savebar' + (dirty ? ' show' : '')}
         role="region"
-        aria-label="保存画像"
+        aria-label={t('保存画像')}
         inert={!dirty}
       >
-        <span>画像有 {dirty} 处改动</span>
+        <span>{t('画像有 {count} 处改动', { count: dirty })}</span>
         <button
           className="btn btn-ghost"
           type="button"
           disabled={!!busy}
           onClick={() => setDraft(saved)}
         >
-          撤销
+          {t('撤销')}
         </button>
         <button
           className="btn btn-primary"
@@ -507,10 +523,10 @@ function ProfileEditor({ user }: { user: PublicUser }) {
           {busy === 'save' ? (
             <>
               <span className="spin" />
-              保存中
+              {t('保存中')}
             </>
           ) : (
-            '保存画像'
+            t('保存画像')
           )}
         </button>
       </div>

@@ -1,5 +1,6 @@
 import { Check, CircleAlert, Dot, Minus } from 'lucide-react'
 import type { FieldValue } from './api'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 // 只有冲突是彩色的，其余等级用墨色深浅区分。
 const levels = {
@@ -16,11 +17,12 @@ const levelColors = {
 }
 
 export function Level({ level }: { level: FieldValue['level'] }) {
+  const { t } = useLocale()
   const [Icon, text] = levels[level] ?? levels.not_found
   return (
     <span className={'inline-flex items-center gap-0.5 whitespace-nowrap ' + levelColors[level]}>
       <Icon aria-hidden="true" className="size-3" strokeWidth={2.25} />
-      {text}
+      {t(text)}
     </span>
   )
 }

@@ -21,18 +21,23 @@ import {
   type LibraryFilters,
 } from '@/entities/contest'
 import type { MatchItem } from '@/shared/api'
+import { defaultLocale, translate, type Locale, type Message } from '@/shared/i18n'
 
 const emptyLibrary: LibraryContest[] = []
 
-export function activeFilters(filters: LibraryFilters) {
+export function activeFilters(filters: LibraryFilters, locale: Locale = defaultLocale) {
   const values: { key: string; label: string; patch: Partial<LibraryFilters> }[] = []
   if (filters.keyword)
     values.push({ key: 'keyword', label: '“' + filters.keyword + '”', patch: { keyword: '' } })
   if (filters.date)
-    values.push({ key: 'date', label: monthDay(filters.date), patch: { date: null } })
+    values.push({ key: 'date', label: monthDay(filters.date, locale), patch: { date: null } })
   if (filters.status !== 'all')
-    values.push({ key: 'status', label: statusNames[filters.status], patch: { status: 'all' } })
-  const dueNames: Record<string, string> = {
+    values.push({
+      key: 'status',
+      label: translate(locale, statusNames[filters.status]),
+      patch: { status: 'all' },
+    })
+  const dueNames: Record<string, Message> = {
     '0': '今天截止',
     '7': '7 天内',
     '30': '30 天内',
@@ -40,11 +45,20 @@ export function activeFilters(filters: LibraryFilters) {
     none: '没写截止时间',
   }
   if (filters.due !== 'all')
-    values.push({ key: 'due', label: dueNames[filters.due]!, patch: { due: 'all' } })
+    values.push({
+      key: 'due',
+      label: translate(locale, dueNames[filters.due]!),
+      patch: { due: 'all' },
+    })
   filters.modes.forEach((mode) =>
     values.push({
       key: 'mode-' + mode,
-      label: mode === 'hybrid' ? '线上+线下' : (modeNames[mode] ?? mode),
+      label:
+        mode === 'hybrid'
+          ? translate(locale, '线上+线下')
+          : modeNames[mode]
+            ? translate(locale, modeNames[mode])
+            : mode,
       patch: { modes: filters.modes.filter((m) => m !== mode) },
     }),
   )
@@ -60,9 +74,13 @@ export function activeFilters(filters: LibraryFilters) {
     ['official', '截止时间对过原文'],
     ['mine', '我关注的'],
   ] as const)
-    if (filters[key]) values.push({ key, label, patch: { [key]: false } })
+    if (filters[key]) values.push({ key, label: translate(locale, label), patch: { [key]: false } })
   if (filters.date_from || filters.date_to)
-    values.push({ key: 'range', label: '日期范围', patch: { date_from: null, date_to: null } })
+    values.push({
+      key: 'range',
+      label: translate(locale, '日期范围'),
+      patch: { date_from: null, date_to: null },
+    })
   return values
 }
 export function useContestBrowser(

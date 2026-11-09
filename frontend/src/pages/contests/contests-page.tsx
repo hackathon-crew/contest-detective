@@ -26,11 +26,13 @@ import { WeeklyPicks } from '@/features/weekly-picks'
 import { FollowButton, useFollows } from '@/features/follow'
 import { ErrorState } from '@/shared/ui'
 import './contests-page.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
 )
 
 export function ContestsPage({ contestId }: { contestId?: string }) {
+  const { locale, t } = useLocale()
   const location = useLocation()
   const { data: user } = useCurrentUser()
   const requireLogin = useLoginGate()
@@ -135,9 +137,9 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
     setTrackingBusy(true)
     setTrackingError(null)
     try {
-      const labels = activeFilters(browser.filters)
+      const labels = activeFilters(browser.filters, locale)
         .map((item) => item.label)
-        .join('、')
+        .join(locale === 'en' ? ', ' : '、')
       const {
         keyword,
         status,
@@ -183,13 +185,16 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
   }
   function download() {
     try {
-      const value = createContestCalendar(browser.all.filter((c) => follows.ids.includes(c.id)))
+      const value = createContestCalendar(
+        browser.all.filter((c) => follows.ids.includes(c.id)),
+        locale,
+      )
       if (!value) throw new Error('关注赛事中没有可导出的已知日期')
       const url = URL.createObjectURL(new Blob([value], { type: 'text/calendar;charset=utf-8' }))
       try {
         const link = document.createElement('a')
         link.href = url
-        link.download = '关注的比赛.ics'
+        link.download = t('关注的比赛.ics')
         link.click()
       } finally {
         URL.revokeObjectURL(url)
@@ -213,7 +218,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
     ...(profile?.topics ?? []),
     profile?.city,
     ...(profile?.preferred_modes ?? []).map((mode) =>
-      mode === 'online' ? '想线上参加' : mode === 'offline' ? '想线下参加' : '线上线下都可',
+      t(mode === 'online' ? '想线上参加' : mode === 'offline' ? '想线下参加' : '线上线下都可'),
     ),
   ].filter((value): value is string => !!value)
   return (
@@ -222,21 +227,25 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
       <main>
         <section className="site-wrap head">
           <div className="head-copy">
-            <h1>赛事库</h1>
+            <h1>{t('赛事库')}</h1>
             <p className="head-lead">
               {browser.query.isPending ? (
-                '正在读取赛事库。'
+                t('正在读取赛事库。')
               ) : browser.query.isError && !browser.query.data ? (
-                '赛事库读取失败，请重试。'
+                t('赛事库读取失败，请重试。')
               ) : !browser.query.complete ? (
                 <>
-                  已加载 <b>{browser.all.length}</b> 场比赛，
-                  {browser.query.isFetching ? '正在读取其余赛事。' : '其余赛事尚未读取完成。'}
+                  {t('已加载 {count} 场比赛，', { count: browser.all.length })}{' '}
+                  {t(browser.query.isFetching ? '正在读取其余赛事。' : '其余赛事尚未读取完成。')}
                 </>
               ) : (
                 <>
-                  收录 <b>{browser.all.length}</b> 场黑客松，优先展示至少还有 7 天准备时间的比赛。
-                  <b>{official}</b> 场的截止时间对过主办方原文，其余每个日期都标明了出处。
+                  {t('收录 {count} 场黑客松，优先展示至少还有 7 天准备时间的比赛。', {
+                    count: browser.all.length,
+                  })}{' '}
+                  {t('{count} 场的截止时间对过主办方原文，其余每个日期都标明了出处。', {
+                    count: official,
+                  })}
                 </>
               )}
             </p>
@@ -246,8 +255,8 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                 <input
                   ref={searchInput}
                   type="search"
-                  aria-label="搜索赛事"
-                  placeholder="搜索比赛、主办方、城市或方向"
+                  aria-label={t('搜索赛事')}
+                  placeholder={t('搜索比赛、主办方、城市或方向')}
                   autoComplete="off"
                   value={keyword}
                   onChange={(event) => {
@@ -264,7 +273,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                   <button
                     className="x"
                     type="button"
-                    aria-label="清空搜索"
+                    aria-label={t('清空搜索')}
                     onClick={() => {
                       change({ keyword: '' })
                       searchInput.current?.focus()
@@ -281,11 +290,11 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                 onClick={() => (matches ? setMatches(null) : setProfileSection('all'))}
               >
                 <UserRound className="ic" />
-                按我的情况挑
+                {t('按我的情况挑')}
               </button>
             </div>
           </div>
-          <div className="head-octo" title="点一下它">
+          <div className="head-octo" title={t('点一下它')}>
             <Suspense
               fallback={
                 <img
@@ -302,7 +311,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
           </div>
         </section>
         <WeeklyPicks />
-        <section className="site-wrap lib" id="lib" ref={listArea} aria-label="全部赛事">
+        <section className="site-wrap lib" id="lib" ref={listArea} aria-label={t('全部赛事')}>
           <ContestFilters
             contests={browser.base}
             filters={browser.filters}
@@ -325,7 +334,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                   scrollToLibrary()
                 }}
               >
-                我的关注
+                {t('我的关注')}
                 {follows.ids.length > 0 && <span className="badge">{follows.ids.length}</span>}
               </button>
             }
@@ -335,7 +344,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             {follows.error && <ErrorState error={new Error(follows.error)} />}
             {downloadError != null && <ErrorState error={downloadError} />}
             {trackingError != null && <ErrorState error={trackingError} />}
-            {trackingId && !user && <ErrorState error={new Error('登录后查看这组追踪条件')} />}
+            {trackingId && !user && <ErrorState error={new Error(t('登录后查看这组追踪条件'))} />}
             {tracking.error && <ErrorState error={tracking.error} />}
             <ContestBrowser
               browser={{ ...browser, change, clear }}
@@ -351,7 +360,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                       disabled={trackingBusy}
                       onClick={() => void trackFilters()}
                     >
-                      {trackingBusy ? '正在追踪…' : '追踪这组条件'}
+                      {trackingBusy ? t('正在追踪…') : t('追踪这组条件')}
                     </button>
                   )}
                   {browser.filters.mine && (
@@ -363,7 +372,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                       }
                       onClick={download}
                     >
-                      导出日历
+                      {t('导出日历')}
                     </button>
                   )}
                 </>
@@ -371,7 +380,8 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
               profile={
                 trackingId ? (
                   <div className="profile-bar">
-                    追踪条件：<span className="tag">{tracking.data?.text ?? '正在读取…'}</span>
+                    {t('追踪条件：')}
+                    <span className="tag">{tracking.data?.text ?? t('正在读取…')}</span>
                     <button
                       className="site-button site-button--ghost"
                       type="button"
@@ -381,13 +391,13 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                         navigate({ pathname: '/contests', search: next.toString() })
                       }}
                     >
-                      看全部
+                      {t('看全部')}
                     </button>
                   </div>
                 ) : (
                   matches !== null && (
                     <div className="profile-bar">
-                      按你的画像挑：
+                      {t('按你的画像挑：')}
                       {tags.map((tag, i) => (
                         <span key={tag + i} className="tag">
                           {tag}
@@ -398,7 +408,7 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                         type="button"
                         onClick={() => setMatches(null)}
                       >
-                        看全部
+                        {t('看全部')}
                       </button>
                     </div>
                   )

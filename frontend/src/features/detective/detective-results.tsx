@@ -5,9 +5,9 @@ import {
   ContestCover,
   Level,
   deadlineDays,
+  dateText,
   displayDeadline,
   fieldNames,
-  formatDate,
   modeNames,
   prizeText,
   safeUrl,
@@ -15,6 +15,7 @@ import {
 import { Dialog } from '@/shared/ui'
 import type { ContestRecommendation, ProfileFile } from './conversation'
 import './detective-results.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 /* 推荐卡：照首页 mock 侦探回答里的 .picks，一组行共用一个描边容器，行间一条细线；
    左边 4:3 小封面，中间名称、主办方·形式·奖金、简介和带勾的建议，右边是截止日期一列。
@@ -26,10 +27,11 @@ export function RecommendationCards({
   items: ContestRecommendation[]
   action?: (contest: ContestRecommendation['contest']) => ReactNode
 }) {
+  const { locale, t } = useLocale()
   if (!items.length) return null
   return (
     <section
-      aria-label="推荐比赛"
+      aria-label={t('推荐比赛')}
       className="min-w-0 overflow-hidden rounded-2xl border border-rule bg-surface font-sans duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
     >
       {items.map(({ contest, introduction, reason }) => {
@@ -38,15 +40,16 @@ export function RecommendationCards({
         const mode = fields.mode?.value
         const meta = [
           fields.organizer?.value,
-          modeNames[mode ?? ''],
+          mode && modeNames[mode] ? t(modeNames[mode]) : null,
           mode === 'online' ? null : fields.city?.value,
         ].filter(Boolean)
         const prize = prizeText(contest)
         const source = deadline?.info.sources?.find((item) => !item.stale && safeUrl(item.url))
-        const date = deadline
-          ? formatDate(deadline.info.value, deadline.info.precision).split('（')[0]
-          : null
-        const note = deadline?.info.precision === 'day' ? '时刻未核实' : undefined
+        const date = deadline ? dateText(deadline.info, locale) : null
+        const note =
+          date && deadline?.info.precision === 'day'
+            ? t('{date}（时刻未核实）', { date })
+            : undefined
         const left = deadline ? deadlineDays(deadline) : null
         const intro = (introduction || contest.summary)
           ?.split(/\r?\n/)
@@ -108,22 +111,22 @@ export function RecommendationCards({
                   href={source.url}
                   target="_blank"
                   rel="noreferrer"
-                  aria-label={note ? `${date}（${note}）` : undefined}
-                  title={note ? `${date}（${note}）` : undefined}
+                  aria-label={note}
+                  title={note}
                   className="detective-recommendation-title relative z-10 font-semibold whitespace-nowrap text-ink tabular-nums decoration-rule-strong underline-offset-4 hover:underline"
                 >
                   {date}
                 </a>
               ) : (
                 <span className="detective-recommendation-title font-semibold whitespace-nowrap text-ink tabular-nums">
-                  {date ?? '日期未公布'}
+                  {date ?? t('日期未公布')}
                 </span>
               )}
               {deadline && (
                 <span className="text-xs text-muted">
                   {deadline.field === 'submission_deadline'
-                    ? '提交截止'
-                    : fieldNames[deadline.field]}
+                    ? t('提交截止')
+                    : t(fieldNames[deadline.field])}
                 </span>
               )}
               {deadline && (
@@ -135,7 +138,11 @@ export function RecommendationCards({
                         left >= 0 && left <= 2 ? 'font-medium text-danger' : 'text-ink-soft'
                       }
                     >
-                      {left < 0 ? '已截止' : left === 0 ? '今天截止' : `还有 ${left} 天`}
+                      {left < 0
+                        ? t('已截止')
+                        : left === 0
+                          ? t('今天截止')
+                          : t(left === 1 ? '还有 1 天' : '还有 {days} 天', { days: left })}
                     </span>
                   )}
                 </span>
@@ -150,6 +157,7 @@ export function RecommendationCards({
 }
 
 export function ProfileFileAttachment({ file }: { file: ProfileFile }) {
+  const { t } = useLocale()
   const [open, setOpen] = useState(false)
   return (
     <>
@@ -162,7 +170,7 @@ export function ProfileFileAttachment({ file }: { file: ProfileFile }) {
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-ink">{file.name}</span>
           <span className="block text-xs text-muted">
-            参赛画像 · {file.candidates.length} 场候选比赛
+            {t('参赛画像 ·')} {t('{count} 场候选比赛', { count: file.candidates.length })}
           </span>
         </span>
       </button>

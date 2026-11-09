@@ -15,15 +15,17 @@ import {
   verdictNames,
 } from './verification-report'
 import './evidence-report.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function SourceConflicts({ items }: { items: SourceConflict[] }) {
+  const { t } = useLocale()
   return items.map((conflict, index) => {
     const selected = conflict.accepted_statement ?? null
     const ordered = conflict.statements
       .map((statement, index) => ({ statement, index }))
       .sort((a, b) => Number(a.index === selected) - Number(b.index === selected))
     return (
-      <section className="detective-clash" aria-label="来源分歧" key={index}>
+      <section className="detective-clash" aria-label={t('来源分歧')} key={index}>
         {ordered.map(({ statement, index }) => (
           <div
             className="detective-clash__row"
@@ -31,12 +33,12 @@ export function SourceConflicts({ items }: { items: SourceConflict[] }) {
             key={index}
           >
             <small>
-              {sourceLevelNames[statement.evidence.source_level]}
-              {selected === index ? ' · 采信原文' : ''}
+              {t(sourceLevelNames[statement.evidence.source_level])}
+              {selected === index ? t(' · 采信原文') : ''}
             </small>
             <span className="detective-clash__quote">「{statement.text}」</span>
             <a href={statement.evidence.url} target="_blank" rel="noreferrer">
-              原文 ↗
+              {t('原文 ↗')}
             </a>
           </div>
         ))}
@@ -46,10 +48,10 @@ export function SourceConflicts({ items }: { items: SourceConflict[] }) {
         >
           <b>
             {selected === null
-              ? '仍有分歧'
+              ? t('仍有分歧')
               : conflict.blocks_participation
-                ? '不能参赛'
-                : '核对结果'}
+                ? t('不能参赛')
+                : t('核对结果')}
           </b>
           <span>{conflict.reason}</span>
         </div>
@@ -59,15 +61,28 @@ export function SourceConflicts({ items }: { items: SourceConflict[] }) {
 }
 
 export function ExecutionDetails({ execution }: { execution: SearchExecution }) {
+  const { t } = useLocale()
   return (
     <div className="detective-report__metadata">
-      <p>实际查询：{execution.query}</p>
-      <p>计划步骤：{execution.step_id}</p>
       <p>
-        服务：{execution.provider} · 第 {execution.round} 轮 · {execution.result_count} 条结果
+        {t('实际查询：')}
+        {execution.query}
       </p>
       <p>
-        执行时间：<time dateTime={execution.executed_at}>{execution.executed_at}</time>
+        {t('计划步骤：')}
+        {execution.step_id}
+      </p>
+      <p>
+        {t('服务：')}
+        {t('{provider} · 第 {round} 轮 · {count} 条结果', {
+          provider: execution.provider,
+          round: execution.round,
+          count: execution.result_count,
+        })}
+      </p>
+      <p>
+        {t('执行时间：')}
+        <time dateTime={execution.executed_at}>{execution.executed_at}</time>
       </p>
       {execution.error_code && <p>{execution.error_code}</p>}
     </div>
@@ -82,33 +97,42 @@ export function InvestigationProgress({
   plan?: InvestigationPlan | null
   queries: SearchExecution[]
 }) {
+  const { t } = useLocale()
   return (
     <div className="detective-report__progress">
       {plan && (
         <details className="detective-report__details" open>
-          <summary>调查计划</summary>
+          <summary>{t('调查计划')}</summary>
           <ol>
             {plan.steps.map((step) => (
               <li key={step.id}>
                 <strong>{step.purpose}</strong>
-                <p>计划查询：{step.query}</p>
-                {!!step.claim_ids.length && <p>关联说法：{step.claim_ids.join('、')}</p>}
+                <p>
+                  {t('计划查询：')}
+                  {step.query}
+                </p>
+                {!!step.claim_ids.length && (
+                  <p>
+                    {t('关联说法：')}
+                    {step.claim_ids.join('、')}
+                  </p>
+                )}
               </li>
             ))}
           </ol>
         </details>
       )}
       <details className="detective-report__details" open>
-        <summary>实际查询记录</summary>
+        <summary>{t('实际查询记录')}</summary>
         {!queries.length ? (
-          <p>尚无实际查询记录。</p>
+          <p>{t('尚无实际查询记录。')}</p>
         ) : (
           <ol>
             {queries.map((execution) => (
               <li key={execution.id}>
                 <div className="detective-report__heading">
                   <strong>{execution.id}</strong>
-                  <span>{execution.status === 'success' ? '成功' : '失败'}</span>
+                  <span>{execution.status === 'success' ? t('成功') : t('失败')}</span>
                 </div>
                 <ExecutionDetails execution={execution} />
               </li>
@@ -121,26 +145,28 @@ export function InvestigationProgress({
 }
 
 export function EvidenceReport({ report }: { report: InvestigationReport }) {
+  const { t } = useLocale()
   const prefix = useId()
-  const [exportError, setExportError] = useState<string | null>(null)
+  const [exportError, setExportError] = useState(false)
   const evidenceId = (id: string) => `${prefix}-evidence-${encodeURIComponent(id)}`
   function download(format: 'json' | 'markdown') {
     try {
       downloadReport(report, format)
-      setExportError(null)
+      setExportError(false)
     } catch {
-      setExportError('报告未通过安全检查或浏览器无法下载，请重新查证后再试。')
+      setExportError(true)
     }
   }
   return (
-    <section className="detective-report" aria-label="查证报告">
+    <section className="detective-report" aria-label={t('查证报告')}>
       <header>
         <div className="detective-report__heading">
-          <h2>{report.mode === 'deep' ? '深度调查报告' : '实时查证报告'}</h2>
-          <span>{reportStatusNames[report.status]}</span>
+          <h2>{report.mode === 'deep' ? t('深度调查报告') : t('实时查证报告')}</h2>
+          <span>{t(reportStatusNames[report.status])}</span>
         </div>
         <p className="detective-report__metadata">
-          生成时间：<time dateTime={report.generated_at}>{report.generated_at}</time>
+          {t('生成时间：')}
+          <time dateTime={report.generated_at}>{report.generated_at}</time>
         </p>
       </header>
       <SourceConflicts items={report.conflicts ?? []} />
@@ -148,29 +174,36 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
         {report.claims.length ? (
           report.claims.map((claim) => (
             <article className="detective-report__claim" key={claim.id}>
-              <p className="detective-report__metadata">说法 {claim.id}</p>
+              <p className="detective-report__metadata">
+                {t('说法')} {claim.id}
+              </p>
               <h3>{claim.text}</h3>
               <dl>
                 <div>
-                  <dt>结论：</dt>
-                  <dd>{verdictNames[claim.verdict]}</dd>
+                  <dt>{t('结论：')}</dt>
+                  <dd>{t(verdictNames[claim.verdict])}</dd>
                 </div>
                 <div>
-                  <dt>来源等级：</dt>
-                  <dd>{sourceLevelNames[claim.source_level]}</dd>
+                  <dt>{t('来源等级：')}</dt>
+                  <dd>{t(sourceLevelNames[claim.source_level])}</dd>
                 </div>
               </dl>
-              <p>{claim.comparison || '尚无可用比对。'}</p>
+              <p>{claim.comparison || t('尚无可用比对。')}</p>
               {claim.evidence_ids.length ? (
-                <ul className="detective-report__references" aria-label={`说法 ${claim.id} 的证据`}>
+                <ul
+                  className="detective-report__references"
+                  aria-label={t('说法 {number} 的证据', { number: claim.id })}
+                >
                   {claim.evidence_ids.map((id) => (
                     <li key={id}>
-                      <a href={`#${evidenceId(id)}`}>证据 {id}</a>
+                      <a href={`#${evidenceId(id)}`}>
+                        {t('证据')} {id}
+                      </a>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="detective-report__metadata">无可用证据。</p>
+                <p className="detective-report__metadata">{t('无可用证据。')}</p>
               )}
               {!!claim.limitations.length && (
                 <ul>
@@ -182,12 +215,12 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
             </article>
           ))
         ) : (
-          <p>没有可用的说法核对结果。</p>
+          <p>{t('没有可用的说法核对结果。')}</p>
         )}
       </div>
       {!!report.limitations.length && (
-        <section aria-label="查证限制">
-          <h3>限制</h3>
+        <section aria-label={t('查证限制')}>
+          <h3>{t('限制')}</h3>
           <ul>
             {report.limitations.map((limitation, index) => (
               <li key={index}>{limitation}</li>
@@ -198,14 +231,16 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
       <InvestigationProgress plan={report.plan} queries={report.queries} />
       {!!report.evidence.length && (
         <details className="detective-report__details" open>
-          <summary>证据来源</summary>
+          <summary>{t('证据来源')}</summary>
           {report.evidence.map((evidence) => (
             <article
               id={evidenceId(evidence.id)}
               className="detective-report__evidence"
               key={evidence.id}
             >
-              <p className="detective-report__metadata">证据 {evidence.id}</p>
+              <p className="detective-report__metadata">
+                {t('证据')} {evidence.id}
+              </p>
               <h3>
                 {publicReportUrl(evidence.url) ? (
                   <a href={evidence.url} target="_blank" rel="noreferrer">
@@ -216,30 +251,44 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
                 )}
               </h3>
               <p className="detective-report__metadata">
-                来源等级：{sourceLevelNames[evidence.source_level]}
+                {t('来源等级：')}
+                {t(sourceLevelNames[evidence.source_level])}
               </p>
               <p className="detective-report__metadata">
-                {evidenceKindNames[evidence.evidence_kind]}
+                {t(evidenceKindNames[evidence.evidence_kind])}
               </p>
-              <p className="detective-report__excerpt">{evidence.excerpt || '无可用摘录。'}</p>
+              <p className="detective-report__excerpt">{evidence.excerpt || t('无可用摘录。')}</p>
               <div className="detective-report__metadata">
                 <p>
-                  获取时间：
+                  {t('获取时间：')}
                   {evidence.retrieved_at ? (
                     <time dateTime={evidence.retrieved_at}>{evidence.retrieved_at}</time>
                   ) : (
-                    '未记录'
+                    t('未记录')
                   )}
                 </p>
-                {evidence.provider && <p>服务：{evidence.provider}</p>}
-                <p>关联查询：{evidence.query_ids.join('、') || '无'}</p>
+                {evidence.provider && (
+                  <p>
+                    {t('服务：')}
+                    {evidence.provider}
+                  </p>
+                )}
+                <p>
+                  {t('关联查询：')}
+                  {evidence.query_ids.join('、') || t('无')}
+                </p>
                 <p>
                   {evidence.source_lineage
-                    ? `来源谱系：${evidence.source_lineage}`
-                    : '来源独立性未确认。'}
+                    ? t('来源谱系：{lineage}', { lineage: evidence.source_lineage })
+                    : t('来源独立性未确认。')}
                 </p>
-                {evidence.content_hash && <p>内容校验：{evidence.content_hash}</p>}
-                {evidence.historical && <p>历史资料</p>}
+                {evidence.content_hash && (
+                  <p>
+                    {t('内容校验：')}
+                    {evidence.content_hash}
+                  </p>
+                )}
+                {evidence.historical && <p>{t('历史资料')}</p>}
               </div>
             </article>
           ))}
@@ -247,15 +296,15 @@ export function EvidenceReport({ report }: { report: InvestigationReport }) {
       )}
       <footer className="detective-report__downloads">
         <Button type="button" variant="outline" size="sm" onClick={() => download('markdown')}>
-          下载 Markdown
+          {t('下载 Markdown')}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={() => download('json')}>
-          下载 JSON
+          {t('下载 JSON')}
         </Button>
       </footer>
       {exportError && (
         <p className="detective-turn__error" role="status">
-          {exportError}
+          {t('报告未通过安全检查或浏览器无法下载，请重新查证后再试。')}
         </p>
       )}
     </section>

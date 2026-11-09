@@ -3,6 +3,7 @@ import type { FollowController } from './model'
 import { Bookmark, Eye } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import './follow-button.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function FollowButton({
   contestId,
@@ -17,6 +18,7 @@ export function FollowButton({
   watch?: boolean
   onFollow?: () => void
 }) {
+  const { t } = useLocale()
   const followed = follows.ids.includes(contestId)
   const [popping, setPopping] = useState(false)
   const [requested, setRequested] = useState(false)
@@ -41,7 +43,7 @@ export function FollowButton({
         onAnimationEnd={() => setPopping(false)}
       >
         <Eye aria-hidden="true" strokeWidth={1.5} />
-        {followed ? '已盯上' : '帮我盯着'}
+        {followed ? t('已盯上') : t('帮我盯着')}
       </button>
     )
   if (iconOnly)
@@ -49,7 +51,7 @@ export function FollowButton({
       <button
         type="button"
         className={'follow' + (popping ? ' pop' : '')}
-        aria-label={followed ? '取消关注' : '关注'}
+        aria-label={followed ? t('取消关注') : t('关注')}
         aria-pressed={followed}
         disabled={follows.pending}
         onClick={() => {
@@ -70,7 +72,7 @@ export function FollowButton({
       disabled={follows.pending}
       onClick={() => follows.toggle(contestId)}
     >
-      {followed ? '已关注' : '关注'}
+      {followed ? t('已关注') : t('关注')}
     </Button>
   )
 }

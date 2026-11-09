@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Dialog } from 'radix-ui'
 import { Ic } from './components'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function AccountModal({
   open,
@@ -15,6 +16,7 @@ export function AccountModal({
   children: ReactNode
   narrow?: boolean
 }) {
+  const { t } = useLocale()
   const [present, setPresent] = useState(open),
     [shown, setShown] = useState(false),
     lastFocus = useRef<HTMLElement | null>(null)
@@ -61,7 +63,7 @@ export function AccountModal({
             aria-describedby={undefined}
             onPointerDownOutside={close}
           >
-            <button className="dlg-x" type="button" onClick={close} aria-label="关闭">
+            <button className="dlg-x" type="button" onClick={close} aria-label={t('关闭')}>
               <Ic name="x" large />
             </button>
             {children}

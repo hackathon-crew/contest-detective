@@ -12,6 +12,7 @@ import {
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
 import { Icon } from '@/shared/ui/site-icon'
+import { translateSystemText } from '@/shared/i18n'
 import { ContestIntroductionSection } from './content'
 import { buildEvidenceIndex, type EvidenceIndex } from './evidence-index'
 import {
@@ -27,6 +28,7 @@ import {
 } from './presentation'
 import { ContestSources, SourceReferences } from './sources'
 import './contest-detail.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export interface ContestDetailProps {
   contestId: string
@@ -48,18 +50,20 @@ function Fact({
   field: string
   label?: string
 }) {
+  const { locale, t } = useLocale()
   if (!showField(contest, field)) return null
   const conflict = hasConflict(contest, field)
   const pending = hasPendingEvidence(contest, field)
-  const alternatives = conflictValues(contest, field)
+  const alternatives = conflictValues(contest, field, locale)
+  const caption = translateSystemText(locale, label)
   return (
     <div className={'contest-detail-fact' + (conflict ? ' has-conflict' : '')}>
-      <dt>{label}</dt>
+      <dt>{caption}</dt>
       <dd>
         {conflict || pending ? (
           <>
             <p className="contest-detail-conflict-label">
-              {conflict ? '来源说法不一，待核实' : '信息待核实'}
+              {conflict ? t('来源说法不一，待核实') : t('信息待核实')}
             </p>
             {!!alternatives.length && (
               <ul className="contest-detail-conflict-values">
@@ -73,11 +77,11 @@ function Fact({
             )}
           </>
         ) : (
-          <span>{displayField(field, contest.fields[field])}</span>
+          <span>{displayField(field, contest.fields[field], locale)}</span>
         )}
         <span className="contest-detail-fact-meta">
-          {!conflict && contest.fields[field]?.level === 'reposted' && <span>仅见转载</span>}
-          <SourceReferences index={index} refs={index.refsByField[field] ?? []} label={label} />
+          {!conflict && contest.fields[field]?.level === 'reposted' && <span>{t('仅见转载')}</span>}
+          <SourceReferences index={index} refs={index.refsByField[field] ?? []} label={caption} />
         </span>
       </dd>
     </div>
@@ -110,15 +114,16 @@ function FactSection({
 }
 
 function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceIndex }) {
+  const { locale, t } = useLocale()
   const next = nextDetailDate(contest)
-  const pending = criticalUnknowns(contest)
+  const pending = criticalUnknowns(contest, locale)
   const generic = pending.filter((item) => item.generic)
   const specific = pending.filter((item) => !item.generic)
   const mode = supportedValue(contest, 'mode')
   const city = mode !== 'online' ? supportedValue(contest, 'city') : null
   const venue = mode !== 'online' ? supportedValue(contest, 'venue') : null
   const place = [city && !venue?.includes(city) ? city : null, venue].filter(Boolean).join(' · ')
-  const modeText = mode ? displayField('mode', contest.fields.mode) : null
+  const modeText = mode ? displayField('mode', contest.fields.mode, locale) : null
   const locationFields = [
     ...(mode ? ['mode'] : []),
     ...(city ? ['city'] : []),
@@ -140,28 +145,33 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
       <ContestIntroductionSection key={contest.id} contest={contest} index={index} />
       {!groundedIntroduction(contest) &&
         !Object.keys(contest.fields).some((field) => supportedValue(contest, field)) && (
-          <p className="contest-detail-empty">目前可确认的信息较少，参赛前请先核对来源。</p>
+          <p className="contest-detail-empty">{t('目前可确认的信息较少，参赛前请先核对来源。')}</p>
         )}
       {hasSummary && (
-        <section className="contest-detail-overview" aria-label="参赛要点">
+        <section className="contest-detail-overview" aria-label={t('参赛要点')}>
           <div className="contest-detail-highlights">
             {next && (
               <div className="contest-detail-deadline">
-                <div className="contest-detail-eyebrow">{detailLabels[next.field]}</div>
+                <div className="contest-detail-eyebrow">{t(detailLabels[next.field])}</div>
                 <p className="contest-detail-date">
                   {next.info.precision === 'day'
-                    ? Number(next.info.value!.slice(0, 4)) + '年' + dateText(next.info)
-                    : formatDate(next.info.value, next.info.precision, true)}
+                    ? locale === 'en'
+                      ? new Intl.DateTimeFormat(locale, {
+                          dateStyle: 'medium',
+                          timeZone: 'UTC',
+                        }).format(new Date(next.info.value!))
+                      : Number(next.info.value!.slice(0, 4)) + '年' + dateText(next.info)
+                    : formatDate(next.info.value, next.info.precision, true, locale)}
                 </p>
                 <div className="contest-detail-fact-meta">
                   <span>
-                    {next.info.precision === 'day' ? '具体时刻未核实' : '北京时间 · UTC+8'}
+                    {next.info.precision === 'day' ? t('具体时刻未核实') : t('北京时间 · UTC+8')}
                   </span>
-                  {next.info.level === 'reposted' && <span>仅见转载</span>}
+                  {next.info.level === 'reposted' && <span>{t('仅见转载')}</span>}
                   <SourceReferences
                     index={index}
                     refs={index.refsByField[next.field] ?? []}
-                    label={detailLabels[next.field]}
+                    label={t(detailLabels[next.field])}
                   />
                 </div>
               </div>
@@ -177,20 +187,27 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
               <span>{[modeText, place].filter(Boolean).join(' · ')}</span>
               {locationReposted && (
                 <span className="contest-detail-inline-level">
-                  {locationOnlyReposted ? '仅见转载' : '部分信息仅见转载'}
+                  {locationOnlyReposted ? t('仅见转载') : t('部分信息仅见转载')}
                 </span>
               )}
-              <SourceReferences index={index} refs={locationRefs} label="参赛方式与地点" />
+              <SourceReferences index={index} refs={locationRefs} label={t('参赛方式与地点')} />
             </div>
           )}
         </section>
       )}
       {!!pending.length && (
-        <div className="contest-detail-coverage" aria-label="参赛前待确认">
-          {!!generic.length && <p>{generic.map((item) => item.label).join('、')}待确认。</p>}
+        <div className="contest-detail-coverage" aria-label={t('参赛前待确认')}>
+          {!!generic.length && (
+            <p>
+              {t('{fields}待确认。', {
+                fields: generic.map((item) => item.label).join(locale === 'en' ? ', ' : '、'),
+              })}
+            </p>
+          )}
           {specific.map((item) => (
             <p key={item.field}>
-              {item.message}。
+              {item.message}
+              {locale === 'en' ? '.' : '。'}
               <SourceReferences
                 index={index}
                 refs={index.refsByField[item.field] ?? []}
@@ -201,25 +218,30 @@ function ReadingContent({ contest, index }: { contest: Contest; index: EvidenceI
         </div>
       )}
       <FactSection
-        title="参赛条件"
+        title={t('参赛条件')}
         fields={['eligibility', 'team_size', 'entry_fee']}
         contest={contest}
         index={index}
       />
       <FactSection
-        title="提交与评审"
+        title={t('提交与评审')}
         fields={['entry_requirements', 'judging_criteria']}
         contest={contest}
         index={index}
       />
       <FactSection
-        title="详细日程"
+        title={t('详细日程')}
         fields={dateFields.filter((field) => field !== next?.field)}
         contest={contest}
         index={index}
       />
-      <FactSection title="其他参赛信息" fields={otherFields} contest={contest} index={index} />
-      <FactSection title="往届参考" fields={['past_statistics']} contest={contest} index={index} />
+      <FactSection title={t('其他参赛信息')} fields={otherFields} contest={contest} index={index} />
+      <FactSection
+        title={t('往届参考')}
+        fields={['past_statistics']}
+        contest={contest}
+        index={index}
+      />
       <ContestSources contest={contest} index={index} />
     </>
   )
@@ -233,6 +255,7 @@ export function ContestDetail({
   onAsk,
   variant = 'default',
 }: ContestDetailProps) {
+  const { t } = useLocale()
   const query = useContest(contestId, open)
   const title = useRef<HTMLHeadingElement>(null)
   const contest = query.data
@@ -256,18 +279,18 @@ export function ContestDetail({
           <div className="contest-detail-body">
             <header className="contest-detail-header">
               <DialogTitle ref={title} tabIndex={-1}>
-                {contest?.name ?? '赛事详情'}
+                {contest?.name ?? t('赛事详情')}
               </DialogTitle>
               {organizer && index && (
                 <p className="contest-detail-organizer">
                   {organizer}
                   {contest?.fields.organizer?.level === 'reposted' && (
-                    <span className="contest-detail-inline-level">仅见转载</span>
+                    <span className="contest-detail-inline-level">{t('仅见转载')}</span>
                   )}
                   <SourceReferences
                     index={index}
                     refs={index.refsByField.organizer ?? []}
-                    label="主办方"
+                    label={t('主办方')}
                   />
                 </p>
               )}
@@ -283,7 +306,7 @@ export function ContestDetail({
           </div>
         </div>
         {contest && (registration || onAsk || action) && (
-          <footer className="contest-detail-actions" aria-label="赛事操作">
+          <footer className="contest-detail-actions" aria-label={t('赛事操作')}>
             {registration && (
               <a
                 className="site-button site-button--primary"
@@ -291,7 +314,7 @@ export function ContestDetail({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                去报名 <Icon name="arrow-right" />
+                {t('去报名')} <Icon name="arrow-right" />
               </a>
             )}
             {onAsk && (
@@ -300,7 +323,7 @@ export function ContestDetail({
                 className="site-button site-button--outline"
                 onClick={() => onAsk(contest)}
               >
-                问侦探这场比赛
+                {t('问侦探这场比赛')}
               </button>
             )}
             {action}
