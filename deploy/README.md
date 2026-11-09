@@ -26,7 +26,7 @@ sudoedit /etc/contest-detective.env
 
 环境文件只由管理员读取，systemd 将变量传给服务；密钥不放进代码目录。模型默认关闭，启用时配置相应供应商的密钥、地址和模型名称。
 
-内测注册需要一次性邀请码。将 `DETECTIVE_INVITE_ADMIN_EMAIL` 设为管理员账号的已验证邮箱，管理员登录后可在「个人中心 → 账号」生成并复制邀请码。空库安装时，在已完成迁移、加载同一数据库配置的后端环境运行 `uv run --directory backend python -m contest_detective.bootstrap.invites` 生成第一个邀请码；用它注册管理员账号后，在账号页完成邮箱验证即可继续发码。
+内测注册需要有效的邀请码，后台生成的 6 位邀请码可重复使用。将 `DETECTIVE_INVITE_ADMIN_EMAIL` 设为管理员账号的已验证邮箱，管理员登录后可在「个人中心 → 账号」生成并复制邀请码。空库安装时，在已完成迁移、加载同一数据库配置的后端环境运行 `uv run --directory backend python -m contest_detective.bootstrap.invites` 生成第一个邀请码；用它注册管理员账号后，在账号页完成邮箱验证即可继续发码。
 
 `DETECTIVE_LLM_LIMITS_MODE` 默认是 `local`：调用前检查累计预算和余额，示例服务器预算为 3.5 元，本地默认 1.5 元。若供应商或网关已经限制额度，可设为 `external`，由供应商控制累计花费及真实上下文容量，不查询本地余额，也不叠加本地累计预算或 JSON 字节数拦截。`DETECTIVE_LLM_MAX_INPUT_TOKENS` 在 `local` 模式用于输入检查和金额预留，`external` 模式只参与预留估算。
 
