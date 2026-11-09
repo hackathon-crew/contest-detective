@@ -47,13 +47,17 @@
   --shadow-dlg: light-dark(0 24px 64px rgb(17 17 17 / 18%), 0 24px 64px rgb(0 0 0 / 48%));
   --header: light-dark(rgb(255 255 255 / 78%), rgb(28 30 29 / 78%));
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --yb: #00cc70;
-  --yb-ink: light-dark(#007a43, #5ee3a5);
-  --yb-soft: light-dark(#e8f9f0, #183126);
+  --unigate-soft: light-dark(#edf5ff, #192c52);
+  --unigate-grid-line: light-dark(rgb(15 23 42 / 8%), rgb(255 255 255 / 7%));
+  --unigate-logo-filter: none;
   --sans:
     'Inkpaw Account Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
   --brand: var(--font-brand);
+}
+
+[data-theme='dark'] .account-root {
+  --unigate-logo-filter: invert(1) hue-rotate(180deg);
 }
 
 @scope (.account-root) {
@@ -1463,7 +1467,15 @@
     margin-top: 20px;
     padding: 18px 20px;
     border-radius: 16px;
-    background: var(--yb-soft);
+    background-color: var(--unigate-soft);
+    background-image:
+      linear-gradient(90deg, var(--unigate-soft) 50%, transparent),
+      linear-gradient(var(--unigate-grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--unigate-grid-line) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      24px 24px,
+      24px 24px;
   }
   .sponsor {
     display: flex;
@@ -1474,13 +1486,9 @@
     color: var(--ink);
   }
   .sponsor img {
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-  }
-  .sponsor b {
-    color: var(--yb-ink);
-    font-weight: 700;
+    flex: none;
+    object-fit: contain;
+    filter: var(--unigate-logo-filter);
   }
   .quota .quota-big {
     font-size: 24px;

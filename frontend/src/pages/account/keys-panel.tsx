@@ -211,8 +211,8 @@ export function KeysPanel() {
       </div>
       <div className="quota">
         <div className="sponsor">
-          <img src="/brand/yuanbao.svg" alt="" />
-          <span>{t('由 {provider} 提供技术支持', { provider: t('腾讯元宝') })}</span>
+          <img src="/brand/unigate.svg" width={28} height={28} alt="" />
+          <span>{t('由 UniGate 提供算力支持')}</span>
         </div>
         <p className="quota-big">
           {quota.data?.unlimited === false ? t('平台次数限制已开启') : t('限时无限次')}
