@@ -19,7 +19,12 @@ export async function recordCampaignArrival(search: string) {
     }
     await apiClient.request<null>('/auth/campaign-visit', {
       method: 'POST',
-      json: { campaign, visitor_id: visitorId, source, content: /^[a-z0-9_-]{0,48}$/.test(content) ? content : '' },
+      json: {
+        campaign,
+        visitor_id: visitorId,
+        source,
+        content: /^[a-z0-9_-]{0,48}$/.test(content) ? content : '',
+      },
     })
   } catch (error) {
     console.warn('Could not record campaign arrival', error)
