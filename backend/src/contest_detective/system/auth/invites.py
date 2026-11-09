@@ -1,9 +1,9 @@
-"""Single-use invitations for new beta accounts."""
+"""Reusable invitations for beta registration."""
 
 import secrets
 from hashlib import sha256
 
-from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
 
 from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.exceptions import BizException
@@ -22,25 +22,21 @@ def _digest(code: str) -> str:
     return sha256(code.strip().upper().encode()).hexdigest()
 
 
-def _unavailable() -> BizException:
-    return BizException('邀请码无效或已使用，请检查邀请码。', code=403)
-
-
 def issue(session) -> str:
-    token = ''.join(secrets.choice(_ALPHABET) for _ in range(16))
-    code = 'INK-' + '-'.join(token[index:index + 4] for index in range(0, 16, 4))
-    session.add(RegistrationInvite(code_hash=_digest(code)))
-    session.commit()
-    return code
+    while True:
+        code = ''.join(secrets.choice(_ALPHABET) for _ in range(6))
+        digest = _digest(code)
+        session.add(RegistrationInvite(code_hash=digest))
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            if session.get(RegistrationInvite, digest) is None:
+                raise
+        else:
+            return code
 
 
 def check(session, code: str) -> None:
     if session.get(RegistrationInvite, _digest(code)) is None:
-        raise _unavailable()
-
-
-def redeem(session, code: str) -> None:
-    # A conditional delete locks redemption to the account transaction, even across workers.
-    result = session.execute(delete(RegistrationInvite).where(RegistrationInvite.code_hash == _digest(code)))
-    if result.rowcount != 1:
-        raise _unavailable()
+        raise BizException('邀请码无效，请检查后重新输入。', code=403)

@@ -18,7 +18,7 @@ def public(user: User) -> PublicUser:
 
 class _RegistrationUserDatabase(SQLAlchemyUserDatabase):
     async def create(self, create_dict):
-        # The account and both codes must commit together.
+        # Commit the account and consume its email verification code together.
         user = self.user_table(**create_dict)
         self.session.add(user)
         await self.session.flush()

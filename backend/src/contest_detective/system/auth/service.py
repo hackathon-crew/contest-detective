@@ -23,7 +23,6 @@ async def register(session, username: str, password: str, code: str, invite_code
     email = registration.normalize(username)
     await session.run_sync(lambda sync: invites.check(sync, invite_code))
     await session.run_sync(lambda sync: registration.check_code(sync, email, code))
-    await session.run_sync(lambda sync: invites.redeem(sync, invite_code))
     await session.run_sync(lambda sync: registration.clear_code(sync, email, code))
     user = await users.create(session, email, password)
     user.unlimited_chat = True
