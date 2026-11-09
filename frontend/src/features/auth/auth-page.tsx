@@ -3,13 +3,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { Link, Navigate, useLocation, useNavigate, type Location } from 'react-router'
 import { currentUserKey, useCurrentUser, type PublicUser } from '@/entities/user'
-import { apiClient } from '@/shared/api'
+import { ApiError, apiClient } from '@/shared/api'
 import inkpawMark from '@/shared/assets/inkpaw-mark-56.webp'
 import { Button, Input } from '@/shared/ui'
 import { translateSystemText } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
 import './auth-tokens.css'
 import './auth-page.css'
-import { useLocale } from '@/shared/i18n/locale-context'
 
 type Mode = 'login' | 'register'
 
@@ -23,7 +23,11 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
   const navigate = useNavigate()
   const client = useQueryClient()
   const { data: user } = useCurrentUser()
-  const [step, setStep] = useState<'email' | 'password'>('email')
+  const registration = mode === 'register'
+  const [step, setStep] = useState<'invite' | 'email' | 'password'>(
+    registration ? 'invite' : 'email',
+  )
+  const [inviteCode, setInviteCode] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
@@ -41,7 +45,6 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
   const destination = returnTo
     ? { pathname: returnTo.pathname, search: returnTo.search, hash: returnTo.hash }
     : '/'
-  const registration = mode === 'register'
 
   useEffect(() => {
     active.current = true
@@ -58,7 +61,12 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
 
   function back() {
     if (lock.current || sendingCode) return
-    if (step === 'email') {
+    if (step === 'email' && registration) {
+      setError(null)
+      setStep('invite')
+      return
+    }
+    if (step !== 'password') {
       const protectedPage = /^\/account(?:\/|$)/.test(returnTo?.pathname ?? '')
       const state = returnTo?.state
       // 取消登录保留草稿，但不能重开需要登录的画像窗口，否则会再次跳回登录页。
@@ -99,7 +107,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
     try {
       await apiClient.request('/auth/register/code', {
         method: 'POST',
-        json: { email: target },
+        json: { email: target, invite_code: inviteCode },
       })
       if (!active.current) return
       setEmail(target)
@@ -107,6 +115,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
       setResendIn(60)
     } catch (cause) {
       if (active.current) {
+        if (cause instanceof ApiError && cause.code === 403) setStep('invite')
         setError({ message: cause instanceof Error ? cause.message : '验证码发送失败，请重试。' })
       }
     } finally {
@@ -117,6 +126,32 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (lock.current) return
+    if (step === 'invite') {
+      const enteredCode = inviteCode.trim().toUpperCase()
+      if (!enteredCode) {
+        setError({ message: '请输入邀请码。' })
+        return
+      }
+      lock.current = true
+      setPending(true)
+      setError(null)
+      try {
+        await apiClient.request('/auth/register/invite', {
+          method: 'POST',
+          json: { invite_code: enteredCode },
+        })
+        if (!active.current) return
+        setInviteCode(enteredCode)
+        setStep('email')
+      } catch (cause) {
+        if (active.current)
+          setError({ message: cause instanceof Error ? cause.message : '未能验证邀请码。' })
+      } finally {
+        lock.current = false
+        if (active.current) setPending(false)
+      }
+      return
+    }
     const normalizedEmail = email.trim()
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(normalizedEmail) || normalizedEmail.length > 320) {
       setError({ message: '请输入有效的邮箱地址。' })
@@ -151,7 +186,7 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
       if (registration && !created) {
         await apiClient.request('/auth/register', {
           method: 'POST',
-          json: { ...credentials, code },
+          json: { ...credentials, code, invite_code: inviteCode },
         })
         created = true
         if (active.current) setAccountCreated(true)
@@ -165,6 +200,11 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
       client.setQueryData(currentUserKey, current)
     } catch (cause) {
       if (active.current) {
+        if (registration && !created && cause instanceof ApiError && cause.code === 403) {
+          setStep('invite')
+          setPassword('')
+          setCode('')
+        }
         const message = cause instanceof Error ? cause.message : '账户请求失败，请重试。'
         setError({ message, created })
       }
@@ -176,7 +216,8 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
 
   if (user) return <Navigate to={destination} state={returnTo?.state} replace />
 
-  const progress = t('第 {step} 步，共 2 步', { step: step === 'email' ? 1 : 2 })
+  const stepIndex = step === 'invite' ? 0 : step === 'email' ? 1 : 2
+  const progress = t('第 {step} 步，共 3 步', { step: stepIndex + 1 })
   const errorMessage = error ? translateSystemText(locale, error.message) : ''
   return (
     <main className="auth-stage" aria-labelledby="auth-title">
@@ -185,7 +226,13 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
         variant="outline"
         size="icon"
         type="button"
-        aria-label={step === 'email' ? t('返回原页面') : t('返回邮箱')}
+        aria-label={
+          step === 'password'
+            ? t('返回邮箱')
+            : step === 'email' && registration
+              ? t('返回邀请码')
+              : t('返回原页面')
+        }
         onClick={back}
         disabled={pending || sendingCode}
       >
@@ -194,12 +241,12 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
       {utilities && <div className="auth-stage__appearance">{utilities}</div>}
       <div className="auth-stage__mascot" aria-hidden="true">
         <Suspense fallback={<img src={inkpawMark} alt="" width={106} height={93} />}>
-          <Octopus size={120} mood={step === 'email' ? 'happy' : 'read'} shadow={false} />
+          <Octopus size={120} mood={step === 'password' ? 'read' : 'happy'} shadow={false} />
         </Suspense>
       </div>
       <div key={step} className="auth-stage__content">
         <h1 id="auth-title">
-          {step === 'email' ? (
+          {step !== 'password' ? (
             <>
               {registration ? t('注册 ') : t('登录 ')}
               <span className="auth-stage__wordmark">Inkpaw</span>
@@ -213,8 +260,9 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
         {registration && (
           <>
             <ol className="auth-stage__steps" aria-label={progress}>
-              <li data-current={step === 'email'} data-done={step === 'password'} />
-              <li data-current={step === 'password'} />
+              {[0, 1, 2].map((index) => (
+                <li key={index} data-current={index === stepIndex} data-done={index < stepIndex} />
+              ))}
             </ol>
             <span className="auth-stage__step-label">{progress}</span>
           </>
@@ -227,7 +275,30 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
           onSubmit={(event) => void submit(event)}
           noValidate
         >
-          {step === 'email' ? (
+          {step === 'invite' ? (
+            <>
+              <Input
+                className="auth-stage__input"
+                aria-label={t('邀请码')}
+                aria-describedby="invite-help"
+                name="invite_code"
+                placeholder={t('邀请码')}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                maxLength={32}
+                required
+                autoFocus
+                disabled={pending}
+                value={inviteCode}
+                onChange={(event) => {
+                  setInviteCode(event.target.value)
+                  setError(null)
+                }}
+              />
+              <small id="invite-help">{t('内测中，填写邀请码后对话不限量')}</small>
+            </>
+          ) : step === 'email' ? (
             <Input
               key="email"
               className="auth-stage__input"
@@ -319,17 +390,21 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
             </p>
           )}
           <Button className="auth-stage__primary" type="submit" disabled={pending || sendingCode}>
-            {step === 'email'
-              ? sendingCode
-                ? t('正在发送验证码…')
+            {step === 'invite'
+              ? pending
+                ? t('正在验证邀请码…')
                 : t('继续')
-              : pending
-                ? registration && !accountCreated
-                  ? t('正在创建…')
-                  : t('正在登录…')
-                : registration && !accountCreated
-                  ? t('创建账号')
-                  : t('登录并继续')}
+              : step === 'email'
+                ? sendingCode
+                  ? t('正在发送验证码…')
+                  : t('继续')
+                : pending
+                  ? registration && !accountCreated
+                    ? t('正在创建…')
+                    : t('正在登录…')
+                  : registration && !accountCreated
+                    ? t('创建账号')
+                    : t('登录并继续')}
           </Button>
         </form>
       </div>

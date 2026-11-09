@@ -120,10 +120,11 @@ def check_code(session, email, code, now=None):
 
 def clear_code(session, email, code):
     email = normalize(email)
-    session.execute(
+    result = session.execute(
         delete(RegistrationCode).where(
             RegistrationCode.email == email,
             RegistrationCode.code_hash == _digest(email, code),
         )
     )
-    session.commit()
+    if result.rowcount != 1:
+        raise BizException('验证码已过期，请重新获取', code=400)

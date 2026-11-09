@@ -14,6 +14,14 @@ class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
 
 
+class RegistrationInvite(Base):
+    __tablename__ = 'registration_invites'
+    code_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
 class RegistrationCode(Base):
     """注册验证码。按邮箱只保留最近一次，成功后删除。"""
 

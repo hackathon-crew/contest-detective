@@ -147,6 +147,8 @@ Implementation: [GitHub profiles](backend/src/contest_detective/system/user/gith
 
 The public catalog and anonymous MCP are available directly. Web chat, profile generation, and follow actions require sign-in. Profiles and conversations are saved to the account across devices, and account exports include conversations. Accounts also save tracking conditions and settings.
 
+During the private beta, [create an account](https://inkpaw.windup.xin/register) with a single-use invite code to get unlimited web chats. Existing accounts can sign in as usual.
+
 The web interface supports English and Simplified Chinese. It follows your browser’s language preferences by default. Use the language menu to save a different choice in this browser.
 
 ## Connect via MCP

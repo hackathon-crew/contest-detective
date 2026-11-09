@@ -3,7 +3,9 @@ import uuid
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import exceptions, schemas
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
+from sqlalchemy.exc import IntegrityError
 
+from contest_detective.framework.config.app import get_app_settings
 from contest_detective.framework.exceptions import BizException
 from .manager import UserManager
 from .models import User
@@ -14,14 +16,24 @@ def public(user: User) -> PublicUser:
     return PublicUser(id=str(user.id), username=user.email, profile=Profile.model_validate(user.profile or {}))
 
 
+class _RegistrationUserDatabase(SQLAlchemyUserDatabase):
+    async def create(self, create_dict):
+        # The account and both codes must commit together.
+        user = self.user_table(**create_dict)
+        self.session.add(user)
+        await self.session.flush()
+        return user
+
+
 def manager(session):
     return UserManager(SQLAlchemyUserDatabase(session, User))
 
 
 async def create(session, username: str, password: str) -> User:
     try:
-        return await manager(session).create(schemas.BaseUserCreate(email=username, password=password), safe=True)
-    except exceptions.UserAlreadyExists as exc:
+        registration = UserManager(_RegistrationUserDatabase(session, User))
+        return await registration.create(schemas.BaseUserCreate(email=username, password=password), safe=True)
+    except (exceptions.UserAlreadyExists, IntegrityError) as exc:
         raise BizException('账号已存在', code=409) from exc
     except exceptions.InvalidPasswordException as exc:
         raise BizException(exc.reason, code=400) from exc
@@ -30,6 +42,10 @@ async def create(session, username: str, password: str) -> User:
 async def verify(session, username: str, password: str) -> User | None:
     credentials = OAuth2PasswordRequestForm(username=username, password=password)
     return await manager(session).authenticate(credentials)
+
+
+def chat_is_unlimited(user: User) -> bool:
+    return user.unlimited_chat or not get_app_settings().query_limits_enabled
 
 
 def get(session, user_id: str) -> PublicUser | None:

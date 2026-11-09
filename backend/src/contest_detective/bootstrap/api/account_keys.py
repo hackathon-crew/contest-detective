@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.result import Response
 from contest_detective.framework.db import get_session
-from contest_detective.framework.config.app import get_app_settings
 from contest_detective.system.auth.service import current
 from contest_detective.system.account import providers, tokens
 from contest_detective.system.account.models import PersonalToken
@@ -25,6 +24,7 @@ from contest_detective.system.account.schemas import (
     TokenCreated,
 )
 from contest_detective.system.account.store import owner, settings_for
+from contest_detective.system.user.service import chat_is_unlimited
 
 
 class CredentialRoute(APIRoute):
@@ -212,7 +212,4 @@ class QuotaRead(BaseModel):
 def read_quota(
     user_id: str | None = Depends(current), session: Session = Depends(get_session)
 ):
-    owner(session, user_id)
-    return Response.success(
-        QuotaRead(unlimited=not get_app_settings().query_limits_enabled)
-    )
+    return Response.success(QuotaRead(unlimited=chat_is_unlimited(owner(session, user_id))))

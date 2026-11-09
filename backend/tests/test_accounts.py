@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from contest_detective.framework.exceptions import BizException
 from contest_detective.bootstrap.api.mail import get_mailer
 
-from account_helpers import account_client as app_client, login, register, request_code
+from account_helpers import account_client as app_client, issue_invite, login, register, request_code
 
 
 def test_register_login_profile_and_logout(tmp_path):
@@ -15,7 +15,7 @@ def test_register_login_profile_and_logout(tmp_path):
         assert result['code']==200
         assert result['data']['username']=='person@example.com'
         assert 'password' not in result['data']
-        assert client.post('/auth/register/code',json={'email':body['email']}).json()['code']==409
+        assert client.post('/auth/register/code',json={'email':body['email'], 'invite_code':issue_invite(client)}).json()['code']==409
         assert client.post('/auth/login',json={**body,'password':'wrong'}).json()['code']==401
         login_response=client.post('/auth/login',json=body)
         assert login_response.json()['code']==200
@@ -32,13 +32,14 @@ def test_register_login_profile_and_logout(tmp_path):
 def test_registration_requires_a_single_use_code(tmp_path):
     with app_client(tmp_path) as client:
         email='code@example.com'
-        credentials={'email':email,'password':'long-password-123'}
+        invite = issue_invite(client)
+        credentials={'email':email,'password':'long-password-123','invite_code':invite}
         assert client.post('/auth/register',json=credentials).json()['code']==400
-        code=request_code(client, email)
+        code=request_code(client, email, invite)
         wrong='000000' if code!='000000' else '111111'
         assert client.post('/auth/register',json={**credentials,'code':wrong}).json()['code']==400
         assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==200
-        assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==400
+        assert client.post('/auth/register',json={**credentials,'code':code}).json()['code']==403
 
 
 def test_registration_code_cooldown_expiry_and_attempt_limit(tmp_path):
@@ -46,14 +47,15 @@ def test_registration_code_cooldown_expiry_and_attempt_limit(tmp_path):
 
     with app_client(tmp_path) as client:
         email='bounded@example.com'
-        credentials={'email':email,'password':'long-password-123'}
-        request_code(client, email)
-        assert client.post('/auth/register/code',json={'email':email}).json()['code']==429
+        invite = issue_invite(client)
+        credentials={'email':email,'password':'long-password-123','invite_code':invite}
+        request_code(client, email, invite)
+        assert client.post('/auth/register/code',json={'email':email,'invite_code':invite}).json()['code']==429
         with client.app.state.test_session_factory() as session:
             session.get(RegistrationCode, email).expires_at=datetime.now(timezone.utc)-timedelta(seconds=1)
             session.commit()
         assert client.post('/auth/register',json={**credentials,'code':'000000'}).json()['code']==400
-        code=request_code(client, email)
+        code=request_code(client, email, invite)
         wrong='999999' if code!='999999' else '888888'
         for _ in range(5):
             assert client.post('/auth/register',json={**credentials,'code':wrong}).json()['code']==400
@@ -70,7 +72,7 @@ def test_registration_is_blocked_when_the_code_cannot_be_sent(tmp_path):
 
     with app_client(tmp_path) as client:
         client.app.dependency_overrides[get_mailer]=lambda: Broken()
-        assert client.post('/auth/register/code',json={'email':'offline@example.com'}).json()['code']==503
+        assert client.post('/auth/register/code',json={'email':'offline@example.com','invite_code':issue_invite(client)}).json()['code']==503
         with client.app.state.test_session_factory() as session:
             assert session.get(RegistrationCode, 'offline@example.com') is None
 
@@ -85,14 +87,15 @@ def test_registration_code_respects_the_shared_mail_quota(tmp_path, monkeypatch)
         lambda: NotificationSettings(mail_daily_limit=0),
     )
     with app_client(tmp_path) as client:
-        assert client.post('/auth/register/code',json={'email':'quota@example.com'}).json()['code']==429
+        assert client.post('/auth/register/code',json={'email':'quota@example.com','invite_code':issue_invite(client)}).json()['code']==429
 
 
 def test_short_password_is_rejected(tmp_path):
     with app_client(tmp_path) as client:
         email='person@example.com'
-        code=request_code(client, email)
-        assert client.post('/auth/register',json={'email':email,'password':'123','code':code}).json()['code']==400
+        invite = issue_invite(client)
+        code=request_code(client, email, invite)
+        assert client.post('/auth/register',json={'email':email,'password':'123','code':code,'invite_code':invite}).json()['code']==400
 
 
 def test_expired_and_revoked_sessions_stop_authenticating(tmp_path):

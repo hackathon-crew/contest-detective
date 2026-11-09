@@ -14,7 +14,6 @@ from sse_starlette.event import ServerSentEvent
 from contest_detective.framework.result import Response
 from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.db import get_session
-from contest_detective.framework.config.app import get_app_settings
 from contest_detective.system.account.providers import runtime_for
 from contest_detective.agent.loop import Investigator, create_investigator
 from contest_detective.agent.models import Investigation
@@ -26,7 +25,9 @@ from contest_detective.agent.chat.models import ChatConversation
 from contest_detective.agent.chat.contracts import SavedTurn
 from contest_detective.agent.schemas import ContestRecommendation, ResolveRecommendations
 from contest_detective.agent.recommendations import resolve_previous
+from contest_detective.system.account.store import owner
 from contest_detective.system.auth.service import require_user
+from contest_detective.system.user.service import chat_is_unlimited
 
 router = APIRouter(dependencies=[Depends(require_user)])
 limiter = Limiter(key_func=get_remote_address, storage_uri='memory://')
@@ -129,9 +130,10 @@ limited_question = limiter.limit('5/minute;30/day')(question_stream)
              responses={200: {'content': {'text/event-stream': {}}}})
 async def ask_question(request: Request, body: AskRequest = Depends(get_ask_request),
                        investigator: Investigator | None = Depends(get_investigator),
-                       user_id: str = Depends(get_request_user_id)):
+                       user_id: str = Depends(get_request_user_id), session: Session = Depends(get_session)):
     try:
-        handler = limited_question if investigator is not None and get_app_settings().query_limits_enabled else question_stream
+        limited = investigator is not None and not chat_is_unlimited(owner(session, user_id))
+        handler = limited_question if limited else question_stream
         return await handler(request, body, investigator, user_id)
     except RateLimitExceeded:
         save_chat_event(request, body, user_id, TraceEvent(type='error', payload={'message': '提问过于频繁，请稍后再试', 'action': 'retry'}))

@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, text
+from test_migration_heads import HEAD
 
 from contest_detective.framework.config import DatabaseSettings
 from contest_detective.framework.sqlite_migration import (
@@ -29,7 +30,7 @@ def test_canonical_normalizes_cross_dialect_values():
 
 
 def test_head_revision_is_single():
-    assert head_revision() == '0021_guest_question_usage'
+    assert head_revision() == HEAD
 
 
 def test_source_engine_is_read_only(tmp_path):
