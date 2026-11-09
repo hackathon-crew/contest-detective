@@ -100,3 +100,49 @@ def test_invited_account_can_chat_past_the_platform_limit(tmp_path, monkeypatch)
                 assert 'event: answer' in client.post('/agent/ask', json={'question': '找比赛'}).text
     finally:
         limiter.reset()
+
+
+def test_campaign_conversion_counts_a_browser_once_and_only_successful_signup(tmp_path, configured_admin):
+    from uuid import uuid4
+
+    from account_helpers import issue_invite, request_code
+
+    report_path = '/account/campaign-conversion'
+    with account_client(tmp_path) as client:
+        assert client.get(report_path).json()['code'] == 401
+        login(client, 'member@example.org')
+        assert client.get(report_path).json()['code'] == 403
+        login(client, 'admin@example.org')
+        empty = client.get(report_path).json()['data']
+        assert empty['total']['conversion_rate'] is None
+        client.post('/auth/logout')
+
+        first = str(uuid4())
+        first_visit = {'campaign': 'inkpaw_launch_202611', 'visitor_id': first,
+                       'source': 'x', 'content': 'solo_eligibility'}
+        assert client.post('/auth/campaign-visit', json=first_visit).json()['code'] == 200
+        assert client.post('/auth/campaign-visit', json={**first_visit, 'source': 'reddit'}).json()['code'] == 200
+        assert client.post('/auth/campaign-visit', json={
+            **first_visit, 'visitor_id': str(uuid4()), 'source': 'reddit',
+        }).json()['code'] == 200
+
+        email = 'campaign-candidate@example.org'
+        invite = issue_invite(client)
+        otp = request_code(client, email, invite)
+        credentials = {'email': email, 'password': 'long-password-123', 'code': otp, 'invite_code': invite}
+        browser_cookie = {'Cookie': f'cd_campaign={first}'}
+        assert client.post('/auth/register', json={**credentials, 'password': 'short'},
+                           headers=browser_cookie).json()['code'] == 400
+        assert client.post('/auth/register', json=credentials, headers=browser_cookie).json()['code'] == 200
+        assert client.post('/auth/register', json=credentials, headers=browser_cookie).json()['code'] != 200
+
+        login(client, 'admin@example.org')
+        data = client.get(report_path).json()['data']
+        assert data['total'] == {'visitors': 2, 'converted_visitors': 1, 'registrations': 1,
+                                 'conversion_rate': 0.5}
+        assert data['by_source']['x'] == {
+            'visitors': 1, 'converted_visitors': 1, 'registrations': 1, 'conversion_rate': 1.0,
+        }
+        assert data['by_source']['reddit'] == {
+            'visitors': 1, 'converted_visitors': 0, 'registrations': 0, 'conversion_rate': 0.0,
+        }
