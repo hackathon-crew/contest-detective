@@ -16,8 +16,8 @@
 </p>
 
 <p align="center">
-  <strong><a href="https://inkpaw.windup.xin/">在线体验：https://inkpaw.windup.xin/ ↗</a></strong>
-  &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests">浏览赛事库</a>
+  <strong><a href="https://inkpaw.windup.xin/?utm_source=github&amp;utm_campaign=inkpaw_launch_202611&amp;utm_content=readme_zh">在线体验：https://inkpaw.windup.xin/ ↗</a></strong>
+  &nbsp; · &nbsp; <a href="https://inkpaw.windup.xin/contests?utm_source=github&amp;utm_campaign=inkpaw_launch_202611&amp;utm_content=readme_zh">免登录浏览赛事库</a>
   &nbsp; · &nbsp; <a href="#深度检索与原文核验">深度检索</a>
   &nbsp; · &nbsp; <a href="#持续盯梢与邮件推送">盯梢推送</a>
   &nbsp; · &nbsp; <a href="README.en.md">English</a>
