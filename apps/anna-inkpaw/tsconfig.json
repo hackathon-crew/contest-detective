@@ -10,7 +10,8 @@
       "DOM"
     ],
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
     "src/**/*.ts"

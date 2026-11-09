@@ -61,6 +61,8 @@ export interface Match {
 }
 export interface SearchResult {
   matches: Match[];
+  /** Quoted public leads with unverified organizer identity, not verified matches. */
+  leads: Opportunity[];
   excluded: { id: string; reason: string }[];
   incomplete: boolean;
   notices: string[];
@@ -68,7 +70,14 @@ export interface SearchResult {
   observedCu: number | null;
   checkedAt: string;
 }
-export type RunPhase = "idle" | "profiling" | "reviewing" | "searching" | "results" | "cancelled" | "failed";
+export type RunPhase =
+  | "idle"
+  | "profiling"
+  | "reviewing"
+  | "searching"
+  | "results"
+  | "cancelled"
+  | "failed";
 export interface RunState {
   phase: RunPhase;
   revision: number;
