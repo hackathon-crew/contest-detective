@@ -3,7 +3,7 @@ from pydantic_ai.messages import ModelResponse
 from pydantic_ai.models.function import FunctionModel
 
 from agent_responses import answer_part
-from account_helpers import Mailbox, request_code
+from account_helpers import Mailbox, register
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
@@ -39,13 +39,13 @@ def test_cookie_identity_and_confirmed_profile_reach_the_investigation(tmp_path)
     app.dependency_overrides[get_session] = session_override
     mailbox = Mailbox()
     app.state.mailbox = mailbox
+    app.state.test_session_factory = sessions
     app.dependency_overrides[get_mailer] = lambda: mailbox
     limiter.reset()
     try:
         with TestClient(app) as client:
             credentials = {'email': 'researcher@example.com', 'password': 'long-password-123'}
-            code = request_code(client, credentials['email'])
-            user_id = client.post('/auth/register', json={**credentials, 'code': code}).json()['data']['id']
+            user_id = register(client, credentials['email'], credentials['password'])['data']['id']
             assert client.post('/auth/login', json=credentials).json()['code'] == 200
             assert client.put('/user/profile', json={'skills': ['Python'], 'city': '杭州'}).json()['code'] == 200
             assert 'event: answer' in client.post('/agent/ask', json={'question': '哪些比赛适合我'}).text

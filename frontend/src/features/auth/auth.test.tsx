@@ -24,7 +24,7 @@ function Address() {
 
 function setup(
   path = '/login',
-  options: { failLoginOnce?: boolean; holdLogin?: Promise<void> } = {},
+  options: { failLoginOnce?: boolean; holdLogin?: Promise<void>; rejectInvite?: boolean } = {},
 ) {
   stubResizeObserver()
   const calls: { path: string; body?: unknown }[] = []
@@ -39,10 +39,15 @@ function setup(
       await options.holdLogin
     }
     const rejected = login && options.failLoginOnce && loginCount === 1
+    const invalidInvite = path.endsWith('/auth/register/invite') && options.rejectInvite
     return new Response(
       JSON.stringify({
-        code: rejected ? 401 : 200,
-        message: rejected ? '邮箱或密码不正确' : 'success',
+        code: invalidInvite ? 403 : rejected ? 401 : 200,
+        message: invalidInvite
+          ? '邀请码无效或已使用，请检查邀请码。'
+          : rejected
+            ? '邮箱或密码不正确'
+            : 'success',
         data:
           path.endsWith('/auth/me') || path.endsWith('/auth/logout')
             ? null
@@ -68,6 +73,14 @@ function setup(
     </MemoryRouter>,
   )
   return calls
+}
+
+const testInvite = 'INK-TEST-INVITE'
+
+async function continueWithInvite() {
+  fireEvent.change(screen.getByLabelText('邀请码'), { target: { value: testInvite } })
+  submit('继续')
+  await screen.findByLabelText('邮箱')
 }
 
 function continueWithEmail(value = 'night@example.com') {
@@ -173,9 +186,22 @@ describe('全屏账户流程', () => {
     expect(calls.map((call) => call.path)).toContain('/api/auth/logout')
   })
 
-  it('注册先发送验证码，再用邮箱、密码和验证码创建账户并自动登录', async () => {
+  it('无效邀请码留在第一步，不请求邮箱验证码', async () => {
+    const calls = setup('/register', { rejectInvite: true })
+    fireEvent.change(screen.getByLabelText('邀请码'), { target: { value: 'invalid' } })
+    submit('继续')
+    expect(await screen.findByRole('alert')).toHaveProperty(
+      'textContent',
+      '邀请码无效或已使用，请检查邀请码。',
+    )
+    expect(screen.queryByLabelText('邮箱')).toBeNull()
+    expect(calls.some((call) => call.path.endsWith('/auth/register/code'))).toBe(false)
+  })
+
+  it('注册校验邀请码后，发送邮箱验证码并创建账户', async () => {
     const calls = setup('/register')
     expect(screen.getByRole('heading', { name: '注册 Inkpaw' })).toBeTruthy()
+    await continueWithInvite()
     continueWithEmail('  night@example.com  ')
     expect(await screen.findByRole('heading', { name: '创建密码' })).toBeTruthy()
     expect(screen.getByLabelText('验证码')).toBeTruthy()
@@ -189,8 +215,12 @@ describe('全屏账户流程', () => {
       calls.filter((call) => call.path.includes('/auth/') && !call.path.endsWith('/me')),
     ).toEqual([
       {
+        path: '/api/auth/register/invite',
+        body: { invite_code: testInvite },
+      },
+      {
         path: '/api/auth/register/code',
-        body: { email: 'night@example.com' },
+        body: { email: 'night@example.com', invite_code: testInvite },
       },
       {
         path: '/api/auth/register',
@@ -198,6 +228,7 @@ describe('全屏账户流程', () => {
           email: 'night@example.com',
           password: 'local-test-password',
           code: '123456',
+          invite_code: testInvite,
         },
       },
       {
@@ -223,6 +254,7 @@ describe('全屏账户流程', () => {
 
   it('账户创建后自动登录失败，重试只登录已有账户', async () => {
     const calls = setup('/register', { failLoginOnce: true })
+    await continueWithInvite()
     continueWithEmail()
     await screen.findByLabelText('验证码')
     enterCode()
@@ -254,6 +286,7 @@ describe('全屏账户流程', () => {
     setup('/contests?mode=online')
     fireEvent.click(screen.getByRole('link', { name: '登录' }))
     fireEvent.click(screen.getByRole('link', { name: '创建账号' }))
+    await continueWithInvite()
     continueWithEmail()
     await screen.findByLabelText('验证码')
     enterCode()
@@ -265,6 +298,7 @@ describe('全屏账户流程', () => {
 
   it('校验邮箱和注册密码，不发送无效凭据', async () => {
     const calls = setup('/register')
+    await continueWithInvite()
     continueWithEmail('invalid')
     expect(screen.getByRole('alert').textContent).toBe('请输入有效的邮箱地址。')
     continueWithEmail()

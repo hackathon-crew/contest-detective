@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from contest_detective.framework.db import get_session
+from contest_detective.system.auth.invites import issue
 from contest_detective.system.notifications.ports import DeliveryReceipt
 from contest_detective.system.user.models import User
 from contest_detective.bootstrap.api.mail import get_mailer
@@ -38,8 +39,13 @@ def account_client(tmp_path):
     return TestClient(app)
 
 
-def request_code(client, email):
-    response = client.post('/auth/register/code', json={'email': email}).json()
+def issue_invite(client):
+    with client.app.state.test_session_factory() as session:
+        return issue(session)
+
+
+def request_code(client, email, invite_code):
+    response = client.post('/auth/register/code', json={'email': email, 'invite_code': invite_code}).json()
     assert response['code'] == 200, response
     message = client.app.state.mailbox.messages[-1]
     match = re.search(r'\b(\d{6})\b', message.text)
@@ -48,8 +54,10 @@ def request_code(client, email):
 
 
 def register(client, email, password='long-password-123'):
+    invite_code = issue_invite(client)
     return client.post('/auth/register', json={
-        'email': email, 'password': password, 'code': request_code(client, email),
+        'email': email, 'password': password, 'code': request_code(client, email, invite_code),
+        'invite_code': invite_code,
     }).json()
 
 

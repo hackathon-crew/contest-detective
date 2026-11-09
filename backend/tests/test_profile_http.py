@@ -71,7 +71,7 @@ def test_confirmed_profile_roundtrips_structured_preferences(tmp_path):
     from sqlalchemy import create_engine
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
     from sqlalchemy.orm import sessionmaker
-    from account_helpers import Mailbox, request_code
+    from account_helpers import Mailbox, register
     from contest_detective.framework.db import get_session
     from contest_detective.bootstrap.api.mail import get_mailer
     from contest_detective.bootstrap.app import create_app
@@ -86,10 +86,10 @@ def test_confirmed_profile_roundtrips_structured_preferences(tmp_path):
     app.dependency_overrides[get_session] = session_override
     mailbox = Mailbox()
     app.state.mailbox = mailbox
+    app.state.test_session_factory = sessions
     app.dependency_overrides[get_mailer] = lambda: mailbox
     with TestClient(app) as browser:
-        code = request_code(browser, 'student@example.org')
-        browser.post('/auth/register', json={'email': 'student@example.org', 'password': 'password123', 'code': code})
+        assert register(browser, 'student@example.org', 'password123')['code'] == 200
         browser.post('/auth/login', json={'email': 'student@example.org', 'password': 'password123'})
         response = browser.put('/user/profile', json={'skills': ['Python'], 'topics': ['agent'],
             'identity_kind': 'student', 'availability': {'weekdays': [5, 6], 'max_consecutive_days': 2}})
