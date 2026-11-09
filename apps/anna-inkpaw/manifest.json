@@ -1,0 +1,39 @@
+{
+  "schema": 4,
+  "required_executas": [],
+  "optional_executas": [],
+  "system_prompt_addendum": "Inkpaw is currently an architecture skeleton, not a working opportunity finder. If asked to open it, use open_app_view with this app's numeric app_id and view main. Do not claim that searches, confirmations, or recommendations have run.",
+  "tags": [
+    "research",
+    "education",
+    "opportunities"
+  ],
+  "ui": {
+    "bundle": {
+      "format": "static-spa",
+      "entry": "index.html",
+      "external_origins": []
+    },
+    "views": [
+      {
+        "name": "main",
+        "title": "Inkpaw · Anna",
+        "default": true,
+        "single_instance": true,
+        "min_size": {
+          "w": 320,
+          "h": 400
+        },
+        "default_size": {
+          "w": 1040,
+          "h": 760
+        },
+        "summary_template": "Inkpaw architecture skeleton"
+      }
+    ],
+    "form_factors": [
+      "desktop"
+    ],
+    "csp_overrides": {}
+  }
+}
