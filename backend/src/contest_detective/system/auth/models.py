@@ -36,3 +36,15 @@ class RegistrationCode(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+
+class CampaignVisit(Base):
+    """A browser's first attributed arrival in a campaign."""
+
+    __tablename__ = 'campaign_visits'
+    campaign: Mapped[str] = mapped_column(String(40), primary_key=True)
+    visitor_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    source: Mapped[str] = mapped_column(String(20))
+    content: Mapped[str] = mapped_column(String(48))
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    registrations: Mapped[int] = mapped_column(Integer, default=0, server_default='0')
