@@ -161,7 +161,7 @@ it('游客从赛事库查证后创建账号能保存当前记录并恢复后续�
   })
   fireEvent.click(await screen.findByRole('button', { name: '登录后保存这次查证' }))
   fireEvent.click(await screen.findByRole('link', { name: '创建账号' }))
-  fireEvent.change(screen.getByLabelText('邀请码'), { target: { value: 'INK-TEST-INVITE' } })
+  fireEvent.change(screen.getByLabelText('邀请码'), { target: { value: 'A2BCD3' } })
   fireEvent.submit(screen.getByRole('button', { name: '继续' }).closest('form')!)
   fireEvent.change(await screen.findByLabelText('邮箱'), {
     target: { value: 'reader@example.org' },
