@@ -293,6 +293,18 @@ function literalFact(
 // Derived enums and dates require affirmative wording, not just a matching keyword.
 const NEGATED_OR_UNCERTAIN =
   /\b(?:not|no|never|neither|nor|without|cannot|unless|if|whether|maybe|unconfirmed|unknown|uncertain|tentative|proposed|possibly|perhaps)\b|\b\w+n['’]t\b|\b(?:may|might|could|should)\s+(?:be|open|close|accept|take|participate|happen)\b|不|未|没有|待定|可能|假如|如果/iu;
+// Alternative, relative, conditional and unresolved critical assertions are not
+// affirmative satisfaction of a deadline, attendance mode or location filter.
+const CRITICAL_AMBIGUITY =
+  /\b(?:or|either|depending|pending|tba|tbd|approximately|around|about|next|tomorrow|yesterday|today|extended|extension|updated|revised|changed|superseded)\b|\b(?:subject to|to be (?:announced|confirmed|decided)|this (?:week|month|year|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)|end of|later than|earlier than)\b|[?？]|或|待定|另行|可能|大约|视情况/iu;
+function ambiguousCritical(text: string): boolean {
+  return NEGATED_OR_UNCERTAIN.test(text) || CRITICAL_AMBIGUITY.test(text);
+}
+function ambiguousLocation(text: string): boolean {
+  return (
+    ambiguousCritical(text) || /\b(?:and|versus|vs)\b|[/|]|及|以及/iu.test(text)
+  );
+}
 const FUTURE_STATUS =
   /\b(?:will|soon|tomorrow|scheduled|planned)\b|\b(?:open|opens|opening)\s+(?:from|on|starting|beginning)\b/iu;
 const REGISTRATION_WORD =
@@ -300,10 +312,18 @@ const REGISTRATION_WORD =
 const CLAUSE_BOUNDARY = /[.!?;\n\r。！？；]/u;
 
 function clauses(text: string): string[] {
-  return text
-    .split(/[.!?;\n\r。！？；]+/u)
-    .map((part) => part.trim())
-    .filter(Boolean);
+  const pieces = text.split(/([.!?;\n\r。！？；]+)/u);
+  const results: string[] = [];
+  for (let index = 0; index < pieces.length; index += 2) {
+    const separator = pieces[index + 1] ?? "";
+    // A question mark carries uncertainty; splitting must not turn a question
+    // into an affirmative source statement. Preserve an exact source substring.
+    const clause = (
+      pieces[index] + (/[?？]/u.test(separator) ? separator : "")
+    ).trim();
+    if (clause) results.push(clause);
+  }
+  return results;
 }
 
 /** Include adjacent source wording so a clipped quote cannot discard "not". */
@@ -366,7 +386,7 @@ function supportsMode(quote: string, mode: Mode): boolean {
     /\bhybrid\s+(?:event|hackathon|competition|challenge)\b|混合形式/iu;
   {
     if (
-      NEGATED_OR_UNCERTAIN.test(quote) ||
+      ambiguousCritical(quote) ||
       nonAttendance.test(quote) ||
       /\bremote sensing\b/iu.test(quote)
     )
@@ -417,7 +437,7 @@ function locationFact(
   if (!location.value) return location;
   const text = location.value;
   const supported = (context: string) =>
-    !NEGATED_OR_UNCERTAIN.test(context) &&
+    !ambiguousLocation(context) &&
     (folded(context.replace(/[.!?。！？]+$/u, "")) === folded(text) ||
       /\b(?:location|venue|held (?:in|at)|takes? place (?:in|at)|event is (?:in|at)|hosted (?:in|at))\b|地点|会场|举办地/iu.test(
         context,
@@ -429,7 +449,7 @@ function locationFact(
       );
 }
 function explicitLocation(clause: string): string | null {
-  if (NEGATED_OR_UNCERTAIN.test(clause)) return null;
+  if (ambiguousLocation(clause)) return null;
   const match =
     /^(?:(?:event|attendance)\s+)?(?:location|venue)\s*:\s*(.{1,160})$/iu.exec(
       clause,
@@ -457,11 +477,10 @@ function registrationFact(
   const status = raw.value as "open" | "closed" | "unknown";
   const supported =
     status === "closed"
-      ? (quote: string) =>
-          !NEGATED_OR_UNCERTAIN.test(quote) && CLOSED.test(quote)
+      ? (quote: string) => !ambiguousCritical(quote) && CLOSED.test(quote)
       : status === "open"
         ? (quote: string) =>
-            !NEGATED_OR_UNCERTAIN.test(quote) &&
+            !ambiguousCritical(quote) &&
             !FUTURE_STATUS.test(quote) &&
             OPEN.test(quote) &&
             !CLOSED.test(quote)
@@ -620,17 +639,35 @@ function deadlineDayHasStarted(
     .slice(0, 10);
   return deadline.value <= latestPossibleDay;
 }
+function registrationDeadlineAssertion(clause: string): boolean {
+  return /\b(?:registrations?|applications?|enrol(?:l)?ment)\b[^\n]{0,100}\b(?:deadline|closes?|closing|ends?|ending|window|period|until|by|cutoff|cut-off)\b|\b(?:deadline|cutoff|cut-off)\b[^\n]{0,60}\b(?:registrations?|applications?)\b|\b(?:register|apply)\s+by\s+(?:\d|January|February|March|April|May|June|July|August|September|October|November|December|next|today|tomorrow|midnight|noon|end|TBD|TBA)|(?:报名|注册|申请)[^\n]{0,30}截止/iu.test(
+    clause,
+  );
+}
+function ambiguousDeadline(clause: string, parsed: Deadline): boolean {
+  if (ambiguousCritical(clause) || parsed.precision === "text") return true;
+  const zones =
+    /(?:(?:UTC|GMT)?[+-]\d{2}:\d{2}|\b(?:UTC|GMT|CET|CEST|EST|EDT|PST|PDT)\b|(?<=\d)Z\b)/gi;
+  if ([...clause.matchAll(zones)].length > 1) return true;
+  const withoutZones = clause.replace(zones, " ");
+  // A calendar day must not conceal an unresolved alternative or range of clocks.
+  return (
+    [
+      ...withoutZones.matchAll(
+        /(?:\b|T)(?:\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?|\d{1,2}\s*(?:AM|PM))/gi,
+      ),
+    ].length > 1
+  );
+}
 function registrationDeadlineClause(clause: string): boolean {
   if (
-    NEGATED_OR_UNCERTAIN.test(clause) ||
+    ambiguousCritical(clause) ||
     /\b(?:idea|project|proposal|pitch|solution|code|demo|judging)\s+(?:submission\s+)?(?:deadline|date|due)|\bsubmission\s+(?:deadline|date)|\b(?:event|competition|hackathon|program|ceremony)\s+(?:date|starts?|ends?|schedule)|项目提交|作品提交|创意提交|活动日期|比赛日期/iu.test(
       clause,
     )
   )
     return false;
-  return /\b(?:registrations?|applications?|register|apply|enrol(?:l)?ment)\b[^\n]{0,100}\b(?:deadline|closes?|closing|until|by|cutoff|cut-off)\b|\b(?:deadline|cutoff|cut-off)\b[^\n]{0,60}\b(?:registrations?|applications?)\b|(?:报名|注册|申请)[^\n]{0,30}截止/iu.test(
-    clause,
-  );
+  return registrationDeadlineAssertion(clause);
 }
 function registrationDeadlineQuote(quote: string, value: string): boolean {
   const relevant = clauses(quote).filter((clause) => clause.includes(value));
@@ -729,7 +766,10 @@ function normalizedDeadlineDay(deadline: Deadline): string | null {
       /(?:(?:UTC|GMT)?[+-]\d{2}:\d{2}|\b(?:UTC|GMT|CET|CEST|EST|EDT|PST|PDT)\b|(?<=\d)Z\b)/gi,
       " ",
     )
-    .replace(/(?:\b|T)\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?/gi, " ");
+    .replace(
+      /(?:\b|T)(?:\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?|\d{1,2}\s*(?:AM|PM))/gi,
+      " ",
+    );
   const day = parseDeadline(stripped);
   return day.precision === "day" ? day.value : null;
 }
@@ -773,7 +813,7 @@ function reconcileDeadlines(
   );
   if (
     all.some((entry) => entry.level === "conflict") ||
-    (known.length && ambiguous.length) ||
+    ambiguous.length > 0 ||
     known.some((entry) =>
       known.some((other) => !compatibleDeadlines(entry.value!, other.value!)),
     )
@@ -782,7 +822,8 @@ function reconcileDeadlines(
       value: null,
       evidence: combineEvidence([...all, { evidence: ambiguous }]),
       level: "conflict",
-      uncertainty: "Current source registration deadline statements conflict",
+      uncertainty:
+        "Current source registration deadline statements are conflicting or unresolved",
     };
   if (ambiguous.length)
     return {
@@ -1015,12 +1056,39 @@ export function validateCandidates(
         },
       ];
       for (const clause of clauses(page.content)) {
-        if (clause.length > 1200) continue;
-        if (CLOSED.test(clause) && !NEGATED_OR_UNCERTAIN.test(clause))
+        if (clause.length > 1200) {
+          // Bounds must not discard an unresolved critical assertion while a
+          // convenient shorter page remains trusted. Retain an exact excerpt.
+          const excerpt = createEvidence(clause.slice(0, 1200));
+          if (registrationDeadlineAssertion(clause))
+            ambiguousDeadlines.push(...excerpt);
+          if (
+            /\b(?:attendance|format|mode|participation)\b|活动形式|举办方式/iu.test(
+              clause,
+            ) &&
+            (ONLINE.test(clause) || OFFLINE.test(clause) || HYBRID.test(clause))
+          )
+            ambiguousModes.push(...excerpt);
+          if (/\b(?:location|venue)\b|地点|会场|举办地/iu.test(clause))
+            ambiguousLocations.push(...excerpt);
+          if (
+            REGISTRATION_WORD.test(clause) &&
+            /\b(?:open|closed|accepting)\b/iu.test(clause) &&
+            registration.value !== "closed"
+          )
+            registration = {
+              ...unknown(
+                "Current registration context exceeds the verification bound",
+              ),
+              evidence: excerpt,
+            };
+          continue;
+        }
+        if (CLOSED.test(clause) && !ambiguousCritical(clause))
           registration = fact("closed", createEvidence(clause));
         else if (
           REGISTRATION_WORD.test(clause) &&
-          (NEGATED_OR_UNCERTAIN.test(clause) || FUTURE_STATUS.test(clause)) &&
+          (ambiguousCritical(clause) || FUTURE_STATUS.test(clause)) &&
           /\b(?:open|accepting|accepted|closed)\b|开放|接受|关闭/iu.test(
             clause,
           ) &&
@@ -1035,7 +1103,7 @@ export function validateCandidates(
             clause,
           );
         if (
-          NEGATED_OR_UNCERTAIN.test(clause) &&
+          ambiguousCritical(clause) &&
           attendanceContext &&
           (ONLINE.test(clause) || OFFLINE.test(clause) || HYBRID.test(clause))
         )
@@ -1045,7 +1113,7 @@ export function validateCandidates(
             if (supportsMode(clause, sourceMode))
               sourceModes.push(fact(sourceMode, createEvidence(clause)));
         if (
-          NEGATED_OR_UNCERTAIN.test(clause) &&
+          ambiguousLocation(clause) &&
           /\b(?:location|venue|(?:event|hackathon|competition)[^.]{0,60}\b(?:in|at)|held (?:in|at))\b|地点|会场|举办地/iu.test(
             clause,
           )
@@ -1056,16 +1124,14 @@ export function validateCandidates(
           if (sourceLocation)
             sourceLocations.push(fact(sourceLocation, createEvidence(clause)));
         }
+        if (!registrationDeadlineAssertion(clause)) continue;
+        const sourceDeadline = parseDeadline(clause);
         if (
-          REGISTRATION_WORD.test(clause) &&
-          /\b(?:deadline|cutoff|closes?)\b|截止/iu.test(clause) &&
-          NEGATED_OR_UNCERTAIN.test(clause)
+          !registrationDeadlineClause(clause) ||
+          ambiguousDeadline(clause, sourceDeadline)
         )
           ambiguousDeadlines.push(...createEvidence(clause));
-        if (!registrationDeadlineClause(clause)) continue;
-        const sourceDeadline = parseDeadline(clause);
-        if (sourceDeadline.precision !== "text")
-          sourceDeadlines.push(fact(sourceDeadline, createEvidence(clause)));
+        else sourceDeadlines.push(fact(sourceDeadline, createEvidence(clause)));
       }
       for (const paragraph of page.content.split(/\n+/).slice(0, 2000)) {
         if (!SIGNIFICANT.test(paragraph)) continue;
@@ -1200,7 +1266,9 @@ export function matchCandidates(
         opportunity.name,
       ].some((field) => field.level === "conflict")
     ) {
-      reject("Source eligibility or essential event facts conflict");
+      reject(
+        "Source eligibility or essential event facts are conflicting or unresolved",
+      );
       continue;
     }
     const deadline = opportunity.deadline.value;
