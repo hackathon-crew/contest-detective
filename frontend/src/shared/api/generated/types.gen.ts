@@ -120,6 +120,75 @@ export type CalendarRead = {
 };
 
 /**
+ * CampaignArrival
+ */
+export type CampaignArrival = {
+    /**
+     * Campaign
+     */
+    campaign: 'inkpaw_launch_202611';
+    /**
+     * Visitor Id
+     */
+    visitor_id: string;
+    /**
+     * Source
+     */
+    source: 'x' | 'xiaohongshu' | 'reddit' | 'github';
+    /**
+     * Content
+     */
+    content?: string;
+};
+
+/**
+ * CampaignCounts
+ */
+export type CampaignCounts = {
+    /**
+     * Visitors
+     */
+    visitors?: number;
+    /**
+     * Converted Visitors
+     */
+    converted_visitors?: number;
+    /**
+     * Registrations
+     */
+    registrations?: number;
+    /**
+     * Conversion Rate
+     */
+    conversion_rate?: number | null;
+};
+
+/**
+ * CampaignReport
+ */
+export type CampaignReport = {
+    /**
+     * Campaign
+     */
+    campaign: 'inkpaw_launch_202611';
+    /**
+     * As Of
+     */
+    as_of: string;
+    /**
+     * First Seen At
+     */
+    first_seen_at: string | null;
+    total: CampaignCounts;
+    /**
+     * By Source
+     */
+    by_source: {
+        [key: string]: CampaignCounts;
+    };
+};
+
+/**
  * ClaimAssessment
  */
 export type ClaimAssessment = {
@@ -1517,6 +1586,34 @@ export type ResponseCalendarRead = {
      * 业务数据
      */
     data?: CalendarRead | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[CampaignReport]
+ */
+export type ResponseCampaignReport = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: CampaignReport | null;
     /**
      * Timestamp
      *
@@ -3914,6 +4011,22 @@ export type ReadAccountAccountSettingsGetResponses = {
 
 export type ReadAccountAccountSettingsGetResponse = ReadAccountAccountSettingsGetResponses[keyof ReadAccountAccountSettingsGetResponses];
 
+export type CampaignConversionAccountCampaignConversionGetData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/campaign-conversion';
+};
+
+export type CampaignConversionAccountCampaignConversionGetResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseCampaignReport;
+};
+
+export type CampaignConversionAccountCampaignConversionGetResponse = CampaignConversionAccountCampaignConversionGetResponses[keyof CampaignConversionAccountCampaignConversionGetResponses];
+
 export type IssueInviteAccountInvitesPostData = {
     body?: never;
     path?: never;
@@ -4114,6 +4227,31 @@ export type RequestRegisterCodeAuthRegisterCodePostResponses = {
 };
 
 export type RequestRegisterCodeAuthRegisterCodePostResponse = RequestRegisterCodeAuthRegisterCodePostResponses[keyof RequestRegisterCodeAuthRegisterCodePostResponses];
+
+export type RecordCampaignVisitAuthCampaignVisitPostData = {
+    body: CampaignArrival;
+    path?: never;
+    query?: never;
+    url: '/auth/campaign-visit';
+};
+
+export type RecordCampaignVisitAuthCampaignVisitPostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type RecordCampaignVisitAuthCampaignVisitPostError = RecordCampaignVisitAuthCampaignVisitPostErrors[keyof RecordCampaignVisitAuthCampaignVisitPostErrors];
+
+export type RecordCampaignVisitAuthCampaignVisitPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type RecordCampaignVisitAuthCampaignVisitPostResponse = RecordCampaignVisitAuthCampaignVisitPostResponses[keyof RecordCampaignVisitAuthCampaignVisitPostResponses];
 
 export type RegisterAuthRegisterPostData = {
     body: RegisterCredentials;

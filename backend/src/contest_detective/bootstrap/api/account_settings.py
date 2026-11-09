@@ -8,7 +8,8 @@ from contest_detective.framework.db import get_session
 from contest_detective.system.account import lifecycle
 from contest_detective.system.account.schemas import Timestamp
 from contest_detective.system.account.store import owner
-from contest_detective.system.auth import invites
+from contest_detective.system.auth import campaign, invites
+from contest_detective.system.auth.campaign_contracts import CampaignReport
 from contest_detective.system.auth.service import current
 from contest_detective.system.notifications.config import get_account_runtime_settings
 from ..handler import SensitiveRoute
@@ -49,6 +50,18 @@ def read_account(
     user_id: str | None = Depends(current), session: Session = Depends(get_session)
 ):
     return Response.success(AccountRead(**lifecycle.read_account(session, user_id)))
+
+
+@router.get("/account/campaign-conversion", response_model=Response[CampaignReport])
+def campaign_conversion(
+    response: HttpResponse,
+    user_id: str | None = Depends(current),
+    session: Session = Depends(get_session),
+):
+    if not invites.can_manage(owner(session, user_id)):
+        raise BizException("只有管理员可以查看宣发转化。", code=403)
+    response.headers["Cache-Control"] = "no-store"
+    return Response.success(campaign.report(session))
 
 
 @router.post("/account/invites", response_model=Response[InviteCreated])

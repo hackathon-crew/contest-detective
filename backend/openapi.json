@@ -1176,6 +1176,24 @@
         }
       }
     },
+    "/account/campaign-conversion": {
+      "get": {
+        "summary": "Campaign Conversion",
+        "operationId": "campaign_conversion_account_campaign_conversion_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_CampaignReport_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/invites": {
       "post": {
         "summary": "Issue Invite",
@@ -1428,6 +1446,44 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/campaign-visit": {
+      "post": {
+        "summary": "Record Campaign Visit",
+        "operationId": "record_campaign_visit_auth_campaign_visit_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignArrival"
               }
             }
           },
@@ -2539,6 +2595,129 @@
           "url"
         ],
         "title": "CalendarRead"
+      },
+      "CampaignArrival": {
+        "properties": {
+          "campaign": {
+            "type": "string",
+            "const": "inkpaw_launch_202611",
+            "title": "Campaign"
+          },
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "x",
+              "xiaohongshu",
+              "reddit",
+              "github"
+            ],
+            "title": "Source"
+          },
+          "content": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[a-z0-9_-]*$",
+            "title": "Content",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign",
+          "visitor_id",
+          "source"
+        ],
+        "title": "CampaignArrival"
+      },
+      "CampaignCounts": {
+        "properties": {
+          "visitors": {
+            "type": "integer",
+            "title": "Visitors",
+            "default": 0
+          },
+          "converted_visitors": {
+            "type": "integer",
+            "title": "Converted Visitors",
+            "default": 0
+          },
+          "registrations": {
+            "type": "integer",
+            "title": "Registrations",
+            "default": 0
+          },
+          "conversion_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversion Rate"
+          }
+        },
+        "type": "object",
+        "title": "CampaignCounts"
+      },
+      "CampaignReport": {
+        "properties": {
+          "campaign": {
+            "type": "string",
+            "const": "inkpaw_launch_202611",
+            "title": "Campaign"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date-time",
+            "title": "As Of"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "total": {
+            "$ref": "#/components/schemas/CampaignCounts"
+          },
+          "by_source": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CampaignCounts"
+            },
+            "propertyNames": {
+              "enum": [
+                "x",
+                "xiaohongshu",
+                "reddit",
+                "github"
+              ]
+            },
+            "type": "object",
+            "title": "By Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign",
+          "as_of",
+          "first_seen_at",
+          "total",
+          "by_source"
+        ],
+        "title": "CampaignReport"
       },
       "ClaimAssessment": {
         "properties": {
@@ -5119,6 +5298,48 @@
         },
         "type": "object",
         "title": "Response[CalendarRead]"
+      },
+      "Response_CampaignReport_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CampaignReport"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[CampaignReport]"
       },
       "Response_ConnectionRead_": {
         "properties": {
