@@ -1,0 +1,26 @@
+name: Anna app
+on:
+  pull_request:
+    paths: ['apps/anna-inkpaw/**', '.github/workflows/anna-app.yml']
+  push:
+    branches: [main]
+    paths: ['apps/anna-inkpaw/**', '.github/workflows/anna-app.yml']
+permissions:
+  contents: read
+jobs:
+  anna-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: apps/anna-inkpaw
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/anna-inkpaw/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm run pack:offline

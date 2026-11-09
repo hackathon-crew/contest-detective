@@ -1,0 +1,20 @@
+{
+  "name": "@inkpaw/anna-app",
+  "version": "0.0.0-skeleton",
+  "private": true,
+  "type": "module",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "validate": "anna-app validate --strict",
+    "check": "npm run typecheck && npm test && npm run validate",
+    "pack:offline": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@anna-ai/cli": "0.1.64",
+    "@anna-ai/app-schema": "0.33.0",
+    "typescript": "5.9.3"
+  }
+}
