@@ -353,16 +353,7 @@ function supportedInSource(
 const ONLINE = /\b(?:online|virtual|remote)\b|线上|在线|远程/iu;
 const OFFLINE = /\b(?:in[ -]person|on[ -]?site|offline)\b|线下|现场/iu;
 const HYBRID = /\bhybrid\b|线上(?:和|及|与)线下|混合形式/iu;
-function modeFact(
-  value: unknown,
-  pages: SourcePage[],
-  now: Date,
-  url: string,
-): SourcedFact<Mode> {
-  const raw = rawFact(value);
-  if (!raw || !MODES.includes(raw.value as Mode)) return unknown();
-  const evidence = evidenceFor(raw.evidence, pages, now, url);
-  const mode = raw.value as Mode;
+function supportsMode(quote: string, mode: Mode): boolean {
   const nonAttendance =
     /\bonline\s+(?:registration|applications?|forms?|payment)|\b(?:register|apply)\s+online\b/iu;
   const context =
@@ -373,7 +364,7 @@ function modeFact(
     /\b(?:in[ -]person|on[ -]?site|offline)\s+(?:event|hackathon|competition|challenge)\b|\b(?:event|hackathon|competition|challenge)\s+(?:(?:is|will|be|entirely|fully)\s+)*(?:offline|in[ -]person|on[ -]?site)\b|线下(?:比赛|赛事|黑客松|活动)/iu;
   const hybridEvent =
     /\bhybrid\s+(?:event|hackathon|competition|challenge)\b|混合形式/iu;
-  const supported = (quote: string) => {
+  {
     if (
       NEGATED_OR_UNCERTAIN.test(quote) ||
       nonAttendance.test(quote) ||
@@ -398,10 +389,56 @@ function modeFact(
       !ONLINE.test(quote) &&
       !HYBRID.test(quote)
     );
-  };
-  return supportedInSource(evidence, pages, supported)
+  }
+}
+function modeFact(
+  value: unknown,
+  pages: SourcePage[],
+  now: Date,
+  url: string,
+): SourcedFact<Mode> {
+  const raw = rawFact(value);
+  if (!raw || !MODES.includes(raw.value as Mode)) return unknown();
+  const evidence = evidenceFor(raw.evidence, pages, now, url);
+  const mode = raw.value as Mode;
+  return supportedInSource(evidence, pages, (quote) =>
+    supportsMode(quote, mode),
+  )
     ? fact(mode, evidence)
     : unknown("Attendance mode is not explicit");
+}
+function locationFact(
+  value: unknown,
+  pages: SourcePage[],
+  now: Date,
+  url: string,
+): SourcedFact {
+  const location = literalFact(value, pages, now, url, 160);
+  if (!location.value) return location;
+  const text = location.value;
+  const supported = (context: string) =>
+    !NEGATED_OR_UNCERTAIN.test(context) &&
+    (folded(context.replace(/[.!?。！？]+$/u, "")) === folded(text) ||
+      /\b(?:location|venue|held (?:in|at)|takes? place (?:in|at)|event is (?:in|at)|hosted (?:in|at))\b|地点|会场|举办地/iu.test(
+        context,
+      ));
+  return supportedInSource(location.evidence, pages, supported)
+    ? location
+    : unknown(
+        "The attendance location is not affirmed by its full source context",
+      );
+}
+function explicitLocation(clause: string): string | null {
+  if (NEGATED_OR_UNCERTAIN.test(clause)) return null;
+  const match =
+    /^(?:(?:event|attendance)\s+)?(?:location|venue)\s*:\s*(.{1,160})$/iu.exec(
+      clause,
+    ) ??
+    /^(?:the\s+)?(?:event|hackathon|competition)\s+(?:is|will be)\s+(?:(?:held|hosted)\s+)?(?:in|at)\s+(.{1,160})$/iu.exec(
+      clause,
+    ) ??
+    /^(?:地点|会场|举办地)[：:]\s*(.{1,160})$/u.exec(clause);
+  return match?.[1]?.trim() ?? null;
 }
 const CLOSED =
   /\b(?:registrations?|applications?|enrol(?:l)?ment)\s+(?:(?:is|are|has|have|now|already|currently|been)\s+)*(?:closed|ended|full)\b|报名(?:已|已经)?(?:截止|结束|关闭)|注册(?:已|已经)?(?:截止|结束|关闭)/iu;
@@ -635,6 +672,129 @@ function deadlineFact(
         : "Date cannot be normalized without guessing a year, time or timezone",
   );
 }
+function combineEvidence(facts: { evidence: Evidence[] }[]): Evidence[] {
+  return facts
+    .flatMap((entry) => entry.evidence)
+    .filter(
+      (entry, index, all) =>
+        all.findIndex(
+          (other) =>
+            other.url === entry.url &&
+            other.fetchedAt === entry.fetchedAt &&
+            other.quote === entry.quote,
+        ) === index,
+    )
+    .slice(0, 32);
+}
+function reconcileLiteral<T>(
+  initial: SourcedFact<T>,
+  sources: SourcedFact<T>[],
+  ambiguous: Evidence[],
+  label: string,
+): SourcedFact<T> {
+  const all = [initial, ...sources];
+  const known = all.filter((entry) => entry.value !== null);
+  const values = new Set(
+    known.map((entry) =>
+      typeof entry.value === "string"
+        ? folded(entry.value)
+        : JSON.stringify(entry.value),
+    ),
+  );
+  if (
+    values.size > 1 ||
+    (known.length > 0 && ambiguous.length > 0) ||
+    all.some((entry) => entry.level === "conflict")
+  )
+    return {
+      value: null,
+      evidence: combineEvidence([...all, { evidence: ambiguous }]),
+      level: "conflict",
+      uncertainty: `Current source ${label} statements conflict`,
+    };
+  if (ambiguous.length)
+    return {
+      ...unknown<T>(`Current source ${label} wording is negative or ambiguous`),
+      evidence: combineEvidence([{ evidence: ambiguous }]),
+    };
+  const chosen = known[0];
+  return chosen ? { ...chosen, evidence: combineEvidence(all) } : initial;
+}
+function normalizedDeadlineDay(deadline: Deadline): string | null {
+  if (deadline.precision === "day") return deadline.value;
+  if (deadline.precision === "text") return null;
+  // Retain the explicitly written local day when comparing day versus instant precision.
+  const stripped = deadline.raw
+    .replace(
+      /(?:(?:UTC|GMT)?[+-]\d{2}:\d{2}|\b(?:UTC|GMT|CET|CEST|EST|EDT|PST|PDT)\b|(?<=\d)Z\b)/gi,
+      " ",
+    )
+    .replace(/(?:\b|T)\d{1,2}:\d{2}(?::\d{2})?\s*(?:AM|PM)?/gi, " ");
+  const day = parseDeadline(stripped);
+  return day.precision === "day" ? day.value : null;
+}
+function compatibleDeadlines(left: Deadline, right: Deadline): boolean {
+  if (left.precision === "text" || right.precision === "text") return true;
+  if (left.precision === "instant" && right.precision === "instant")
+    return left.value === right.value;
+  if (normalizedDeadlineDay(left) !== normalizedDeadlineDay(right))
+    return false;
+  if (
+    left.precision === "day" &&
+    right.precision === "day" &&
+    left.timezone &&
+    right.timezone &&
+    left.timezone !== right.timezone
+  )
+    return false;
+  const clock = (raw: string): string | null => {
+    const withoutOffsets = raw.replace(/(?:UTC|GMT)?[+-]\d{2}:\d{2}/gi, " ");
+    const match = /(?:\b|T)(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i.exec(
+      withoutOffsets,
+    );
+    if (!match) return null;
+    const hour = match[4]
+      ? (Number(match[1]) % 12) + (match[4].toUpperCase() === "PM" ? 12 : 0)
+      : Number(match[1]);
+    return `${hour}:${match[2]}:${match[3] ?? "00"}`;
+  };
+  const leftClock = clock(left.raw),
+    rightClock = clock(right.raw);
+  return !leftClock || !rightClock || leftClock === rightClock;
+}
+function reconcileDeadlines(
+  initial: SourcedFact<Deadline>,
+  sources: SourcedFact<Deadline>[],
+  ambiguous: Evidence[],
+): SourcedFact<Deadline> {
+  const all = [initial, ...sources];
+  const known = all.filter(
+    (entry) => entry.value !== null && entry.value.precision !== "text",
+  );
+  if (
+    all.some((entry) => entry.level === "conflict") ||
+    (known.length && ambiguous.length) ||
+    known.some((entry) =>
+      known.some((other) => !compatibleDeadlines(entry.value!, other.value!)),
+    )
+  )
+    return {
+      value: null,
+      evidence: combineEvidence([...all, { evidence: ambiguous }]),
+      level: "conflict",
+      uncertainty: "Current source registration deadline statements conflict",
+    };
+  if (ambiguous.length)
+    return {
+      ...unknown<Deadline>(
+        "Current source registration deadline is negative or ambiguous",
+      ),
+      evidence: combineEvidence([{ evidence: ambiguous }]),
+    };
+  const chosen =
+    known.find((entry) => entry.value!.precision === "instant") ?? known[0];
+  return chosen ? { ...chosen, evidence: combineEvidence(all) } : initial;
+}
 function mergeFact<T>(
   left: SourcedFact<T>,
   right: SourcedFact<T>,
@@ -681,7 +841,7 @@ function mergeOpportunities(
     description: mergeFact(left.description, right.description),
     mode: mergeFact(left.mode, right.mode),
     location: mergeFact(left.location, right.location),
-    deadline: mergeFact(left.deadline, right.deadline),
+    deadline: reconcileDeadlines(left.deadline, [right.deadline], []),
     registration,
     eligibility: mergeFact(left.eligibility, right.eligibility),
     terms: [...left.terms, ...right.terms]
@@ -816,6 +976,13 @@ export function validateCandidates(
     );
     let deadline = deadlineFact(candidate.deadline, pages, now, canonical);
     let mode = modeFact(candidate.mode, pages, now, canonical);
+    let location = locationFact(candidate.location, pages, now, canonical);
+    const sourceModes: SourcedFact<Mode>[] = [],
+      sourceDeadlines: SourcedFact<Deadline>[] = [],
+      sourceLocations: SourcedFact[] = [];
+    const ambiguousModes: Evidence[] = [],
+      ambiguousDeadlines: Evidence[] = [],
+      ambiguousLocations: Evidence[] = [];
     const terms: SourcedFact[] =
       Array.isArray(candidate.terms) && candidate.terms.length <= 8
         ? candidate.terms
@@ -863,33 +1030,42 @@ export function validateCandidates(
             ...unknown("Current registration wording is negative or ambiguous"),
             evidence: createEvidence(clause),
           };
-        if (
-          mode.value &&
-          NEGATED_OR_UNCERTAIN.test(clause) &&
+        const attendanceContext =
           /\b(?:attendance|format|mode|event|hackathon|participat(?:ion|e))\b|活动形式|举办方式|参与/iu.test(
             clause,
-          ) &&
+          );
+        if (
+          NEGATED_OR_UNCERTAIN.test(clause) &&
+          attendanceContext &&
           (ONLINE.test(clause) || OFFLINE.test(clause) || HYBRID.test(clause))
         )
-          mode = {
-            ...unknown<Mode>("Attendance wording is negative or ambiguous"),
-            evidence: createEvidence(clause),
-          };
+          ambiguousModes.push(...createEvidence(clause));
+        else
+          for (const sourceMode of MODES)
+            if (supportsMode(clause, sourceMode))
+              sourceModes.push(fact(sourceMode, createEvidence(clause)));
+        if (
+          NEGATED_OR_UNCERTAIN.test(clause) &&
+          /\b(?:location|venue|(?:event|hackathon|competition)[^.]{0,60}\b(?:in|at)|held (?:in|at))\b|地点|会场|举办地/iu.test(
+            clause,
+          )
+        )
+          ambiguousLocations.push(...createEvidence(clause));
+        else {
+          const sourceLocation = explicitLocation(clause);
+          if (sourceLocation)
+            sourceLocations.push(fact(sourceLocation, createEvidence(clause)));
+        }
+        if (
+          REGISTRATION_WORD.test(clause) &&
+          /\b(?:deadline|cutoff|closes?)\b|截止/iu.test(clause) &&
+          NEGATED_OR_UNCERTAIN.test(clause)
+        )
+          ambiguousDeadlines.push(...createEvidence(clause));
         if (!registrationDeadlineClause(clause)) continue;
         const sourceDeadline = parseDeadline(clause);
-        const expired =
-          sourceDeadline.precision === "instant"
-            ? Date.parse(sourceDeadline.value) <= now.getTime()
-            : sourceDeadline.precision === "day" &&
-              deadlineDayHasStarted(sourceDeadline, now);
-        // A malformed model date must not erase an explicit, already-passed
-        // registration cutoff into a recommendation with an "unknown" cutoff.
-        if (expired)
-          deadline = fact(
-            sourceDeadline,
-            createEvidence(clause),
-            "The current source states a registration cutoff that is today or earlier",
-          );
+        if (sourceDeadline.precision !== "text")
+          sourceDeadlines.push(fact(sourceDeadline, createEvidence(clause)));
       }
       for (const paragraph of page.content.split(/\n+/).slice(0, 2000)) {
         if (!SIGNIFICANT.test(paragraph)) continue;
@@ -902,6 +1078,23 @@ export function validateCandidates(
           terms.push(fact(quote, createEvidence(quote)));
       }
     }
+    mode = reconcileLiteral(
+      mode,
+      sourceModes,
+      ambiguousModes,
+      "attendance mode",
+    );
+    location = reconcileLiteral(
+      location,
+      sourceLocations,
+      ambiguousLocations,
+      "attendance location",
+    );
+    deadline = reconcileDeadlines(
+      deadline,
+      sourceDeadlines,
+      ambiguousDeadlines,
+    );
     let eligibility = literalFact(candidate.eligibility, pages, now, canonical);
     const ageEvidence = ageRangeEvidence(pages, canonical, now);
     if (new Set(ageEvidence.map((entry) => entry.range)).size > 1)
@@ -916,7 +1109,7 @@ export function validateCandidates(
       name,
       description: literalFact(candidate.description, pages, now, canonical),
       mode,
-      location: literalFact(candidate.location, pages, now, canonical, 160),
+      location,
       deadline,
       registration,
       eligibility,

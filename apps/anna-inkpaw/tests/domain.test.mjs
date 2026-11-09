@@ -148,7 +148,11 @@ test("invented excerpts, synthesized string fields and extra source claims canno
   assert.equal(validate(second)[0].description.value, null);
   const third = liveFixture();
   third.candidate.deadline.value = "2027-11-10T23:59:00Z";
-  assert.equal(validate(third)[0].deadline.value, null);
+  assert.equal(
+    validate(third)[0].deadline.value.value,
+    "2026-11-10T22:59:00.000Z",
+  );
+  assert.ok(!validate(third)[0].deadline.value.raw.includes("2027"));
   const fourth = liveFixture();
   fourth.candidate.name.evidence[0].fetchedAt = NOW.toISOString();
   assert.deepEqual(validate(fourth), []);
@@ -486,7 +490,10 @@ test("technical online/remote/offline topics cannot be normalized into attendanc
     ["offline", "Create offline language models."],
   ]) {
     const source = liveFixture({ mode });
-    source.page.content += `\n${quote}`;
+    source.page.content = source.page.content.replace(
+      source.candidate.mode.evidence[0].quote,
+      quote,
+    );
     source.candidate.mode.evidence[0].quote = quote;
     assert.equal(validate(source)[0].mode.value, null);
   }
@@ -576,7 +583,6 @@ test("registration deadline binds its own clause rather than a later event or su
   for (const quote of [
     "Registration deadline: 11 November 2026 and event date: 20 November 2026.",
     "Registration deadline: 11 November 2026 or 20 November 2026.",
-    "Registration deadline: 11 November 2026. Event date: 20 November 2026.",
   ]) {
     const source = replaceFactSource(
       liveFixture(),
@@ -735,4 +741,154 @@ test("date-only cutoffs use explicit source timezone and conservatively handle a
   });
   const events = validateCandidates(raw(source.candidate), [source.page], now);
   assert.equal(matchCandidates(events, profile(), now).matches.length, 1);
+});
+
+function eventRules(root, content, path = "rules") {
+  return {
+    ...root.page,
+    url: `${URLS.crash}${path}`,
+    finalUrl: `${URLS.crash}${path}`,
+    content,
+  };
+}
+
+test("all explicit same-event future deadlines are reconciled even when the model omits rules", () => {
+  for (const includeModelDeadline of [true, false]) {
+    const root = liveFixture({ deadline: "20 November 2026, 17:00 UTC" });
+    if (!includeModelDeadline) root.candidate.deadline = null;
+    const rules = eventRules(
+      root,
+      "Registration deadline: 10 November 2026, 17:00 UTC.",
+    );
+    const events = validateCandidates(
+      raw(root.candidate),
+      [root.page, rules],
+      NOW,
+    );
+    assert.equal(events[0].deadline.level, "conflict");
+    assert.equal(events[0].deadline.value, null);
+    assert.ok(
+      events[0].deadline.evidence.some((entry) => entry.url === rules.url),
+    );
+    assert.ok(
+      events[0].deadline.evidence.some((entry) => entry.url === root.page.url),
+    );
+    assert.equal(match(events).matches.length, 0);
+  }
+});
+
+test("same-page omitted future dates and several current rules cannot silently select a deadline", () => {
+  const root = liveFixture({ deadline: "20 November 2026, 17:00 UTC" });
+  root.page.content += "\nRegistration closes by 18 November 2026, 17:00 UTC.";
+  const earlier = eventRules(
+    root,
+    "Application deadline: 15 November 2026, 17:00 UTC.",
+    "rules-a",
+  );
+  const later = eventRules(
+    root,
+    "Registration deadline: 19 November 2026, 17:00 UTC.",
+    "rules-b",
+  );
+  for (const pages of [
+    [root.page, earlier, later],
+    [root.page, later, earlier],
+  ]) {
+    const events = validateCandidates(raw(root.candidate), pages, NOW);
+    assert.equal(events[0].deadline.level, "conflict");
+    assert.equal(match(events).matches.length, 0);
+  }
+});
+
+test("equivalent deadline spellings and explicit timezone conversions do not invent conflicts", () => {
+  const root = liveFixture({ deadline: "20 November 2026, 17:00 UTC" });
+  const rules = eventRules(
+    root,
+    "Registration deadline: November 20, 2026 at 18:00 CET.",
+  );
+  const events = validateCandidates(
+    raw(root.candidate),
+    [root.page, rules],
+    NOW,
+  );
+  assert.equal(events[0].deadline.level, "official");
+  assert.equal(events[0].deadline.value.value, "2026-11-20T17:00:00.000Z");
+  assert.equal(match(events).matches.length, 1);
+});
+
+test("positive attendance contradictions on any current event page cannot satisfy a mode filter", () => {
+  for (const [mode, statement] of [
+    ["online", "Attendance: in-person."],
+    ["offline", "Attendance: online."],
+    ["online", "Attendance: hybrid."],
+  ]) {
+    const root = liveFixture({ mode, deadline: "20 November 2026, 17:00 UTC" });
+    const rules = eventRules(root, statement);
+    const events = validateCandidates(
+      raw(root.candidate),
+      [root.page, rules],
+      NOW,
+    );
+    assert.equal(events[0].mode.level, "conflict", statement);
+    assert.equal(events[0].mode.value, null);
+    assert.equal(match(events, { modes: [mode] }).matches.length, 0);
+  }
+  const root = liveFixture();
+  root.candidate.mode = null;
+  const rules = eventRules(root, "Attendance: in-person.");
+  assert.equal(
+    validateCandidates(raw(root.candidate), [root.page, rules], NOW)[0].mode
+      .level,
+    "conflict",
+  );
+});
+
+test("clipped, negated and ambiguous locations cannot satisfy a required location", () => {
+  for (const statement of [
+    "The event is not in Austria.",
+    "The event will not be in Austria.",
+    "If the event is in Austria, we will announce it.",
+  ]) {
+    const root = liveFixture({
+      mode: "offline",
+      deadline: "20 November 2026, 17:00 UTC",
+    });
+    root.page.content = root.page.content.replace("Graz, Austria", statement);
+    root.candidate.location = {
+      value: "Austria",
+      evidence: [{ page: 0, quote: "Austria" }],
+    };
+    const events = validate(root);
+    assert.equal(events[0].location.value, null, statement);
+    assert.equal(
+      match(events, { modes: ["offline"], location: "Austria" }).matches.length,
+      0,
+      statement,
+    );
+  }
+});
+
+test("independent positive and negative location rules preserve contradictions", () => {
+  for (const statement of [
+    "Location: Vienna, Austria.",
+    "Venue: London, UK.",
+    "The event will not be in Austria.",
+  ]) {
+    const root = liveFixture({
+      mode: "offline",
+      deadline: "20 November 2026, 17:00 UTC",
+    });
+    const rules = eventRules(root, statement);
+    const events = validateCandidates(
+      raw(root.candidate),
+      [root.page, rules],
+      NOW,
+    );
+    assert.equal(events[0].location.level, "conflict", statement);
+    assert.equal(events[0].location.value, null);
+    assert.equal(
+      match(events, { modes: ["offline"], location: "Austria" }).matches.length,
+      0,
+    );
+  }
 });
