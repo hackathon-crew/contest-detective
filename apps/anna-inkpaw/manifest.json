@@ -2,12 +2,8 @@
   "schema": 4,
   "required_executas": [],
   "optional_executas": [],
-  "system_prompt_addendum": "Inkpaw is currently an architecture skeleton, not a working opportunity finder. If asked to open it, use open_app_view with this app's numeric app_id and view main. Do not claim that searches, confirmations, or recommendations have run.",
-  "tags": [
-    "research",
-    "education",
-    "opportunities"
-  ],
+  "system_prompt_addendum": "Inkpaw helps users find contest opportunities with source evidence. When the user #mentions this app with interests, summon open_app_view using this app's numeric app_id, view=\"main\", payload={\"query\": \"the user's request\"}. Never use the slug as app_id. Opening only prefills a draft: the user must review and confirm the profile, then explicitly start the CU-consuming search in the window. Describe returned results as source-backed candidates, not guaranteed eligibility or admission. Extracted facts can be incomplete; the user must review linked organizer rules before applying. Do not claim a search happened before the app returns evidence. Unknown or conflicting facts stay uncertain. Do not auto-register, accept terms, or access private accounts. Reopening with a new query stages a change and never starts a paid call. The app can send a small transient source summary back to chat; that artifact is not durable conversation memory.",
+  "tags": ["research", "education", "opportunities"],
   "ui": {
     "bundle": {
       "format": "static-spa",
@@ -28,12 +24,10 @@
           "w": 1040,
           "h": 760
         },
-        "summary_template": "Inkpaw architecture skeleton"
+        "summary_template": "Inkpaw · sourced opportunities"
       }
     ],
-    "form_factors": [
-      "desktop"
-    ],
+    "form_factors": ["desktop"],
     "csp_overrides": {}
   }
 }

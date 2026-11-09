@@ -9,7 +9,7 @@ permissions:
   contents: read
 jobs:
   anna-app:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
@@ -23,4 +23,14 @@ jobs:
           cache-dependency-path: apps/anna-inkpaw/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm run check
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - run: npm run test:browser
+      - name: Keep offline browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anna-offline-browser-${{ github.sha }}
+          path: apps/anna-inkpaw/test-results/
+          if-no-files-found: warn
+          retention-days: 7
       - run: npm run pack:offline

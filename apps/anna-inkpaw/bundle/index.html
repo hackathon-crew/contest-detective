@@ -1,5 +1,257 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Inkpaw · Anna skeleton</title><link rel="stylesheet" href="./style.css"></head>
-<body><main><p class="eyebrow">INKPAW / ANNA</p><h1>Architecture skeleton</h1><p>Opportunity matching is not implemented in this version.</p><p lang="zh-CN">当前仅为空骨架，尚不能生成画像或检索赛事。</p><p>No network, LLM or storage calls are made.</p><a href="./LICENSE.txt">License</a></main><script type="module" src="./app.js"></script></body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Inkpaw · Anna</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main id="app">
+      <header class="masthead">
+        <a class="brand" href="#top" aria-label="Inkpaw home"
+          ><span class="brand-mark" aria-hidden="true">i.</span>Inkpaw<span
+            class="platform"
+            >/ ANNA</span
+          ></a
+        ><span class="edition" data-i18n="edition"
+          >SOURCE-FIRST OPPORTUNITIES</span
+        >
+      </header>
+      <section class="intro" id="top">
+        <div>
+          <p class="eyebrow" data-i18n="eyebrow">
+            A LITTLE DIRECTION. A REAL OPPORTUNITY.
+          </p>
+          <h1 data-i18n="heading">Find your next<br />worthwhile challenge.</h1>
+          <p class="lead" data-i18n="lead">
+            Tell us what you enjoy building. Review your profile, then explore
+            opportunities with the evidence in view.
+          </p>
+        </div>
+        <aside class="principle">
+          <span class="principle-number">01 / 03</span>
+          <p data-i18n="principle">
+            Your interests first.<br />Sources always.
+          </p>
+          <small data-i18n="privacy"
+            >No resume, private accounts or device access. Only your confirmed
+            profile and saved links are stored.</small
+          >
+        </aside>
+      </section>
+      <div id="connection" class="notice" role="status" data-i18n="connecting">
+        Connecting to Anna…
+      </div>
+      <div id="pending" class="notice" hidden>
+        <p data-i18n="pending">
+          Anna sent a new request. Applying it will require a fresh profile
+          confirmation.
+        </p>
+        <button id="apply-entry" class="text-button" data-i18n="applyEntry">
+          Use the new request
+        </button>
+      </div>
+      <div class="workspace">
+        <section class="panel setup">
+          <div class="section-title">
+            <span class="step">01</span>
+            <h2 data-i18n="describe">Describe your interests</h2>
+          </div>
+          <label for="query" data-i18n="queryLabel"
+            >What would you like to find?</label
+          ><textarea
+            id="query"
+            rows="4"
+            maxlength="3000"
+            placeholder="AI tools, online hackathons, accessible to individual builders…"
+          ></textarea>
+          <p class="hint" data-i18n="inputHint">
+            Use interests and practical constraints. Please leave out private or
+            sensitive details.
+          </p>
+          <label class="check"
+            ><input type="checkbox" id="model-consent" /><span
+              data-i18n="modelConsent"
+              >Use my Anna model quota for one profile draft. I can also fill
+              the form below without AI.</span
+            ></label
+          ><button id="draft" class="secondary" data-i18n="draft">
+            Draft my profile
+          </button>
+          <div class="divider"></div>
+          <div class="section-title">
+            <span class="step">02</span>
+            <h2 data-i18n="review">Review & confirm</h2>
+          </div>
+          <div class="fields">
+            <div>
+              <label for="topics" data-i18n="topics">Interests</label
+              ><input
+                id="topics"
+                maxlength="300"
+                placeholder="AI, open source"
+              />
+            </div>
+            <div>
+              <label for="skills" data-i18n="skills">Skills</label
+              ><input
+                id="skills"
+                maxlength="300"
+                placeholder="Python, design"
+              />
+            </div>
+            <div>
+              <label for="mode" data-i18n="mode">Participation</label
+              ><select id="mode" multiple size="3">
+                <option value="online" data-i18n="online">Online only</option>
+                <option value="offline" data-i18n="offline">
+                  In person only
+                </option>
+                <option value="hybrid" data-i18n="hybrid">Hybrid only</option>
+              </select>
+            </div>
+            <div>
+              <label for="location" data-i18n="location"
+                >Required location</label
+              ><input id="location" maxlength="120" placeholder="Optional" />
+            </div>
+            <div class="full">
+              <label for="availability" data-i18n="availability"
+                >Required schedule</label
+              ><input
+                id="availability"
+                maxlength="180"
+                placeholder="Optional"
+              />
+            </div>
+            <div class="full">
+              <label for="constraints" data-i18n="constraints"
+                >Other hard constraints</label
+              ><textarea
+                id="constraints"
+                rows="2"
+                maxlength="500"
+                placeholder="One per line"
+              ></textarea>
+            </div>
+          </div>
+          <p class="hint" data-i18n="hardHint">
+            Hard constraints that cannot be verified exclude a match. Schedule
+            and custom-condition verification are limited in this first version.
+          </p>
+          <button id="confirm" class="primary" data-i18n="confirm">
+            Confirm this profile
+          </button>
+          <p id="confirmed" class="confirmation" aria-live="polite"></p>
+        </section>
+        <section class="panel results-panel">
+          <div class="section-title">
+            <span class="step">03</span>
+            <h2 data-i18n="explore">Explore with evidence</h2>
+          </div>
+          <p class="hint" data-i18n="sourceCoverage">
+            Initial coverage: CRASH, EIS and Mobile World Capital. Each run
+            fetches current pages; search snippets are only leads. Missing
+            evidence can mean fewer or no matches.
+          </p>
+          <label class="check"
+            ><input type="checkbox" id="search-consent" /><span
+              data-i18n="searchConsent"
+              >Start a search using my Anna quota: up to 2 basic searches, 8
+              fetched pages and 1 extraction-model call. Pricing varies by
+              provider; no automatic retries.</span
+            ></label
+          >
+          <div class="action-row">
+            <button id="search" class="primary" data-i18n="search">
+              Find opportunities <span aria-hidden="true">↗</span></button
+            ><button id="cancel" class="secondary" hidden data-i18n="cancel">
+              Stop after current call
+            </button>
+          </div>
+          <p class="hint" data-i18n="cancelHint">
+            Stopping prevents later steps. Requests already sent may still
+            finish and consume quota.
+          </p>
+          <div id="status" role="status" aria-live="polite"></div>
+          <div id="error" role="alert" class="error" hidden></div>
+          <div id="usage" class="usage"></div>
+          <div id="results">
+            <div class="empty">
+              <span class="empty-symbol" aria-hidden="true">✳</span>
+              <h3 data-i18n="emptyTitle">Start with a profile.</h3>
+              <p data-i18n="emptyText">
+                Your shortlist will appear here, with what we know, what is
+                uncertain and the source for each fact.
+              </p>
+            </div>
+          </div>
+          <button id="summary" class="text-button" hidden data-i18n="summary">
+            Send a brief source summary to Anna chat
+          </button>
+          <p id="summary-hint" class="hint" hidden data-i18n="summaryHint">
+            Chat summaries are transient and may disappear after refresh. Save
+            individual links below to keep them.
+          </p>
+        </section>
+      </div>
+      <section class="panel saved-panel">
+        <div class="section-title">
+          <span class="step">↗</span>
+          <h2 data-i18n="saved">Saved for later</h2>
+        </div>
+        <div id="bookmarks"></div>
+        <p class="hint" data-i18n="bookmarkHint">
+          Saved links are dated snapshots, not a promise that registration is
+          still open.
+        </p>
+        <details class="privacy-controls">
+          <summary data-i18n="dataControls">Your data</summary>
+          <p data-i18n="dataHelp">
+            Only the confirmed profile and links you save are persisted in your
+            own Anna app storage. Search pages and unconfirmed drafts are not
+            saved.
+          </p>
+          <button id="reload-saved" class="secondary" data-i18n="reloadSaved">
+            Reload saved data
+          </button>
+          <button id="clear" class="danger" data-i18n="clear">
+            Clear my profile and saved links
+          </button>
+          <section
+            id="clear-confirmation"
+            role="group"
+            aria-labelledby="clear-question"
+            hidden
+          >
+            <p id="clear-question" data-i18n="clearConfirm">
+              Clear the confirmed profile and all saved links from this app?
+              Anna soft deletion does not guarantee permanent erasure.
+            </p>
+            <button id="clear-no" class="secondary" data-i18n="clearNo">
+              Keep my data
+            </button>
+            <button id="clear-yes" class="danger" data-i18n="clearYes">
+              Yes, clear my saved data
+            </button>
+          </section>
+          <p class="hint" data-i18n="softDelete">
+            Anna uses soft deletion. Clearing the app does not promise permanent
+            erasure from platform backups.
+          </p>
+        </details>
+      </section>
+      <footer>
+        <span
+          >Inkpaw / Anna ·
+          <span data-i18n="candidate"
+            >Candidate build, not yet live-validated</span
+          ></span
+        ><a href="./LICENSE.txt" data-i18n="license">License</a>
+      </footer>
+    </main>
+    <script type="module" src="./app.js"></script>
+  </body>
 </html>
