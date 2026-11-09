@@ -20,6 +20,7 @@ from contest_detective.system.account.schemas import (
     SearchPreferences,
 )
 from contest_detective.system.account.store import owner, settings_for
+from contest_detective.system.auth.invites import can_manage
 from contest_detective.system.auth.models import AccessToken
 from contest_detective.system.user.models import User
 from contest_detective.agent.models import Investigation, TraceRecord
@@ -44,6 +45,7 @@ def read_account(session, user_id):
     return dict(
         email=user.email,
         email_verified=user.is_verified,
+        can_manage_invites=can_manage(user),
         created_at=user.created_at,
         password_changed_at=row.password_changed_at,
         follows_count=session.scalar(

@@ -11,12 +11,13 @@ from contest_detective.framework.exceptions import BizException
 from contest_detective.framework.result import Response
 from contest_detective.framework.async_db import get_async_session
 from contest_detective.framework.db import get_session
-from contest_detective.system.auth import registration, service
+from contest_detective.system.auth import invites, registration, service
 from contest_detective.system.user import service as users
 from contest_detective.system.user.schemas import Profile, PublicUser
+from ..handler import SensitiveRoute
 from .mail import get_mailer
 
-router = APIRouter()
+router = APIRouter(route_class=SensitiveRoute)
 
 
 class Credentials(BaseModel):
@@ -24,11 +25,15 @@ class Credentials(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
-class RegisterCredentials(Credentials):
+class InviteRequest(BaseModel):
+    invite_code: str = Field(min_length=1, max_length=32)
+
+
+class RegisterCredentials(Credentials, InviteRequest):
     code: str = Field(pattern=r'^[0-9]{6}$')
 
 
-class CodeRequest(BaseModel):
+class CodeRequest(InviteRequest):
     email: EmailStr
 
 
@@ -37,15 +42,22 @@ def copy_cookie(source, target):
         target.headers.append('set-cookie', value)
 
 
+@router.post('/auth/register/invite', response_model=Response[None])
+def validate_invite(body: InviteRequest, session: Session = Depends(get_session)):
+    invites.check(session, body.invite_code)
+    return Response.success()
+
+
 @router.post('/auth/register/code', response_model=Response[None])
 def request_register_code(body: CodeRequest, session: Session = Depends(get_session), mailer=Depends(get_mailer)):
+    invites.check(session, body.invite_code)
     registration.request_code(session, str(body.email), mailer)
     return Response.success()
 
 
 @router.post('/auth/register', response_model=Response[PublicUser])
 async def register(body: RegisterCredentials, session: AsyncSession = Depends(get_async_session)):
-    return Response.success(await service.register(session, body.email, body.password, body.code))
+    return Response.success(await service.register(session, body.email, body.password, body.code, body.invite_code))
 
 
 @router.post('/auth/login', response_model=Response[PublicUser])

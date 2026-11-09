@@ -13,6 +13,7 @@ from starlette.exceptions import HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.routing import APIRoute
 
 from contest_detective.framework.enums.biz_code import BizCode
 from contest_detective.framework.exceptions import BizException
@@ -65,6 +66,19 @@ def handle_unhandled_exception(request: Request, exc: Exception) -> JSONResponse
         exc_info=exc,
     )
     return _jsonify(Response.fail("服务器内部错误", code=BizCode.INTERNAL_ERROR))
+
+
+class SensitiveRoute(APIRoute):
+    def get_route_handler(self):
+        original = super().get_route_handler()
+
+        async def handle(request):
+            try:
+                return await original(request)
+            except RequestValidationError:
+                raise BizException("账号信息格式不正确", code=400) from None
+
+        return handle
 
 
 def register_exception_handlers(app: FastAPI) -> None:

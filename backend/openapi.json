@@ -1176,6 +1176,24 @@
         }
       }
     },
+    "/account/invites": {
+      "post": {
+        "summary": "Issue Invite",
+        "operationId": "issue_invite_account_invites_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_InviteCreated_"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/account/email": {
       "post": {
         "summary": "Request Email",
@@ -1334,6 +1352,44 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DeleteInput"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Response_NoneType_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register/invite": {
+      "post": {
+        "summary": "Validate Invite",
+        "operationId": "validate_invite_auth_register_invite_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteRequest"
               }
             }
           },
@@ -2272,6 +2328,10 @@
             "type": "boolean",
             "title": "Email Verified"
           },
+          "can_manage_invites": {
+            "type": "boolean",
+            "title": "Can Manage Invites"
+          },
           "follows_count": {
             "type": "integer",
             "title": "Follows Count"
@@ -2298,6 +2358,7 @@
         "required": [
           "email",
           "email_verified",
+          "can_manage_invites",
           "follows_count",
           "created_at",
           "password_changed_at"
@@ -2541,6 +2602,12 @@
       },
       "CodeRequest": {
         "properties": {
+          "invite_code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Invite Code"
+          },
           "email": {
             "type": "string",
             "format": "email",
@@ -2549,6 +2616,7 @@
         },
         "type": "object",
         "required": [
+          "invite_code",
           "email"
         ],
         "title": "CodeRequest"
@@ -3686,6 +3754,34 @@
         ],
         "title": "InvestigationReport"
       },
+      "InviteCreated": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "InviteCreated"
+      },
+      "InviteRequest": {
+        "properties": {
+          "invite_code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Invite Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invite_code"
+        ],
+        "title": "InviteRequest"
+      },
       "LibraryConditions": {
         "properties": {
           "keyword": {
@@ -4781,6 +4877,12 @@
       },
       "RegisterCredentials": {
         "properties": {
+          "invite_code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Invite Code"
+          },
           "email": {
             "type": "string",
             "format": "email",
@@ -4800,6 +4902,7 @@
         },
         "type": "object",
         "required": [
+          "invite_code",
           "email",
           "password",
           "code"
@@ -5268,6 +5371,48 @@
         },
         "type": "object",
         "title": "Response[GuestQuestionQuota]"
+      },
+      "Response_InviteCreated_": {
+        "properties": {
+          "code": {
+            "type": "integer",
+            "title": "Code",
+            "description": "业务状态码：成功 200，失败非 200",
+            "default": 200
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "提示信息",
+            "default": "success"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/InviteCreated"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "业务数据"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp",
+            "description": "响应时间；默认不携带，不携带时省略"
+          }
+        },
+        "type": "object",
+        "title": "Response[InviteCreated]"
       },
       "Response_MailPreview_": {
         "properties": {

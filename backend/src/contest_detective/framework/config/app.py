@@ -7,7 +7,7 @@ import re
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import EmailStr, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +21,7 @@ class AppSettings(BaseSettings):
 
     log_level: str = "INFO"
     query_limits_enabled: bool = False
+    invite_admin_email: EmailStr | Literal[""] = ""
     sync_interval_minutes: int = Field(default=0, ge=0)
     # 北京时间 HH:MM。非空时每天在该窗口跑一轮，并忽略小时间隔。
     sync_daily_at: str = ""

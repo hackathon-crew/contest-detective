@@ -6,6 +6,7 @@ import { apiClient } from '@/shared/api'
 import type { AccountRead } from '@/shared/api/generated'
 import { Expand, failure, Ic, useNotice } from './components'
 import { AccountModal } from './modal'
+import { InvitePanel } from './invite-panel'
 import { translateSystemText, type Locale } from '@/shared/i18n'
 import { useLocale } from '@/shared/i18n/locale-context'
 
@@ -184,6 +185,7 @@ export function SettingsPanel() {
           {translateSystemText(locale, failure(account.error))}
         </p>
       )}
+      {account.data?.can_manage_invites && <InvitePanel />}
       <div className="grp" style={{ marginTop: 24 }}>
         <div className="arow" id="email">
           <div>

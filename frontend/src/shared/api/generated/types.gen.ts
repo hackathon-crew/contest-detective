@@ -17,6 +17,10 @@ export type AccountRead = {
      */
     email_verified: boolean;
     /**
+     * Can Manage Invites
+     */
+    can_manage_invites: boolean;
+    /**
      * Follows Count
      */
     follows_count: number;
@@ -153,6 +157,10 @@ export type ClaimAssessment = {
  * CodeRequest
  */
 export type CodeRequest = {
+    /**
+     * Invite Code
+     */
+    invite_code: string;
     /**
      * Email
      */
@@ -748,6 +756,26 @@ export type InvestigationReport = {
      * Conflicts
      */
     conflicts?: Array<SourceConflict> | null;
+};
+
+/**
+ * InviteCreated
+ */
+export type InviteCreated = {
+    /**
+     * Code
+     */
+    code: string;
+};
+
+/**
+ * InviteRequest
+ */
+export type InviteRequest = {
+    /**
+     * Invite Code
+     */
+    invite_code: string;
 };
 
 /**
@@ -1356,6 +1384,10 @@ export type QuotaRead = {
  */
 export type RegisterCredentials = {
     /**
+     * Invite Code
+     */
+    invite_code: string;
+    /**
      * Email
      */
     email: string;
@@ -1653,6 +1685,34 @@ export type ResponseGuestQuestionQuota = {
      * 业务数据
      */
     data?: GuestQuestionQuota | null;
+    /**
+     * Timestamp
+     *
+     * 响应时间；默认不携带，不携带时省略
+     */
+    timestamp?: string | null;
+};
+
+/**
+ * Response[InviteCreated]
+ */
+export type ResponseInviteCreated = {
+    /**
+     * Code
+     *
+     * 业务状态码：成功 200，失败非 200
+     */
+    code?: number;
+    /**
+     * Message
+     *
+     * 提示信息
+     */
+    message?: string;
+    /**
+     * 业务数据
+     */
+    data?: InviteCreated | null;
     /**
      * Timestamp
      *
@@ -3854,6 +3914,22 @@ export type ReadAccountAccountSettingsGetResponses = {
 
 export type ReadAccountAccountSettingsGetResponse = ReadAccountAccountSettingsGetResponses[keyof ReadAccountAccountSettingsGetResponses];
 
+export type IssueInviteAccountInvitesPostData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/account/invites';
+};
+
+export type IssueInviteAccountInvitesPostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseInviteCreated;
+};
+
+export type IssueInviteAccountInvitesPostResponse = IssueInviteAccountInvitesPostResponses[keyof IssueInviteAccountInvitesPostResponses];
+
 export type RequestEmailAccountEmailPostData = {
     body: EmailInput;
     path?: never;
@@ -3988,6 +4064,31 @@ export type DeleteAccountAccountDeleteResponses = {
 };
 
 export type DeleteAccountAccountDeleteResponse = DeleteAccountAccountDeleteResponses[keyof DeleteAccountAccountDeleteResponses];
+
+export type ValidateInviteAuthRegisterInvitePostData = {
+    body: InviteRequest;
+    path?: never;
+    query?: never;
+    url: '/auth/register/invite';
+};
+
+export type ValidateInviteAuthRegisterInvitePostErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type ValidateInviteAuthRegisterInvitePostError = ValidateInviteAuthRegisterInvitePostErrors[keyof ValidateInviteAuthRegisterInvitePostErrors];
+
+export type ValidateInviteAuthRegisterInvitePostResponses = {
+    /**
+     * Successful Response
+     */
+    200: ResponseNoneType;
+};
+
+export type ValidateInviteAuthRegisterInvitePostResponse = ValidateInviteAuthRegisterInvitePostResponses[keyof ValidateInviteAuthRegisterInvitePostResponses];
 
 export type RequestRegisterCodeAuthRegisterCodePostData = {
     body: CodeRequest;

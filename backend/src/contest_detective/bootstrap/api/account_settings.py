@@ -1,7 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Request, Response as HttpResponse
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import RedirectResponse
-from fastapi.routing import APIRoute
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from contest_detective.framework.exceptions import BizException
@@ -9,30 +7,25 @@ from contest_detective.framework.result import Response
 from contest_detective.framework.db import get_session
 from contest_detective.system.account import lifecycle
 from contest_detective.system.account.schemas import Timestamp
+from contest_detective.system.account.store import owner
+from contest_detective.system.auth import invites
 from contest_detective.system.auth.service import current
 from contest_detective.system.notifications.config import get_account_runtime_settings
+from ..handler import SensitiveRoute
 from .mail import get_mailer
-
-
-class SensitiveRoute(APIRoute):
-    def get_route_handler(self):
-        original = super().get_route_handler()
-
-        async def handle(request):
-            try:
-                return await original(request)
-            except RequestValidationError:
-                raise BizException("账号信息格式不正确", code=400) from None
-
-        return handle
 
 
 class AccountRead(BaseModel):
     email: str
     email_verified: bool
+    can_manage_invites: bool
     follows_count: int
     created_at: Timestamp
     password_changed_at: Timestamp | None
+
+
+class InviteCreated(BaseModel):
+    code: str
 
 
 class EmailInput(BaseModel):
@@ -56,6 +49,18 @@ def read_account(
     user_id: str | None = Depends(current), session: Session = Depends(get_session)
 ):
     return Response.success(AccountRead(**lifecycle.read_account(session, user_id)))
+
+
+@router.post("/account/invites", response_model=Response[InviteCreated])
+def issue_invite(
+    response: HttpResponse,
+    user_id: str | None = Depends(current),
+    session: Session = Depends(get_session),
+):
+    if not invites.can_manage(owner(session, user_id)):
+        raise BizException("只有管理员可以生成邀请码。", code=403)
+    response.headers["Cache-Control"] = "no-store"
+    return Response.success(InviteCreated(code=invites.issue(session)))
 
 
 @router.post("/account/email", response_model=Response[None])
