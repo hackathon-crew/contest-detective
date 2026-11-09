@@ -290,9 +290,12 @@ test("date parser preserves missing years and ambiguous dates without guessed va
     "1 November 2026 or 10 November 2026",
   ]) {
     const event = validate(liveFixture({ deadline }))[0];
-    assert.equal(event.deadline.value.precision, "text", deadline);
-    assert.equal(event.deadline.value.value, null);
-    assert.equal(event.deadline.value.raw, deadline);
+    assert.equal(event.deadline.value, null, deadline);
+    assert.equal(event.deadline.level, "conflict", deadline);
+    assert.ok(
+      event.deadline.evidence.some((entry) => entry.quote.includes(deadline)),
+    );
+    assert.equal(match([event]).matches.length, 0, deadline);
   }
   for (const deadline of [
     "November 10, 2026 at 23:59",
@@ -454,7 +457,8 @@ test("explicit numeric timezone offsets are not confused with their UTC label", 
   const ambiguous = validate(
     liveFixture({ deadline: "10 November 2026 at 23:59 UTC or CET" }),
   )[0];
-  assert.notEqual(ambiguous.deadline.value.precision, "instant");
+  assert.equal(ambiguous.deadline.value, null);
+  assert.equal(match([ambiguous]).matches.length, 0);
 });
 
 test("unverified leads and official matches are bounded at five without padding", () => {
@@ -891,4 +895,144 @@ test("independent positive and negative location rules preserve contradictions",
       0,
     );
   }
+});
+
+test("unparseable or alternative current registration assertions veto a convenient root deadline", () => {
+  for (const statement of [
+    "Registration deadline: 1 November 2026 or 20 November 2026.",
+    "Registration deadline: 1 November 2026 / 20 November 2026.",
+    "Registration deadline: between 1 November 2026 and 20 November 2026.",
+    "Registration deadline: November 1.",
+    "Registration deadline: 11/01/2026.",
+    "Registration deadline: next Friday.",
+    "Registration deadline: TBD.",
+    "Registration deadline: 20 November 2026, 15:00 or 17:00 UTC.",
+    "Registration deadline: 20 November 2026, 15:00/17:00 UTC.",
+    "Registration deadline: 20 November 2026, 3pm/5pm UTC.",
+    "Registration ends next Friday.",
+    "Registration window: 1 November 2026 to 20 November 2026.",
+    "Registration deadline: 20 November 2026, 15:00–17:00 UTC.",
+    "Registration deadline: 20 November 2026, 17:00 UTC/CET.",
+    "Registration deadline: 20 November 2026 if capacity remains.",
+    "Registration deadline has been extended; replacement date is pending.",
+    "Application deadline: to be announced.",
+  ]) {
+    const root = liveFixture({ deadline: "20 November 2026, 17:00 UTC" });
+    const rules = eventRules(root, statement);
+    const events = validateCandidates(
+      raw(root.candidate),
+      [root.page, rules],
+      NOW,
+    );
+    assert.equal(events[0].deadline.level, "conflict", statement);
+    assert.equal(events[0].deadline.value, null, statement);
+    assert.ok(
+      events[0].deadline.evidence.some(
+        (entry) => entry.url === rules.url && statement.includes(entry.quote),
+      ),
+      statement,
+    );
+    assert.ok(
+      events[0].deadline.evidence.some((entry) => entry.url === root.page.url),
+      statement,
+    );
+    assert.equal(match(events).matches.length, 0, statement);
+  }
+});
+
+test("a sole explicit unresolved registration cutoff is not downgraded to an otherwise eligible unknown", () => {
+  for (const deadline of [
+    "next Friday",
+    "November 20",
+    "TBD",
+    "20 November 2026, 15:00/17:00 UTC",
+    "20 November 2026 or 21 November 2026",
+  ]) {
+    const source = liveFixture({ deadline });
+    source.candidate.deadline = null;
+    const events = validate(source);
+    assert.equal(events[0].deadline.level, "conflict", deadline);
+    assert.equal(events[0].deadline.value, null, deadline);
+    assert.equal(match(events).matches.length, 0, deadline);
+  }
+});
+
+test("alternative, multiple and conditional venue statements cannot satisfy a hard location", () => {
+  for (const location of [
+    "Vienna or Berlin",
+    "Vienna/Berlin",
+    "Vienna and Berlin",
+    "Vienna if funding allows",
+    "Vienna, subject to confirmation",
+    "Vienna?",
+  ]) {
+    const root = liveFixture({
+      mode: "offline",
+      deadline: "20 November 2026, 17:00 UTC",
+    });
+    root.page.content = root.page.content.replace(
+      "Graz, Austria",
+      `Venue: ${location}.`,
+    );
+    root.candidate.location = {
+      value: location,
+      evidence: [{ page: 0, quote: `Venue: ${location}.` }],
+    };
+    const events = validate(root);
+    assert.equal(events[0].location.value, null, location);
+    assert.equal(
+      match(events, { modes: ["offline"], location: "Vienna" }).matches.length,
+      0,
+      location,
+    );
+  }
+});
+
+test("an omitted ambiguous rules venue cannot leave the root location certain", () => {
+  for (const statement of [
+    "Venue: Graz or Vienna.",
+    "Location: Graz/Vienna.",
+    "Venue: Graz, subject to confirmation.",
+  ]) {
+    const root = liveFixture({
+      mode: "offline",
+      deadline: "20 November 2026, 17:00 UTC",
+    });
+    const rules = eventRules(root, statement);
+    const events = validateCandidates(
+      raw(root.candidate),
+      [root.page, rules],
+      NOW,
+    );
+    assert.equal(events[0].location.level, "conflict", statement);
+    assert.equal(events[0].location.value, null, statement);
+    assert.equal(
+      match(events, { modes: ["offline"], location: "Austria" }).matches.length,
+      0,
+      statement,
+    );
+    assert.ok(
+      events[0].location.evidence.some((entry) => entry.url === rules.url),
+    );
+  }
+});
+
+test("overlong critical source context is unresolved rather than silently discarded", () => {
+  const root = liveFixture({ deadline: "20 November 2026, 17:00 UTC" });
+  const rules = eventRules(
+    root,
+    `Registration deadline: ${"unresolved ".repeat(130)} next Friday.`,
+  );
+  const events = validateCandidates(
+    raw(root.candidate),
+    [root.page, rules],
+    NOW,
+  );
+  assert.equal(events[0].deadline.level, "conflict");
+  assert.equal(match(events).matches.length, 0);
+  assert.ok(
+    events[0].deadline.evidence.some(
+      (entry) => entry.url === rules.url && rules.content.includes(entry.quote),
+    ),
+  );
 });
