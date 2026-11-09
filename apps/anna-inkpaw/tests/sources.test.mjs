@@ -129,6 +129,81 @@ test("new identities retain HTTPS, host, port and credential boundaries", () => 
   }
 });
 
+test("encoded and double-encoded paths cannot escape registered event scopes", () => {
+  const urls = [
+    `${imagineCup}/%2e%2e%2Fzh-cn`,
+    `${gems}%2e%2e%2f%2e%2e%2f307/other/`,
+    `${imagineCup}/%252e%252e%252Fzh-cn`,
+    `${gems}%252e%252e%252f%252e%252e%252f307/other/`,
+  ];
+  for (const source of TRUSTED_SOURCES) {
+    for (const suffix of [
+      "%2fother",
+      "%2Fother",
+      "%5cother",
+      "%5Cother",
+      "%252fother",
+      "%255cother",
+      "%2e%2e%5cother",
+      "%252e%252e%255cother",
+      "rules%20copy",
+      "%72ules",
+    ]) {
+      const url = new URL(source.entryUrl);
+      url.pathname = `${url.pathname.replace(/\/$/, "")}/${suffix}`;
+      urls.push(url.href);
+    }
+  }
+  for (const url of urls) {
+    assert.equal(trustedSourceFor(url), null, url);
+    assert.equal(isTrustedSourceUrl(url), false, url);
+  }
+});
+
+test("path encoding rejection preserves allowed query and fragment semantics", () => {
+  for (const source of TRUSTED_SOURCES) {
+    const url = new URL(source.entryUrl);
+    url.hash = "%2e%2e%2f%252f";
+    assert.equal(trustedSourceFor(url.href)?.entryUrl, source.entryUrl);
+    if (!url.search) {
+      url.search = "?redirect=%2e%2e%2f%252f";
+      assert.equal(trustedSourceFor(url.href)?.entryUrl, source.entryUrl);
+    }
+  }
+  assert.equal(
+    trustedSourceFor(
+      "https://eisociety.org/hackathon.php?slug=next%2Dhorizon%2D2026",
+    ),
+    null,
+  );
+});
+
+test("EIS requires the complete unique slug in its exact query scope", () => {
+  const entry = "https://eisociety.org/hackathon.php?slug=next-horizon-2026";
+  assert.equal(trustedSourceFor(entry)?.entryUrl, entry);
+  assert.equal(isTrustedSourceUrl(entry), true);
+  for (const query of [
+    "slug=next-horizon-2026&slug=next-horizon-2026",
+    "slug=next-horizon-2026&slug=another-event",
+    "slug=another-event&slug=next-horizon-2026",
+    "slug=next-horizon-2026-other",
+    "slug=other-next-horizon-2026",
+    "slug=next%2Dhorizon%2D2026",
+    "slug=%6eext-horizon-2026",
+    "slug=next%252Dhorizon%252D2026",
+    "%73lug=next-horizon-2026",
+    "slug=next-horizon-2026%26slug=another-event",
+    "slug=another-event%26slug=next-horizon-2026",
+    "slug=next-horizon-2026%2526slug=another-event",
+    "slug=next-horizon-2026%26slug%3Dnext-horizon-2026",
+    "slug=another-event",
+  ]) {
+    const url = `https://eisociety.org/hackathon.php?${query}`;
+    assert.equal(trustedSourceFor(url), null, url);
+    assert.equal(isTrustedSourceUrl(url), false, url);
+  }
+});
+
 test("Stanford's mixed-year source stays outside the registry and remains an unverified lead", () => {
   for (const url of [
     stanford,

@@ -65,6 +65,8 @@ export function trustedSourceFor(url: string): TrustedSource | null {
     (parsed.port && parsed.port !== "443")
   )
     return null;
+  // Approved paths need no encoding; server decoding must not expand their scope.
+  if (parsed.pathname.includes("%")) return null;
   return (
     TRUSTED_SOURCES.find((source) => {
       if (parsed.hostname !== source.hostname) return false;
