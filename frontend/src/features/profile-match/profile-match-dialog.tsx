@@ -355,7 +355,7 @@ function ProfileMatchForm({
                 {section === 'all' && <h3 className="text-2xl font-bold">{t('确认你的画像')}</h3>}
                 {profile.github && (
                   <p className="break-words text-xs text-muted">
-                    GitHub · {profile.github} ·{' '}
+                    {t('GitHub：{name}', { name: profile.github })} ·{' '}
                     {t('{count} 个公开仓库', { count: profile.github_evidence?.length ?? 0 })}
                   </p>
                 )}

@@ -169,7 +169,7 @@ function InstanceMetadata({
     <li className="contest-detail-source-meta" tabIndex={-1} data-source-evidence={instance.id}>
       <p>
         <span>
-          {t('记录')} {number} ·{' '}
+          {t('记录 {number}', { number })} ·{' '}
           {instance.kind === 'citation'
             ? t('版本引用')
             : instance.kind === 'document'
