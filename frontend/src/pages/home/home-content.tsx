@@ -4,6 +4,7 @@ import type { Profile } from '@/shared/api'
 import type { ProfileMatchSection } from '@/features/profile-match'
 import type { VerificationOptions } from '@/features/detective/verification-contracts'
 import { Icon } from '@/shared/ui/site-icon'
+import { useLocale } from '@/shared/i18n/locale-context'
 import note from '@/shared/assets/stickers/note.png'
 import happy from '@/shared/assets/mascot/octo-happy.png'
 import peer from '@/shared/assets/mascot/octo-peer.png'
@@ -539,30 +540,33 @@ export function WatchPreview() {
   )
 }
 export function McpIntro() {
+  const { t } = useLocale()
   return (
     <div className="copy">
-      <h2>在你常用的 AI 里直接查</h2>
+      <h2>{t('在你常用的 AI 里直接查')}</h2>
       <p>
-        Inkpaw 提供远程 MCP 服务。在 Claude Code、Cursor 这类客户端里加一行配置，它就能直接查 Inkpaw
-        的比赛库，拿到的日期和出处跟网页上一样。
+        {t(
+          'Inkpaw 提供远程 MCP 服务。在 Claude Code、Cursor 这类客户端里加一行配置，它就能直接查 Inkpaw 的比赛库，拿到的日期和出处跟网页上一样。',
+        )}
       </p>
       <div className="tools">
         <div>
           <code>search_contests</code>
-          <span>按关键词、状态、形式和日期范围查比赛</span>
+          <span>{t('按关键词、状态、形式和日期范围查比赛')}</span>
         </div>
         <div>
           <code>get_contest</code>
-          <span>读一场比赛的全部字段，以及每个字段的出处</span>
+          <span>{t('读一场比赛的全部字段，以及每个字段的出处')}</span>
         </div>
         <div>
           <code>match_contests</code>
-          <span>按技能、年级和偏好挑比赛，附上推荐理由</span>
+          <span>{t('按技能、年级和偏好挑比赛，附上推荐理由')}</span>
         </div>
       </div>
       <p className="text-muted" style={{ fontSize: '14px' }}>
-        不带令牌时只读比赛库。在个人中心的「搜索与密钥」生成个人令牌，填入下方 Authorization
-        请求头，MCP 就能读取你的画像、关注和追踪条件。
+        {t(
+          '不带令牌时只读比赛库。在个人中心的「搜索与密钥」生成个人令牌，填入下方 Authorization 请求头，MCP 就能读取你的画像、关注和追踪条件。',
+        )}
       </p>
     </div>
   )

@@ -1,21 +1,31 @@
-<div id="stage" aria-label="Inkpaw 的侦探八爪鱼"></div>
+<div id="stage" data-copy="Inkpaw 的侦探八爪鱼" data-copy-attr="aria-label"></div>
 
 <header class="top">
-  <a class="logo" href="/detective" title="回到文字对话"
+  <a class="logo" href="/detective" data-copy="回到文字对话" data-copy-attr="title"
     ><img src="/inkpaw-mark-56.png" alt="" /><span>Inkpaw</span></a
   >
   <nav class="nav" aria-label="Live">
-    <a href="/detective">文字对话</a>
-    <button type="button" id="b-log" aria-expanded="false">记录</button>
-    <button type="button" id="b-album">卡册<b id="count" hidden>0</b></button>
+    <a href="/detective" data-copy="文字对话"></a>
+    <button type="button" id="b-log" data-copy="记录" aria-expanded="false"></button>
+    <button type="button" id="b-album">
+      <span data-copy="卡册"></span><b id="count" hidden>0</b>
+    </button>
     <button type="button" id="b-sound" class="opt" aria-pressed="false">声音关</button>
     <button type="button" id="b-theme" class="opt">深色</button>
+    <span id="language"></span>
   </nav>
 </header>
 
 <ol id="trail" aria-hidden="true"></ol>
 
-<div id="bubble" class="pf" role="button" tabindex="0" aria-label="点一下看完这句">
+<div
+  id="bubble"
+  class="pf"
+  role="button"
+  tabindex="0"
+  data-copy="点一下看完这句"
+  data-copy-attr="aria-label"
+>
   <span class="in"><p id="btext"></p></span><span id="more"></span
   ><svg id="tail" viewBox="0 0 7 5" aria-hidden="true">
     <path class="a" d="M0 1h1v1h1v1h1v1h1v1H3V4H2V3H1V2H0zM6 1h1v1H6zM5 2h1v1H5zM4 3h1v1H4z" />
@@ -24,39 +34,46 @@
 </div>
 <div class="sr" id="live" aria-live="polite"></div>
 
-<div id="acts" role="group" aria-label="这张卡"></div>
+<div id="acts" role="group" data-copy="这张卡" data-copy-attr="aria-label"></div>
 
 <div id="dock">
   <div id="chips"></div>
   <form id="ask" class="pf" autocomplete="off">
-    <label class="sr" for="q">问八爪鱼</label>
-    <button type="button" id="profile-add" class="link" aria-label="添加 GitHub 或简历画像">
+    <label class="sr" data-copy="问八爪鱼" for="q"></label>
+    <button
+      type="button"
+      id="profile-add"
+      class="link"
+      data-copy="添加 GitHub 或简历画像"
+      data-copy-attr="aria-label"
+    >
       +
     </button>
     <input
       id="q"
       maxlength="4000"
       enterkeyhint="send"
-      placeholder="问它一场比赛，或者说说你的条件"
+      data-copy="问它一场比赛，或者说说你的条件"
+      data-copy-attr="placeholder"
     />
     <span id="quota" hidden></span>
     <button id="send" class="btn primary" type="submit" aria-label="发送" disabled></button>
   </form>
 </div>
 
-<aside id="log" aria-label="对话记录">
+<aside id="log" data-copy="对话记录" data-copy-attr="aria-label">
   <div class="panel-head">
-    <h2>对话记录</h2>
-    <button type="button" class="link" id="log-x">收起</button>
+    <h2 data-copy="对话记录"></h2>
+    <button type="button" class="link" id="log-x" data-copy="收起"></button>
   </div>
   <div id="loglist"></div>
 </aside>
 
-<div id="album" role="dialog" aria-modal="true" aria-label="卡册">
+<div id="album" role="dialog" aria-modal="true" data-copy="卡册" data-copy-attr="aria-label">
   <div class="sheet pf">
     <div class="panel-head">
-      <h2>卡册</h2>
-      <button type="button" class="link" id="album-x">关上</button>
+      <h2 data-copy="卡册"></h2>
+      <button type="button" class="link" id="album-x" data-copy="关上"></button>
     </div>
     <div id="grid"></div>
   </div>

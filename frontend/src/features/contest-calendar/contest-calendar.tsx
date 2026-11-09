@@ -1,8 +1,19 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { monthDay, type ContestDay, type LibraryRow } from '@/entities/contest'
+import { useLocale } from '@/shared/i18n/locale-context'
+import type { Locale } from '@/shared/i18n'
 
-const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+const weekdays = ['一', '二', '三', '四', '五', '六', '日'] as const
+const shortWeekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'] as const
+
+function monthTitle(month: string, locale: Locale) {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  }).format(new Date(month + '-01'))
+}
 function monthDates(month: string, outside = false) {
   const [year, m] = month.split('-').map(Number)
   const lead = (new Date(Date.UTC(year!, m! - 1, 1)).getUTCDay() + 6) % 7
@@ -28,19 +39,20 @@ function DotTypes({ value }: { value: ContestDay | undefined }) {
   )
 }
 function CalendarLegend({ mini = false }: { mini?: boolean }) {
+  const { t } = useLocale()
   return (
     <div className={mini ? 'mini-legend' : 'legend'}>
       <span>
         <i className="dot" />
-        截止
+        {t('截止')}
       </span>
       <span>
         <i className="dot start" />
-        开赛
+        {t('开赛')}
       </span>
       <span>
         <i className="dot mine" />
-        我关注的
+        {t('我关注的')}
       </span>
     </div>
   )
@@ -62,25 +74,32 @@ export function ContestDatePicker({
   onDate: (date: string) => void
   strip?: boolean
 }) {
+  const { locale, t } = useLocale()
   if (strip)
     return (
-      <div className="dstrip" role="group" aria-label="按日期看">
+      <div className="dstrip" role="group" aria-label={t('按日期看')}>
         {Array.from({ length: 14 }, (_, i) => {
           const instant = new Date(Date.parse(today) + i * 86400000)
           const day = instant.toISOString().slice(0, 10),
             value = map.get(day)
           const label =
             i === 0
-              ? '今天'
+              ? t('今天')
               : day.endsWith('-01')
-                ? Number(day.slice(5, 7)) + '月'
-                : ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][instant.getUTCDay()]
+                ? new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }).format(
+                    instant,
+                  )
+                : t(shortWeekdays[instant.getUTCDay()])
+          const count = value?.count ?? 0
           return (
             <button
               className={'dpill' + (!value ? ' zero' : '') + (i === 0 ? ' today' : '')}
               type="button"
               key={day}
-              aria-label={monthDay(day) + '，' + (value?.count ?? 0) + ' 场'}
+              aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                date: monthDay(day, locale),
+                count,
+              })}
               aria-pressed={date === day}
               onClick={() => onDate(day)}
             >
@@ -93,16 +112,22 @@ export function ContestDatePicker({
       </div>
     )
   return (
-    <div className="mini" role="group" aria-label="小日历">
+    <div className="mini" role="group" aria-label={t('小日历')}>
       <div className="mini-head">
-        <h2>
-          {Number(month.slice(0, 4))}年{Number(month.slice(5, 7))}月
-        </h2>
+        <h2>{monthTitle(month, locale)}</h2>
         <div className="mini-nav">
-          <button type="button" aria-label="上个月" onClick={() => onMonth(shiftMonth(month, -1))}>
+          <button
+            type="button"
+            aria-label={t('上个月')}
+            onClick={() => onMonth(shiftMonth(month, -1))}
+          >
             <ChevronLeft className="ic" />
           </button>
-          <button type="button" aria-label="下个月" onClick={() => onMonth(shiftMonth(month, 1))}>
+          <button
+            type="button"
+            aria-label={t('下个月')}
+            onClick={() => onMonth(shiftMonth(month, 1))}
+          >
             <ChevronRight className="ic" />
           </button>
         </div>
@@ -110,18 +135,22 @@ export function ContestDatePicker({
       <div className="mini-grid">
         {weekdays.map((day) => (
           <span className="mini-wd" key={day}>
-            {day}
+            {t(day)}
           </span>
         ))}
         {monthDates(month).map((day, index) => {
           if (!day) return <span key={index} />
           const value = map.get(day)
+          const count = value?.count ?? 0
           return (
             <button
               key={day}
               type="button"
               className={'mday' + (value ? ' has' : '') + (day === today ? ' today' : '')}
-              aria-label={monthDay(day) + '，' + (value?.count ?? 0) + ' 场'}
+              aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                date: monthDay(day, locale),
+                count,
+              })}
               aria-pressed={date === day}
               onClick={() => onDate(day)}
             >
@@ -154,6 +183,7 @@ export function ContestCalendar({
   onSelect: (day: string) => void
   renderRows: (rows: LibraryRow[]) => ReactNode
 }) {
+  const { locale, t } = useLocale()
   const byDay = new Map<string, LibraryRow[]>()
   rows.forEach((row) => {
     const day = row.type === 'series' ? row.start : row.key?.day
@@ -163,24 +193,22 @@ export function ContestCalendar({
   const start = (row: LibraryRow) => row.type === 'series' || row.key?.start
   const picked = byDay.get(selected) ?? []
   return (
-    <section aria-label="赛事日历">
+    <section aria-label={t('赛事日历')}>
       <div className="cal-head">
         <div className="cal-title">
           <button
             className="site-button site-button--ghost site-button--icon"
             type="button"
-            aria-label="上个月"
+            aria-label={t('上个月')}
             onClick={() => onMonth(shiftMonth(month, -1))}
           >
             <ChevronLeft className="ic" />
           </button>
-          <h3>
-            {Number(month.slice(0, 4))}年{Number(month.slice(5, 7))}月
-          </h3>
+          <h3>{monthTitle(month, locale)}</h3>
           <button
             className="site-button site-button--ghost site-button--icon"
             type="button"
-            aria-label="下个月"
+            aria-label={t('下个月')}
             onClick={() => onMonth(shiftMonth(month, 1))}
           >
             <ChevronRight className="ic" />
@@ -193,7 +221,7 @@ export function ContestCalendar({
               onSelect(today)
             }}
           >
-            今天
+            {t('今天')}
           </button>
         </div>
         <CalendarLegend />
@@ -201,7 +229,7 @@ export function ContestCalendar({
       <div className="cal">
         {weekdays.map((day) => (
           <div className="wd" key={day}>
-            {day}
+            {t(day)}
           </div>
         ))}
         {monthDates(month, true).map((day) => {
@@ -217,7 +245,10 @@ export function ContestCalendar({
               }
               type="button"
               key={day}
-              aria-label={monthDay(day) + '，' + list.length + ' 场'}
+              aria-label={t(list.length === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                date: monthDay(day, locale),
+                count: list.length,
+              })}
               aria-pressed={day === selected}
               onClick={() => onSelect(day)}
             >
@@ -227,12 +258,17 @@ export function ContestCalendar({
                   {dot(row)}
                   <span>
                     {row.type === 'series'
-                      ? 'AI 切磋大会 · ' + row.contests.length + ' 场'
+                      ? 'AI 切磋大会 · ' +
+                        t(row.contests.length === 1 ? '1 场' : '{count} 场', {
+                          count: row.contests.length,
+                        })
                       : row.contests[0]!.name}
                   </span>
                 </span>
               ))}
-              {list.length > 3 && <span className="more">还有 {list.length - 3} 场</span>}
+              {list.length > 3 && (
+                <span className="more">{t('还有 {count} 场', { count: list.length - 3 })}</span>
+              )}
               <span className="cnt" aria-hidden="true">
                 {list.slice(0, 4).map((row) => (
                   <i
@@ -247,7 +283,10 @@ export function ContestCalendar({
       </div>
       <div className="day-list">
         <h3>
-          {monthDay(selected)} · {picked.length ? picked.length + ' 场' : '没有比赛'}
+          {monthDay(selected, locale)} ·{' '}
+          {t(picked.length === 0 ? '没有比赛' : picked.length === 1 ? '1 场' : '{count} 场', {
+            count: picked.length,
+          })}
         </h3>
         {picked.length > 0 && renderRows(picked)}
       </div>

@@ -2,7 +2,9 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import folder from '@/shared/assets/stickers/folder.png'
 import { SiteBrand } from './site-header'
+import { translateSystemText } from '@/shared/i18n'
 import './site.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 const year = new Date().getFullYear()
 const github = 'https://github.com/hackathon-crew/contest-detective'
 const groups = [
@@ -43,6 +45,7 @@ const groups = [
   ],
 ] as const
 export function SiteFooter({ appearance }: { appearance: ReactNode }) {
+  const { locale, t } = useLocale()
   return (
     <footer className="site-footer">
       <img
@@ -56,22 +59,30 @@ export function SiteFooter({ appearance }: { appearance: ReactNode }) {
         <div className="site-foot">
           <div className="site-foot-brand">
             <SiteBrand />
-            <p>帮大学生找比赛、核对截止时间的侦探。每条信息都附原文链接。</p>
+            <p>{t('帮大学生找比赛、核对截止时间的侦探。每条信息都附原文链接。')}</p>
           </div>
           {groups.map(([title, links]) => (
             <div className="site-foot-col" key={title}>
-              <h3>{title}</h3>
+              <h3>{t(title)}</h3>
               <ul>
                 {links.map(([label, href]) => (
                   <li key={label}>
                     {href.startsWith('/') ? (
-                      <Link to={href}>{label}</Link>
+                      <Link to={href}>{translateSystemText(locale, label)}</Link>
                     ) : href ? (
-                      <a href={href} target="_blank" rel="noopener noreferrer">
-                        {label}
+                      <a
+                        href={
+                          locale === 'en' && label === '使用说明'
+                            ? github + '/blob/main/README.en.md'
+                            : href
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {translateSystemText(locale, label)}
                       </a>
                     ) : (
-                      <span className="select-all">{label}</span>
+                      <span className="select-all">{translateSystemText(locale, label)}</span>
                     )}
                   </li>
                 ))}
@@ -84,7 +95,7 @@ export function SiteFooter({ appearance }: { appearance: ReactNode }) {
             © {year} Inkpaw · {import.meta.env.VITE_BUILD_VERSION}
           </span>
           <span className="site-source">
-            赛事信息整理自 Devpost、ETHGlobal、HackerTrip、活动行、WaytoAGI 和主办方公众号
+            {t('赛事信息整理自 Devpost、ETHGlobal、HackerTrip、活动行、WaytoAGI 和主办方公众号')}
           </span>
           {appearance}
         </div>

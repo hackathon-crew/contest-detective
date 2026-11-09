@@ -84,6 +84,14 @@
   }
 }
 
+@media (max-width: 880px) {
+  /* 赛事筛选是视口底部弹层。列表的位移动画会改变 fixed 元素的参照。 */
+  .route-motion-surface > .contests-page > main > section.lib {
+    animation-name: route-content-fade;
+    animation-fill-mode: backwards;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(inkpaw-octopus) {
     animation-duration: var(--motion-fast);

@@ -6,6 +6,7 @@ import { ArrowRight, FileUp, X } from 'lucide-react'
 
 import type { MatchItem, Profile, PublicUser } from '@/shared/api'
 import { formatDate } from '@/shared/lib/date'
+import type { Message } from '@/shared/i18n'
 import {
   Badge,
   Button,
@@ -22,6 +23,7 @@ import { confirmAccountProfile, githubDraft, matchProfile, resumeDraft } from '.
 import { mergeDraft } from './state'
 import githubMark from '@/shared/assets/github-mark.svg'
 import { ContestFilterIcon, ProfileIcon } from '@/shared/ui/context-icons'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 function Tags({
   label,
@@ -34,6 +36,7 @@ function Tags({
   onChange: (value: string[]) => void
   disabled: boolean
 }) {
+  const { t } = useLocale()
   const id = useId()
   const [value, setValue] = useState('')
   function add(event: FormEvent) {
@@ -55,7 +58,7 @@ function Tags({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label={`移除${label} ${item}`}
+              aria-label={t('移除{label} {value}', { label, value: item })}
               disabled={disabled}
               onClick={() => onChange(values.filter((value) => value !== item))}
             >
@@ -67,7 +70,7 @@ function Tags({
       <form onSubmit={add} className="flex gap-2">
         <Input
           id={id}
-          aria-label={`添加${label}`}
+          aria-label={t('添加{label}', { label })}
           className="h-10 rounded-xl"
           value={value}
           maxLength={80}
@@ -78,9 +81,9 @@ function Tags({
           type="submit"
           variant="outline"
           disabled={disabled || !value.trim() || values.length >= 50}
-          aria-label={`添加${label}`}
+          aria-label={t('添加{label}', { label })}
         >
-          添加
+          {t('添加')}
         </Button>
       </form>
     </div>
@@ -92,10 +95,10 @@ const modes = [
   ['offline', '线下'],
   ['hybrid', '混合'],
 ] as const
-const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 
 export type ProfileMatchSection = 'all' | 'github' | 'profile' | 'filters'
-const titles: Record<ProfileMatchSection, string> = {
+const titles: Record<ProfileMatchSection, Message> = {
   all: '按我的情况挑比赛',
   github: '连接到 GitHub',
   profile: '添加画像',
@@ -105,7 +108,7 @@ const descriptions = {
   github: '从公开仓库生成画像，再由你编辑确认。',
   profile: '导入简历，或直接填写你的技能、兴趣方向和身份。',
   filters: '设置地点、参与形式和可投入时间，筛选适合的比赛。',
-}
+} as const
 
 interface ProfileMatchDialogProps {
   open?: boolean
@@ -137,6 +140,7 @@ function ProfileMatchForm({
   onMatched,
   initialSection = 'all',
 }: ProfileMatchDialogProps) {
+  const { locale, t } = useLocale()
   const [section, setSection] = useState(initialSection)
   const showProfile = section === 'all' || section === 'profile'
   const showFilters = section === 'all' || section === 'filters'
@@ -205,15 +209,15 @@ function ProfileMatchForm({
             setError(null)
           }}
         >
-          清空草稿
+          {t('清空草稿')}
         </Button>
       ) : (
         <Button type="button" variant="ghost" onClick={onClose}>
-          取消
+          {t('取消')}
         </Button>
       )}
       <Button type="button" disabled={busy} onClick={confirmProfile}>
-        {busy ? '正在处理' : '确认并挑比赛'}
+        {busy ? t('正在处理') : t('确认并挑比赛')}
       </Button>
     </div>
   )
@@ -221,8 +225,8 @@ function ProfileMatchForm({
   return (
     <Dialog
       open={open}
-      title={titles[section]}
-      description={section === 'all' ? undefined : descriptions[section]}
+      title={t(titles[section])}
+      description={section === 'all' ? undefined : t(descriptions[section])}
       icon={
         section === 'github' ? (
           <img src={githubMark} alt="" className="size-8 dark:invert" />
@@ -266,7 +270,7 @@ function ProfileMatchForm({
                   }}
                 >
                   <label htmlFor={`${id}-github`} className="text-sm">
-                    GitHub 用户名
+                    {t('GitHub 用户名')}
                   </label>
                   <div className="relative">
                     <span
@@ -294,7 +298,7 @@ function ProfileMatchForm({
                     variant={section === 'all' ? 'outline' : 'default'}
                     disabled={busy || !username.trim()}
                   >
-                    {busy && errorLocation === 'source' ? '正在读取' : '读取 GitHub'}
+                    {busy && errorLocation === 'source' ? t('正在读取') : t('读取 GitHub')}
                     <ArrowRight aria-hidden="true" className="size-4" strokeWidth={1.5} />
                   </Button>
                 </form>
@@ -311,12 +315,14 @@ function ProfileMatchForm({
                   strokeWidth={1.5}
                 />
                 <span className="min-w-0 space-y-1">
-                  <span className="block text-sm font-medium text-ink">导入简历</span>
-                  <span className="block text-xs text-muted">PDF、DOCX、TXT · 最大 2 MiB</span>
+                  <span className="block text-sm font-medium text-ink">{t('导入简历')}</span>
+                  <span className="block text-xs text-muted">
+                    {t('PDF、DOCX、TXT · 最大 2 MiB')}
+                  </span>
                 </span>
                 <Input
                   id={`${id}-resume`}
-                  aria-label="上传简历"
+                  aria-label={t('上传简历')}
                   type="file"
                   className="sr-only"
                   accept=".pdf,.docx,.txt"
@@ -338,7 +344,7 @@ function ProfileMatchForm({
         )}
         {busy && errorLocation === 'source' && (
           <p role="status" className="text-sm text-muted">
-            正在生成画像
+            {t('正在生成画像')}
           </p>
         )}
         {error != null && errorLocation === 'source' && <ErrorState error={error} />}
@@ -346,15 +352,16 @@ function ProfileMatchForm({
           <div className="space-y-4">
             {showProfile && (
               <>
-                {section === 'all' && <h3 className="text-2xl font-bold">确认你的画像</h3>}
+                {section === 'all' && <h3 className="text-2xl font-bold">{t('确认你的画像')}</h3>}
                 {profile.github && (
                   <p className="break-words text-xs text-muted">
-                    GitHub：{profile.github} · {profile.github_evidence?.length ?? 0} 个公开仓库
+                    {t('GitHub：{name}', { name: profile.github })} ·{' '}
+                    {t('{count} 个公开仓库', { count: profile.github_evidence?.length ?? 0 })}
                   </p>
                 )}
                 {!!Object.keys(profile.language_repo_share ?? {}).length && (
                   <p className="text-xs text-muted">
-                    仓库主语言：
+                    {t('仓库主语言：')}{' '}
                     {Object.entries(profile.language_repo_share ?? {})
                       .map(([language, share]) => `${language} ${Math.round(share * 100)}%`)
                       .join(' · ')}
@@ -362,17 +369,18 @@ function ProfileMatchForm({
                 )}
                 {profile.github_last_active_at && (
                   <p className="text-xs text-muted">
-                    最近推送：{formatDate(profile.github_last_active_at, 'datetime', true)}
+                    {t('最近推送：')}{' '}
+                    {formatDate(profile.github_last_active_at, 'datetime', true, locale)}
                   </p>
                 )}
                 <Tags
-                  label="技能"
+                  label={t('技能')}
                   values={profile.skills ?? []}
                   disabled={busy}
                   onChange={(skills) => draft({ ...profile, skills })}
                 />
                 <Tags
-                  label="兴趣方向"
+                  label={t('兴趣方向')}
                   values={profile.topics ?? []}
                   disabled={busy}
                   onChange={(topics) => draft({ ...profile, topics })}
@@ -380,7 +388,7 @@ function ProfileMatchForm({
                 <div>
                   <div className="space-y-2">
                     <label className="text-sm" htmlFor={`${id}-identity`}>
-                      身份
+                      {t('身份')}
                     </label>
                     <Select
                       value={profile.identity_kind ?? 'any'}
@@ -397,9 +405,9 @@ function ProfileMatchForm({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="any">未填写</SelectItem>
-                        <SelectItem value="student">在校生</SelectItem>
-                        <SelectItem value="professional">职场开发者</SelectItem>
+                        <SelectItem value="any">{t('未填写')}</SelectItem>
+                        <SelectItem value="student">{t('在校生')}</SelectItem>
+                        <SelectItem value="professional">{t('职场开发者')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -407,7 +415,7 @@ function ProfileMatchForm({
                 {profile.identity != null && (
                   <div className="space-y-2">
                     <label htmlFor={`${id}-identity-text`} className="text-sm">
-                      身份信息
+                      {t('身份信息')}
                     </label>
                     <Input
                       id={`${id}-identity-text`}
@@ -427,13 +435,13 @@ function ProfileMatchForm({
               <>
                 <div className="space-y-2">
                   <label htmlFor={`${id}-city`} className="text-sm">
-                    城市
+                    {t('城市')}
                   </label>
                   <Input
                     id={`${id}-city`}
                     className="h-10 rounded-xl"
                     value={profile.city ?? ''}
-                    placeholder="例如 上海"
+                    placeholder={t('例如 上海')}
                     maxLength={80}
                     disabled={busy}
                     onChange={(event) =>
@@ -442,7 +450,7 @@ function ProfileMatchForm({
                   />
                 </div>
                 <fieldset className="space-y-2">
-                  <legend className="text-sm">参与形式</legend>
+                  <legend className="text-sm">{t('参与形式')}</legend>
                   <div className="grid grid-cols-3 gap-2">
                     {modes.map(([mode, label]) => {
                       const checked = profile.preferred_modes?.includes(mode) ?? false
@@ -464,14 +472,14 @@ function ProfileMatchForm({
                             })
                           }
                         >
-                          {label}
+                          {t(label)}
                         </Button>
                       )
                     })}
                   </div>
                 </fieldset>
                 <fieldset className="space-y-2">
-                  <legend className="text-sm">每周可参加</legend>
+                  <legend className="text-sm">{t('每周可参加')}</legend>
                   <div className="grid grid-cols-7 gap-1">
                     {days.map((label, day) => {
                       const weekdays = profile.availability?.weekdays ?? []
@@ -497,7 +505,7 @@ function ProfileMatchForm({
                             })
                           }
                         >
-                          {label}
+                          {t(label)}
                         </Button>
                       )
                     })}
@@ -506,7 +514,7 @@ function ProfileMatchForm({
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label htmlFor={`${id}-days`} className="text-sm">
-                      最多连续天数
+                      {t('最多连续天数')}
                     </label>
                     <Input
                       id={`${id}-days`}
@@ -531,13 +539,13 @@ function ProfileMatchForm({
                   </div>
                   <div className="space-y-2">
                     <label htmlFor={`${id}-time`} className="text-sm">
-                      时间说明
+                      {t('时间说明')}
                     </label>
                     <Input
                       id={`${id}-time`}
                       className="h-10 rounded-xl"
                       value={profile.available_time ?? ''}
-                      placeholder="例如 周末可投入两天"
+                      placeholder={t('例如 周末可投入两天')}
                       maxLength={500}
                       disabled={busy}
                       onChange={(event) =>
@@ -554,7 +562,8 @@ function ProfileMatchForm({
                         className="flex flex-wrap items-center gap-2 text-sm"
                       >
                         <span>
-                          {formatDate(window.start_at)} 至 {formatDate(window.end_at)}
+                          {formatDate(window.start_at, 'datetime', false, locale)} {t('至')}{' '}
+                          {formatDate(window.end_at, 'datetime', false, locale)}
                         </span>
                         <Button
                           type="button"
@@ -573,7 +582,7 @@ function ProfileMatchForm({
                             })
                           }
                         >
-                          移除
+                          {t('移除')}
                         </Button>
                       </div>
                     ))}
@@ -586,9 +595,9 @@ function ProfileMatchForm({
         {error != null && errorLocation === 'match' && <ErrorState error={error} />}
         {results !== null && (
           <section ref={resultsRef} className="space-y-4 border-t border-rule pt-6">
-            <h3 className="text-2xl font-bold">推荐比赛</h3>
+            <h3 className="text-2xl font-bold">{t('推荐比赛')}</h3>
             {results.length === 0 ? (
-              <p className="text-sm text-muted">没有找到符合条件的比赛，调整画像后再试。</p>
+              <p className="text-sm text-muted">{t('没有找到符合条件的比赛，调整画像后再试。')}</p>
             ) : (
               <div className="divide-y divide-rule">
                 {results.map((item) => (

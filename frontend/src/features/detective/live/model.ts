@@ -2,6 +2,7 @@ import type { ContestDetail, ContestRecommendation } from '@/shared/api'
 import { fieldNames, formatDate, modeNames, safeUrl } from '@/entities/contest'
 import { cardDate } from '@/entities/contest/card-date'
 import type { Mood } from '@/shared/ui/octopus/live-stage'
+import { defaultLocale, translate, type Locale, type Message } from '@/shared/i18n'
 import type { DetectiveTurn } from '../conversation'
 
 export interface CardSource {
@@ -33,7 +34,7 @@ const dateFields = new Set([
   'start_at',
   'end_at',
 ])
-const rowLabels: Record<string, string> = {
+const rowLabels: Record<string, Message> = {
   registration_deadline: '报名',
   submission_deadline: '提交',
   deadline_unspecified: '截止',
@@ -48,21 +49,24 @@ const levelNames = {
   reposted: '只见转载',
   conflict: '来源说法不一',
   not_found: '未核实',
-}
+} as const
 
 export function liveCard(
   item: ContestRecommendation,
   turn?: DetectiveTurn,
   now = new Date(),
+  locale: Locale = defaultLocale,
 ): LiveCard {
+  const t = translate.bind(null, locale)
+  const label = (key: string) => (fieldNames[key] ? t(fieldNames[key]) : key)
   const c = item.contest
   const fields = Object.entries(c.fields)
   const sources: CardSource[] = fields.flatMap(([key, info]) =>
     (info.sources ?? [])
       .filter((source) => safeUrl(source.url))
       .map((source) => ({
-        field: fieldNames[key] ?? key,
-        who: `${fieldNames[key] ?? key} · ${source.is_official ? '官方' : '转载'} · ${source.site || source.title}`,
+        field: label(key),
+        who: `${label(key)} · ${t(source.is_official ? '官方' : '转载')} · ${source.site || source.title}`,
         quote: source.excerpt || source.value,
         url: source.url,
       })),
@@ -75,7 +79,7 @@ export function liveCard(
     conflict.statements.forEach((statement, i) => {
       if (!safeUrl(statement.evidence.url)) return
       sources.push({
-        field: '查证结论',
+        field: t('查证结论'),
         who: statement.evidence.title,
         quote: statement.text,
         url: statement.evidence.url,
@@ -98,13 +102,15 @@ export function liveCard(
     const info = c.fields[key]
     const sourced = (info.sources ?? []).some((source) => safeUrl(source.url))
     const value = !sourced
-      ? '未核实'
+      ? t('未核实')
       : dateFields.has(key)
-        ? formatDate(info.value, info.precision, true)
-        : (modeNames[info.value!] ?? info.value!)
+        ? formatDate(info.value, info.precision, true, locale)
+        : key === 'mode' && modeNames[info.value!]
+          ? t(modeNames[info.value!])
+          : info.value!
     return [
-      rowLabels[key] ?? fieldNames[key] ?? key,
-      info.level === 'conflict' && sourced ? `${value}（说法不一）` : value,
+      rowLabels[key] ? t(rowLabels[key]) : label(key),
+      info.level === 'conflict' && sourced ? t('{value}（说法不一）', { value }) : value,
     ]
   })
   const levels = selected.map((key) => {
@@ -137,7 +143,7 @@ export function liveCard(
     name: c.name,
     img: safeUrl(c.cover_url) ?? '',
     contest: c,
-    grade: levelNames[level],
+    grade: t(levelNames[level]),
     conflict: level === 'conflict',
     rows,
     sources,
@@ -146,15 +152,21 @@ export function liveCard(
         ? ''
         : due?.field === 'start_at'
           ? days <= 0
-            ? '已开赛'
-            : `${days} 天后开赛`
+            ? t('已开赛')
+            : t(days === 1 ? '1 天后开赛' : '{days} 天后开赛', { days })
           : days <= 0
-            ? '已截止'
-            : `还有 ${days} 天`,
+            ? t('已截止')
+            : t(days === 1 ? '还有 1 天' : '还有 {days} 天', { days }),
     urgent: days !== null && days > 0 && days <= 7,
     verdict: conflicts.map((conflict) => conflict.reason).join('；'),
-    checked: turn?.report?.generated_at ? `查证于 ${formatDate(turn.report.generated_at)}` : '',
-    ...(conflicts.some((conflict) => conflict.blocks_participation) ? { blocked: '不能参赛' } : {}),
+    checked: turn?.report?.generated_at
+      ? t('查证于 {date}', {
+          date: formatDate(turn.report.generated_at, 'datetime', false, locale),
+        })
+      : '',
+    ...(conflicts.some((conflict) => conflict.blocks_participation)
+      ? { blocked: t('不能参赛') }
+      : {}),
   }
 }
 

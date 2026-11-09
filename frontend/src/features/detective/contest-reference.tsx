@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 import { safeUrl } from '@/entities/contest'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export interface ContestReferenceValue {
   id: string
@@ -19,6 +20,7 @@ export function ContestReference({
   onRemove?: () => void
   showCover?: boolean
 }) {
+  const { t } = useLocale()
   const [failedCover, setFailedCover] = useState<string | null>(null)
   const cover = showCover ? safeUrl(contest.cover_url) : null
   return (
@@ -26,7 +28,7 @@ export function ContestReference({
       <Link
         to={`/contests/${encodeURIComponent(contest.id)}`}
         className="flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-xl outline-offset-4 transition-opacity duration-140 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-accent"
-        aria-label={`查看比赛：${contest.name}`}
+        aria-label={t('查看比赛：{name}', { name: contest.name })}
       >
         {cover && cover !== failedCover && (
           <img
@@ -44,7 +46,7 @@ export function ContestReference({
         <button
           type="button"
           onClick={onRemove}
-          aria-label="移除比赛引用"
+          aria-label={t('移除比赛引用')}
           className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-muted transition-colors duration-140 hover:bg-surface-strong hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
           <X className="size-4" strokeWidth={1.5} aria-hidden="true" />

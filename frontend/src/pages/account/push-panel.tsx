@@ -13,7 +13,9 @@ import type {
 } from '@/shared/api/generated'
 import { Chips, failure, Ic, Row, Segments, Switch, useNotice } from './components'
 import { AccountModal } from './modal'
-const wd = '一二三四五六日'
+import { translate, translateSystemText, type Locale } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
+const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'] as const
 function dateParts(value: string) {
   return Object.fromEntries(
     new Intl.DateTimeFormat('en-CA', {
@@ -29,53 +31,73 @@ function dateParts(value: string) {
       .map((p) => [p.type, p.value]),
   )
 }
-function clock(value: string) {
+function clock(value: string, locale: Locale) {
+  if (locale === 'en')
+    return new Intl.DateTimeFormat(locale, {
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'Asia/Shanghai',
+    }).format(new Date(value))
   const p = dateParts(value),
     day = new Date(`${p.year}-${p.month}-${p.day}T00:00:00Z`)
-  return `${+p.month!}月${+p.day!}日 周${wd[(day.getUTCDay() + 6) % 7]} ${p.hour}:${p.minute}`
+  return `${+p.month!}月${+p.day!}日 ${weekdays[(day.getUTCDay() + 6) % 7]} ${p.hour}:${p.minute}`
 }
-function nextLabel(value: string) {
+function nextLabel(value: string, locale: Locale) {
   const p = dateParts(value),
     today = dateParts(new Date().toISOString()),
     day = `${p.year}-${p.month}-${p.day}`,
     now = `${today.year}-${today.month}-${today.day}`,
     left = Math.round((Date.parse(day) - Date.parse(now)) / 864e5)
-  if (left === 0) return `今天 ${p.hour}:${p.minute}`
+  if (left === 0) return translate(locale, '今天 {time}', { time: `${p.hour}:${p.minute}` })
+  if (locale === 'en') return left === 1 ? translate(locale, '明天') : clock(value, locale)
   if (left === 1) return `明天（${+p.month!}月${+p.day!}日）`
-  return `${+p.month!}月${+p.day!}日（周${wd[(new Date(day + 'T00:00:00Z').getUTCDay() + 6) % 7]}）`
+  return `${+p.month!}月${+p.day!}日（${weekdays[(new Date(day + 'T00:00:00Z').getUTCDay() + 6) % 7]}）`
 }
 
-function tags(q: TrackingConditions) {
+function tags(q: TrackingConditions, locale: Locale) {
+  const t = translate.bind(null, locale)
+  const modes = { online: '线上', offline: '线下', hybrid: '线上+线下' } as const
   return [
     q.city,
     ...(q.library?.cities ?? []),
-    ...(q.library?.modes ?? []).map(
-      (m) => ({ online: '线上', offline: '线下', hybrid: '线上+线下' })[m],
-    ),
-    q.library?.keyword && `含「${q.library.keyword}」`,
-    q.library?.prize && '写明奖金',
-    q.library?.official && '截止时间对过原文',
-    q.library?.mine && '我关注的',
+    ...(q.library?.modes ?? []).map((mode) => t(modes[mode])),
+    q.library?.keyword && t('含「{keyword}」', { keyword: q.library.keyword }),
+    q.library?.prize && t('写明奖金'),
+    q.library?.official && t('截止时间对过原文'),
+    q.library?.mine && t('我关注的'),
     q.library?.date,
     q.library?.due &&
       q.library.due !== 'all' &&
-      { '0': '今天截止', '7': '7 天内', '30': '30 天内', later: '30 天以后', none: '没写截止时间' }[
-        q.library.due
-      ],
+      t(
+        (
+          {
+            '0': '今天截止',
+            '7': '7 天内',
+            '30': '30 天内',
+            later: '30 天以后',
+            none: '没写截止时间',
+          } as const
+        )[q.library.due],
+      ),
     q.library?.status &&
       q.library.status !== 'all' &&
-      { upcoming: '即将开始', ongoing: '进行中', ended: '已结束' }[q.library.status],
-    q.library?.date_from && `${q.library.date_from.slice(0, 10)} 起`,
-    q.library?.date_to && `${q.library.date_to.slice(0, 10)} 前`,
-    ...(q.modes ?? []).map((m) => ({ online: '线上', offline: '线下', hybrid: '线上+线下' })[m]),
+      t(({ upcoming: '即将开始', ongoing: '进行中', ended: '已结束' } as const)[q.library.status]),
+    q.library?.date_from && t('{date} 起', { date: q.library.date_from.slice(0, 10) }),
+    q.library?.date_to && t('{date} 前', { date: q.library.date_to.slice(0, 10) }),
+    ...(q.modes ?? []).map((mode) => t(modes[mode])),
     ...(q.topics ?? []),
-    ...(q.keywords ?? []).map((t) => `含「${t}」`),
-    q.has_prize && '写明奖金',
-    q.deadline_from && `${q.deadline_from} 起截止`,
-    q.deadline_to && `${q.deadline_to} 前截止`,
+    ...(q.keywords ?? []).map((keyword) => t('含「{keyword}」', { keyword })),
+    q.has_prize && t('写明奖金'),
+    q.deadline_from && t('{date} 起截止', { date: q.deadline_from }),
+    q.deadline_to && t('{date} 前截止', { date: q.deadline_to }),
   ].filter(Boolean)
 }
 export function PushPanel() {
+  const { locale, t } = useLocale()
   const { data: user } = useCurrentUser(),
     client = useQueryClient(),
     notice = useNotice()
@@ -115,9 +137,9 @@ export function PushPanel() {
   if (!push.data)
     return (
       <section className="panel" aria-busy={push.isPending}>
-        <h2>比赛推送</h2>
+        <h2>{t('比赛推送')}</h2>
         <p className="p-lead" role={push.error ? 'alert' : undefined}>
-          {push.error ? failure(push.error) : '正在读取推送设置…'}
+          {push.error ? translateSystemText(locale, failure(push.error)) : t('正在读取推送设置…')}
         </p>
       </section>
     )
@@ -141,7 +163,7 @@ export function PushPanel() {
     await run('test', async () => {
       await apiClient.request('/account/push/test', { method: 'POST' })
       await client.invalidateQueries({ queryKey: historyKey })
-      notice(`测试邮件已发到 ${state.email}`)
+      notice(t('测试邮件已发到 {email}', { email: state.email }))
       setMailOpen(false)
     })
     await client.invalidateQueries({ queryKey: historyKey })
@@ -149,7 +171,7 @@ export function PushPanel() {
   async function sendVerification() {
     await run('verify', async () => {
       await apiClient.request('/account/email/verification', { method: 'POST' })
-      notice(`验证邮件已发到 ${state.email}，20 分钟内有效`)
+      notice(t('验证邮件已发到 {email}，20 分钟内有效', { email: state.email }))
     })
   }
   async function preview() {
@@ -196,7 +218,7 @@ export function PushPanel() {
         client.invalidateQueries({ queryKey: tracksKey }),
         client.invalidateQueries({ queryKey: ['account-summary', user?.id] }),
       ])
-      notice(`已删除「${item.text}」`, {
+      notice(t('已删除「{name}」', { name: item.text }), {
         label: '撤销',
         run: () => {
           void run('restore', async () => {
@@ -212,10 +234,10 @@ export function PushPanel() {
   }
   const when =
     s.frequency === 'daily'
-      ? `每天 ${s.time}`
+      ? t('每天 {time}', { time: s.time ?? '' })
       : s.frequency === 'weekly'
-        ? `每周${wd[s.weekday ?? 0]} ${s.time}`
-        : '有新比赛时'
+        ? t('每{day} {time}', { day: t(weekdays[s.weekday ?? 0]), time: s.time ?? '' })
+        : t('有新比赛时')
   return (
     <section
       className={'panel' + (!s.enabled ? ' off' : '')}
@@ -225,34 +247,38 @@ export function PushPanel() {
     >
       <div className="p-head">
         <div>
-          <h2 id="h-push">比赛推送</h2>
+          <h2 id="h-push">{t('比赛推送')}</h2>
           <p className="p-lead">
             {!s.enabled ? (
-              '邮件推送已关闭，截止提醒也不会发。'
+              t('邮件推送已关闭，截止提醒也不会发。')
             ) : (
               <>
-                {when}发到 <b>{state.email}</b>
+                {when}
+                {locale === 'en' ? ' · ' : ''}
+                {t('发到 {email}', { email: state.email })}
                 {state.next_send_at
-                  ? `，下一封在${nextLabel(state.next_send_at)}`
-                  : '，一天最多一封'}
-                。
+                  ? t('，下一封在{time}', { time: nextLabel(state.next_send_at, locale) })
+                  : t('，一天最多一封')}
+                {locale === 'en' ? '.' : '。'}
               </>
             )}
           </p>
         </div>
         <Switch
           on={s.enabled ?? false}
-          label="邮件推送"
+          label={t('邮件推送')}
           change={(enabled) => update({ enabled })}
           disabled={save.isPending || (!s.enabled && !state.email_verified)}
         />
       </div>
       {error && (
         <p className="grp-note" role="alert">
-          {error}
+          {translateSystemText(locale, error)}
         </p>
       )}
-      {!state.email_verified && <p className="grp-note">验证邮箱后即可开启推送或发送测试邮件。</p>}
+      {!state.email_verified && (
+        <p className="grp-note">{t('验证邮箱后即可开启推送或发送测试邮件。')}</p>
+      )}
       <div className="p-acts">
         {!state.email_verified ? (
           <button
@@ -262,7 +288,7 @@ export function PushPanel() {
             disabled={!!busy}
           >
             <Ic name="mail" />
-            {busy === 'verify' ? '正在发送…' : '发送验证邮件'}
+            {busy === 'verify' ? t('正在发送…') : t('发送验证邮件')}
           </button>
         ) : (
           !s.enabled && (
@@ -272,13 +298,13 @@ export function PushPanel() {
               onClick={() => update({ enabled: true })}
               disabled={save.isPending}
             >
-              开启邮件推送
+              {t('开启邮件推送')}
             </button>
           )
         )}
         <button className="btn btn-outline" onClick={() => void preview()} disabled={!!busy}>
           <Ic name="mail" />
-          预览下一封
+          {t('预览下一封')}
         </button>
         <button
           className="btn btn-ghost"
@@ -286,70 +312,70 @@ export function PushPanel() {
           disabled={!!busy || !state.email_verified}
         >
           <Ic name="send" />
-          {busy === 'test' ? '正在发送…' : '发一封测试邮件'}
+          {busy === 'test' ? t('正在发送…') : t('发一封测试邮件')}
         </button>
       </div>
       <div inert={save.isPending}>
         <div className="grp dep">
           <div className="grp-head">
-            <h3>推送什么</h3>
+            <h3>{t('推送什么')}</h3>
           </div>
           <div className="trow">
             <div>
-              <label htmlFor="pu-new">符合画像的新比赛</label>
-              <p>赛事库每天同步，新收录的比赛按你的画像挑过再发</p>
+              <label htmlFor="pu-new">{t('符合画像的新比赛')}</label>
+              <p>{t('赛事库每天同步，新收录的比赛按你的画像挑过再发')}</p>
             </div>
             <Switch
               id="pu-new"
-              label="符合画像的新比赛"
+              label={t('符合画像的新比赛')}
               on={s.new_matches ?? true}
               change={(new_matches) => update({ new_matches })}
             />
           </div>
           <div className="trow">
             <div>
-              <label htmlFor="pu-dl">关注的比赛快截止时提醒</label>
+              <label htmlFor="pu-dl">{t('关注的比赛快截止时提醒')}</label>
               <div className={'sub' + (!s.deadline_reminders ? ' reminders-off' : '')}>
-                <span>截止前</span>
+                <span>{t('截止前')}</span>
                 <Chips
                   values={[
-                    [7, '7 天'],
-                    [3, '3 天'],
-                    [1, '1 天'],
+                    [7, t('7 天')],
+                    [3, t('3 天')],
+                    [1, t('1 天')],
                   ]}
                   selected={s.reminder_days ?? []}
                   change={(reminder_days) => update({ reminder_days })}
                 />
-                <span>各提醒一次</span>
+                <span>{t('各提醒一次')}</span>
               </div>
             </div>
             <Switch
               id="pu-dl"
-              label="关注的比赛快截止时提醒"
+              label={t('关注的比赛快截止时提醒')}
               on={s.deadline_reminders ?? true}
               change={(deadline_reminders) => update({ deadline_reminders })}
             />
           </div>
           <div className="trow">
             <div>
-              <label htmlFor="pu-chg">关注的比赛信息有变动</label>
-              <p>截止时间、地点或奖金改了，或者几个来源说法对不上</p>
+              <label htmlFor="pu-chg">{t('关注的比赛信息有变动')}</label>
+              <p>{t('截止时间、地点或奖金改了，或者几个来源说法对不上')}</p>
             </div>
             <Switch
               id="pu-chg"
-              label="关注的比赛信息有变动"
+              label={t('关注的比赛信息有变动')}
               on={s.changes ?? true}
               change={(changes) => update({ changes })}
             />
           </div>
           <div className="trow">
             <div>
-              <label htmlFor="pu-trk">追踪条件出了新比赛</label>
-              <p>下面每组追踪条件，侦探每天查一遍</p>
+              <label htmlFor="pu-trk">{t('追踪条件出了新比赛')}</label>
+              <p>{t('下面每组追踪条件，侦探每天查一遍')}</p>
             </div>
             <Switch
               id="pu-trk"
-              label="追踪条件出了新比赛"
+              label={t('追踪条件出了新比赛')}
               on={s.tracking ?? true}
               change={(tracking) => update({ tracking })}
             />
@@ -357,16 +383,16 @@ export function PushPanel() {
         </div>
         <div className="grp dep">
           <div className="grp-head">
-            <h3>什么时候发</h3>
+            <h3>{t('什么时候发')}</h3>
           </div>
-          <Row label="频率">
+          <Row label={t('频率')}>
             <Segments
-              label="频率"
+              label={t('频率')}
               values={
                 [
-                  ['daily', '每天'],
-                  ['weekly', '每周'],
-                  ['instant', '有新比赛就发'],
+                  ['daily', t('每天')],
+                  ['weekly', t('每周')],
+                  ['instant', t('有新比赛就发')],
                 ] as const
               }
               value={s.frequency}
@@ -375,19 +401,19 @@ export function PushPanel() {
             {s.frequency === 'weekly' && (
               <Segments
                 id="pu-wd"
-                label="每周哪天"
-                values={[...wd].map((d, i) => [i, '周' + d] as const)}
+                label={t('每周哪天')}
+                values={weekdays.map((day, i) => [i, t(day)] as const)}
                 value={s.weekday}
                 change={(weekday) => update({ weekday })}
               />
             )}
           </Row>
           {s.frequency !== 'instant' && (
-            <Row label="时间" small="北京时间">
+            <Row label={t('时间')} small={t('北京时间')}>
               <span className="sel">
                 <select
                   className="inp"
-                  aria-label="发送时间"
+                  aria-label={t('发送时间')}
                   value={s.time}
                   onChange={(e) => update({ time: e.target.value })}
                 >
@@ -401,69 +427,73 @@ export function PushPanel() {
               </span>
             </Row>
           )}
-          <Row label="收件邮箱">
+          <Row label={t('收件邮箱')}>
             <div className="ctl-line">
               <span>{state.email}</span>
-              <span className="muted">{state.email_verified ? '已验证' : '未验证'}</span>
+              <span className="muted">{state.email_verified ? t('已验证') : t('未验证')}</span>
               {!state.email_verified && (
                 <Link className="linkbtn" to="/account/settings#email">
-                  去验证
+                  {t('去验证')}
                 </Link>
               )}
               <Link className="linkbtn" to="/account/settings#email">
-                换一个
+                {t('换一个')}
               </Link>
             </div>
           </Row>
-          <p className="grp-note">截止提醒和信息变动不等这个时间，到点就发。</p>
+          <p className="grp-note">{t('截止提醒和信息变动不等这个时间，到点就发。')}</p>
         </div>
       </div>
       <div className="grp dep">
         <div className="grp-head">
-          <h3>追踪条件</h3>
+          <h3>{t('追踪条件')}</h3>
           <span className="note">
-            {tracks.data?.length ? `${tracks.data.filter((t) => t.enabled).length} 组在推送` : ''}
+            {tracks.data?.length
+              ? t('{count} 组在推送', {
+                  count: tracks.data.filter((track) => track.enabled).length,
+                })
+              : ''}
           </span>
         </div>
         <ul>
           {tracks.data?.length
-            ? tracks.data.map((t) => (
-                <li className={'track' + (!t.enabled ? ' paused' : '')} key={t.id}>
+            ? tracks.data.map((track) => (
+                <li className={'track' + (!track.enabled ? ' paused' : '')} key={track.id}>
                   <div className="t-main">
-                    <p className="t-name">{t.text}</p>
+                    <p className="t-name">{track.text}</p>
                     <div className="t-tags">
-                      {tags(t.conditions).map((tag) => (
+                      {tags(track.conditions, locale).map((tag) => (
                         <span className="tag" key={String(tag)}>
                           {tag}
                         </span>
                       ))}
                     </div>
                     <div className="t-meta">
+                      <span>{t('现在 {count} 场符合', { count: track.matched_count })}</span>
                       <span>
-                        现在 <b>{t.matched_count}</b> 场符合
+                        {!track.enabled
+                          ? t('已暂停')
+                          : track.last_sent_at
+                            ? t('{time}推送过', { time: clock(track.last_sent_at, locale) })
+                            : t('刚加的，明早第一次查')}
                       </span>
-                      <span>
-                        {!t.enabled
-                          ? '已暂停'
-                          : t.last_sent_at
-                            ? `${clock(t.last_sent_at)}推送过`
-                            : '刚加的，明早第一次查'}
-                      </span>
-                      <Link to={'/contests?tracking=' + encodeURIComponent(t.id)}>看这些比赛</Link>
+                      <Link to={'/contests?tracking=' + encodeURIComponent(track.id)}>
+                        {t('看这些比赛')}
+                      </Link>
                     </div>
                   </div>
                   <div className="t-acts">
                     <Switch
-                      on={t.enabled}
-                      label={`推送「${t.text}」`}
+                      on={track.enabled}
+                      label={t('推送「{name}」', { name: track.text })}
                       disabled={!!busy}
-                      change={() => void changeTrack(t)}
+                      change={() => void changeTrack(track)}
                     />
                     <button
                       className="iconbtn"
-                      aria-label={`删除「${t.text}」`}
+                      aria-label={t('删除「{name}」', { name: track.text })}
                       disabled={!!busy}
-                      onClick={() => void removeTrack(t)}
+                      onClick={() => void removeTrack(track)}
                     >
                       <Ic name="x" />
                     </button>
@@ -472,7 +502,7 @@ export function PushPanel() {
               ))
             : !tracks.isPending && (
                 <li className="t-empty">
-                  还没有追踪条件。写一句想找的比赛，侦探每天替你查一遍，有新的就发邮件。
+                  {t('还没有追踪条件。写一句想找的比赛，侦探每天替你查一遍，有新的就发邮件。')}
                 </li>
               )}
           {parsing && (
@@ -487,7 +517,7 @@ export function PushPanel() {
                 <div className="t-meta">
                   <span className="reading">
                     <span className="spin" />
-                    侦探在拆条件…
+                    {t('侦探在拆条件…')}
                   </span>
                 </div>
               </div>
@@ -510,22 +540,22 @@ export function PushPanel() {
           <input
             className="inp"
             maxLength={80}
-            placeholder="写一句想找的比赛，比如：12 月截止的线上 AI 比赛"
-            aria-label="新的追踪条件"
+            placeholder={t('写一句想找的比赛，比如：12 月截止的线上 AI 比赛')}
+            aria-label={t('新的追踪条件')}
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
           <button className="btn btn-outline" type="submit" disabled={!input.trim() || !!parsing}>
             <Ic name="plus" />
-            追踪
+            {t('追踪')}
           </button>
         </form>
-        <p className="grp-note">在赛事库里筛好条件，也能直接点「追踪这组条件」加到这里。</p>
+        <p className="grp-note">{t('在赛事库里筛好条件，也能直接点「追踪这组条件」加到这里。')}</p>
       </div>
       <div className="grp">
         <div className="grp-head">
-          <h3>推送记录</h3>
-          <span className="note">最近 30 天</span>
+          <h3>{t('推送记录')}</h3>
+          <span className="note">{t('最近 30 天')}</span>
         </div>
         <ul className="hist">
           {history.data?.map((h) => (
@@ -536,29 +566,29 @@ export function PushPanel() {
                   setMailOpen(true)
                 }}
               >
-                <span className="h-date">{clock(h.created_at)}</span>
+                <span className="h-date">{clock(h.created_at, locale)}</span>
                 <span className="h-subj">
                   {h.subject}
                   <span>
                     {{
-                      digest: '每周推送',
-                      weekly: '每周推送',
-                      daily: '每天推送',
-                      instant: '即时推送',
-                      reminder: '截止提醒',
-                      change: '信息变动',
-                      test: '测试邮件',
+                      digest: t('每周推送'),
+                      weekly: t('每周推送'),
+                      daily: t('每天推送'),
+                      instant: t('即时推送'),
+                      reminder: t('截止提醒'),
+                      change: t('信息变动'),
+                      test: t('测试邮件'),
                     }[h.kind] ?? h.kind}
                   </span>
                 </span>
                 <span className="h-st">
                   {
                     {
-                      sent: '已发送',
-                      delivered: '已送达',
-                      sending: '发送中',
-                      failed: '发送失败',
-                      bounced: '已退回',
+                      sent: t('已发送'),
+                      delivered: t('已送达'),
+                      sending: t('发送中'),
+                      failed: t('发送失败'),
+                      bounced: t('已退回'),
                     }[h.status]
                   }
                 </span>
@@ -566,23 +596,31 @@ export function PushPanel() {
             </li>
           ))}
         </ul>
-        {!history.isPending && !history.data?.length && <p className="t-empty">还没有推送记录。</p>}
+        {!history.isPending && !history.data?.length && (
+          <p className="t-empty">{t('还没有推送记录。')}</p>
+        )}
         {history.error && (
           <p className="grp-note" role="alert">
-            {failure(history.error)}
+            {translateSystemText(locale, failure(history.error))}
           </p>
         )}
       </div>
       <AccountModal open={mailOpen} close={() => setMailOpen(false)} titleId="mail-subj">
         <div className="mail-head">
           <h3 id="mail-subj">{mail?.subject}</h3>
-          <span>发件人：{mail?.sender}</span>
-          <span>收件人：{mail?.recipient}</span>
+          <span>
+            {t('发件人：')}
+            {mail?.sender}
+          </span>
+          <span>
+            {t('收件人：')}
+            {mail?.recipient}
+          </span>
         </div>
         <div className="mail-body" dangerouslySetInnerHTML={{ __html: mail?.html ?? '' }} />
         <div className="mail-acts">
           <button className="btn btn-ghost" onClick={() => setMailOpen(false)}>
-            关闭
+            {t('关闭')}
           </button>
           <button
             className="btn btn-outline"
@@ -590,7 +628,7 @@ export function PushPanel() {
             onClick={() => void test()}
           >
             <Ic name="send" />
-            发到我的邮箱
+            {t('发到我的邮箱')}
           </button>
         </div>
       </AccountModal>

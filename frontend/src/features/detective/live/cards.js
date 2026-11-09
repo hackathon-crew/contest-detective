@@ -2,6 +2,7 @@
 // 字号只用 12、16：乘 3 后是 36、48，正好是 12 格像素字的整数倍，放大后每格边缘是锐的。
 // 卡是实物，深色模式下也还是白纸；产品不变量落在这里：每个字段都有来源，核实等级如实写，只有拦人的结论用 danger 色。
 import { MARK } from './mark.data.js'
+import { defaultLocale, translate } from '@/shared/i18n'
 
 const S = 3,
   W = 240,
@@ -123,6 +124,7 @@ function seal(x, label, color, cx, cy) {
 }
 
 export async function drawContest(c, o = {}) {
+  const t = translate.bind(null, o.locale ?? defaultLocale)
   const [cv, x] = surface()
   frame(x)
   // 顶行：核实等级（中性）和剩余天数
@@ -146,6 +148,8 @@ export async function drawContest(c, o = {}) {
   if (c.note) y = block(x, c.note, 14, y, 12, ACCENT, W - 28, 2, 16)
   // 字段：标签和值分两栏，分隔靠行距
   const rows = c.rows.slice(0, 3)
+  x.font = FONT(12)
+  const labelWidth = Math.max(40, ...rows.map(([label]) => x.measureText(label).width + 8))
   let ry = H - 14 - rows.length * 19 - 18
   x.fillStyle = RULE
   x.fillRect(14, ry - 6, W - 28, 1)
@@ -153,16 +157,17 @@ export async function drawContest(c, o = {}) {
     text(x, k, 14, ry, 12, MUTED)
     x.font = FONT(12)
     x.fillStyle = INK
-    x.fillText(wrap(x, v, W - 28 - 40, 1)[0] ?? '', 54, ry)
+    x.fillText(wrap(x, v, W - 28 - labelWidth, 1)[0] ?? '', 14 + labelWidth, ry)
     ry += 19
   }
-  text(x, `${c.sources.length} 条来源，翻面看原文`, 14, H - 27, 12, MUTED)
-  if (o.watching) seal(x, '盯着', ACCENT, W - 52, 132)
+  text(x, t('{count} 条来源，翻面看原文', { count: c.sources.length }), 14, H - 27, 12, MUTED)
+  if (o.watching) seal(x, t('盯着'), ACCENT, W - 52, 132)
   if (c.blocked) seal(x, c.blocked, DANGER, W - 62, 132)
   return cv
 }
 
-export async function drawBack(c) {
+export async function drawBack(c, locale = defaultLocale) {
+  const t = translate.bind(null, locale)
   const [cv, x] = surface()
   frame(x, ACCENT)
   // 上沿的点阵过渡：蓝一格格落到纸面
@@ -176,14 +181,13 @@ export async function drawBack(c) {
     x.drawImage(mark, 14, 14, 28, 28)
     x.imageSmoothingEnabled = true
   }
-  text(x, '来源', 50, 19, 16, '#ffffff')
+  text(x, t('来源'), 50, 19, 16, '#ffffff')
   x.fillStyle = PAPER
   x.fillRect(4, 54, W - 8, H - 58)
   const links = []
   let y = 64
   for (const s of c.sources) {
-    text(x, s.who, 14, y, 12, MUTED)
-    y += 17
+    y = block(x, s.who, 14, y, 12, MUTED, W - 28, 2, 15) + 2
     const q = s.quote
     const end = block(x, q, 14, y, 12, s.old ? MUTED : INK, W - 28, 3, 16)
     if (s.old) {
@@ -192,10 +196,12 @@ export async function drawBack(c) {
     }
     y = end + 1
     if (s.url) {
-      text(x, '打开原文', 14, y, 12, ACCENT)
+      const label = t('打开原文')
+      text(x, label, 14, y, 12, ACCENT)
+      const width = x.measureText(label).width
       x.fillStyle = ACCENT
-      x.fillRect(14, y + 14, 48, 1)
-      links.push({ x: 10 / W, y: (y - 2) / H, w: 60 / W, h: 20 / H, url: s.url })
+      x.fillRect(14, y + 14, width, 1)
+      links.push({ x: 10 / W, y: (y - 2) / H, w: (width + 12) / W, h: 20 / H, url: s.url })
       y += 22
     }
     y += 6

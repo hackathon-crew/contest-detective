@@ -9,8 +9,15 @@ import {
   type ContestDetail,
   type FieldValue,
 } from '@/entities/contest'
+import {
+  defaultLocale,
+  translate,
+  translateSystemText,
+  type Locale,
+  type Message,
+} from '@/shared/i18n'
 
-export const detailLabels: Record<string, string> = {
+export const detailLabels: Record<string, Message> = {
   ...fieldNames,
   eligibility: '参赛资格',
   entry_requirements: '参赛与作品要求',
@@ -48,10 +55,14 @@ export function hasPendingEvidence(contest: ContestDetail, field: string): boole
   return contest.fields[field]?.level === 'not_found' && conflictValues(contest, field).length > 0
 }
 
-export function displayField(field: string, item: FieldValue | undefined): string {
+export function displayField(
+  field: string,
+  item: FieldValue | undefined,
+  locale: Locale = defaultLocale,
+): string {
   if (!item?.value) return ''
-  if (dateFields.includes(field)) return formatDate(item.value, item.precision, true)
-  if (field === 'mode') return modeNames[item.value] ?? item.value
+  if (dateFields.includes(field)) return formatDate(item.value, item.precision, true, locale)
+  if (field === 'mode' && modeNames[item.value]) return translate(locale, modeNames[item.value])
   return item.value
 }
 
@@ -71,19 +82,43 @@ export interface PendingFact {
   generic: boolean
 }
 
-export function pendingFact(contest: ContestDetail, field: string, label: string): PendingFact {
+export function pendingFact(
+  contest: ContestDetail,
+  field: string,
+  name: string,
+  locale: Locale = defaultLocale,
+): PendingFact {
+  const label = translateSystemText(locale, name)
   const observation = contest.coverage?.fields?.[field]
   if (observation?.state === 'not_found_in_source')
-    return { field, label, message: `已查来源中暂未找到${label}说明`, generic: false }
+    return {
+      field,
+      label,
+      message: translate(locale, '已查来源中暂未找到{field}说明', { field: label }),
+      generic: false,
+    }
   if (
     observation?.state === 'source_unpublished' &&
     usableCitations(observation.citations).length > 0
   )
-    return { field, label, message: `来源明确注明${label}尚未公布`, generic: false }
-  return { field, label, message: `${label}待确认`, generic: true }
+    return {
+      field,
+      label,
+      message: translate(locale, '来源明确注明{field}尚未公布', { field: label }),
+      generic: false,
+    }
+  return {
+    field,
+    label,
+    message: translate(locale, '{field}待确认', { field: label }),
+    generic: true,
+  }
 }
 
-export function criticalUnknowns(contest: ContestDetail): PendingFact[] {
+export function criticalUnknowns(
+  contest: ContestDetail,
+  locale: Locale = defaultLocale,
+): PendingFact[] {
   const pending: PendingFact[] = []
   const registration = supportedValue(contest, 'registration_deadline')
   const submission = supportedValue(contest, 'submission_deadline')
@@ -98,6 +133,7 @@ export function criticalUnknowns(contest: ContestDetail): PendingFact[] {
         contest,
         'registration_deadline',
         submission || unspecified ? '报名截止' : '截止时间',
+        locale,
       ),
     )
   }
@@ -106,22 +142,30 @@ export function criticalUnknowns(contest: ContestDetail): PendingFact[] {
     ['entry_fee', '费用'],
   ]) {
     if (!supportedValue(contest, field!) && !hasConflict(contest, field!))
-      pending.push(pendingFact(contest, field!, label!))
+      pending.push(pendingFact(contest, field!, label!, locale))
   }
   return pending
 }
 
-export function conflictValues(contest: ContestDetail, field: string) {
+export function conflictValues(
+  contest: ContestDetail,
+  field: string,
+  locale: Locale = defaultLocale,
+) {
   const seen = new Set<string>()
   return (contest.fields[field]?.sources ?? []).flatMap((source) => {
     if (!safeUrl(source.url) || !source.value?.trim() || source.stale) return []
-    const value = displayField(field, {
-      value: source.value,
-      level: 'conflict',
-      precision: source.precision ?? contest.fields[field]?.precision,
-    })
+    const value = displayField(
+      field,
+      {
+        value: source.value,
+        level: 'conflict',
+        precision: source.precision ?? contest.fields[field]?.precision,
+      },
+      locale,
+    )
     if (seen.has(value)) return []
     seen.add(value)
-    return [{ value, site: source.site || source.title || '来源' }]
+    return [{ value, site: source.site || source.title || translate(locale, '来源') }]
   })
 }

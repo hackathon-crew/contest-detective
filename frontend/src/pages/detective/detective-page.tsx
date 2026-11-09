@@ -45,12 +45,14 @@ import {
 import '@/features/detective/detective-composer.css'
 import '@/features/detective/detective-conversation.css'
 import '@/features/detective/detective-workspace.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const Octopus = lazy(() =>
   import('@/shared/ui/octopus/Octopus').then((module) => ({ default: module.Octopus })),
 )
 
 export function DetectivePage() {
+  const { t } = useLocale()
   const location = useLocation()
   const { conversationId } = useParams()
   const {
@@ -170,13 +172,13 @@ export function DetectivePage() {
               ref={sidebarButton}
               type="button"
               className="detective-icon"
-              aria-label="打开会话列表"
+              aria-label={t('打开会话列表')}
               aria-expanded={sidebarOpen}
               onClick={() => setSidebarOpen(true)}
             >
               <PanelLeftOpen aria-hidden="true" strokeWidth={1.5} />
             </button>
-            <Link to="/detective" className="detective-icon" aria-label="新对话">
+            <Link to="/detective" className="detective-icon" aria-label={t('新对话')}>
               <SquarePen aria-hidden="true" strokeWidth={1.5} />
             </Link>
             <Collapsible.Trigger asChild>
@@ -184,8 +186,8 @@ export function DetectivePage() {
                 ref={researchButton}
                 type="button"
                 className="detective-icon"
-                aria-label="研究面板"
-                title="研究面板"
+                aria-label={t('研究面板')}
+                title={t('研究面板')}
                 aria-pressed={researchOpen}
               >
                 <PanelRight aria-hidden="true" strokeWidth={1.5} />
@@ -243,7 +245,7 @@ export function DetectivePage() {
         <Collapsible.Content asChild>
           <aside
             className="detective-research"
-            aria-label="研究面板"
+            aria-label={t('研究面板')}
             onKeyDown={(event) => {
               if (event.key === 'Escape') closeResearch()
             }}
@@ -266,11 +268,11 @@ export function DetectivePage() {
             }}
           >
             <div className="detective-sidebar__top">
-              <PrimitiveDialog.Title>对话记录</PrimitiveDialog.Title>
+              <PrimitiveDialog.Title>{t('对话记录')}</PrimitiveDialog.Title>
               <button
                 type="button"
                 className="detective-icon"
-                aria-label="关闭会话列表"
+                aria-label={t('关闭会话列表')}
                 onClick={closeSidebar}
               >
                 <PanelLeftClose aria-hidden="true" strokeWidth={1.5} />
@@ -279,13 +281,13 @@ export function DetectivePage() {
             <Link
               to="/detective"
               className="detective-nav-item detective-sidebar__new"
-              aria-label="新对话"
+              aria-label={t('新对话')}
               onClick={closeSidebar}
             >
               <SquarePen aria-hidden="true" strokeWidth={1.5} />
-              <span>新对话</span>
+              <span>{t('新对话')}</span>
             </Link>
-            <nav aria-label="对话记录" className="detective-history">
+            <nav aria-label={t('对话记录')} className="detective-history">
               {sessions.length ? (
                 sessions
                   .toSorted((a, b) => b.updatedAt - a.updatedAt)
@@ -301,12 +303,12 @@ export function DetectivePage() {
                       <MessageCircle aria-hidden="true" strokeWidth={1.5} />
                       <span>{item.title}</span>
                       {item.turns.at(-1)?.status === 'running' && (
-                        <i className="detective-history__busy" aria-label="正在回复" />
+                        <i className="detective-history__busy" aria-label={t('正在回复')} />
                       )}
                     </Link>
                   ))
               ) : (
-                <p>对话会保存在这里</p>
+                <p>{t('对话会保存在这里')}</p>
               )}
             </nav>
           </PrimitiveDialog.Content>
@@ -346,7 +348,7 @@ export function DetectivePage() {
       />
       {watchNotice && (
         <p role="status" className="detective-watch-notice">
-          截止或规则一变，发邮件告诉你
+          {t('截止或规则一变，发邮件告诉你')}
         </p>
       )}
       {follows.error && (
@@ -405,6 +407,7 @@ function Conversation({
   guestRemaining?: number
   onSave: (question: string) => void
 }) {
+  const { t } = useLocale()
   const [question, setQuestion] = useState(initialQuestion ?? '')
   const [referenceRemoved, setReferenceRemoved] = useState(false)
   const attached = referenceRemoved ? null : reference
@@ -454,7 +457,7 @@ function Conversation({
         className="detective-conversation__scroll"
         role={active ? 'log' : undefined}
         tabIndex={active ? 0 : undefined}
-        aria-label={active ? '对话内容' : undefined}
+        aria-label={active ? t('对话内容') : undefined}
         aria-live={pending ? 'polite' : undefined}
         aria-busy={pending}
         onScroll={(event) => {
@@ -477,7 +480,7 @@ function Conversation({
                       className="detective-guest-save"
                       onClick={() => onSave(question)}
                     >
-                      登录后保存这次查证
+                      {t('登录后保存这次查证')}
                     </button>
                   )
                 }
@@ -501,7 +504,7 @@ function Conversation({
                   fallback={
                     <img
                       src={readingFrame}
-                      alt="捧书的 Inkpaw 八爪鱼"
+                      alt={t('捧书的 Inkpaw 八爪鱼')}
                       width={159}
                       height={128}
                       className="[image-rendering:pixelated]"
@@ -512,42 +515,44 @@ function Conversation({
                     size={mascotSize}
                     mood={nudgeTalking ? 'talk' : 'read'}
                     shadow={false}
-                    label="捧书的 Inkpaw 八爪鱼"
+                    label={t('捧书的 Inkpaw 八爪鱼')}
                   />
                 </Suspense>
               </div>
             )}
             <h2>
               {loading
-                ? '正在读取对话…'
+                ? t('正在读取对话…')
                 : missing
-                  ? '没有找到这段对话'
+                  ? t('没有找到这段对话')
                   : attached
-                    ? '关于这场比赛，想了解什么？'
-                    : '想找什么样的比赛？'}
+                    ? t('关于这场比赛，想了解什么？')
+                    : t('想找什么样的比赛？')}
             </h2>
-            {missing && <p>从左侧选择已有记录，或发起一段新对话。</p>}
+            {missing && <p>{t('从左侧选择已有记录，或发起一段新对话。')}</p>}
           </div>
         )}
         <div className="detective-conversation__compose">
           {guestRemaining !== undefined && (
-            <p className="detective-guest-quota">今天还剩 {guestRemaining} 次提问</p>
+            <p className="detective-guest-quota">
+              {t('今天还剩 {count} 次提问', { count: guestRemaining })}
+            </p>
           )}
           {storageError && (
             <p role="alert" className="detective-turn__error">
-              聊天记录暂时无法读取。
+              {t('聊天记录暂时无法读取。')}
               <button type="button" className="underline" onClick={onReload}>
-                重新读取
+                {t('重新读取')}
               </button>
             </p>
           )}
           {referenceError && !referenceRemoved && (
             <p role="alert" className="detective-turn__error">
-              比赛资料暂时无法读取，请返回赛事库重新选择。
+              {t('比赛资料暂时无法读取，请返回赛事库重新选择。')}
             </p>
           )}
           <DetectiveComposer
-            placeholder={attached ? '输入你想问的问题' : '问一个问题'}
+            placeholder={attached ? t('输入你想问的问题') : t('问一个问题')}
             attachment={
               attached && (
                 <ContestReference

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import fallbackImage from '@/shared/assets/mascot/octo-search.png'
 import readingImage from '@/shared/assets/mascot/octo-read.png'
 import { mountOctopus, type Mood, type OctopusHandle } from './inkpaw-octopus'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 interface Props {
   size: number
@@ -20,8 +21,9 @@ export function Octopus({
   shadow,
   res = 120,
   className,
-  label = 'Inkpaw 八爪鱼',
+  label,
 }: Props) {
+  const { t } = useLocale()
   const host = useRef<HTMLDivElement>(null)
   const handle = useRef<OctopusHandle | null>(null)
   const [fallback, setFallback] = useState(false)
@@ -64,7 +66,7 @@ export function Octopus({
       className={className}
       style={{ width: size, height: size, display: 'grid', placeItems: 'center' }}
       role="img"
-      aria-label={label}
+      aria-label={label ?? t('Inkpaw 八爪鱼')}
       onClick={() => handle.current?.poke()}
     >
       {fallback && (

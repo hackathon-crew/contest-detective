@@ -26,6 +26,7 @@ import {
   User,
   X,
 } from 'lucide-react'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const icons = {
   'arrow-right': ArrowRight,
@@ -198,6 +199,7 @@ export function Tags({
   placeholder: string
   sources?: Record<string, ('github' | 'resume' | 'manual')[]>
 }) {
+  const { t } = useLocale()
   const [input, setInput] = useState('')
   function add() {
     const v = input.trim().replace(/[,，]$/, '')
@@ -213,17 +215,21 @@ export function Tags({
           title={
             sources?.[v]
               ?.map((s) =>
-                s === 'github' ? '从 GitHub 仓库读出' : s === 'resume' ? '从简历读出' : '自己填的',
+                s === 'github'
+                  ? t('从 GitHub 仓库读出')
+                  : s === 'resume'
+                    ? t('从简历读出')
+                    : t('自己填的'),
               )
-              .join('、') || '自己填的'
+              .join('、') || t('自己填的')
           }
         >
-          {sources?.[v]?.includes('github') && <Ic name="github" label="来自 GitHub" />}
-          {sources?.[v]?.includes('resume') && <Ic name="file" label="来自简历" />}
+          {sources?.[v]?.includes('github') && <Ic name="github" label={t('来自 GitHub')} />}
+          {sources?.[v]?.includes('resume') && <Ic name="file" label={t('来自简历')} />}
           {v}
           <button
             type="button"
-            aria-label={'去掉' + v}
+            aria-label={t('去掉{value}', { value: v })}
             onClick={() => change(values.filter((x) => x !== v))}
           >
             <Ic name="x" />
@@ -268,6 +274,7 @@ export function SecretField({
   change: (s: string) => void
   placeholder?: string
 }) {
+  const { t } = useLocale()
   const [shown, setShown] = useState(false)
   return (
     <span className="inp-wrap w-md">
@@ -283,7 +290,7 @@ export function SecretField({
       <button
         className="iconbtn"
         type="button"
-        aria-label={shown ? '隐藏密钥' : '显示密钥'}
+        aria-label={shown ? t('隐藏密钥') : t('显示密钥')}
         onClick={() => setShown(!shown)}
       >
         <Ic name={shown ? 'eye-off' : 'eye'} />

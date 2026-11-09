@@ -661,6 +661,14 @@
     .nav a {
       padding: 0 6px;
     }
+    :scope:lang(en) .nav,
+    :scope:lang(en) #acts .btn,
+    :scope:lang(en) #quota {
+      font-size: 12px;
+    }
+    :scope:lang(en) .nav {
+      white-space: nowrap;
+    }
     #trail {
       display: none;
     }
@@ -685,6 +693,10 @@
     #acts {
       gap: 7px;
       flex-wrap: nowrap;
+    }
+    :scope:lang(en) #acts {
+      flex-wrap: wrap;
+      max-width: calc(100vw - 24px);
     }
     #acts .btn {
       padding: 0 6px;

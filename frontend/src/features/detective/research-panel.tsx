@@ -8,6 +8,8 @@ import type { SearchExecution } from './verification-contracts'
 import { publicReportUrl, reportStatusNames, sourceLevelNames } from './verification-report'
 import { SourceIcon } from './source-icon'
 import './research-panel.css'
+import { useLocale } from '@/shared/i18n/locale-context'
+import { translateSystemText } from '@/shared/i18n'
 
 interface Activity {
   id: string
@@ -147,6 +149,7 @@ function RailSection({
 }
 
 function Sources({ sources }: { sources: TraceSource[] }) {
+  const { t } = useLocale()
   return sources.map((source) => (
     <a
       className="detective-research__source"
@@ -159,25 +162,45 @@ function Sources({ sources }: { sources: TraceSource[] }) {
       <span>
         <strong>{source.title || source.site || new URL(source.url).hostname}</strong>
         <small>{new URL(source.url).hostname.replace(/^www\./u, '')}</small>
-        {source.provider && <small>服务：{source.provider}</small>}
-        {source.query && <small>查询：{source.query}</small>}
-        {source.retrieved_at && <small>获取时间：{source.retrieved_at}</small>}
-        {source.stale ? <em>来源已过期</em> : !source.is_official ? <em>待核实</em> : null}
+        {source.provider && (
+          <small>
+            {t('服务：')}
+            {source.provider}
+          </small>
+        )}
+        {source.query && (
+          <small>
+            {t('查询：')}
+            {source.query}
+          </small>
+        )}
+        {source.retrieved_at && (
+          <small>
+            {t('获取时间：')}
+            {source.retrieved_at}
+          </small>
+        )}
+        {source.stale ? (
+          <em>{t('来源已过期')}</em>
+        ) : !source.is_official ? (
+          <em>{t('待核实')}</em>
+        ) : null}
       </span>
     </a>
   ))
 }
 
 export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onClose: () => void }) {
+  const { locale, t } = useLocale()
   const { official, clues, activities } = useMemo(() => researchFor(turns), [turns])
   return (
     <>
       <header className="detective-research__header">
-        <h2>研究面板</h2>
+        <h2>{t('研究面板')}</h2>
         <button
           type="button"
           className="detective-icon"
-          aria-label="关闭研究面板"
+          aria-label={t('关闭研究面板')}
           onClick={onClose}
         >
           <X aria-hidden="true" strokeWidth={1.5} />
@@ -190,10 +213,10 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
             <section
               key={turn.id}
               className="detective-research__section-body"
-              aria-label={`关于${turn.question}的查证过程`}
+              aria-label={t('关于{topic}的查证过程', { topic: turn.question })}
             >
               <p>{turn.question}</p>
-              {turn.report && <p>{reportStatusNames[turn.report.status]}</p>}
+              {turn.report && <p>{t(reportStatusNames[turn.report.status])}</p>}
               <InvestigationProgress
                 plan={turn.report?.plan ?? turn.plan}
                 queries={
@@ -210,60 +233,60 @@ export function ResearchPanel({ turns, onClose }: { turns: DetectiveTurn[]; onCl
                       <a href={evidence.url} target="_blank" rel="noreferrer">
                         {evidence.title || evidence.id}
                       </a>{' '}
-                      · {sourceLevelNames[evidence.source_level]}
+                      · {t(sourceLevelNames[evidence.source_level])}
                     </p>
                   ),
               )}
             </section>
           ))}
         <RailSection
-          title="赛事官网"
+          title={t('赛事官网')}
           count={official.length}
           index={0}
-          empty="查证到的官方出处会列在这里。"
+          empty={t('查证到的官方出处会列在这里。')}
         >
           <Sources sources={official} />
         </RailSection>
         <RailSection
-          title="网页线索"
+          title={t('网页线索')}
           count={clues.length}
           index={1}
-          empty="搜索到的网页线索会列在这里。"
+          empty={t('搜索到的网页线索会列在这里。')}
         >
           <Sources sources={clues} />
         </RailSection>
         <RailSection
-          title="工作流程"
+          title={t('工作流程')}
           count={activities.length}
           index={2}
-          empty="侦探开始查证后，这里会显示工具步骤。"
+          empty={t('侦探开始查证后，这里会显示工具步骤。')}
         >
           {activities.map((activity) => (
             <article className="detective-research__activity" key={activity.id}>
               {activity.status === 'running' ? (
-                <LoaderCircle className="detective-spin" aria-label="进行中" />
+                <LoaderCircle className="detective-spin" aria-label={t('进行中')} />
               ) : activity.status === 'completed' ? (
-                <CheckCircle2 aria-label="已完成" />
+                <CheckCircle2 aria-label={t('已完成')} />
               ) : activity.status === 'continuing' ? (
-                <ChevronRight aria-label="继续查找" />
+                <ChevronRight aria-label={t('继续查找')} />
               ) : (
-                <CircleAlert aria-label={activity.status === 'failed' ? '失败' : '已中断'} />
+                <CircleAlert aria-label={activity.status === 'failed' ? t('失败') : t('已中断')} />
               )}
               <div>
-                <strong>{activity.label}</strong>
+                <strong>{translateSystemText(locale, activity.label)}</strong>
                 {activity.summary && <p>{activity.summary}</p>}
                 {activity.execution && <ExecutionDetails execution={activity.execution} />}
               </div>
               <span>
                 {activity.status === 'running'
-                  ? '进行中'
+                  ? t('进行中')
                   : activity.status === 'completed'
-                    ? '已完成'
+                    ? t('已完成')
                     : activity.status === 'continuing'
-                      ? '继续查找'
+                      ? t('继续查找')
                       : activity.status === 'failed'
-                        ? '失败'
-                        : '已中断'}
+                        ? t('失败')
+                        : t('已中断')}
               </span>
             </article>
           ))}

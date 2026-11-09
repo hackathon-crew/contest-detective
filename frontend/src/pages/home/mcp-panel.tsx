@@ -5,6 +5,7 @@ import { TZDate } from '@date-fns/tz'
 import { deadlineDays, formatDate, nextDeadline, type ContestSummary } from '@/entities/contest'
 import { Icon } from '@/shared/ui/site-icon'
 import plug from '@/shared/assets/stickers/plug.png'
+import { useLocale } from '@/shared/i18n/locale-context'
 const endpoint = new URL('/mcp', window.location.origin).href
 const config = {
   cc:
@@ -22,23 +23,22 @@ const config = {
       null,
       2,
     ),
-  other:
-    '// 支持 Streamable HTTP 的客户端都能用\n' +
-    JSON.stringify(
-      {
-        mcpServers: {
-          inkpaw: {
-            type: 'http',
-            url: endpoint,
-            headers: { Authorization: 'Bearer YOUR_PERSONAL_TOKEN' },
-          },
+  other: JSON.stringify(
+    {
+      mcpServers: {
+        inkpaw: {
+          type: 'http',
+          url: endpoint,
+          headers: { Authorization: 'Bearer YOUR_PERSONAL_TOKEN' },
         },
       },
-      null,
-      2,
-    ),
+    },
+    null,
+    2,
+  ),
 }
 export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
+  const { locale, t } = useLocale()
   const [tab, setTab] = useState<keyof typeof config>('cc')
   const [copied, setCopied] = useState(false)
   const pre = useRef<HTMLPreElement>(null)
@@ -70,6 +70,8 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
     return contest.fields.mode?.value === 'online' && deadline && deadlineDays(deadline) <= 7
   })
   const first = week[0] && nextDeadline(week[0])
+  const displayedConfig =
+    tab === 'other' ? `// ${t('支持 Streamable HTTP 的客户端都能用')}\n${config[tab]}` : config[tab]
   return (
     <div className="stage">
       <img
@@ -82,12 +84,12 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
       />
       <div className="win">
         <div className="win-bar">
-          <div className="seg" role="group" aria-label="客户端">
+          <div className="seg" role="group" aria-label={t('客户端')}>
             {(
               [
                 ['cc', 'Claude Code'],
                 ['cursor', 'Cursor'],
-                ['other', '其他客户端'],
+                ['other', t('其他客户端')],
               ] as const
             ).map(([key, label]) => (
               <button
@@ -107,14 +109,14 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
             type="button"
             className="copy-btn"
             onClick={() => void copy()}
-            aria-label={copied ? '已复制配置' : '复制配置'}
+            aria-label={copied ? t('已复制配置') : t('复制配置')}
           >
             <Icon name={copied ? 'check' : 'copy'} />
           </button>
         </div>
         <div className="code">
           <pre ref={pre}>
-            {config[tab].split(/("[a-zA-Z]+"(?=\s*:)|^claude)/).map((part, index) =>
+            {displayedConfig.split(/("[a-zA-Z]+"(?=\s*:)|^claude)/).map((part, index) =>
               /^("[a-zA-Z]+"|claude)$/.test(part) ? (
                 <span className="k" key={index}>
                   {part}
@@ -126,7 +128,7 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
           </pre>
         </div>
         <div className="mcp-demo">
-          <div className="q">用 inkpaw 查一下下周截止、线上能参加的比赛</div>
+          <div className="q">{t('用 inkpaw 查一下下周截止、线上能参加的比赛')}</div>
           <div className="call">
             <Icon name="database" />
             <code>
@@ -140,9 +142,14 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
           <div className="call">
             <Icon name="check" />
             <span>
-              {contests ? `返回 ${week.length} 场` : '接入后，AI 会返回赛事、截止时间和出处'}
+              {contests
+                ? t('返回 {count} 场', { count: week.length })
+                : t('接入后，AI 会返回赛事、截止时间和出处')}
               {week[0] && first
-                ? `，最近的是 ${week[0].name}（${formatDate(first.info.value, first.info.precision)}）`
+                ? t('，最近的是 {name}（{date}）', {
+                    name: week[0].name,
+                    date: formatDate(first.info.value, first.info.precision, false, locale),
+                  })
                 : ''}
             </span>
           </div>

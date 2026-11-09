@@ -15,6 +15,8 @@ import {
 } from '@/features/profile-match'
 import { useLiveAlbum } from '@/features/follow/live-album'
 import { liveCard } from '@/features/detective/live/model'
+import { translateSystemText } from '@/shared/i18n'
+import { LanguageControl } from '@/shared/ui/language-control'
 import {
   mountLive,
   type LiveHandle,
@@ -25,8 +27,10 @@ import view from '@/features/detective/live/view.html?raw'
 import '@/features/detective/detective-conversation.css'
 import '@/features/detective/evidence-report.css'
 import '@/features/detective/live/live.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export default function LivePage() {
+  const { locale, t } = useLocale()
   const location = useLocation(),
     navigate = useNavigate(),
     { conversationId } = useParams()
@@ -50,19 +54,29 @@ export default function LivePage() {
     enabled: !!user,
     queryFn: ({ signal }) => apiClient.request<WatchRead>('/account/watch', { signal }),
   })
+  const cardsByTurn = new Map(
+    session?.turns.map((item) => [
+      item.id,
+      (item.recommendations ?? []).map((recommendation) =>
+        liveCard(recommendation, item, undefined, locale),
+      ),
+    ]),
+  )
   const album = book.cards.map((contest) => {
     const sourceTurn = detective.sessions
       .flatMap((item) => item.turns)
       .findLast((item) =>
         item.recommendations?.some((recommendation) => recommendation.contest.id === contest.id),
       )
-    return liveCard({ contest, reason: '' }, sourceTurn)
+    return liveCard({ contest, reason: '' }, sourceTurn, undefined, locale)
   })
   const snapshot: LiveSnapshot = {
+    locale,
     textHref: conversationId ? '/detective/' + conversationId : '/detective',
     turn,
-    cards: (turn?.recommendations ?? []).map((item) => liveCard(item, turn)),
+    cards: (turn && cardsByTurn.get(turn.id)) ?? [],
     album,
+    historyCards: [...cardsByTurn.values()].flat(),
     loggedIn: !!user,
     remaining: !user ? quota.data?.remaining : undefined,
     watching: (watching.data?.items ?? [])
@@ -78,6 +92,7 @@ export default function LivePage() {
   const host = useRef<HTMLDivElement>(null),
     runtime = useRef<LiveHandle | null>(null)
   const [logTarget, setLogTarget] = useState<Element | null>(null)
+  const [languageTarget, setLanguageTarget] = useState<Element | null>(null)
   function submit(text: string) {
     const id = detective.send(text, profile, session?.id)
     if (id) navigate('/live/' + id, { replace: !session })
@@ -152,6 +167,7 @@ export default function LivePage() {
     }
     runtime.current = mountLive(host.current!, callbacks, latest.current)
     setLogTarget(host.current!.querySelector('#loglist'))
+    setLanguageTarget(host.current!.querySelector('#language'))
     return () => {
       runtime.current?.stop()
       runtime.current = null
@@ -191,11 +207,12 @@ export default function LivePage() {
   return (
     <>
       <div ref={host} className="inkpaw-live" dangerouslySetInnerHTML={{ __html: view }} />
+      {languageTarget && createPortal(<LanguageControl />, languageTarget)}
       {logTarget &&
         createPortal(
           <div className="live-record">
             {!session?.turns.length && (
-              <p className="empty">这里会留下你们说过的话和查过的步骤。</p>
+              <p className="empty">{t('这里会留下你们说过的话和查过的步骤。')}</p>
             )}
             {session?.turns.map((item) => (
               <div key={item.id}>
@@ -205,23 +222,24 @@ export default function LivePage() {
                 />
                 {item.report?.status === 'complete' && item.content && (
                   <details>
-                    <summary>完整回答</summary>
+                    <summary>{t('完整回答')}</summary>
                     <ReactMarkdown urlTransform={(url) => safeUrl(url) ?? ''}>
                       {item.content}
                     </ReactMarkdown>
                   </details>
                 )}
-                {(item.recommendations ?? []).map((recommendation) => {
-                  const card = liveCard(recommendation, item)
+                {(cardsByTurn.get(item.id) ?? []).map((card) => {
                   return (
                     <details key={card.id}>
-                      <summary>{card.name} · 卡片来源</summary>
+                      <summary>
+                        {card.name} {t('· 卡片来源')}
+                      </summary>
                       <button
                         type="button"
                         className="link"
                         onClick={() => runtime.current?.reopen(card.id, card)}
                       >
-                        看这张卡
+                        {t('看这张卡')}
                       </button>
                       <ul>
                         {card.sources.map((source, index) => (
@@ -240,9 +258,9 @@ export default function LivePage() {
             ))}
             {detective.storageError && (
               <p>
-                本机记录保留在这里。
+                {t('本机记录保留在这里。')}
                 <button type="button" onClick={() => void detective.reload()}>
-                  读取账号记录
+                  {t('读取账号记录')}
                 </button>
               </p>
             )}
@@ -258,9 +276,9 @@ export default function LivePage() {
       />
       {(notice || book.notice) && (
         <div className="live-notice" role="status">
-          {notice || book.notice}
-          {notice && <a href="/account/watch">打开盯梢设置</a>}
-          <button type="button" aria-label="收起提示" onClick={() => setNotice('')}>
+          {translateSystemText(locale, notice || book.notice)}
+          {notice && <a href="/account/follows">{t('打开盯梢设置')}</a>}
+          <button type="button" aria-label={t('收起提示')} onClick={() => setNotice('')}>
             ×
           </button>
         </div>

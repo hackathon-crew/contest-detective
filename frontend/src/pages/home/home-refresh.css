@@ -64,6 +64,9 @@
   .hello span {
     display: inline-block;
   }
+  :lang(en) .hello span {
+    display: inline;
+  }
   .pill {
     position: relative;
     z-index: 2;

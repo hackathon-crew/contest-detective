@@ -6,8 +6,17 @@ import { apiClient } from '@/shared/api'
 import type { AccountRead } from '@/shared/api/generated'
 import { Expand, failure, Ic, useNotice } from './components'
 import { AccountModal } from './modal'
+import { translateSystemText, type Locale } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
 
-function date(value: string, year = false) {
+function date(value: string, locale: Locale, year = false) {
+  if (locale === 'en')
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: year ? 'medium' : undefined,
+      month: year ? undefined : 'short',
+      day: year ? undefined : 'numeric',
+      timeZone: 'Asia/Shanghai',
+    }).format(new Date(value))
   const parts = new Intl.DateTimeFormat('zh-CN', {
     year: 'numeric',
     month: 'numeric',
@@ -18,6 +27,7 @@ function date(value: string, year = false) {
   return (year ? part('year') + ' 年 ' : '') + part('month') + ' 月 ' + part('day') + ' 日'
 }
 export function SettingsPanel() {
+  const { locale, t } = useLocale()
   const { data: user } = useCurrentUser(),
     client = useQueryClient(),
     notice = useNotice(),
@@ -79,7 +89,7 @@ export function SettingsPanel() {
     setBusy('verify')
     try {
       await apiClient.request('/account/email/verification', { method: 'POST' })
-      notice('验证邮件已发到 ' + loginEmail + '，20 分钟内有效')
+      notice(t('验证邮件已发到 {email}，20 分钟内有效', { email: loginEmail }))
     } catch (e) {
       notice(failure(e))
     } finally {
@@ -93,7 +103,7 @@ export function SettingsPanel() {
     try {
       await apiClient.request('/account/email', { method: 'POST', json: { email: email.trim() } })
       setEmailOpen(false)
-      notice('验证邮件已发到 ' + email.trim() + '，点开链接后生效')
+      notice(t('验证邮件已发到 {email}，点开链接后生效', { email: email.trim() }))
       setEmail('')
     } catch (e) {
       notice(failure(e))
@@ -130,7 +140,7 @@ export function SettingsPanel() {
       )
       const a = document.createElement('a')
       a.href = href
-      a.download = 'inkpaw-我的数据.json'
+      a.download = t('inkpaw-我的数据.json')
       a.click()
       setTimeout(() => URL.revokeObjectURL(href), 1000)
       notice('已导出')
@@ -161,24 +171,30 @@ export function SettingsPanel() {
     <>
       <div className="p-head">
         <div>
-          <h2>账号</h2>
+          <h2>{t('账号')}</h2>
           <p className="p-lead">
-            {account.data ? date(account.data.created_at, true) + '注册' : '正在读取账号…'}
+            {account.data
+              ? t('{date} 注册', { date: date(account.data.created_at, locale, true) })
+              : t('正在读取账号…')}
           </p>
         </div>
       </div>
       {account.error && (
         <p className="grp-note" role="alert">
-          {failure(account.error)}
+          {translateSystemText(locale, failure(account.error))}
         </p>
       )}
       <div className="grp" style={{ marginTop: 24 }}>
         <div className="arow" id="email">
           <div>
-            <b>登录邮箱</b>
+            <b>{t('登录邮箱')}</b>
             <p>
               {loginEmail} ·{' '}
-              {account.data?.email_verified ? '已验证' : account.data ? '未验证' : '读取中'}
+              {account.data?.email_verified
+                ? t('已验证')
+                : account.data
+                  ? t('未验证')
+                  : t('读取中')}
             </p>
           </div>
           <div className="arow-actions">
@@ -189,7 +205,7 @@ export function SettingsPanel() {
                 disabled={!!busy}
                 onClick={() => void sendVerification()}
               >
-                {busy === 'verify' ? '正在发送…' : '发送验证邮件'}
+                {busy === 'verify' ? t('正在发送…') : t('发送验证邮件')}
               </button>
             )}
             <button
@@ -197,7 +213,7 @@ export function SettingsPanel() {
               type="button"
               onClick={() => setEmailOpen(!emailOpen)}
             >
-              修改
+              {t('修改')}
             </button>
           </div>
           <div style={{ gridColumn: '1/-1' }}>
@@ -208,7 +224,7 @@ export function SettingsPanel() {
                 onSubmit={(e) => void changeEmail(e)}
               >
                 <label>
-                  新邮箱
+                  {t('新邮箱')}
                   <input
                     className="inp"
                     type="email"
@@ -221,14 +237,14 @@ export function SettingsPanel() {
                 </label>
                 <div className="acts">
                   <button className="btn btn-primary btn-sm" type="submit" disabled={!!busy}>
-                    发验证邮件
+                    {t('发验证邮件')}
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
                     type="button"
                     onClick={() => setEmailOpen(false)}
                   >
-                    取消
+                    {t('取消')}
                   </button>
                 </div>
               </form>
@@ -237,11 +253,13 @@ export function SettingsPanel() {
         </div>
         <div className="arow">
           <div>
-            <b>密码</b>
+            <b>{t('密码')}</b>
             <p>
               {account.data
-                ? '上次修改是 ' + date(account.data.password_changed_at ?? account.data.created_at)
-                : '正在读取…'}
+                ? t('上次修改是 {date}', {
+                    date: date(account.data.password_changed_at ?? account.data.created_at, locale),
+                  })
+                : t('正在读取…')}
             </p>
           </div>
           <button
@@ -249,7 +267,7 @@ export function SettingsPanel() {
             type="button"
             onClick={() => setPasswordOpen(!passwordOpen)}
           >
-            修改密码
+            {t('修改密码')}
           </button>
           <div style={{ gridColumn: '1/-1' }}>
             <Expand open={passwordOpen}>
@@ -259,7 +277,7 @@ export function SettingsPanel() {
                 onSubmit={(e) => void changePassword(e)}
               >
                 <label>
-                  现在的密码
+                  {t('现在的密码')}
                   <input
                     className="inp"
                     type="password"
@@ -271,14 +289,14 @@ export function SettingsPanel() {
                   />
                 </label>
                 <label>
-                  新密码
+                  {t('新密码')}
                   <input
                     className="inp"
                     type="password"
                     required
                     minLength={8}
                     maxLength={128}
-                    placeholder="至少 8 位"
+                    placeholder={t('至少 8 位')}
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -286,7 +304,7 @@ export function SettingsPanel() {
                 </label>
                 <div className="acts">
                   <button className="btn btn-primary btn-sm" type="submit" disabled={!!busy}>
-                    保存
+                    {t('保存')}
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
@@ -297,7 +315,7 @@ export function SettingsPanel() {
                       setNewPassword('')
                     }}
                   >
-                    取消
+                    {t('取消')}
                   </button>
                 </div>
               </form>
@@ -306,8 +324,8 @@ export function SettingsPanel() {
         </div>
         <div className="arow">
           <div>
-            <b>导出我的数据</b>
-            <p>画像、关注、追踪条件和推送设置，导出成一个 JSON 文件</p>
+            <b>{t('导出我的数据')}</b>
+            <p>{t('画像、关注、追踪条件和推送设置，导出成一个 JSON 文件')}</p>
           </div>
           <button
             className="btn btn-ghost btn-sm"
@@ -316,13 +334,13 @@ export function SettingsPanel() {
             onClick={() => void exportData()}
           >
             <Ic name="download" />
-            导出
+            {t('导出')}
           </button>
         </div>
         <div className="arow danger">
           <div>
-            <b>删除账号</b>
-            <p>画像、关注、追踪条件和推送设置会一起删掉，没法恢复。</p>
+            <b>{t('删除账号')}</b>
+            <p>{t('画像、关注、追踪条件和推送设置会一起删掉，没法恢复。')}</p>
           </div>
           <button
             className="btn btn-danger-line btn-sm"
@@ -332,35 +350,36 @@ export function SettingsPanel() {
               setDeleting(true)
             }}
           >
-            删除账号
+            {t('删除账号')}
           </button>
         </div>
       </div>
       <AccountModal open={deleting} close={() => setDeleting(false)} titleId="del-title" narrow>
         <form className="dlg-pad" onSubmit={(e) => void remove(e)}>
-          <h3 id="del-title">删除这个账号？</h3>
+          <h3 id="del-title">{t('删除这个账号？')}</h3>
           <p>
-            画像、{account.data?.follows_count ?? '—'}{' '}
-            场关注、追踪条件和推送设置会一起删掉，没法恢复。输入登录邮箱确认。
+            {t('画像、{count} 场关注、追踪条件和推送设置会一起删掉，没法恢复。输入登录邮箱确认。', {
+              count: account.data?.follows_count ?? '—',
+            })}
           </p>
           <input
             className="inp"
             ref={confirmInput}
             autoComplete="off"
-            aria-label="输入登录邮箱确认"
+            aria-label={t('输入登录邮箱确认')}
             value={confirmation}
             onChange={(e) => setConfirmation(e.target.value)}
           />
           <div className="dlg-acts">
             <button className="btn btn-ghost" type="button" onClick={() => setDeleting(false)}>
-              取消
+              {t('取消')}
             </button>
             <button
               className="btn btn-danger"
               type="submit"
               disabled={!loginEmail || confirmation.trim() !== loginEmail || !!busy}
             >
-              删除账号
+              {t('删除账号')}
             </button>
           </div>
         </form>

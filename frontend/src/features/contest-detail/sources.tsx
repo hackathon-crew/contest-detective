@@ -8,8 +8,20 @@ import type {
   EvidenceObservation,
   EvidenceReference,
 } from './evidence-index'
+import { useLocale } from '@/shared/i18n/locale-context'
+import { translate, translateSystemText, type Locale } from '@/shared/i18n'
 
 const activateSourceEvent = 'contest-source-activate'
+
+function evidenceLabel(locale: Locale, label: string) {
+  const copy = translateSystemText(locale, label)
+  if (locale === 'en' && copy === label && label.endsWith('采集记录')) {
+    return translate(locale, '{field}采集记录', {
+      field: translateSystemText(locale, label.slice(0, -4)),
+    })
+  }
+  return copy
+}
 
 interface ReadingPosition {
   trigger: HTMLButtonElement
@@ -96,6 +108,7 @@ export function SourceReferences({
   refs: EvidenceReference[] | undefined
   label?: string
 }) {
+  const { locale, t } = useLocale()
   const unique = new Map<string, EvidenceReference>()
   for (const ref of refs ?? []) {
     const group = index.groups.find((item) => item.id === ref.groupId)
@@ -120,7 +133,10 @@ export function SourceReferences({
             key={ref.groupId}
             type="button"
             className="contest-detail-source-ref"
-            aria-label={`查看${label}的信息来源 ${group.number}`}
+            aria-label={t('查看{field}的信息来源 {number}', {
+              field: evidenceLabel(locale, label),
+              number: group.number,
+            })}
             onClick={(event) => openSource(event, index, ref)}
           >
             [{group.number}]
@@ -140,67 +156,92 @@ function InstanceMetadata({
   number: number
   valueIsExcerpt: boolean
 }) {
+  const { locale, t } = useLocale()
   const source = instance.source
   const document = instance.document
   const official = source?.is_official ?? document?.is_official
-  const labels = instance.uses.map((use) => use.label)
-  const conflicts = instance.uses.filter((use) => use.level === 'conflict').map((use) => use.label)
+  const labels = instance.uses.map((use) => evidenceLabel(locale, use.label))
+  const conflicts = instance.uses
+    .filter((use) => use.level === 'conflict')
+    .map((use) => evidenceLabel(locale, use.label))
+  const separator = locale === 'en' ? ', ' : '、'
   return (
     <li className="contest-detail-source-meta" tabIndex={-1} data-source-evidence={instance.id}>
       <p>
         <span>
-          记录 {number} ·{' '}
+          {t('记录 {number}', { number })} ·{' '}
           {instance.kind === 'citation'
-            ? '版本引用'
+            ? t('版本引用')
             : instance.kind === 'document'
-              ? '公开资料'
+              ? t('公开资料')
               : instance.kind === 'source'
-                ? '字段引用'
-                : '来源链接'}
+                ? t('字段引用')
+                : t('来源链接')}
         </span>
         {typeof official === 'boolean' && (
           <VerificationLevel level={official ? 'official' : 'reposted'} />
         )}
-        {source?.stale && <span>可能过期</span>}
+        {source?.stale && <span>{t('可能过期')}</span>}
       </p>
       <p className="contest-detail-source-uses">
-        对应：{labels.join('、')}
-        {conflicts.length ? `；${conflicts.join('、')}的来源说法不一` : ''}
+        {t('对应：')} {labels.join(separator)}
+        {conflicts.length ? t('；{field}的来源说法不一', { field: conflicts.join(separator) }) : ''}
       </p>
-      {source?.value && !valueIsExcerpt && <p>记录值：{source.value}</p>}
-      {(source?.title || document?.title) && <p>来源标题：{source?.title || document?.title}</p>}
+      {source?.value && !valueIsExcerpt && (
+        <p>
+          {t('记录值：')} {source.value}
+        </p>
+      )}
+      {(source?.title || document?.title) && (
+        <p>
+          {t('来源标题：')} {source?.title || document?.title}
+        </p>
+      )}
       <p>
         {instance.contentHash ? (
-          <span title={instance.contentHash} aria-label={`内容版本 ${instance.contentHash}`}>
-            内容版本 {instance.contentHash.slice(0, 12)}
+          <span
+            title={instance.contentHash}
+            aria-label={t('内容版本 {version}', { version: instance.contentHash })}
+          >
+            {t('内容版本')} {instance.contentHash.slice(0, 12)}
           </span>
         ) : (
-          '未标注内容版本'
+          t('未标注内容版本')
         )}
         {document &&
-          ` · ${document.kind === 'search_snippet' ? '搜索摘要' : document.kind === 'structured' ? '结构化来源' : '页面来源'} · ${document.completeness === 'partial' ? '部分内容' : '完整采集，仅展示摘录'}`}
+          ` · ${document.kind === 'search_snippet' ? t('搜索摘要') : document.kind === 'structured' ? t('结构化来源') : t('页面来源')} · ${document.completeness === 'partial' ? t('部分内容') : t('完整采集，仅展示摘录')}`}
       </p>
       {document && (
         <p>
-          表示形式：{document.representation ?? '未标注'} · 提取版本：{document.extractor_version} ·
-          获取方式：{document.fetch_method}
-          {document.retrieved_at && ` · 读取时间：${document.retrieved_at}`}
+          {t('表示形式：')} {document.representation ?? t('未标注')} {t('· 提取版本：')}{' '}
+          {document.extractor_version} {t('· 获取方式：')} {document.fetch_method}
+          {document.retrieved_at && t(' · 读取时间：{time}', { time: document.retrieved_at })}
         </p>
       )}
-      {!instance.excerptIds.length && <p>此记录没有可展示的摘录，请查看来源链接。</p>}
+      {!instance.excerptIds.length && <p>{t('此记录没有可展示的摘录，请查看来源链接。')}</p>}
     </li>
   )
 }
 
 function SourceObservations({ observations }: { observations: EvidenceObservation[] }) {
+  const { locale, t } = useLocale()
   if (!observations.length) return null
   return (
     <div className="contest-detail-source-observations">
-      <p>采集状态，不等同于主办方是否公布</p>
+      <p>{t('采集状态，不等同于主办方是否公布')}</p>
       {observations.map((observation) => (
         <p className="contest-detail-coverage" key={observation.id}>
-          {observation.uses.map((use) => use.label).join('、')}：{observation.label}
-          {observation.checkedAt && <span> · 检查时间：{observation.checkedAt}</span>}
+          {observation.uses
+            .map((use) => evidenceLabel(locale, use.label))
+            .join(locale === 'en' ? ', ' : '、')}
+          {locale === 'en' ? ' · ' : '：'}
+          {evidenceLabel(locale, observation.label)}
+          {observation.checkedAt && (
+            <span>
+              {' '}
+              {t('· 检查时间：')} {observation.checkedAt}
+            </span>
+          )}
         </p>
       ))}
     </div>
@@ -216,6 +257,7 @@ function SourceGroup({
   canReturn: boolean
   onReturn: () => void
 }) {
+  const { locale, t } = useLocale()
   const conflictFields = [
     ...new Set([
       ...group.instances.flatMap((instance) =>
@@ -240,7 +282,7 @@ function SourceGroup({
       className="contest-detail-source-group"
       data-source-group={group.id}
       tabIndex={-1}
-      aria-label={`信息来源 ${group.number}：${group.title}`}
+      aria-label={t('信息来源 {number}：{label}', { number: group.number, label: group.title })}
     >
       <div className="contest-detail-source-heading">
         <a href={safeUrl(group.url)} target="_blank" rel="noopener noreferrer">
@@ -248,7 +290,7 @@ function SourceGroup({
         </a>
         {canReturn && (
           <button type="button" className="contest-detail-source-return" onClick={onReturn}>
-            返回阅读处
+            {t('返回阅读处')}
           </button>
         )}
       </div>
@@ -256,17 +298,20 @@ function SourceGroup({
       {!!sourceTypes.length && (
         <p className="contest-detail-source-uses">
           {sourceTypes.length > 1
-            ? '来源类型标注不一，见核验记录。'
-            : `记录标注：${sourceTypes[0] ? '官方原文' : '转载'}`}
+            ? t('来源类型标注不一，见核验记录。')
+            : t('记录标注：{type}', { type: t(sourceTypes[0] ? '官方原文' : '转载') })}
         </p>
       )}
       {!!conflictFields.length && (
         <p className="contest-detail-coverage">
-          {conflictFields.join('、')}：来源说法不一，保留各方摘录，未做取舍。
+          {conflictFields
+            .map((label) => evidenceLabel(locale, label))
+            .join(locale === 'en' ? ', ' : '、')}
+          {t('：来源说法不一，保留各方摘录，未做取舍。')}
         </p>
       )}
       {group.instances.some((instance) => instance.source?.stale) && (
-        <p className="contest-detail-coverage">含可能过期的引用，版本与状态见核验记录。</p>
+        <p className="contest-detail-coverage">{t('含可能过期的引用，版本与状态见核验记录。')}</p>
       )}
       {group.excerpts.map((excerpt) => (
         <div
@@ -277,7 +322,7 @@ function SourceGroup({
         >
           <p>{excerpt.text}</p>
           <p className="contest-detail-source-meta">
-            对应记录{' '}
+            {t('对应记录')}{' '}
             {excerpt.evidenceIds
               .map((id) => group.instances.findIndex((instance) => instance.id === id) + 1)
               .join('、')}
@@ -285,10 +330,14 @@ function SourceGroup({
         </div>
       ))}
       {!group.excerpts.length && (
-        <p className="contest-detail-empty">没有可展示的摘录，来源链接仍可查看。</p>
+        <p className="contest-detail-empty">{t('没有可展示的摘录，来源链接仍可查看。')}</p>
       )}
       <details className="contest-detail-source-versions">
-        <summary>核验记录与版本（{group.instances.length + group.observations.length}）</summary>
+        <summary>
+          {t('核验记录与版本（{count}）', {
+            count: group.instances.length + group.observations.length,
+          })}
+        </summary>
         <ul>
           {group.instances.map((instance, index) => (
             <InstanceMetadata
@@ -316,6 +365,7 @@ export function ContestSources({
   contest: ContestDetail
   index: EvidenceIndex
 }) {
+  const { t } = useLocale()
   const details = useRef<HTMLDetailsElement>(null)
   const readingPosition = useRef<ReadingPosition | null>(null)
   const [returnGroup, setReturnGroup] = useState<{ contestId: string; groupId: string } | null>(
@@ -350,11 +400,13 @@ export function ContestSources({
         data-contest-sources={index.contestId}
       >
         <summary className="contest-detail-sources-summary">
-          信息来源（{index.groups.length}）
+          {t('信息来源（{count}）', { count: index.groups.length })}
         </summary>
         <div className="contest-detail-sources-body">
           <p className="contest-detail-empty">
-            引用与摘录集中列在这里，完整内容请查看原文。相同摘录只展示一次；不同版本和未标注版本的记录分别保留，不视为同一份证据。
+            {t(
+              '引用与摘录集中列在这里，完整内容请查看原文。相同摘录只展示一次；不同版本和未标注版本的记录分别保留，不视为同一份证据。',
+            )}
           </p>
           {!!index.groups.length && (
             <ol className="contest-detail-source-list">
@@ -371,15 +423,15 @@ export function ContestSources({
             </ol>
           )}
           {!index.groups.length && (
-            <p className="contest-detail-empty">暂时没有可打开的信息来源。</p>
+            <p className="contest-detail-empty">{t('暂时没有可打开的信息来源。')}</p>
           )}
           <SourceObservations observations={index.unlinkedObservations} />
         </div>
       </details>
       {contest.summary?.trim() && (
         <details className="contest-detail-history">
-          <summary>历史资料（未核实）</summary>
-          <p className="contest-detail-empty">保留的历史摘要，不代表本次来源核实结果。</p>
+          <summary>{t('历史资料（未核实）')}</summary>
+          <p className="contest-detail-empty">{t('保留的历史摘要，不代表本次来源核实结果。')}</p>
           <ReactMarkdown
             urlTransform={(url) => safeUrl(url) ?? ''}
             components={{

@@ -21,6 +21,9 @@ import { DetectiveProvider } from '@/features/detective'
 import { useCurrentUser } from '@/entities/user'
 import { AuthPage } from '@/features/auth'
 import { AppearanceControl } from '@/features/appearance'
+import { useLocale } from '@/shared/i18n/locale-context'
+import { LocaleProvider } from '@/shared/i18n/locale-provider'
+import { LanguageControl } from '@/shared/ui/language-control'
 import { queryClient } from './query-client'
 import { RouteMotionSurface } from './route-motion'
 
@@ -28,18 +31,21 @@ const LivePage = lazy(() => import('@/pages/live/live-page'))
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <NuqsAdapter>
-          <AppRoutes />
-        </NuqsAdapter>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <LocaleProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <NuqsAdapter>
+            <AppRoutes />
+          </NuqsAdapter>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </LocaleProvider>
   )
 }
 
 /** 路由表单独导出，测试用 MemoryRouter 验证直接打开某个地址的情况。 */
 export function AppRoutes() {
+  const { t } = useLocale()
   const location = useLocation()
   const background = location.state?.backgroundLocation as Location | undefined
   const contestId = matchPath('/contests/:contestId', location.pathname)?.params.contestId
@@ -49,7 +55,12 @@ export function AppRoutes() {
       <AuthPage
         key={location.pathname}
         mode={location.pathname === '/register' ? 'register' : 'login'}
-        utilities={<AppearanceControl />}
+        utilities={
+          <div className="flex items-center gap-1">
+            <LanguageControl />
+            <AppearanceControl />
+          </div>
+        }
       />
     )
   }
@@ -65,7 +76,7 @@ export function AppRoutes() {
   if (/^\/(?:detective|live)(?:\/|$)/.test(location.pathname) && isPending) {
     return (
       <main aria-busy="true">
-        <p role="status">正在确认登录状态…</p>
+        <p role="status">{t('正在确认登录状态…')}</p>
       </main>
     )
   }

@@ -22,6 +22,8 @@ import {
   Tags,
   useNotice,
 } from './components'
+import { translateSystemText, type Locale } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 const defaults: SearchPreferences = { scope: 'all', exclude_ended: true, blocked_domains: [] }
 const providers = [
@@ -43,13 +45,14 @@ const providers = [
     fields: [['tavily_api_key', 'API Key', 'tvly-…']],
   },
 ] as const
-const day = (value: string) =>
-  new Date(value).toLocaleDateString('zh-CN', {
-    month: 'numeric',
+const day = (value: string, locale: Locale) =>
+  new Date(value).toLocaleDateString(locale, {
+    month: locale === 'en' ? 'short' : 'numeric',
     day: 'numeric',
     timeZone: 'Asia/Shanghai',
   })
 export function KeysPanel() {
+  const { locale, t } = useLocale()
   const { data: user } = useCurrentUser(),
     client = useQueryClient(),
     notice = useNotice(),
@@ -142,7 +145,9 @@ export function KeysPanel() {
       notice(
         id === 'llm'
           ? '模型密钥已保存，之后问侦探走你的密钥'
-          : providers.find((p) => p.id === id)?.name + ' 的密钥已保存',
+          : t('{provider} 的密钥已保存', {
+              provider: translateSystemText(locale, providers.find((p) => p.id === id)!.name),
+            }),
       )
     } catch (e) {
       notice(failure(e))
@@ -157,15 +162,21 @@ export function KeysPanel() {
         method: 'DELETE',
       })
       await client.invalidateQueries({ queryKey: providerKey })
-      notice('已移除 ' + name + ' 的密钥，改用平台的', {
-        label: '撤销',
-        run: () => {
-          void apiClient
-            .request<ProvidersRead>('/account/providers/restore', { method: 'POST', json: result })
-            .then((data) => client.setQueryData(providerKey, data))
-            .catch((e) => notice(failure(e)))
+      notice(
+        t('已移除 {provider} 的密钥，改用平台的', { provider: translateSystemText(locale, name) }),
+        {
+          label: '撤销',
+          run: () => {
+            void apiClient
+              .request<ProvidersRead>('/account/providers/restore', {
+                method: 'POST',
+                json: result,
+              })
+              .then((data) => client.setQueryData(providerKey, data))
+              .catch((e) => notice(failure(e)))
+          },
         },
-      })
+      )
     } catch (e) {
       notice(failure(e))
     } finally {
@@ -192,46 +203,46 @@ export function KeysPanel() {
     <>
       <div className="p-head">
         <div>
-          <h2>搜索与密钥</h2>
+          <h2>{t('搜索与密钥')}</h2>
           <p className="p-lead">
-            侦探查比赛时用的模型和搜索服务，默认用平台的，也可以换成你自己的密钥。
+            {t('侦探查比赛时用的模型和搜索服务，默认用平台的，也可以换成你自己的密钥。')}
           </p>
         </div>
       </div>
       <div className="quota">
         <div className="sponsor">
           <img src="/brand/yuanbao.svg" alt="" />
-          <span>
-            由<b>腾讯元宝</b>提供技术支持
-          </span>
+          <span>{t('由 {provider} 提供技术支持', { provider: t('腾讯元宝') })}</span>
         </div>
         <p className="quota-big">
-          {quota.data?.unlimited === false ? '平台次数限制已开启' : '限时无限次'}
+          {quota.data?.unlimited === false ? t('平台次数限制已开启') : t('限时无限次')}
         </p>
         <p>
           {own
-            ? `问侦探现在走你自己的${saved.data?.llm_vendor === 'deepseek' ? ' DeepSeek ' : ''}密钥。`
-            : '问侦探、让它重新查证都不限次数。'}
+            ? t('问侦探现在走你自己的{provider}密钥。', {
+                provider: saved.data?.llm_vendor === 'deepseek' ? ' DeepSeek ' : '',
+              })
+            : t('问侦探、让它重新查证都不限次数。')}
         </p>
       </div>
       {error && (
         <p className="grp-note" role="alert">
-          {failure(error)}
+          {translateSystemText(locale, failure(error))}
         </p>
       )}
       <div className="grp">
         <div className="grp-head">
-          <h3>个人令牌</h3>
-          <span className="note">在 Claude、Cursor 里接 Inkpaw MCP 时用</span>
+          <h3>{t('个人令牌')}</h3>
+          <span className="note">{t('在 Claude、Cursor 里接 Inkpaw MCP 时用')}</span>
         </div>
-        <Row label="令牌" small="带上它，MCP 能读到你的画像、关注和追踪条件">
+        <Row label={t('令牌')} small={t('带上它，MCP 能读到你的画像、关注和追踪条件')}>
           <div className="copyrow">
             <input
               className="inp"
               readOnly
-              aria-label="个人令牌"
+              aria-label={t('个人令牌')}
               value={freshToken ?? masked}
-              placeholder="还没有生成个人令牌"
+              placeholder={t('还没有生成个人令牌')}
             />
             <button
               className="btn btn-outline"
@@ -242,16 +253,31 @@ export function KeysPanel() {
               }}
             >
               <Ic name="copy" />
-              复制
+              {t('复制')}
             </button>
           </div>
           <div className="ctl-line">
             <span className="muted">
               {freshToken
-                ? '刚生成，只完整显示这一次'
+                ? t('刚生成，只完整显示这一次')
                 : token.data
-                  ? `${day(token.data.created_at)}创建 · ${token.data.last_used_at ? '最近一次使用是' + day(token.data.last_used_at) + ' ' + new Date(token.data.last_used_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Shanghai' }) : '还没有使用过'}`
-                  : '还没有生成个人令牌'}
+                  ? t('{date}创建 · {lastUsed}', {
+                      date: day(token.data.created_at, locale),
+                      lastUsed: token.data.last_used_at
+                        ? t('最近一次使用是 {date}', {
+                            date:
+                              day(token.data.last_used_at, locale) +
+                              ' ' +
+                              new Date(token.data.last_used_at).toLocaleTimeString(locale, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hourCycle: 'h23',
+                                timeZone: 'Asia/Shanghai',
+                              }),
+                          })
+                        : t('还没有使用过'),
+                    })
+                  : t('还没有生成个人令牌')}
             </span>
             <button
               className="btn btn-ghost btn-sm"
@@ -260,22 +286,24 @@ export function KeysPanel() {
               onClick={() => void regenerate()}
             >
               <Ic name="refresh" />
-              重新生成
+              {t('重新生成')}
             </button>
           </div>
         </Row>
       </div>
       <div className="grp">
         <div className="grp-head">
-          <h3>模型</h3>
-          <span className="note">{own ? '用你的密钥 · 末 4 位 ' + own : '现在用平台的'}</span>
+          <h3>{t('模型')}</h3>
+          <span className="note">
+            {own ? t('用你的密钥 · 末 4 位 {last4}', { last4: own }) : t('现在用平台的')}
+          </span>
         </div>
-        <Row label="供应商">
+        <Row label={t('供应商')}>
           <Segments
-            label="模型供应商"
+            label={t('模型供应商')}
             values={[
               ['deepseek', 'DeepSeek'],
-              ['openai', '兼容 OpenAI 的接口'],
+              ['openai', t('兼容 OpenAI 的接口')],
             ]}
             value={vendor}
             change={(v) => {
@@ -285,33 +313,33 @@ export function KeysPanel() {
             }}
           />
         </Row>
-        <Row label="接口地址">
+        <Row label={t('接口地址')}>
           <input
             className="inp w-md"
-            aria-label="接口地址"
+            aria-label={t('接口地址')}
             placeholder="https://…/v1"
             value={base}
             onChange={(e) => setBase(e.target.value)}
           />
         </Row>
-        <Row label="模型">
+        <Row label={t('模型')}>
           <input
             className="inp w-sm"
-            aria-label="模型名"
-            placeholder="模型名"
+            aria-label={t('模型名')}
+            placeholder={t('模型名')}
             value={model}
             onChange={(e) => setModel(e.target.value)}
           />
         </Row>
         <Row label="API Key">
           <SecretField
-            label="模型 API Key"
+            label={t('模型 API Key')}
             value={key}
             change={(v) => {
               setKey(v)
               setMessage('')
             }}
-            placeholder={own ? '已保存 · 末 4 位 ' + own : 'sk-…'}
+            placeholder={own ? t('已保存 · 末 4 位 {last4}', { last4: own }) : 'sk-…'}
           />
           <div className="ctl-line">
             <button
@@ -330,7 +358,7 @@ export function KeysPanel() {
                 )
               }
             >
-              保存
+              {t('保存')}
             </button>
             <button
               className="btn btn-ghost btn-sm"
@@ -338,19 +366,19 @@ export function KeysPanel() {
               disabled={!key.trim() || !!busy}
               onClick={() => void test()}
             >
-              测试连接
+              {t('测试连接')}
             </button>
             <span className="field-msg" role="status">
               {busy === 'test' && <span className="spin" />}
-              {message}
+              {translateSystemText(locale, message)}
             </span>
           </div>
         </Row>
       </div>
       <div className="grp">
         <div className="grp-head">
-          <h3>搜索服务</h3>
-          <span className="note">两个都开着时，结果合在一起再查证</span>
+          <h3>{t('搜索服务')}</h3>
+          <span className="note">{t('两个都开着时，结果合在一起再查证')}</span>
         </div>
         <div>
           {providers.map((p) => {
@@ -363,10 +391,16 @@ export function KeysPanel() {
                     <Ic name={p.icon} large />
                   </div>
                   <div className="src-main">
-                    <b>{p.name}</b>
+                    <b>{translateSystemText(locale, p.name)}</b>
                     <p className="prov-st">
-                      {p.description} ·{' '}
-                      {last ? <span className="own">用你的密钥 · 末 4 位 {last}</span> : '用平台的'}
+                      {t(p.description)} ·{' '}
+                      {last ? (
+                        <span className="own">
+                          {t('用你的密钥 · 末 4 位 {last4}', { last4: last })}
+                        </span>
+                      ) : (
+                        t('用平台的')
+                      )}
                     </p>
                   </div>
                   {last ? (
@@ -376,7 +410,7 @@ export function KeysPanel() {
                         type="button"
                         onClick={() => setOpened(open ? null : p.id)}
                       >
-                        修改
+                        {t('修改')}
                       </button>
                       <button
                         className="btn btn-ghost btn-sm"
@@ -384,7 +418,7 @@ export function KeysPanel() {
                         disabled={!!busy}
                         onClick={() => void remove(p.id, p.name)}
                       >
-                        移除
+                        {t('移除')}
                       </button>
                     </div>
                   ) : (
@@ -393,7 +427,7 @@ export function KeysPanel() {
                       type="button"
                       onClick={() => setOpened(open ? null : p.id)}
                     >
-                      填自己的密钥
+                      {t('填自己的密钥')}
                     </button>
                   )}
                 </div>
@@ -414,7 +448,7 @@ export function KeysPanel() {
                       <label key={field}>
                         {label}
                         <SecretField
-                          label={p.name + ' ' + label}
+                          label={translateSystemText(locale, p.name) + ' ' + label}
                           value={fields[field] ?? ''}
                           change={(value) => setFields((v) => ({ ...v, [field]: value }))}
                           placeholder={placeholder}
@@ -427,7 +461,7 @@ export function KeysPanel() {
                         type="submit"
                         disabled={!!busy || p.fields.some(([field]) => !fields[field]?.trim())}
                       >
-                        保存
+                        {t('保存')}
                       </button>
                       <button
                         className="btn btn-ghost btn-sm"
@@ -437,7 +471,7 @@ export function KeysPanel() {
                           setFields({})
                         }}
                       >
-                        取消
+                        {t('取消')}
                       </button>
                     </div>
                   </form>
@@ -446,19 +480,21 @@ export function KeysPanel() {
             )
           })}
         </div>
-        <p className="safe">密钥加密保存，只用在你自己发起的查询里；保存后页面上只显示末 4 位。</p>
+        <p className="safe">
+          {t('密钥加密保存，只用在你自己发起的查询里；保存后页面上只显示末 4 位。')}
+        </p>
       </div>
       <div className="grp">
         <div className="grp-head">
-          <h3>搜索偏好</h3>
+          <h3>{t('搜索偏好')}</h3>
         </div>
-        <Row label="来源范围">
+        <Row label={t('来源范围')}>
           <Segments
-            label="来源范围"
+            label={t('来源范围')}
             values={[
-              ['all', '国内和海外'],
-              ['cn', '只看国内'],
-              ['intl', '只看海外'],
+              ['all', t('国内和海外')],
+              ['cn', t('只看国内')],
+              ['intl', t('只看海外')],
             ]}
             value={prefs.scope}
             change={(scope) => updateSearch.mutate({ ...prefs, scope })}
@@ -466,21 +502,21 @@ export function KeysPanel() {
         </Row>
         <div className="trow">
           <div>
-            <label htmlFor="sr-ended">默认不看已截止的比赛</label>
-            <p>问侦探时，已经过了截止时间的比赛不进结果</p>
+            <label htmlFor="sr-ended">{t('默认不看已截止的比赛')}</label>
+            <p>{t('问侦探时，已经过了截止时间的比赛不进结果')}</p>
           </div>
           <Switch
             id="sr-ended"
-            label="默认不看已截止的比赛"
+            label={t('默认不看已截止的比赛')}
             on={prefs.exclude_ended ?? true}
             change={(exclude_ended) => updateSearch.mutate({ ...prefs, exclude_ended })}
             disabled={updateSearch.isPending}
           />
         </div>
-        <Row label="不看这些网站" small="转载站、聚合站">
+        <Row label={t('不看这些网站')} small={t('转载站、聚合站')}>
           <Tags
             values={prefs.blocked_domains ?? []}
-            placeholder="比如 example.com，回车"
+            placeholder={t('比如 example.com，回车')}
             change={(blocked_domains) => updateSearch.mutate({ ...prefs, blocked_domains })}
           />
         </Row>

@@ -4,8 +4,10 @@ import { ContestCard, createContestCalendar, listAllContests } from '@/entities/
 import { Button, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 import { FollowButton } from './follow-button'
 import type { FollowController } from './model'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function FollowedContests({ follows }: { follows: FollowController }) {
+  const { locale, t } = useLocale()
   const [downloadError, setDownloadError] = useState<Error | null>(null)
   const query = useQuery({
     queryKey: ['followed-contests', follows.ids],
@@ -14,13 +16,13 @@ export function FollowedContests({ follows }: { follows: FollowController }) {
   })
   function download() {
     try {
-      const value = createContestCalendar(query.data ?? [])
+      const value = createContestCalendar(query.data ?? [], locale)
       if (!value) throw new Error('关注赛事中没有可导出的已知日期')
       const url = URL.createObjectURL(new Blob([value], { type: 'text/calendar;charset=utf-8' }))
       try {
         const link = document.createElement('a')
         link.href = url
-        link.download = '关注的比赛.ics'
+        link.download = t('关注的比赛.ics')
         link.click()
       } finally {
         URL.revokeObjectURL(url)
@@ -38,7 +40,7 @@ export function FollowedContests({ follows }: { follows: FollowController }) {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="followed-contests-title" className="text-2xl font-bold text-ink">
-          我的关注
+          {t('我的关注')}
         </h2>
         <Button
           type="button"
@@ -47,13 +49,13 @@ export function FollowedContests({ follows }: { follows: FollowController }) {
           onClick={download}
           disabled={!follows.ids.length || !query.data?.length}
         >
-          导出日历
+          {t('导出日历')}
         </Button>
       </div>
       {follows.error && <ErrorState error={new Error(follows.error)} />}
       {downloadError && <ErrorState error={downloadError} />}
       {!follows.ids.length ? (
-        <EmptyState>先关注一场赛事</EmptyState>
+        <EmptyState>{t('先关注一场赛事')}</EmptyState>
       ) : query.isPending ? (
         <Skeleton />
       ) : query.isError ? (
@@ -69,7 +71,7 @@ export function FollowedContests({ follows }: { follows: FollowController }) {
           ))}
         </div>
       ) : (
-        <EmptyState>关注的赛事暂时无法获取</EmptyState>
+        <EmptyState>{t('关注的赛事暂时无法获取')}</EmptyState>
       )}
     </section>
   )

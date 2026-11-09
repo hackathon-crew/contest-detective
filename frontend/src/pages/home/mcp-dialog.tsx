@@ -5,9 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/di
 import { McpIntro } from './home-content'
 import { McpPanel } from './mcp-panel'
 import './home-page.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 /** #mcp 同时保留原有接入链接，以及打开弹窗前的页面和筛选条件。 */
 export function McpDialog() {
+  const { t } = useLocale()
   const location = useLocation()
   const navigate = useNavigate()
   const open = location.hash === '#mcp'
@@ -41,7 +43,7 @@ export function McpDialog() {
       >
         <DialogHeader className="shrink-0 pr-8">
           <DialogTitle ref={title} tabIndex={-1} className="outline-none">
-            接入 MCP
+            {t('接入 MCP')}
           </DialogTitle>
         </DialogHeader>
         <div className="inkpaw-home mcp-dialog-body">

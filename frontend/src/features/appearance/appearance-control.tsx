@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { Button } from '@/shared/ui'
 import '@/shared/ui/site.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 type Theme = 'system' | 'light' | 'dark'
 const key = 'contest-detective.theme'
 const changed = 'contest-detective-theme'
@@ -43,6 +44,7 @@ function subscribeSystem(notify: () => void) {
   return () => media?.removeEventListener('change', notify)
 }
 export function AppearanceControl({ segmented = false }: { segmented?: boolean }) {
+  const { t } = useLocale()
   const theme = useSyncExternalStore(subscribe, read)
   const systemDark = useSyncExternalStore(subscribeSystem, readSystemDark)
   const resolved = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme
@@ -53,12 +55,12 @@ export function AppearanceControl({ segmented = false }: { segmented?: boolean }
   const dark = resolved === 'dark'
   if (segmented)
     return (
-      <div className="site-seg" role="group" aria-label="外观">
+      <div className="site-seg" role="group" aria-label={t('外观')}>
         {(
           [
-            ['system', '跟随系统'],
-            ['light', '浅色'],
-            ['dark', '深色'],
+            ['system', t('跟随系统')],
+            ['light', t('浅色')],
+            ['dark', t('深色')],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -72,7 +74,7 @@ export function AppearanceControl({ segmented = false }: { segmented?: boolean }
         ))}
       </div>
     )
-  const label = dark ? '切换到浅色' : '切换到深色'
+  const label = t(dark ? '切换到浅色' : '切换到深色')
   return (
     <Button
       variant="ghost"

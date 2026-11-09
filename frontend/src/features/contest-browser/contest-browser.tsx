@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, List, SlidersHorizontal, X } f
 import { ContestCard, ContestSeriesRow, type LibraryRow } from '@/entities/contest'
 import { ErrorState, Skeleton } from '@/shared/ui'
 import { activeFilters, type ContestBrowserModel } from './browser-state'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function LibraryRows({
   rows,
@@ -48,15 +49,17 @@ export function ContestBrowser({
   renderAction?: (id: string) => ReactNode
   reasons?: Map<string, string>
 }) {
+  const { locale, t } = useLocale()
   const { filters, query, rows, params, page, pages, setParams, change, clear, total } = browser
-  const active = activeFilters(filters)
+  const active = activeFilters(filters, locale)
   const empty = filters.mine && !browser.hasFollows
   return (
     <div className="results" aria-busy={query.isFetching}>
       <div className="res-bar">
         <div className="res-left">
           <span className="res-count" aria-live="polite">
-            {query.complete ? '共' : '已找到'} <b>{total}</b> 场
+            {query.complete ? t('共') : t('已找到')} <b>{total}</b>{' '}
+            {locale === 'en' && total === 1 ? 'contest' : t('场')}
           </span>
           <div className="actives">
             {active.map((item) => (
@@ -64,7 +67,7 @@ export function ContestBrowser({
                 className="achip"
                 type="button"
                 key={item.key}
-                aria-label={'去掉 ' + item.label}
+                aria-label={t('去掉 {filter}', { filter: item.label })}
                 onClick={() => change(item.patch)}
               >
                 {item.label}
@@ -80,49 +83,49 @@ export function ContestBrowser({
             onClick={onOpenFilters}
           >
             <SlidersHorizontal className="ic" />
-            筛选
+            {t('筛选')}
             {active.filter((item) => item.key !== 'keyword').length > 0 && (
               <span className="badge">
                 {active.filter((item) => item.key !== 'keyword').length}
               </span>
             )}
           </button>
-          <div className="seg" role="group" aria-label="排序">
-            {[
-              ['preparation', '准备时间优先'],
-              ['deadline', '截止最近'],
-              ['start', '开赛最早'],
-            ].map(([sort, label]) => (
+          <div className="seg" role="group" aria-label={t('排序')}>
+            {(
+              [
+                ['preparation', t('准备时间优先')],
+                ['deadline', t('截止最近')],
+                ['start', t('开赛最早')],
+              ] as const
+            ).map(([sort, label]) => (
               <button
                 type="button"
                 key={sort}
                 aria-pressed={params.sort === sort}
-                onClick={() =>
-                  void setParams({ sort: sort as 'preparation' | 'deadline' | 'start', page: 1 })
-                }
+                onClick={() => void setParams({ sort, page: 1 })}
               >
                 {label}
               </button>
             ))}
           </div>
-          <div className="seg" role="group" aria-label="视图" id="view">
+          <div className="seg" role="group" aria-label={t('视图')} id="view">
             <button
               type="button"
-              aria-label="列表"
+              aria-label={t('列表')}
               aria-pressed={params.view === 'list'}
               onClick={() => void setParams({ view: 'list' })}
             >
               <List className="ic" />
-              <span className="v-txt">列表</span>
+              <span className="v-txt">{t('列表')}</span>
             </button>
             <button
               type="button"
-              aria-label="日历"
+              aria-label={t('日历')}
               aria-pressed={params.view !== 'list'}
               onClick={() => void setParams({ view: 'calendar' })}
             >
               <CalendarDays className="ic" />
-              <span className="v-txt">日历</span>
+              <span className="v-txt">{t('日历')}</span>
             </button>
           </div>
           {exportAction}
@@ -131,28 +134,30 @@ export function ContestBrowser({
       {profile}
       {query.data && !query.complete && (
         <p className="note" role="status">
-          已加载 {query.data.length} 场{query.isFetching ? '，继续读取中。' : '。'}
+          {t(query.isFetching ? '已加载 {count} 场，继续读取中。' : '已加载 {count} 场。', {
+            count: query.data.length,
+          })}
         </p>
       )}
       {query.isError && <ErrorState error={query.error} retry={() => void query.refetch()} />}
       {query.isPending ? (
         <Skeleton className="mt-4 h-32 w-full" />
       ) : query.isError && !query.data ? null : !total && !query.complete ? (
-        <div className="empty">其余赛事尚未读取完成。</div>
+        <div className="empty">{t('其余赛事尚未读取完成。')}</div>
       ) : !total ? (
         <div className="empty">
-          <b>{empty ? '还没有关注的比赛' : '没有符合条件的比赛'}</b>
+          <b>{empty ? t('还没有关注的比赛') : t('没有符合条件的比赛')}</b>
           <span>
             {empty
-              ? '点每场右边的书签就能关注，关注的比赛在日历上标成蓝色。'
-              : '放宽截止时间或参赛形式再看看。'}
+              ? t('点每场右边的书签就能关注，关注的比赛在日历上标成蓝色。')
+              : t('放宽截止时间或参赛形式再看看。')}
           </span>
           <button
             className="site-button site-button--outline"
             type="button"
             onClick={() => (empty ? change({ mine: false }) : clear())}
           >
-            {empty ? '看全部比赛' : '清除筛选'}
+            {empty ? t('看全部比赛') : t('清除筛选')}
           </button>
         </div>
       ) : params.view !== 'list' ? (
@@ -167,10 +172,10 @@ export function ContestBrowser({
             reasons={reasons}
           />
           {pages > 1 && (
-            <nav className="pager" aria-label="赛事分页">
+            <nav className="pager" aria-label={t('赛事分页')}>
               <button
                 type="button"
-                aria-label="上一页"
+                aria-label={t('上一页')}
                 disabled={page <= 1}
                 onClick={() => void setParams({ page: page - 1 })}
               >
@@ -188,7 +193,7 @@ export function ContestBrowser({
               ))}
               <button
                 type="button"
-                aria-label="下一页"
+                aria-label={t('下一页')}
                 disabled={page >= pages}
                 onClick={() => void setParams({ page: page + 1 })}
               >

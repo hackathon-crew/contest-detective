@@ -7,6 +7,7 @@ import { Button } from '@/shared/ui'
 import { ScreenshotDialog } from './screenshot-dialog'
 import type { ScreenshotConfirmation } from './screenshot-contracts'
 import type { VerificationOptions } from './verification-contracts'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export type DetectiveContextAction = 'github' | 'profile' | 'filters'
 
@@ -19,7 +20,7 @@ export function DetectiveComposer({
   onAddProfile,
   onVerifyScreenshot,
   inputRef,
-  placeholder = '问一个问题',
+  placeholder,
   profileGuide,
   attachment,
 }: {
@@ -35,6 +36,7 @@ export function DetectiveComposer({
   profileGuide?: { onDismiss: () => void; onCreate: () => void }
   attachment?: ReactNode
 }) {
+  const { t } = useLocale()
   const [screenshotOpen, setScreenshotOpen] = useState(false)
   const addButton = useRef<HTMLButtonElement>(null)
   return (
@@ -65,8 +67,8 @@ export function DetectiveComposer({
                   ref={addButton}
                   type="button"
                   className="detective-composer__add"
-                  aria-label="添加简历或参赛资料"
-                  title="添加简历或参赛资料"
+                  aria-label={t('添加简历或参赛资料')}
+                  title={t('添加简历或参赛资料')}
                   disabled={pending || (!onAddProfile && !onVerifyScreenshot)}
                 >
                   <Plus aria-hidden="true" strokeWidth={1.5} />
@@ -78,7 +80,7 @@ export function DetectiveComposer({
                 align="start"
                 sideOffset={8}
                 collisionPadding={24}
-                aria-label="添加参赛资料"
+                aria-label={t('添加参赛资料')}
                 className="z-50 w-64 origin-(--radix-dropdown-menu-content-transform-origin) rounded-3xl border border-rule bg-surface p-2 text-base text-ink shadow-lg outline-none duration-140 ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
               >
                 {onVerifyScreenshot && (
@@ -88,7 +90,7 @@ export function DetectiveComposer({
                     onSelect={() => setScreenshotOpen(true)}
                   >
                     <ImagePlus className="size-5" aria-hidden="true" strokeWidth={1.5} />
-                    截图查证（暂不可用）
+                    {t('截图查证（暂不可用）')}
                   </DropdownMenu.Item>
                 )}
                 {onAddProfile && (
@@ -98,21 +100,21 @@ export function DetectiveComposer({
                       onSelect={() => onAddProfile?.('github')}
                     >
                       <img src={githubMark} alt="" className="size-5 shrink-0 dark:invert" />
-                      连接到 GitHub
+                      {t('连接到 GitHub')}
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                       onSelect={() => onAddProfile?.('profile')}
                     >
                       <ProfileIcon className="size-5" />
-                      添加画像
+                      {t('添加画像')}
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
                       className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                       onSelect={() => onAddProfile?.('filters')}
                     >
                       <ContestFilterIcon className="size-5" />
-                      添加比赛筛选
+                      {t('添加比赛筛选')}
                     </DropdownMenu.Item>
                   </>
                 )}
@@ -125,28 +127,30 @@ export function DetectiveComposer({
               align="start"
               sideOffset={12}
               collisionPadding={24}
-              aria-label="建立参赛画像"
+              aria-label={t('建立参赛画像')}
               className="z-50 grid w-85 max-w-(--radix-popover-content-available-width) origin-(--radix-popover-content-transform-origin) gap-3 rounded-3xl bg-surface p-6 text-ink-soft shadow-lg outline-none duration-140 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:pointer-events-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
               onOpenAutoFocus={(event) => event.preventDefault()}
               onCloseAutoFocus={(event) => event.preventDefault()}
             >
               <header className="flex items-center justify-between gap-2">
-                <h3 className="text-base font-medium text-ink">建立参赛画像</h3>
+                <h3 className="text-base font-medium text-ink">{t('建立参赛画像')}</h3>
                 <Popover.Close asChild>
-                  <Button type="button" variant="ghost" size="icon" aria-label="关闭画像提示">
+                  <Button type="button" variant="ghost" size="icon" aria-label={t('关闭画像提示')}>
                     <X aria-hidden="true" />
                   </Button>
                 </Popover.Close>
               </header>
-              <p className="text-sm">点击加号，导入简历或连接 GitHub，让比赛推荐更适合你。</p>
+              <p className="text-sm">
+                {t('点击加号，导入简历或连接 GitHub，让比赛推荐更适合你。')}
+              </p>
               <div className="flex items-center justify-between gap-2">
                 <Popover.Close asChild>
                   <Button type="button" variant="ghost" size="sm">
-                    稍后再说
+                    {t('稍后再说')}
                   </Button>
                 </Popover.Close>
                 <Button type="button" size="sm" onClick={profileGuide?.onCreate}>
-                  建立画像
+                  {t('建立画像')}
                 </Button>
               </div>
               <Popover.Arrow width={16} height={8} className="fill-surface" aria-hidden="true" />
@@ -155,8 +159,9 @@ export function DetectiveComposer({
         </Popover.Root>
         <textarea
           ref={inputRef}
-          aria-label="问侦探"
-          placeholder={placeholder}
+          data-detective-input
+          aria-label={t('问侦探')}
+          placeholder={placeholder ?? t('问一个问题')}
           value={value}
           rows={1}
           disabled={pending}
@@ -176,8 +181,8 @@ export function DetectiveComposer({
         <button
           type={pending ? 'button' : 'submit'}
           className="detective-composer__send"
-          aria-label={pending ? '停止查证' : '查证'}
-          title={pending ? '停止查证' : '查证'}
+          aria-label={pending ? t('停止查证') : t('查证')}
+          title={pending ? t('停止查证') : t('查证')}
           disabled={!pending && !value.trim()}
           onClick={pending ? onStop : undefined}
         >

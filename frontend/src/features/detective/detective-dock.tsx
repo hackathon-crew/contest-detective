@@ -6,6 +6,7 @@ import type { VerificationOptions } from './verification-contracts'
 import { DetectiveComposer, type DetectiveContextAction } from './detective-composer'
 import { useDetective } from './detective-context'
 import './detective-composer.css'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function DetectiveDock({
   profile,
@@ -14,6 +15,7 @@ export function DetectiveDock({
   profile?: Profile | null
   onAddProfile?: (section: DetectiveContextAction) => void
 }) {
+  const { t } = useLocale()
   const location = useLocation()
   const [question, setQuestion] = useState(() => personalIntent(location).question ?? '')
   const { send } = useDetective()
@@ -28,7 +30,10 @@ export function DetectiveDock({
     navigate(`/detective/${id}`)
   }
   return (
-    <section aria-label="侦探" className="detective-dock fixed inset-x-6 bottom-4 z-10 mx-auto">
+    <section
+      aria-label={t('侦探')}
+      className="detective-dock fixed inset-x-6 bottom-4 z-10 mx-auto"
+    >
       <DetectiveComposer
         value={question}
         pending={false}

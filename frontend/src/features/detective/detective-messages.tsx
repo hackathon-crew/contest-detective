@@ -6,6 +6,7 @@ import { Button } from '@/shared/ui/button'
 import { ContestReference } from './contest-reference'
 import { useDetective } from './detective-context'
 import { safeUrl } from '@/entities/contest'
+import { translateSystemText } from '@/shared/i18n'
 import inkpawMark from '@/shared/assets/inkpaw-mark-32.webp'
 import type { DetectiveTurn } from './conversation'
 import type { TraceSource } from './events'
@@ -23,8 +24,10 @@ import { reportStatusNames } from './verification-report'
 import { ProfileFileAttachment, RecommendationCards } from './detective-results'
 import type { ReactNode } from 'react'
 import type { ContestRecommendation } from './conversation'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 function Sources({ items }: { items: TraceSource[] }) {
+  const { t } = useLocale()
   const cited = [
     ...new Map(
       items.filter((source) => safeUrl(source.url)).map((source) => [source.url, source]),
@@ -32,7 +35,7 @@ function Sources({ items }: { items: TraceSource[] }) {
   ]
   if (!cited.length) return null
   return (
-    <footer aria-label="引用来源">
+    <footer aria-label={t('引用来源')}>
       <ul className="detective-sources">
         {cited.map((source, index) => (
           <li key={`${source.url}-${index}`}>
@@ -53,6 +56,7 @@ function Sources({ items }: { items: TraceSource[] }) {
 }
 
 function ToolActivity({ turn }: { turn: DetectiveTurn }) {
+  const { locale, t } = useLocale()
   const steps: {
     label: string
     tool: string
@@ -84,16 +88,16 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
   const failed = steps.some((step) => step.execution?.status === 'failure')
   const unfinished = steps.some((step) => step.summary === undefined)
   const label = turn.report
-    ? reportStatusNames[turn.report.status]
+    ? t(reportStatusNames[turn.report.status])
     : active
-      ? `正在${steps.at(-1)!.label}`
+      ? t('正在{step}', { step: translateSystemText(locale, steps.at(-1)!.label) })
       : turn.status === 'stopped'
-        ? `已停止，完成 ${completed} 项检索`
+        ? t('已停止，完成 {count} 项检索', { count: completed })
         : turn.status === 'error'
-          ? '检索未完成'
+          ? t('检索未完成')
           : failed || unfinished
-            ? `检索未完成，成功 ${completed} 项`
-            : `已完成 ${completed} 项检索`
+            ? t('检索未完成，成功 {count} 项', { count: completed })
+            : t('已完成 {count} 项检索', { count: completed })
   return (
     <details className="detective-tools">
       <summary aria-label={label}>
@@ -114,17 +118,17 @@ function ToolActivity({ turn }: { turn: DetectiveTurn }) {
         {steps.map((step, index) => (
           <li key={index}>
             <div className="detective-tools__heading">
-              <strong>{step.label}</strong>
+              <strong>{translateSystemText(locale, step.label)}</strong>
               {step.execution?.status === 'failure' ? (
-                <span>失败</span>
+                <span>{t('失败')}</span>
               ) : step.status === 'continuing' ? (
-                <ChevronRight aria-label="继续查找" />
+                <ChevronRight aria-label={t('继续查找')} />
               ) : step.summary !== undefined ? (
-                <Check aria-label="已完成" />
+                <Check aria-label={t('已完成')} />
               ) : turn.status === 'running' ? (
-                <LoaderCircle className="detective-spin" aria-label="进行中" />
+                <LoaderCircle className="detective-spin" aria-label={t('进行中')} />
               ) : (
-                <Square aria-label="已停止" />
+                <Square aria-label={t('已停止')} />
               )}
             </div>
             {step.summary && <p>{step.summary}</p>}
@@ -146,10 +150,11 @@ const markdownComponents = {
 }
 
 function RetryInvestigation({ turnId }: { turnId: string }) {
+  const { t } = useLocale()
   const { retry } = useDetective()
   return (
     <Button variant="outline" size="sm" onClick={() => retry(turnId)}>
-      一键重查
+      {t('一键重查')}
     </Button>
   )
 }
@@ -165,9 +170,13 @@ export function DetectiveMessage({
   saveAction?: ReactNode
   onProvideLink?: () => void
 }) {
+  const { locale, t } = useLocale()
   const paced = useStreamPacer(turn.content, turn.status === 'running')
   return (
-    <article className="detective-turn" aria-label={`关于${turn.question}的对话`}>
+    <article
+      className="detective-turn"
+      aria-label={t('关于{topic}的对话', { topic: turn.question })}
+    >
       <div className="detective-turn__question">
         {turn.profileFile && <ProfileFileAttachment file={turn.profileFile} />}
         {turn.request?.contest && (
@@ -204,7 +213,7 @@ export function DetectiveMessage({
             !turn.plan &&
             (!turn.trace.length || turn.trace.at(-1)?.type === 'observation') && (
               <p className="detective-thinking" role="status">
-                {turn.trace.length ? '正在查找资料' : '正在看你的问题'}
+                {turn.trace.length ? t('正在查找资料') : t('正在看你的问题')}
               </p>
             )}
           {(!turn.report || turn.report.status !== 'complete') && paced.visible && (
@@ -231,12 +240,12 @@ export function DetectiveMessage({
               className="detective-turn__error"
               role={turn.status === 'error' ? 'alert' : 'status'}
             >
-              {turn.error}
+              {translateSystemText(locale, turn.error)}
             </p>
           )}
           {turn.action === 'settings' && (
             <Button asChild variant="outline" size="sm">
-              <Link to="/account/keys">账户设置</Link>
+              <Link to="/account/keys">{t('账户设置')}</Link>
             </Button>
           )}
           {turn.action === 'retry' && turn.status !== 'running' && (
@@ -250,11 +259,11 @@ export function DetectiveMessage({
                 onProvideLink ??
                 (() =>
                   document
-                    .querySelector<HTMLTextAreaElement>('textarea[aria-label="问侦探"]')
+                    .querySelector<HTMLTextAreaElement>('textarea[data-detective-input]')
                     ?.focus())
               }
             >
-              贴官网链接
+              {t('贴官网链接')}
             </Button>
           )}
         </div>

@@ -2,13 +2,16 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useCurrentUser } from '@/entities/user'
 import { useFollows } from '@/features/follow'
-import { contestCity, libraryDate, modeNames, normalizedPrize } from '@/entities/contest'
+import { monthDay, contestCity, libraryDate, modeNames, normalizedPrize } from '@/entities/contest'
 import { apiClient } from '@/shared/api'
 import type { CalendarRead, FollowRead, PushRead } from '@/shared/api/generated'
 import { copy, failure, Ic, Row, useNotice } from './components'
 import { WatchPanel } from './watch-panel'
+import { translateSystemText } from '@/shared/i18n'
+import { useLocale } from '@/shared/i18n/locale-context'
 
 export function FollowsPanel() {
+  const { locale, t } = useLocale()
   const { data: user } = useCurrentUser(),
     follows = useFollows(),
     notice = useNotice()
@@ -44,8 +47,8 @@ export function FollowsPanel() {
       await follows.setReminders(row.contest.id, !row.reminders)
       notice(
         row.reminders
-          ? `不再提醒「${row.contest.name}」的截止`
-          : `会在截止前提醒「${row.contest.name}」`,
+          ? t('不再提醒「{name}」的截止', { name: row.contest.name })
+          : t('会在截止前提醒「{name}」', { name: row.contest.name }),
       )
     } catch (e) {
       setError(failure(e))
@@ -86,12 +89,19 @@ export function FollowsPanel() {
       const reminder = closed
         ? ''
         : !row.reminders
-          ? '不提醒'
+          ? t('不提醒')
           : days.length
-            ? `截止前 ${days.join('、')} 天提醒`
-            : '只在信息变动时提醒'
+            ? t(days.length === 1 && days[0] === 1 ? '截止前 1 天提醒' : '截止前 {days} 天提醒', {
+                days: days.join(locale === 'en' ? ', ' : '、'),
+              })
+            : t('只在信息变动时提醒')
       const meta = [
-        c.fields.mode?.value === 'hybrid' ? '线上+线下' : modeNames[c.fields.mode?.value ?? ''],
+        translateSystemText(
+          locale,
+          c.fields.mode?.value === 'hybrid'
+            ? '线上+线下'
+            : (modeNames[c.fields.mode?.value ?? ''] ?? ''),
+        ),
         contestCity(c),
         normalizedPrize(c.fields.prize?.value),
       ]
@@ -100,10 +110,10 @@ export function FollowsPanel() {
       const near = !due
         ? ''
         : closed
-          ? '已截止'
+          ? t('已截止')
           : due.left === 0
-            ? '今天截止'
-            : `还有 ${due.left} 天`
+            ? t('今天截止')
+            : t(due.left === 1 ? '还有 1 天' : '还有 {days} 天', { days: due.left })
       return (
         <li
           className={
@@ -126,19 +136,17 @@ export function FollowsPanel() {
           <div className="f-date">
             {due ? (
               <>
-                <b>
-                  {+due.day.slice(5, 7)}月{+due.day.slice(8, 10)}日
-                </b>
+                <b>{monthDay(due.day, locale)}</b>
                 <span className="k">
                   {due.field === 'registration_deadline'
-                    ? '报名截止'
+                    ? t('报名截止')
                     : due.field === 'submission_deadline'
-                      ? '作品提交截止'
-                      : '截止'}
+                      ? t('作品提交截止')
+                      : t('截止')}
                 </span>
               </>
             ) : (
-              <b className="f-unknown">没写截止</b>
+              <b className="f-unknown">{t('没写截止')}</b>
             )}
             {near && (
               <span className={'soon' + (!closed && due && due.left <= 2 ? ' hot' : '')}>
@@ -152,7 +160,7 @@ export function FollowsPanel() {
                 className="iconbtn bell"
                 type="button"
                 aria-pressed={row.reminders}
-                aria-label={(row.reminders ? '关掉' : '打开') + '这场的截止提醒'}
+                aria-label={t(row.reminders ? '关掉这场的截止提醒' : '打开这场的截止提醒')}
                 disabled={follows.pending}
                 onClick={() => void remind(row)}
               >
@@ -162,7 +170,7 @@ export function FollowsPanel() {
             <button
               className="iconbtn unfollow"
               type="button"
-              aria-label="取消关注"
+              aria-label={t('取消关注')}
               disabled={follows.pending}
               onClick={() => void remove(row)}
             >
@@ -182,19 +190,22 @@ export function FollowsPanel() {
     >
       <div className="p-head">
         <div>
-          <h2 id="h-follows">关注的比赛</h2>
+          <h2 id="h-follows">{t('关注的比赛')}</h2>
           <p className="p-lead">
             {follows.pending && !rows.length
-              ? '正在读取关注的比赛…'
+              ? t('正在读取关注的比赛…')
               : live.length
-                ? `关注了 ${live.length} 场还没截止的比赛${soon ? `，${soon} 场 7 天内截止` : ''}。`
-                : '还没有关注的比赛。在赛事库里点书签就会出现在这里。'}
+                ? t('关注了 {count} 场还没截止的比赛{soon}。', {
+                    count: live.length,
+                    soon: soon ? t('，{count} 场 7 天内截止', { count: soon }) : '',
+                  })
+                : t('还没有关注的比赛。在赛事库里点书签就会出现在这里。')}
           </p>
         </div>
       </div>
       {(follows.error || error) && (
         <p className="grp-note" role="alert">
-          {error || follows.error}
+          {translateSystemText(locale, error || follows.error!)}
         </p>
       )}
       <ul id="fols">{items(live)}</ul>
@@ -206,7 +217,8 @@ export function FollowsPanel() {
             aria-expanded={endedOpen}
             onClick={() => setEndedOpen(!endedOpen)}
           >
-            已截止 {ended.length} 场<Ic name="chev-down" />
+            {t('已截止 {count} 场', { count: ended.length })}
+            <Ic name="chev-down" />
           </button>
           <ul hidden={!endedOpen}>{items(ended)}</ul>
         </div>
@@ -214,15 +226,15 @@ export function FollowsPanel() {
       <WatchPanel followedIds={follows.rows.map((row) => row.contest.id)} />
       <div className="grp">
         <div className="grp-head">
-          <h3>订阅到日历</h3>
+          <h3>{t('订阅到日历')}</h3>
         </div>
-        <Row label="订阅链接" small="Apple 日历、Google 日历、Outlook 都能用">
+        <Row label={t('订阅链接')} small={t('Apple 日历、Google 日历、Outlook 都能用')}>
           <div className="copyrow">
             <input
               className="inp"
               readOnly
               value={calendar.data?.url ?? ''}
-              aria-label="日历订阅链接"
+              aria-label={t('日历订阅链接')}
             />
             <button
               className="btn btn-outline"
@@ -231,10 +243,12 @@ export function FollowsPanel() {
               onClick={() => void copy(calendar.data!.url, notice)}
             >
               <Ic name="copy" />
-              复制
+              {t('复制')}
             </button>
           </div>
-          <p className="field-msg">关注的比赛的截止日期会出现在你的日历里，取消关注后自动移除。</p>
+          <p className="field-msg">
+            {t('关注的比赛的截止日期会出现在你的日历里，取消关注后自动移除。')}
+          </p>
           {calendar.error && (
             <p className="field-msg err" role="alert">
               {failure(calendar.error)}
