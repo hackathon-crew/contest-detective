@@ -1,20 +1,27 @@
 {
   "name": "@inkpaw/anna-app",
-  "version": "0.0.0-skeleton",
+  "version": "0.1.0-candidate",
   "private": true,
   "type": "module",
   "license": "PolyForm-Noncommercial-1.0.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "validate": "anna-app validate --strict",
-    "check": "npm run typecheck && npm test && npm run validate",
-    "pack:offline": "node scripts/package.mjs"
+    "test:browser": "node tests/browser.mjs",
+    "validate": "anna-app validate --strict --bundle dist/bundle",
+    "check": "npm run format:check && npm run typecheck && npm test && npm run build && npm run validate",
+    "pack:offline": "npm run build",
+    "format:check": "prettier --check bundle src tests scripts *.json README.md"
   },
   "devDependencies": {
-    "@anna-ai/cli": "0.1.64",
     "@anna-ai/app-schema": "0.33.0",
+    "@anna-ai/cli": "0.1.64",
+    "playwright-core": "1.58.2",
+    "prettier": "3.6.2",
     "typescript": "5.9.3"
   }
 }

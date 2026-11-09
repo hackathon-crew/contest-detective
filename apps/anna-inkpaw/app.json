@@ -1,6 +1,6 @@
 {
   "name": "Inkpaw",
-  "tagline": "Anna architecture skeleton. Opportunity matching is not implemented.",
-  "description": "Development skeleton only. No searches, profiles or recommendations run in this version.",
+  "tagline": "Find contest opportunities with a confirmed profile and traceable sources.",
+  "description": "Anna-native candidate build. Describe your interests, review and confirm an editable profile, then explicitly start a bounded public-source search using your Anna quota. Each result links to source evidence and exposes missing or conflicting facts. Source coverage is limited; fewer or zero results are possible. Confirmed profiles and manual bookmarks stay in your own app storage. No local Agent, third-party credentials, resumes or old Inkpaw account are required. Real Anna end-to-end validation and publication are pending.",
   "category": "education"
 }
