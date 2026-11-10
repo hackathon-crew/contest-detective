@@ -41,13 +41,25 @@
   --danger: var(--color-danger);
   --danger-soft: var(--color-danger-soft);
   --shadow-float:
-    light-dark(0 0 0 1px rgb(17 17 17 / 7%), 0 0 0 1px rgb(255 255 255 / 6%)),
-    light-dark(0 8px 32px rgb(17 17 17 / 10%), 0 8px 32px rgb(0 0 0 / 36%));
-  --shadow-dlg: light-dark(0 24px 64px rgb(17 17 17 / 18%), 0 24px 64px rgb(0 0 0 / 48%));
-  --header: light-dark(rgb(255 255 255 / 78%), rgb(28 30 29 / 78%));
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --unigate-soft: light-dark(#edf5ff, #192c52);
-  --unigate-grid-line: light-dark(rgb(15 23 42 / 8%), rgb(255 255 255 / 7%));
+    0 0 0 1px
+      light-dark(
+        color-mix(in srgb, var(--ink) 7%, transparent),
+        color-mix(in srgb, var(--ink) 6%, transparent)
+      ),
+    0 8px 32px
+      light-dark(
+        color-mix(in srgb, var(--ink) 10%, transparent),
+        color-mix(in srgb, var(--color-scrim) 64%, transparent)
+      );
+  --shadow-dlg: 0 24px 64px
+    light-dark(
+      color-mix(in srgb, var(--ink) 18%, transparent),
+      color-mix(in srgb, var(--color-scrim) 86%, transparent)
+    );
+  --header: color-mix(in srgb, var(--page) 78%, transparent);
+  --ease: var(--ease-out);
+  --unigate-soft: var(--accent-soft);
+  --unigate-grid-line: color-mix(in srgb, var(--ink) 8%, transparent);
   --unigate-logo-filter: none;
   --sans:
     'Inkpaw Account Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
@@ -64,7 +76,7 @@
     display: block;
     width: 80px;
     aspect-ratio: 4 / 3;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: var(--surface-strong);
   }
   .t-tags .sk:nth-child(1) {
@@ -171,7 +183,7 @@
     gap: 6px;
     height: 40px;
     padding-inline: 16px;
-    border-radius: 12px;
+    border-radius: var(--radius-control);
     border: 1px solid transparent;
     font-size: 14px;
     font-weight: 500;
@@ -253,7 +265,7 @@
     padding-inline: 8px;
     margin-inline: -8px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: transparent;
     font-size: 13px;
     color: var(--accent);
@@ -269,7 +281,7 @@
     width: 32px;
     height: 32px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: transparent;
     color: var(--muted);
     display: grid;
@@ -286,7 +298,7 @@
   .spin {
     width: 14px;
     height: 14px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 2px solid currentColor;
     border-right-color: transparent;
     animation: spin 700ms linear infinite;
@@ -591,7 +603,7 @@
     height: 40px;
     padding-inline: 12px;
     padding-block: 1px;
-    border-radius: 12px;
+    border-radius: var(--radius-control);
     border: 1px solid var(--rule-strong);
     background: var(--surface);
     color: var(--ink);
@@ -672,7 +684,7 @@
     margin-top: 2px;
     padding: 0;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--rule-strong);
     cursor: pointer;
     transition: background-color 140ms var(--ease);
@@ -689,9 +701,9 @@
     left: 2px;
     width: 16px;
     height: 16px;
-    border-radius: 999px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
+    border-radius: var(--radius-pill);
+    background: light-dark(var(--surface), var(--ink));
+    box-shadow: var(--shadow-control);
     transition: transform 240ms var(--ease);
   }
   .sw[aria-checked='true'] {
@@ -717,7 +729,7 @@
     height: 30px;
     padding-inline: 12px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: transparent;
     font-size: 13px;
     color: var(--muted);
@@ -733,7 +745,7 @@
   .seg button[data-state='on'] {
     background: var(--surface);
     color: var(--ink);
-    box-shadow: 0 1px 2px rgb(17 17 17 / 8%);
+    box-shadow: var(--shadow-control);
   }
   .chips {
     display: flex;
@@ -744,7 +756,7 @@
     height: 32px;
     min-width: 40px;
     padding-inline: 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid var(--rule);
     background: var(--surface);
     font-size: 13px;
@@ -781,7 +793,7 @@
     align-items: center;
     height: 24px;
     padding-inline: 8px;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: var(--surface-strong);
     color: var(--ink-soft);
     font-size: 12px;
@@ -792,7 +804,7 @@
     align-items: center;
     height: 40px;
     border: 1px solid var(--rule-strong);
-    border-radius: 12px;
+    border-radius: var(--radius-control);
     background: var(--surface);
     overflow: hidden;
   }
@@ -836,7 +848,7 @@
     gap: 5px;
     height: 32px;
     padding: 0 4px 0 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: var(--surface-strong);
     color: var(--ink);
     font-size: 13px;
@@ -852,7 +864,7 @@
     width: 24px;
     height: 24px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-skeleton);
     background: transparent;
     color: var(--muted);
     display: grid;
@@ -891,7 +903,7 @@
     height: 32px;
     padding-inline: 10px;
     border: 1px dashed var(--rule-strong);
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: transparent;
     color: var(--ink);
     font-size: 13px;
@@ -923,7 +935,7 @@
     height: 28px;
     padding-inline: 6px;
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-skeleton);
     background: transparent;
     color: var(--accent);
     font-size: 13px;
@@ -948,7 +960,7 @@
     align-items: end;
     margin-top: 20px;
     padding: 24px 24px 20px 28px;
-    border-radius: 16px;
+    border-radius: var(--radius-card);
     background: var(--stage);
   }
   .hero-k {
@@ -1110,7 +1122,7 @@
   }
   .bar {
     height: 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--surface-strong);
     overflow: hidden;
   }
@@ -1130,7 +1142,7 @@
     display: block;
     padding: 6px 10px;
     margin-inline: -10px;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     transition: background-color 140ms var(--ease);
   }
   .repo:hover {
@@ -1230,7 +1242,7 @@
   .sk {
     display: inline-block;
     height: 24px;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     background: linear-gradient(
       90deg,
       var(--surface-strong) 0%,
@@ -1404,7 +1416,7 @@
   .f-acts .iconbtn {
     width: 36px;
     height: 36px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
   }
   .bell[aria-pressed='false'] {
     color: var(--faint);
@@ -1462,7 +1474,7 @@
     gap: 10px;
     margin-top: 20px;
     padding: 18px 20px;
-    border-radius: 16px;
+    border-radius: var(--radius-card);
     background-color: var(--unigate-soft);
     background-image:
       linear-gradient(90deg, var(--unigate-soft) 50%, transparent),
@@ -1587,7 +1599,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 8px 8px 20px;
-    border-radius: 16px;
+    border-radius: var(--radius-card);
     background: var(--surface);
     box-shadow: var(--shadow-float);
     transform: translate(-50%, calc(100% + 40px));
@@ -1631,7 +1643,7 @@
     align-items: center;
     gap: 10px;
     padding: 10px 12px 10px 14px;
-    border-radius: 12px;
+    border-radius: var(--radius-control);
     background: var(--surface);
     box-shadow: var(--shadow-float);
     font-size: 14px;
@@ -1657,7 +1669,7 @@
     margin: auto;
     overflow: auto;
     overscroll-behavior: contain;
-    border-radius: 24px;
+    border-radius: var(--radius-dialog);
     background: var(--surface);
     box-shadow: var(--shadow-dlg);
     font: inherit;
@@ -1670,7 +1682,7 @@
     right: 14px;
     width: 36px;
     height: 36px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 0;
     background: transparent;
     color: var(--ink);
@@ -1763,7 +1775,7 @@
   .m-item img {
     width: 80px;
     aspect-ratio: 4 / 3;
-    border-radius: 8px;
+    border-radius: var(--radius-label);
     object-fit: cover;
     background: var(--surface-strong);
   }
