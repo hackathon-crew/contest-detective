@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
@@ -368,18 +369,19 @@ export function AuthPage({ mode, utilities }: { mode: Mode; utilities?: ReactNod
                   aria-describedby={registration ? 'password-help' : undefined}
                   onChange={(event) => setPassword(event.target.value)}
                 />
-                <Button
-                  className="auth-stage__password-toggle"
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  aria-label={passwordVisible ? t('隐藏密码') : t('显示密码')}
-                  aria-pressed={passwordVisible}
-                  disabled={pending}
-                  onClick={() => setPasswordVisible((value) => !value)}
-                >
-                  {passwordVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
-                </Button>
+                <PressedToggle pressed={passwordVisible}>
+                  <Button
+                    className="auth-stage__password-toggle"
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    aria-label={passwordVisible ? t('隐藏密码') : t('显示密码')}
+                    disabled={pending}
+                    onClick={() => setPasswordVisible((value) => !value)}
+                  >
+                    {passwordVisible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                  </Button>
+                </PressedToggle>
               </div>
               {registration && <small id="password-help">{t('8–128 个字符。')}</small>}
             </>

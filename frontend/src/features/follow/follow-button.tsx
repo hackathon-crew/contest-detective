@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import { Button } from '@huyanxius/ui'
 import type { FollowController } from './model'
 import { Bookmark, Eye } from 'lucide-react'
@@ -30,49 +31,52 @@ export function FollowButton({
   }, [followed, requested, onFollow])
   if (watch)
     return (
-      <button
-        type="button"
-        className="detective-watch"
-        data-popping={popping}
-        aria-pressed={followed}
-        disabled={follows.pending}
-        onClick={() => {
-          setRequested(!followed)
-          follows.toggle(contestId)
-        }}
-        onAnimationEnd={() => setPopping(false)}
-      >
-        <Eye aria-hidden="true" strokeWidth={1.5} />
-        {followed ? t('已盯上') : t('帮我盯着')}
-      </button>
+      <PressedToggle pressed={followed}>
+        <button
+          type="button"
+          className="detective-watch"
+          data-popping={popping}
+          disabled={follows.pending}
+          onClick={() => {
+            setRequested(!followed)
+            follows.toggle(contestId)
+          }}
+          onAnimationEnd={() => setPopping(false)}
+        >
+          <Eye aria-hidden="true" strokeWidth={1.5} />
+          {followed ? t('已盯上') : t('帮我盯着')}
+        </button>
+      </PressedToggle>
     )
   if (iconOnly)
     return (
-      <button
-        type="button"
-        className={'follow' + (popping ? ' pop' : '')}
-        aria-label={followed ? t('取消关注') : t('关注')}
-        aria-pressed={followed}
-        disabled={follows.pending}
-        onClick={() => {
-          setPopping(!followed)
-          follows.toggle(contestId)
-        }}
-        onAnimationEnd={() => setPopping(false)}
-      >
-        <Bookmark className="ic" />
-      </button>
+      <PressedToggle pressed={followed}>
+        <button
+          type="button"
+          className={'follow' + (popping ? ' pop' : '')}
+          aria-label={followed ? t('取消关注') : t('关注')}
+          disabled={follows.pending}
+          onClick={() => {
+            setPopping(!followed)
+            follows.toggle(contestId)
+          }}
+          onAnimationEnd={() => setPopping(false)}
+        >
+          <Bookmark className="ic" />
+        </button>
+      </PressedToggle>
     )
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      aria-pressed={followed}
-      disabled={follows.pending}
-      onClick={() => follows.toggle(contestId)}
-    >
-      {followed ? t('已关注') : t('关注')}
-    </Button>
+    <PressedToggle pressed={followed}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={follows.pending}
+        onClick={() => follows.toggle(contestId)}
+      >
+        {followed ? t('已关注') : t('关注')}
+      </Button>
+    </PressedToggle>
   )
 }

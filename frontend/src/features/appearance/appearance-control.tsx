@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { Button } from '@huyanxius/ui'
+import { Button, ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import '@/shared/ui/site.css'
 import { useLocale } from '@/shared/i18n/locale-context'
 type Theme = 'system' | 'light' | 'dark'
@@ -55,7 +55,16 @@ export function AppearanceControl({ segmented = false }: { segmented?: boolean }
   const dark = resolved === 'dark'
   if (segmented)
     return (
-      <div className="site-seg" role="group" aria-label={t('外观')}>
+      <ToggleGroup
+        type="single"
+        unstyled
+        className="site-seg"
+        aria-label={t('外观')}
+        value={theme}
+        onValueChange={(value) => {
+          if (value) select(value as Theme)
+        }}
+      >
         {(
           [
             ['system', t('跟随系统')],
@@ -63,16 +72,11 @@ export function AppearanceControl({ segmented = false }: { segmented?: boolean }
             ['dark', t('深色')],
           ] as const
         ).map(([value, label]) => (
-          <button
-            type="button"
-            key={value}
-            aria-pressed={theme === value}
-            onClick={() => select(value)}
-          >
+          <ToggleGroupItem key={value} value={value}>
             {label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
     )
   const label = t(dark ? '切换到浅色' : '切换到深色')
   return (

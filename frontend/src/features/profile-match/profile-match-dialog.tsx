@@ -16,6 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@huyanxius/ui'
 import { Dialog, ErrorState } from '@/shared/ui'
 import { confirmAccountProfile, githubDraft, matchProfile, resumeDraft } from './api'
@@ -454,65 +456,62 @@ function ProfileMatchForm({
                 </div>
                 <fieldset className="space-y-2">
                   <legend className="text-sm">{t('参与形式')}</legend>
-                  <div className="grid grid-cols-3 gap-2">
-                    {modes.map(([mode, label]) => {
-                      const checked = profile.preferred_modes?.includes(mode) ?? false
-                      return (
+                  <ToggleGroup
+                    type="multiple"
+                    unstyled
+                    className="grid grid-cols-3 gap-2"
+                    aria-label={t('参与形式')}
+                    value={profile.preferred_modes ?? []}
+                    onValueChange={(value) =>
+                      draft({ ...profile, preferred_modes: value as Profile['preferred_modes'] })
+                    }
+                  >
+                    {modes.map(([mode, label]) => (
+                      <ToggleGroupItem key={mode} value={mode} asChild>
                         <Button
-                          key={mode}
                           type="button"
-                          variant={checked ? 'default' : 'outline'}
+                          variant={profile.preferred_modes?.includes(mode) ? 'default' : 'outline'}
                           size="sm"
                           className="h-10 w-full"
-                          aria-pressed={checked}
                           disabled={busy}
-                          onClick={() =>
-                            draft({
-                              ...profile,
-                              preferred_modes: checked
-                                ? profile.preferred_modes?.filter((value) => value !== mode)
-                                : [...(profile.preferred_modes ?? []), mode],
-                            })
-                          }
                         >
                           {t(label)}
                         </Button>
-                      )
-                    })}
-                  </div>
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
                 </fieldset>
                 <fieldset className="space-y-2">
                   <legend className="text-sm">{t('每周可参加')}</legend>
-                  <div className="grid grid-cols-7 gap-1">
-                    {days.map((label, day) => {
-                      const weekdays = profile.availability?.weekdays ?? []
-                      const checked = weekdays.includes(day)
-                      return (
+                  <ToggleGroup
+                    type="multiple"
+                    unstyled
+                    className="grid grid-cols-7 gap-1"
+                    aria-label={t('每周可参加')}
+                    value={(profile.availability?.weekdays ?? []).map(String)}
+                    onValueChange={(value) =>
+                      draft({
+                        ...profile,
+                        availability: { ...profile.availability, weekdays: value.map(Number) },
+                      })
+                    }
+                  >
+                    {days.map((label, day) => (
+                      <ToggleGroupItem key={day} value={String(day)} asChild>
                         <Button
-                          key={day}
                           type="button"
-                          variant={checked ? 'default' : 'outline'}
+                          variant={
+                            profile.availability?.weekdays?.includes(day) ? 'default' : 'outline'
+                          }
                           size="sm"
                           className="h-10 w-full px-0"
-                          aria-pressed={checked}
                           disabled={busy}
-                          onClick={() =>
-                            draft({
-                              ...profile,
-                              availability: {
-                                ...profile.availability,
-                                weekdays: checked
-                                  ? weekdays.filter((value) => value !== day)
-                                  : [...weekdays, day],
-                              },
-                            })
-                          }
                         >
                           {t(label)}
                         </Button>
-                      )
-                    })}
-                  </div>
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
                 </fieldset>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">

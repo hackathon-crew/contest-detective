@@ -112,8 +112,8 @@ describe('路由', () => {
 
     const dialog = await screen.findByRole('dialog', { name: '接入 MCP' })
     expect(screen.getByRole('heading', { name: title, hidden: true })).toBe(heading)
-    expect(within(dialog).getByRole('button', { name: 'Claude Code' })).toBeTruthy()
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Cursor' }))
+    expect(within(dialog).getByRole('radio', { name: 'Claude Code' })).toBeTruthy()
+    fireEvent.click(within(dialog).getByRole('radio', { name: 'Cursor' }))
     expect(within(dialog).getByText(/~\/\.cursor\/mcp.json/)).toBeTruthy()
     fireEvent.keyDown(document, { key: 'Escape' })
 
@@ -155,7 +155,7 @@ describe('路由', () => {
   it('赛事库保留完整浏览、日历和常驻侦探', () => {
     renderAt('/contests')
     expect(screen.getByRole('region', { name: '全部赛事' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: '日历' })).toBeTruthy()
+    expect(screen.getByRole('radio', { name: '日历' })).toBeTruthy()
     expect(screen.getByRole('region', { name: '侦探' })).toBeTruthy()
   })
 

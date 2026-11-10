@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
-    "@huyanxius/ui": "git+https://github.com/huyanxius/ui.git#fc144aa524a58b49e7a0b2c3e272438cb3c9db50",
+    "@huyanxius/ui": "git+https://github.com/huyanxius/ui.git#5601fa69cd435e28fc73675087eae01dc5040124",
     "@tanstack/react-query": "^5.104.5",
     "cn": "^0.5.0",
     "date-fns": "^4.4.0",

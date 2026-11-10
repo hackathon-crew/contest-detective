@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import { useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { addDays } from 'date-fns'
@@ -84,7 +85,19 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
       />
       <div className="win">
         <div className="win-bar">
-          <div className="seg" role="group" aria-label={t('客户端')}>
+          <ToggleGroup
+            type="single"
+            unstyled
+            className="seg"
+            aria-label={t('客户端')}
+            value={tab}
+            onValueChange={(next) => {
+              if (next) {
+                setTab(next as keyof typeof config)
+                setCopied(false)
+              }
+            }}
+          >
             {(
               [
                 ['cc', 'Claude Code'],
@@ -92,19 +105,11 @@ export function McpPanel({ contests }: { contests?: ContestSummary[] }) {
                 ['other', t('其他客户端')],
               ] as const
             ).map(([key, label]) => (
-              <button
-                type="button"
-                key={key}
-                aria-pressed={tab === key}
-                onClick={() => {
-                  setTab(key)
-                  setCopied(false)
-                }}
-              >
+              <ToggleGroupItem key={key} value={key}>
                 {label}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
           <button
             type="button"
             className="copy-btn"

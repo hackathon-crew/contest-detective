@@ -40,7 +40,6 @@
   --on-accent: var(--color-on-accent);
   --danger: var(--color-danger);
   --danger-soft: var(--color-danger-soft);
-  --scrim: var(--color-scrim);
   --shadow-float:
     light-dark(0 0 0 1px rgb(17 17 17 / 7%), 0 0 0 1px rgb(255 255 255 / 6%)),
     light-dark(0 8px 32px rgb(17 17 17 / 10%), 0 8px 32px rgb(0 0 0 / 36%));
@@ -61,9 +60,6 @@
 }
 
 @scope (.account-root) {
-  .dlg-narrow {
-    width: min(440px, 100%);
-  }
   .m-cover {
     display: block;
     width: 80px;
@@ -686,8 +682,8 @@
     position: absolute;
     inset: -6px -4px;
   }
-  .sw::after {
-    content: '';
+  .sw [data-slot='switch-thumb'] {
+    pointer-events: none;
     position: absolute;
     top: 2px;
     left: 2px;
@@ -701,7 +697,7 @@
   .sw[aria-checked='true'] {
     background: var(--accent);
   }
-  .sw[aria-checked='true']::after {
+  .sw[aria-checked='true'] [data-slot='switch-thumb'] {
     transform: translateX(16px);
   }
 
@@ -734,7 +730,7 @@
   .seg button:hover {
     color: var(--ink);
   }
-  .seg button[aria-pressed='true'] {
+  .seg button[data-state='on'] {
     background: var(--surface);
     color: var(--ink);
     box-shadow: 0 1px 2px rgb(17 17 17 / 8%);
@@ -1064,7 +1060,7 @@
     grid-template-rows: 0fr;
     transition: grid-template-rows 240ms var(--ease);
   }
-  .expand.open {
+  .expand[data-state='open'] {
     grid-template-rows: 1fr;
   }
   .expand > div {
@@ -1078,7 +1074,7 @@
       opacity 240ms var(--ease),
       transform 240ms var(--ease);
   }
-  .expand.open .expand-in {
+  .expand[data-state='open'] .expand-in {
     opacity: 1;
     transform: none;
   }
@@ -1613,33 +1609,33 @@
     font-size: 14px;
     color: var(--ink);
   }
-  .toast {
-    position: fixed;
+  .account-toaster[data-sonner-toaster][data-x-position='center'] {
+    right: auto;
     left: 50%;
-    bottom: calc(max(20px, env(safe-area-inset-bottom)) + var(--lift, 0px));
     z-index: 70;
+    width: 0;
+    transform: none;
+    font-family: var(--sans);
+  }
+  .account-toaster [data-sonner-toast] {
+    right: auto;
+    left: 0;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    translate: -50% 0;
+    transition-duration: var(--motion-surface);
+    transition-timing-function: var(--ease);
+  }
+  .toast {
     display: flex;
     align-items: center;
     gap: 10px;
-    max-width: calc(100% - 32px);
     padding: 10px 12px 10px 14px;
     border-radius: 12px;
     background: var(--surface);
     box-shadow: var(--shadow-float);
     font-size: 14px;
     color: var(--ink);
-    opacity: 0;
-    transform: translate(-50%, 12px);
-    pointer-events: none;
-    transition:
-      opacity 240ms var(--ease),
-      transform 240ms var(--ease),
-      bottom 420ms var(--ease);
-  }
-  .toast.show {
-    opacity: 1;
-    transform: translate(-50%, 0);
-    pointer-events: auto;
   }
   .toast > .ic {
     color: var(--accent);
@@ -1652,43 +1648,21 @@
     --lift: 72px;
   }
 
-  /* 弹窗：从中间弹出 */
-  .modal {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: grid;
-    place-items: center;
-    padding: 24px 16px;
-  }
-  .modal .scrim {
-    position: absolute;
-    inset: 0;
-    background: var(--scrim);
-    opacity: 0;
-    transition: opacity 240ms var(--ease);
-  }
   .dlg {
-    position: relative;
-    width: min(600px, 100%);
+    inset: 24px 16px;
+    display: block;
+    width: min(600px, calc(100% - 32px));
+    height: max-content;
     max-height: calc(100dvh - 48px);
+    margin: auto;
     overflow: auto;
     overscroll-behavior: contain;
     border-radius: 24px;
     background: var(--surface);
     box-shadow: var(--shadow-dlg);
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-    transition:
-      opacity 240ms var(--ease),
-      transform 240ms var(--ease);
-  }
-  .modal.open .scrim {
-    opacity: 1;
-  }
-  .modal.open .dlg {
-    opacity: 1;
-    transform: none;
+    font: inherit;
+    color: inherit;
+    translate: none;
   }
   .dlg-x {
     position: absolute;

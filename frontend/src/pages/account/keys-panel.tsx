@@ -1,3 +1,4 @@
+import { Switch } from '@huyanxius/ui'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -19,7 +20,6 @@ import {
   Row,
   SecretField,
   Segments,
-  Switch,
   Tags,
   useNotice,
 } from './components'
@@ -513,10 +513,12 @@ export function KeysPanel() {
             <p>{t('问侦探时，已经过了截止时间的比赛不进结果')}</p>
           </div>
           <Switch
+            unstyled
+            className="sw"
             id="sr-ended"
-            label={t('默认不看已截止的比赛')}
-            on={prefs.exclude_ended ?? true}
-            change={(exclude_ended) => updateSearch.mutate({ ...prefs, exclude_ended })}
+            aria-label={t('默认不看已截止的比赛')}
+            checked={prefs.exclude_ended ?? true}
+            onCheckedChange={(exclude_ended) => updateSearch.mutate({ ...prefs, exclude_ended })}
             disabled={updateSearch.isPending}
           />
         </div>

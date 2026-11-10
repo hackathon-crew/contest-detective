@@ -1,3 +1,4 @@
+import { Textarea } from '@huyanxius/ui'
 import { ArrowUp, ImagePlus, Plus, Square, X } from 'lucide-react'
 import { useRef, useState, type FormEvent, type Ref, type ReactNode } from 'react'
 import { DropdownMenu, Popover } from 'radix-ui'
@@ -157,7 +158,8 @@ export function DetectiveComposer({
             </Popover.Content>
           </Popover.Portal>
         </Popover.Root>
-        <textarea
+        <Textarea
+          unstyled
           ref={inputRef}
           data-detective-input
           aria-label={t('问侦探')}

@@ -141,9 +141,9 @@ it('restores multiple URL filters and keeps inactive alternatives countable', as
   expect(
     screen.getByRole('button', { name: /^线上\+线下\s*0$/ }).getAttribute('aria-pressed'),
   ).toBe('true')
-  expect(screen.getByRole('button', { name: '日历' }).getAttribute('aria-pressed')).toBe('true')
+  expect(screen.getByRole('radio', { name: '日历' }).getAttribute('aria-checked')).toBe('true')
   fireEvent.click(screen.getByRole('button', { name: '清除全部' }))
-  fireEvent.click(screen.getByRole('button', { name: '列表' }))
+  fireEvent.click(screen.getByRole('radio', { name: '列表' }))
   await screen.findAllByRole('link', { name: '真实接口赛事' })
   await waitFor(() => expect(screen.getByTestId('query').textContent).toBe(''))
 })

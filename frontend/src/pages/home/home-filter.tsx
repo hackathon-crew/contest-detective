@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { TZDate } from '@date-fns/tz'
@@ -25,13 +26,22 @@ function Segments<T extends string>({
   onChange: (value: T) => void
 }) {
   return (
-    <div className="seg" role="group" aria-label={label}>
+    <ToggleGroup
+      type="single"
+      unstyled
+      className="seg"
+      aria-label={label}
+      value={value}
+      onValueChange={(next) => {
+        if (next) onChange(next as T)
+      }}
+    >
       {options.map(([key, title]) => (
-        <button type="button" key={key} aria-pressed={value === key} onClick={() => onChange(key)}>
+        <ToggleGroupItem key={key} value={key}>
           {title}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 export function HomeFilter({

@@ -1,3 +1,4 @@
+import { Switch, DialogTitle } from '@huyanxius/ui'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,7 +12,7 @@ import type {
   TrackRead,
   TrackingConditions,
 } from '@/shared/api/generated'
-import { Chips, failure, Ic, Row, Segments, Switch, useNotice } from './components'
+import { Chips, failure, Ic, Row, Segments, useNotice } from './components'
 import { AccountModal } from './modal'
 import { translate, translateSystemText, type Locale } from '@/shared/i18n'
 import { useLocale } from '@/shared/i18n/locale-context'
@@ -265,9 +266,11 @@ export function PushPanel() {
           </p>
         </div>
         <Switch
-          on={s.enabled ?? false}
-          label={t('邮件推送')}
-          change={(enabled) => update({ enabled })}
+          unstyled
+          className="sw"
+          checked={s.enabled ?? false}
+          aria-label={t('邮件推送')}
+          onCheckedChange={(enabled) => update({ enabled })}
           disabled={save.isPending || (!s.enabled && !state.email_verified)}
         />
       </div>
@@ -326,10 +329,12 @@ export function PushPanel() {
               <p>{t('赛事库每天同步，新收录的比赛按你的画像挑过再发')}</p>
             </div>
             <Switch
+              unstyled
+              className="sw"
               id="pu-new"
-              label={t('符合画像的新比赛')}
-              on={s.new_matches ?? true}
-              change={(new_matches) => update({ new_matches })}
+              aria-label={t('符合画像的新比赛')}
+              checked={s.new_matches ?? true}
+              onCheckedChange={(new_matches) => update({ new_matches })}
             />
           </div>
           <div className="trow">
@@ -350,10 +355,12 @@ export function PushPanel() {
               </div>
             </div>
             <Switch
+              unstyled
+              className="sw"
               id="pu-dl"
-              label={t('关注的比赛快截止时提醒')}
-              on={s.deadline_reminders ?? true}
-              change={(deadline_reminders) => update({ deadline_reminders })}
+              aria-label={t('关注的比赛快截止时提醒')}
+              checked={s.deadline_reminders ?? true}
+              onCheckedChange={(deadline_reminders) => update({ deadline_reminders })}
             />
           </div>
           <div className="trow">
@@ -362,10 +369,12 @@ export function PushPanel() {
               <p>{t('截止时间、地点或奖金改了，或者几个来源说法对不上')}</p>
             </div>
             <Switch
+              unstyled
+              className="sw"
               id="pu-chg"
-              label={t('关注的比赛信息有变动')}
-              on={s.changes ?? true}
-              change={(changes) => update({ changes })}
+              aria-label={t('关注的比赛信息有变动')}
+              checked={s.changes ?? true}
+              onCheckedChange={(changes) => update({ changes })}
             />
           </div>
           <div className="trow">
@@ -374,10 +383,12 @@ export function PushPanel() {
               <p>{t('下面每组追踪条件，侦探每天查一遍')}</p>
             </div>
             <Switch
+              unstyled
+              className="sw"
               id="pu-trk"
-              label={t('追踪条件出了新比赛')}
-              on={s.tracking ?? true}
-              change={(tracking) => update({ tracking })}
+              aria-label={t('追踪条件出了新比赛')}
+              checked={s.tracking ?? true}
+              onCheckedChange={(tracking) => update({ tracking })}
             />
           </div>
         </div>
@@ -484,10 +495,12 @@ export function PushPanel() {
                   </div>
                   <div className="t-acts">
                     <Switch
-                      on={track.enabled}
-                      label={t('推送「{name}」', { name: track.text })}
+                      unstyled
+                      className="sw"
+                      checked={track.enabled}
+                      aria-label={t('推送「{name}」', { name: track.text })}
                       disabled={!!busy}
-                      change={() => void changeTrack(track)}
+                      onCheckedChange={() => void changeTrack(track)}
                     />
                     <button
                       className="iconbtn"
@@ -605,9 +618,11 @@ export function PushPanel() {
           </p>
         )}
       </div>
-      <AccountModal open={mailOpen} close={() => setMailOpen(false)} titleId="mail-subj">
+      <AccountModal open={mailOpen} close={() => setMailOpen(false)}>
         <div className="mail-head">
-          <h3 id="mail-subj">{mail?.subject}</h3>
+          <DialogTitle asChild>
+            <h3>{mail?.subject}</h3>
+          </DialogTitle>
           <span>
             {t('发件人：')}
             {mail?.sender}
