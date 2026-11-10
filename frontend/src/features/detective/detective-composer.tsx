@@ -3,7 +3,7 @@ import { useRef, useState, type FormEvent, type Ref, type ReactNode } from 'reac
 import { DropdownMenu, Popover } from 'radix-ui'
 import githubMark from '@/shared/assets/github-mark.svg'
 import { ContestFilterIcon, ProfileIcon } from '@/shared/ui/context-icons'
-import { Button } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
 import { ScreenshotDialog } from './screenshot-dialog'
 import type { ScreenshotConfirmation } from './screenshot-contracts'
 import type { VerificationOptions } from './verification-contracts'
@@ -81,12 +81,12 @@ export function DetectiveComposer({
                 sideOffset={8}
                 collisionPadding={24}
                 aria-label={t('添加参赛资料')}
-                className="z-50 w-64 origin-(--radix-dropdown-menu-content-transform-origin) rounded-3xl border border-rule bg-surface p-2 text-base text-ink shadow-lg outline-none duration-140 ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+                className="z-50 w-64 origin-(--radix-dropdown-menu-content-transform-origin) rounded-(--radius-dialog) border border-rule bg-surface p-2 text-base text-ink shadow-lg outline-none duration-140 ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
               >
                 {onVerifyScreenshot && (
                   <DropdownMenu.Item
                     disabled
-                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
+                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-(--radius-card) px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                     onSelect={() => setScreenshotOpen(true)}
                   >
                     <ImagePlus className="size-5" aria-hidden="true" strokeWidth={1.5} />
@@ -96,21 +96,21 @@ export function DetectiveComposer({
                 {onAddProfile && (
                   <>
                     <DropdownMenu.Item
-                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
+                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-(--radius-card) px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                       onSelect={() => onAddProfile?.('github')}
                     >
                       <img src={githubMark} alt="" className="size-5 shrink-0 dark:invert" />
                       {t('连接到 GitHub')}
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
-                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
+                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-(--radius-card) px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                       onSelect={() => onAddProfile?.('profile')}
                     >
                       <ProfileIcon className="size-5" />
                       {t('添加画像')}
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
-                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
+                      className="flex min-h-12 cursor-pointer items-center gap-3 rounded-(--radius-card) px-3 outline-none transition-colors duration-140 data-highlighted:bg-surface-strong"
                       onSelect={() => onAddProfile?.('filters')}
                     >
                       <ContestFilterIcon className="size-5" />
@@ -128,7 +128,7 @@ export function DetectiveComposer({
               sideOffset={12}
               collisionPadding={24}
               aria-label={t('建立参赛画像')}
-              className="z-50 grid w-85 max-w-(--radix-popover-content-available-width) origin-(--radix-popover-content-transform-origin) gap-3 rounded-3xl bg-surface p-6 text-ink-soft shadow-lg outline-none duration-140 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:pointer-events-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
+              className="z-50 grid w-85 max-w-(--radix-popover-content-available-width) origin-(--radix-popover-content-transform-origin) gap-3 rounded-(--radius-dialog) bg-surface p-6 text-ink-soft shadow-lg outline-none duration-140 ease-out data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:pointer-events-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95"
               onOpenAutoFocus={(event) => event.preventDefault()}
               onCloseAutoFocus={(event) => event.preventDefault()}
             >

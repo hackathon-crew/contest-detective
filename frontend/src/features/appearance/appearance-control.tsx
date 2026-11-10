@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { Moon, Sun } from 'lucide-react'
-import { Button } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
 import '@/shared/ui/site.css'
 import { useLocale } from '@/shared/i18n/locale-context'
 type Theme = 'system' | 'light' | 'dark'

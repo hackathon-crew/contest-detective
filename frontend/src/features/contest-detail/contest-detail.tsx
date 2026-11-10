@@ -9,8 +9,9 @@ import {
   useContest,
   type ContestDetail as Contest,
 } from '@/entities/contest'
-import { ErrorState, Skeleton } from '@/shared/ui'
-import { Dialog, DialogContent, DialogTitle } from '@/shared/ui/dialog'
+import { Skeleton } from '@huyanxius/ui'
+import { ErrorState } from '@/shared/ui'
+import { Dialog, DialogContent, DialogTitle } from '@huyanxius/ui'
 import { Icon } from '@/shared/ui/site-icon'
 import { translateSystemText } from '@/shared/i18n'
 import { ContestIntroductionSection } from './content'
@@ -265,6 +266,7 @@ export function ContestDetail({
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent
+        closeLabel={t('关闭')}
         className={'contest-detail' + (variant === 'library' ? ' contest-detail--library' : '')}
         aria-describedby={undefined}
         onOpenAutoFocus={(event) => {

@@ -8,7 +8,8 @@ import {
   normalizedPrize,
   type ContestSummary,
 } from '@/entities/contest'
-import { EmptyState, ErrorState, Skeleton } from '@/shared/ui'
+import { Skeleton } from '@huyanxius/ui'
+import { EmptyState, ErrorState } from '@/shared/ui'
 import type { Message } from '@/shared/i18n'
 import { useLocale } from '@/shared/i18n/locale-context'
 

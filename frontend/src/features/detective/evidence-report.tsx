@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { Button } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
 import type {
   InvestigationPlan,
   InvestigationReport,

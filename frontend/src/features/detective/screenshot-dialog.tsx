@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus } from 'lucide-react'
-import { Button, Dialog } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
+import { Dialog } from '@/shared/ui'
 import type {
   ScreenshotConfirmation,
   ScreenshotExtraction,
@@ -157,7 +158,7 @@ export function ScreenshotDialog({
           <img
             src={preview}
             alt={t('待查证的截图预览')}
-            className="max-h-40 max-w-full rounded-xl object-contain"
+            className="max-h-40 max-w-full rounded-(--radius-control) object-contain"
           />
         )}
         {result?.status === 'no_text' && (
@@ -205,7 +206,10 @@ export function ScreenshotDialog({
               </Button>
             </div>
             {claims.map((claim, index) => (
-              <div key={claim.id} className="grid gap-2 rounded-2xl border border-rule p-3">
+              <div
+                key={claim.id}
+                className="grid gap-2 rounded-(--radius-card) border border-rule p-3"
+              >
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -225,7 +229,7 @@ export function ScreenshotDialog({
                   value={claim.text}
                   rows={2}
                   maxLength={MAX_SCREENSHOT_TEXT}
-                  className="w-full resize-y rounded-xl border border-rule bg-surface px-3 py-2 text-sm text-ink outline-none focus-visible:border-accent-line focus-visible:ring-4 focus-visible:ring-accent-soft focus-visible:outline-none"
+                  className="w-full resize-y rounded-(--radius-control) border border-rule bg-surface px-3 py-2 text-sm text-ink outline-none focus-visible:border-accent-line focus-visible:ring-4 focus-visible:ring-accent-soft focus-visible:outline-none"
                   onChange={(event) =>
                     setClaims((items) =>
                       items.map((item) =>
