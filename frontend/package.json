@@ -20,8 +20,8 @@
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
+    "@huyanxius/ui": "git+https://github.com/huyanxius/ui.git#fc144aa524a58b49e7a0b2c3e272438cb3c9db50",
     "@tanstack/react-query": "^5.104.5",
-    "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "date-fns": "^4.4.0",
     "eventsource-parser": "^4.1.2",
@@ -30,7 +30,6 @@
     "nuqs": "^2.10.2",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
-    "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.1",
     "react-markdown": "^10.1.0",
     "react-router": "^8.5.0",

@@ -10,15 +10,14 @@ import type { Message } from '@/shared/i18n'
 import {
   Badge,
   Button,
-  Dialog,
-  ErrorState,
   Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/shared/ui'
+} from '@huyanxius/ui'
+import { Dialog, ErrorState } from '@/shared/ui'
 import { confirmAccountProfile, githubDraft, matchProfile, resumeDraft } from './api'
 import { mergeDraft } from './state'
 import githubMark from '@/shared/assets/github-mark.svg'
@@ -52,7 +51,11 @@ function Tags({
       </label>
       <div className="flex flex-wrap gap-2">
         {values.map((item) => (
-          <Badge key={item} variant="outline" className="max-w-full gap-1 rounded-lg text-sm">
+          <Badge
+            key={item}
+            variant="outline"
+            className="max-w-full gap-1 rounded-(--radius-label) text-sm"
+          >
             <span className="min-w-0 whitespace-normal break-all">{item}</span>
             <Button
               type="button"
@@ -71,7 +74,7 @@ function Tags({
         <Input
           id={id}
           aria-label={t('添加{label}', { label })}
-          className="h-10 rounded-xl"
+          className="h-10 rounded-(--radius-control)"
           value={value}
           maxLength={80}
           disabled={disabled}
@@ -281,7 +284,7 @@ function ProfileMatchForm({
                     </span>
                     <Input
                       id={`${id}-github`}
-                      className="h-12 rounded-xl pl-28"
+                      className="h-12 rounded-(--radius-control) pl-28"
                       value={username}
                       placeholder="octocat"
                       autoComplete="off"
@@ -307,7 +310,7 @@ function ProfileMatchForm({
             {showProfile && (
               <label
                 htmlFor={`${id}-resume`}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-rule-strong bg-surface-muted p-4 transition-colors duration-140 hover:bg-surface-strong has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-2 has-disabled:cursor-wait has-disabled:opacity-60"
+                className="flex cursor-pointer items-center gap-3 rounded-(--radius-card) border border-dashed border-rule-strong bg-surface-muted p-4 transition-colors duration-140 hover:bg-surface-strong has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-2 has-disabled:cursor-wait has-disabled:opacity-60"
               >
                 <FileUp
                   aria-hidden="true"
@@ -419,7 +422,7 @@ function ProfileMatchForm({
                     </label>
                     <Input
                       id={`${id}-identity-text`}
-                      className="h-10 rounded-xl"
+                      className="h-10 rounded-(--radius-control)"
                       maxLength={500}
                       value={profile.identity}
                       disabled={busy}
@@ -439,7 +442,7 @@ function ProfileMatchForm({
                   </label>
                   <Input
                     id={`${id}-city`}
-                    className="h-10 rounded-xl"
+                    className="h-10 rounded-(--radius-control)"
                     value={profile.city ?? ''}
                     placeholder={t('例如 上海')}
                     maxLength={80}
@@ -518,7 +521,7 @@ function ProfileMatchForm({
                     </label>
                     <Input
                       id={`${id}-days`}
-                      className="h-10 rounded-xl"
+                      className="h-10 rounded-(--radius-control)"
                       type="number"
                       min={1}
                       max={30}
@@ -543,7 +546,7 @@ function ProfileMatchForm({
                     </label>
                     <Input
                       id={`${id}-time`}
-                      className="h-10 rounded-xl"
+                      className="h-10 rounded-(--radius-control)"
                       value={profile.available_time ?? ''}
                       placeholder={t('例如 周末可投入两天')}
                       maxLength={500}

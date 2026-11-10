@@ -5,7 +5,7 @@ import {
   useLocale,
   type LanguagePreference,
 } from '@/shared/i18n/locale-context'
-import { Button } from './button'
+import { Button } from '@huyanxius/ui'
 
 export function LanguageControl() {
   const { t } = useLocale()
@@ -30,7 +30,7 @@ export function LanguageControl() {
           sideOffset={8}
           collisionPadding={12}
           aria-label={label}
-          className="z-50 min-w-40 origin-(--radix-dropdown-menu-content-transform-origin) rounded-xl border border-rule bg-surface p-1 text-sm text-ink shadow-lg outline-none duration-140 ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          className="z-50 min-w-40 origin-(--radix-dropdown-menu-content-transform-origin) rounded-(--radius-control) border border-rule bg-surface p-1 text-sm text-ink shadow-lg outline-none duration-140 ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
           <DropdownMenu.RadioGroup
             value={setting.preference}
@@ -41,7 +41,7 @@ export function LanguageControl() {
                 key={option.value}
                 value={option.value}
                 lang={'lang' in option ? option.lang : undefined}
-                className="flex min-h-9 cursor-pointer items-center justify-between gap-3 rounded-lg px-3 outline-none data-highlighted:bg-surface-strong"
+                className="flex min-h-9 cursor-pointer items-center justify-between gap-3 rounded-(--radius-label) px-3 outline-none data-highlighted:bg-surface-strong"
               >
                 {option.name}
                 <DropdownMenu.ItemIndicator>

@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { useContestCollection } from '@/entities/contest'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@huyanxius/ui'
 import { McpIntro } from './home-content'
 import { McpPanel } from './mcp-panel'
 import './home-page.css'
@@ -29,6 +29,7 @@ export function McpDialog() {
       }}
     >
       <DialogContent
+        closeLabel={t('关闭')}
         aria-describedby={undefined}
         className="max-h-5/6 w-11/12 max-w-6xl gap-6 p-6 sm:max-w-6xl sm:p-8"
         onOpenAutoFocus={(event) => {

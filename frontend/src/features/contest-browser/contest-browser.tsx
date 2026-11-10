@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, List, SlidersHorizontal, X } from 'lucide-react'
 import { ContestCard, ContestSeriesRow, type LibraryRow } from '@/entities/contest'
-import { ErrorState, Skeleton } from '@/shared/ui'
+import { Skeleton } from '@huyanxius/ui'
+import { ErrorState } from '@/shared/ui'
 import { activeFilters, type ContestBrowserModel } from './browser-state'
 import { useLocale } from '@/shared/i18n/locale-context'
 

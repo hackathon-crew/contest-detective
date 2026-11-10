@@ -5,7 +5,7 @@ import { Link, Navigate, useLocation, useNavigate, type Location } from 'react-r
 import { currentUserKey, useCurrentUser, type PublicUser } from '@/entities/user'
 import { ApiError, apiClient } from '@/shared/api'
 import inkpawMark from '@/shared/assets/inkpaw-mark-56.webp'
-import { Button, Input } from '@/shared/ui'
+import { Button, Input } from '@huyanxius/ui'
 import { translateSystemText } from '@/shared/i18n'
 import { useLocale } from '@/shared/i18n/locale-context'
 import './auth-tokens.css'

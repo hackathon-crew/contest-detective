@@ -463,7 +463,7 @@
     place-items: center;
     width: calc(var(--spacing) * 8);
     height: calc(var(--spacing) * 8);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-label);
     background: var(--surface-muted);
     color: var(--accent);
   }
@@ -488,7 +488,7 @@
     resize: vertical;
     padding: calc(var(--spacing) * 3);
     border: 1px solid var(--rule);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-control);
     background: var(--surface-muted);
     color: var(--ink-soft);
     font: inherit;
@@ -517,7 +517,7 @@
     min-height: calc(var(--spacing) * 16);
     padding: calc(var(--spacing) * 2);
     border: 0;
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--muted);
     font-size: var(--text-xs);
@@ -538,7 +538,7 @@
     inset-block: 0;
     left: 0;
     width: calc((100% - var(--spacing) * 3) / 4);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-control);
     background: var(--accent-soft);
     transform: translateX(calc(var(--selected-step) * (100% + var(--spacing))));
     transition: transform 420ms var(--ease);
@@ -585,7 +585,7 @@
     inset-block: calc(var(--spacing) * 0.75);
     left: calc(var(--spacing) * 0.75);
     width: calc((100% - var(--spacing) * 2.5) / 3);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-label);
     background: var(--surface);
     transform: translateX(calc(var(--selected-mail) * (100% + var(--spacing) * 0.5)));
     transition: transform 420ms var(--ease);
@@ -602,7 +602,7 @@
     width: calc(var(--spacing) * 12);
     height: calc(var(--spacing) * 12);
     margin-block: var(--spacing);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-control);
     background: var(--accent-soft);
     color: var(--accent);
   }
@@ -630,7 +630,7 @@
     width: calc(var(--spacing) * 8);
     height: calc(var(--spacing) * 8);
     border: 0;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-label);
     color: var(--muted);
     background: transparent;
     cursor: pointer;

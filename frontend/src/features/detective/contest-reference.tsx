@@ -24,17 +24,17 @@ export function ContestReference({
   const [failedCover, setFailedCover] = useState<string | null>(null)
   const cover = showCover ? safeUrl(contest.cover_url) : null
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-2xl bg-surface-muted p-3 text-ink">
+    <div className="flex min-w-0 items-center gap-2 rounded-(--radius-card) bg-surface-muted p-3 text-ink">
       <Link
         to={`/contests/${encodeURIComponent(contest.id)}`}
-        className="flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-xl outline-offset-4 transition-opacity duration-140 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-accent"
+        className="flex min-h-9 min-w-0 flex-1 items-center gap-3 rounded-(--radius-control) outline-offset-4 transition-opacity duration-140 hover:opacity-75 focus-visible:outline-2 focus-visible:outline-accent"
         aria-label={t('查看比赛：{name}', { name: contest.name })}
       >
         {cover && cover !== failedCover && (
           <img
             src={cover}
             alt=""
-            className="size-12 shrink-0 rounded-lg object-cover"
+            className="size-12 shrink-0 rounded-(--radius-label) object-cover"
             onError={() => setFailedCover(cover)}
           />
         )}
@@ -47,7 +47,7 @@ export function ContestReference({
           type="button"
           onClick={onRemove}
           aria-label={t('移除比赛引用')}
-          className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-muted transition-colors duration-140 hover:bg-surface-strong hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-(--radius-control) text-muted transition-colors duration-140 hover:bg-surface-strong hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
         >
           <X className="size-4" strokeWidth={1.5} aria-hidden="true" />
         </button>

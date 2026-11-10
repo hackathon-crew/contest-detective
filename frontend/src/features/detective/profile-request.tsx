@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
 import { useLocale } from '@/shared/i18n/locale-context'
 
 export function ProfileRequestMessage({

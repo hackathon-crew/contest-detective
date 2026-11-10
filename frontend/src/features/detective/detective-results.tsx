@@ -32,7 +32,7 @@ export function RecommendationCards({
   return (
     <section
       aria-label={t('推荐比赛')}
-      className="min-w-0 overflow-hidden rounded-2xl border border-rule bg-surface font-sans duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
+      className="min-w-0 overflow-hidden rounded-(--radius-card) border border-rule bg-surface font-sans duration-240 ease-out animate-in fade-in-0 slide-in-from-bottom-2"
     >
       {items.map(({ contest, introduction, reason }) => {
         const deadline = displayDeadline(contest)
@@ -63,7 +63,7 @@ export function RecommendationCards({
           >
             <ContestCover
               contest={contest}
-              className="detective-recommendation-cover row-span-2 aspect-[4/3] w-16 self-start rounded-lg bg-surface-strong object-cover sm:row-span-1 sm:self-center"
+              className="detective-recommendation-cover row-span-2 aspect-[4/3] w-16 self-start rounded-(--radius-label) bg-surface-strong object-cover sm:row-span-1 sm:self-center"
             />
             <div className="min-w-0 space-y-0.5">
               <h3 className="detective-recommendation-title truncate leading-normal font-semibold text-ink">
@@ -164,7 +164,7 @@ export function ProfileFileAttachment({ file }: { file: ProfileFile }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex max-w-full min-w-0 items-center gap-3 rounded-2xl border border-rule bg-surface px-4 py-3 text-left font-sans transition-colors duration-140 hover:bg-surface-muted active:bg-surface-strong focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+        className="inline-flex max-w-full min-w-0 items-center gap-3 rounded-(--radius-card) border border-rule bg-surface px-4 py-3 text-left font-sans transition-colors duration-140 hover:bg-surface-muted active:bg-surface-strong focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
       >
         <FileText aria-hidden="true" className="size-5 shrink-0 text-muted" strokeWidth={1.5} />
         <span className="min-w-0">
@@ -175,7 +175,7 @@ export function ProfileFileAttachment({ file }: { file: ProfileFile }) {
         </span>
       </button>
       <Dialog open={open} title={file.name} onClose={() => setOpen(false)}>
-        <pre className="overflow-x-auto rounded-xl bg-surface-muted p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-words text-ink-soft">
+        <pre className="overflow-x-auto rounded-(--radius-control) bg-surface-muted p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap break-words text-ink-soft">
           {JSON.stringify({ profile: file.profile, candidates: file.candidates }, null, 2)}
         </pre>
       </Dialog>

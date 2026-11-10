@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui'
+import { Button } from '@huyanxius/ui'
 import type { FollowController } from './model'
 import { Bookmark, Eye } from 'lucide-react'
 import { useEffect, useState } from 'react'

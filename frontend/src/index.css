@@ -1,7 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import './shared/ui/motion.css';
-@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+@import '@huyanxius/ui/theme.css';
+@import '@huyanxius/ui/themes/inkpaw.css';
+@source '../node_modules/@huyanxius/ui/src';
 
 @font-face {
   font-family: 'Inkpaw Wordmark';
@@ -12,101 +13,8 @@
   unicode-range: U+0049, U+0061, U+006B, U+006E, U+0070, U+0077;
 }
 
-/*
- * 用途对照：页面标题 text-4xl font-bold；分区标题 text-2xl font-bold；
- * 卡片标题 text-base font-semibold；正文 text-sm；元信息 text-xs text-muted。
- * 圆角：标签 rounded-lg；控件 rounded-xl；卡片 rounded-2xl；弹窗 rounded-3xl。
- *
- * 设计令牌。尺寸一律用 Tailwind 自带的刻度，不另起名字：
- * 字号 text-xs…text-5xl，圆角 rounded-lg / xl / 2xl / 3xl（正好是 Everplain 的 8 / 12 / 16 / 24），
- * 阴影 shadow-*，间距，版心 max-w-*，动效时长 duration-140 / 240 / 420。
- *
- * 这里只放 Tailwind 给不了的：跟着深浅色切换的语义色、核实等级色，以及为中文改的两处默认值。
- * 颜色取自 Everplain（frontend/src/styles/tokens.css）。默认调色板清掉了，组件只用下面这些语义色。
- */
 @theme {
-  --color-*: initial;
-
-  /* shadcn 颜色名只映射语义色，不引入另一套调色板。 */
-  --color-background: var(--color-canvas);
-  --color-foreground: var(--color-ink);
-  --color-primary: var(--color-accent);
-  --color-primary-foreground: var(--color-on-accent);
-  --color-secondary: var(--color-surface);
-  --color-secondary-foreground: var(--color-ink);
-  --color-muted-foreground: var(--color-muted);
-  --color-popover: var(--color-surface);
-  --color-popover-foreground: var(--color-ink);
-  --color-card: var(--color-surface);
-  --color-card-foreground: var(--color-ink);
-  --color-border: var(--color-rule);
-  --color-input: var(--color-rule);
-  --color-ring: var(--color-accent);
-  --color-destructive: var(--color-danger);
-  --color-accent-foreground: var(--color-ink);
-
-  --font-sans:
-    Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  /* 品牌字体只覆盖 Inkpaw 字标，界面正文继续使用原有字体。 */
   --font-brand: 'Inkpaw Wordmark', var(--font-sans);
-
-  /* 中文字面几乎占满字身，行高低于 1.45 相邻两行会贴上；Tailwind 默认的 xs、sm 只有 1.33 和 1.43 */
-  --text-xs--line-height: 1.5;
-  --text-sm--line-height: 1.6;
-  --text-base--line-height: 1.6;
-
-  /* 主缓动：短而有弹性，替换 Tailwind 默认的 ease-out */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  /* 回弹只给发送气泡、关注成功和画像提示这类短反馈。 */
-  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
-  --default-transition-duration: var(--motion-fast);
-  --default-transition-timing-function: var(--ease-out);
-
-  /* 紧凑元素、控件、内容表面；大浮层保留 24px，胶囊不随尺寸变化。 */
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-2xl: 1rem;
-  --radius-3xl: 1.5rem;
-  --radius-pill: 999px;
-
-  --shadow-card:
-    0 1px 2px light-dark(rgb(17 17 17 / 4%), rgb(0 0 0 / 24%)),
-    0 8px 24px light-dark(rgb(17 17 17 / 6%), rgb(0 0 0 / 24%));
-  --shadow-cover: 0 2px 6px light-dark(rgb(17 17 17 / 10%), rgb(0 0 0 / 30%));
-  /* 输入聚焦是实色浅圈，保留表面原有阴影，不另外加发光。 */
-  --shadow-focus: 0 0 0 4px var(--color-accent-soft);
-
-  /* 表面：从最底的画布到浮起的纸面；scrim 是弹窗背后压暗页面的那层 */
-  --color-canvas: light-dark(#f5f5f5, #1c1e1d);
-  --color-surface: light-dark(#ffffff, #242625);
-  --color-surface-muted: light-dark(#f7f7f7, #202221);
-  --color-surface-strong: light-dark(#ededed, #303331);
-  /* 首页画布和展台沿用同一套中性色。 */
-  --color-page: light-dark(#ffffff, #1c1e1d);
-  --color-stage: light-dark(#f5f5f5, #222423);
-  --color-scrim: light-dark(rgb(17 17 17 / 32%), rgb(0 0 0 / 56%));
-
-  /* 墨色：ink 是标题与强调，ink-soft 是正文，muted 是元信息，faint 是几乎不看的定位符 */
-  --color-ink: light-dark(#111111, #e6e7e3);
-  --color-ink-soft: light-dark(#303030, #c9ccc6);
-  --color-muted: light-dark(#6c6c6c, #a4aaa2);
-  --color-faint: light-dark(#969696, #92998f);
-  --color-rule: light-dark(#e3e3e3, #383d38);
-  --color-rule-strong: light-dark(#cccccc, #50574f);
-
-  /* 品牌蓝用于主要操作；soft 是浅底，line 是描边。 */
-  --color-accent: light-dark(#3f5fd6, #93a9f6);
-  --color-accent-hover: light-dark(#3550bd, #a9bbf8);
-  --color-accent-soft: light-dark(#e9eefc, #2a3150);
-  --color-accent-line: light-dark(#cdd7f7, #3a4670);
-  --color-on-accent: light-dark(#ffffff, #121a33);
-
-  /* 状态色只有 danger 是彩色的；普通提示用中性灰加一道细线，不另起一种黄 */
-  --color-danger: light-dark(#98434b, #e2a3a6);
-  --color-danger-soft: light-dark(#f8edef, #382729);
-  --color-danger-line: light-dark(#ecd3d7, #553a3d);
-  --color-notice-line: light-dark(#b8b8b8, #50574f);
 
   /* 核实等级（#8 决策 2）：只有冲突是彩色的，其余三档是同一种墨色的深浅 */
   --color-level-official: var(--color-ink);
@@ -116,11 +24,10 @@
 }
 
 :root {
-  color-scheme: light dark;
   /* 首页和展示动画沿用同一组短名称，避免再定义第二套取值。 */
-  --r-s: var(--radius-lg);
-  --r-m: var(--radius-xl);
-  --r-l: var(--radius-2xl);
+  --r-s: var(--radius-label);
+  --r-m: var(--radius-control);
+  --r-l: var(--radius-card);
   --t1: var(--motion-fast);
   --t2: var(--motion-surface);
   --t3: var(--motion-page);
@@ -128,34 +35,7 @@
   --spring: var(--ease-spring);
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
-}
-
-:root[data-theme='dark'] {
-  color-scheme: dark;
-}
-
 body {
   @apply bg-canvas font-sans text-ink-soft antialiased;
   font-variant-numeric: tabular-nums;
-}
-
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
-[data-slot='input']:focus-visible {
-  outline: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 1ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 1ms !important;
-  }
 }
