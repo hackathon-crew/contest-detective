@@ -6,7 +6,7 @@ import { AppearanceControl } from '@/features/appearance'
 import { apiClient } from '@/shared/api'
 import { translateSystemText } from '@/shared/i18n'
 import { SiteHeader } from '@/shared/ui/site-header'
-import { Button } from '@huyanxius/ui'
+import { Button, Toaster, toast } from '@huyanxius/ui'
 import { User } from 'lucide-react'
 import mark from '@/shared/assets/inkpaw-mark-56.webp'
 import folder from '@/shared/assets/stickers/folder.png'
@@ -30,6 +30,7 @@ const panels = {
 }
 const year = new Date().getFullYear()
 const github = 'https://github.com/hackathon-crew/contest-detective'
+const toastId = 'inkpaw-account-notice'
 function Brand() {
   const { t } = useLocale()
   return (
@@ -82,8 +83,7 @@ export function AccountPage() {
     location = useLocation(),
     navigate = useNavigate(),
     client = useQueryClient()
-  const [notice, setNotice] = useState<{ text: string; action?: NoticeAction } | null>(null),
-    [loggingOut, setLoggingOut] = useState(false)
+  const [loggingOut, setLoggingOut] = useState(false)
   useEffect(() => {
     const title = document.title
     document.title = t('个人中心 · Inkpaw')
@@ -91,14 +91,36 @@ export function AccountPage() {
       document.title = title
     }
   }, [t])
-  const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined),
-    panel = useRef<HTMLDivElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
   function notify(text: string, action?: NoticeAction) {
-    setNotice({ text, action })
-    clearTimeout(timeout.current)
-    timeout.current = setTimeout(() => setNotice(null), action ? 5000 : 2600)
+    toast.custom(
+      (id) => (
+        <div className="toast">
+          <Ic name="check" />
+          <span>{translateSystemText(locale, text)}</span>
+          {action && (
+            <button
+              className="linkbtn"
+              type="button"
+              onClick={() => {
+                action.run()
+                toast.dismiss(id)
+              }}
+            >
+              {translateSystemText(locale, action.label)}
+            </button>
+          )}
+        </div>
+      ),
+      { id: toastId, duration: action ? 5000 : 2600 },
+    )
   }
-  useEffect(() => () => clearTimeout(timeout.current), [])
+  useEffect(
+    () => () => {
+      toast.dismiss(toastId)
+    },
+    [],
+  )
   useEffect(() => {
     const el = panel.current
     if (!el) return
@@ -259,21 +281,13 @@ export function AccountPage() {
             </div>
           </div>
         </footer>
-        <div className={'toast' + (notice ? ' show' : '')} role="status" aria-live="polite">
-          <Ic name="check" />
-          <span>{notice && translateSystemText(locale, notice.text)}</span>
-          {notice?.action && (
-            <button
-              className="linkbtn"
-              onClick={() => {
-                notice.action!.run()
-                setNotice(null)
-              }}
-            >
-              {translateSystemText(locale, notice.action.label)}
-            </button>
-          )}
-        </div>
+        <Toaster
+          className="account-toaster"
+          position="bottom-center"
+          visibleToasts={1}
+          offset="calc(max(20px, env(safe-area-inset-bottom)) + var(--lift, 0px))"
+          mobileOffset="calc(max(20px, env(safe-area-inset-bottom)) + var(--lift, 0px))"
+        />
       </div>
     </NoticeContext.Provider>
   )

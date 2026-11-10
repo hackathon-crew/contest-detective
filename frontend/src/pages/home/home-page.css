@@ -530,7 +530,7 @@
     background: var(--surface-muted);
     color: var(--ink);
   }
-  .research-tabs button[aria-pressed='true'] {
+  .research-tabs button[data-state='on'] {
     color: var(--accent);
   }
   .research-active-surface {
@@ -576,7 +576,7 @@
     z-index: 1;
     height: calc(var(--spacing) * 8);
   }
-  .mail-tabs.seg button[aria-pressed='true'] {
+  .mail-tabs.seg button[data-state='on'] {
     background: transparent;
     box-shadow: none;
   }
@@ -727,7 +727,7 @@
   .seg button:hover {
     color: var(--ink);
   }
-  .seg button[aria-pressed='true'] {
+  .seg button[data-state='on'] {
     background: var(--surface);
     color: var(--ink);
     box-shadow: 0 1px 2px rgb(17 17 17 / 8%);

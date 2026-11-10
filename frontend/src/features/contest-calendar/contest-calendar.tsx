@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import type { ReactNode } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { monthDay, type ContestDay, type LibraryRow } from '@/entities/contest'
@@ -92,21 +93,21 @@ export function ContestDatePicker({
                 : t(shortWeekdays[instant.getUTCDay()])
           const count = value?.count ?? 0
           return (
-            <button
-              className={'dpill' + (!value ? ' zero' : '') + (i === 0 ? ' today' : '')}
-              type="button"
-              key={day}
-              aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
-                date: monthDay(day, locale),
-                count,
-              })}
-              aria-pressed={date === day}
-              onClick={() => onDate(day)}
-            >
-              <span className="w">{label}</span>
-              <b>{Number(day.slice(8, 10))}</b>
-              <DotTypes value={value} />
-            </button>
+            <PressedToggle pressed={date === day} key={day}>
+              <button
+                className={'dpill' + (!value ? ' zero' : '') + (i === 0 ? ' today' : '')}
+                type="button"
+                aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                  date: monthDay(day, locale),
+                  count,
+                })}
+                onClick={() => onDate(day)}
+              >
+                <span className="w">{label}</span>
+                <b>{Number(day.slice(8, 10))}</b>
+                <DotTypes value={value} />
+              </button>
+            </PressedToggle>
           )
         })}
       </div>
@@ -143,20 +144,20 @@ export function ContestDatePicker({
           const value = map.get(day)
           const count = value?.count ?? 0
           return (
-            <button
-              key={day}
-              type="button"
-              className={'mday' + (value ? ' has' : '') + (day === today ? ' today' : '')}
-              aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
-                date: monthDay(day, locale),
-                count,
-              })}
-              aria-pressed={date === day}
-              onClick={() => onDate(day)}
-            >
-              <span className="num">{Number(day.slice(8, 10))}</span>
-              <DotTypes value={value} />
-            </button>
+            <PressedToggle pressed={date === day} key={day}>
+              <button
+                type="button"
+                className={'mday' + (value ? ' has' : '') + (day === today ? ' today' : '')}
+                aria-label={t(count === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                  date: monthDay(day, locale),
+                  count,
+                })}
+                onClick={() => onDate(day)}
+              >
+                <span className="num">{Number(day.slice(8, 10))}</span>
+                <DotTypes value={value} />
+              </button>
+            </PressedToggle>
           )
         })}
       </div>
@@ -239,45 +240,47 @@ export function ContestCalendar({
             <i className={'dot' + (mine(row) ? ' mine' : start(row) ? ' start' : '')} />
           )
           return (
-            <button
-              className={
-                'day' + (day.slice(0, 7) !== month ? ' out' : '') + (day === today ? ' today' : '')
-              }
-              type="button"
-              key={day}
-              aria-label={t(list.length === 1 ? '{date}，1 场' : '{date}，{count} 场', {
-                date: monthDay(day, locale),
-                count: list.length,
-              })}
-              aria-pressed={day === selected}
-              onClick={() => onSelect(day)}
-            >
-              <span className="dn">{Number(day.slice(8, 10))}</span>
-              {list.slice(0, 3).map((row) => (
-                <span className={'ev' + (mine(row) ? ' mine' : '')} key={row.id}>
-                  {dot(row)}
-                  <span>
-                    {row.type === 'series'
-                      ? 'AI 切磋大会 · ' +
-                        t(row.contests.length === 1 ? '1 场' : '{count} 场', {
-                          count: row.contests.length,
-                        })
-                      : row.contests[0]!.name}
+            <PressedToggle pressed={day === selected} key={day}>
+              <button
+                className={
+                  'day' +
+                  (day.slice(0, 7) !== month ? ' out' : '') +
+                  (day === today ? ' today' : '')
+                }
+                type="button"
+                aria-label={t(list.length === 1 ? '{date}，1 场' : '{date}，{count} 场', {
+                  date: monthDay(day, locale),
+                  count: list.length,
+                })}
+                onClick={() => onSelect(day)}
+              >
+                <span className="dn">{Number(day.slice(8, 10))}</span>
+                {list.slice(0, 3).map((row) => (
+                  <span className={'ev' + (mine(row) ? ' mine' : '')} key={row.id}>
+                    {dot(row)}
+                    <span>
+                      {row.type === 'series'
+                        ? 'AI 切磋大会 · ' +
+                          t(row.contests.length === 1 ? '1 场' : '{count} 场', {
+                            count: row.contests.length,
+                          })
+                        : row.contests[0]!.name}
+                    </span>
                   </span>
-                </span>
-              ))}
-              {list.length > 3 && (
-                <span className="more">{t('还有 {count} 场', { count: list.length - 3 })}</span>
-              )}
-              <span className="cnt" aria-hidden="true">
-                {list.slice(0, 4).map((row) => (
-                  <i
-                    key={row.id}
-                    className={'dot' + (mine(row) ? ' mine' : start(row) ? ' start' : '')}
-                  />
                 ))}
-              </span>
-            </button>
+                {list.length > 3 && (
+                  <span className="more">{t('还有 {count} 场', { count: list.length - 3 })}</span>
+                )}
+                <span className="cnt" aria-hidden="true">
+                  {list.slice(0, 4).map((row) => (
+                    <i
+                      key={row.id}
+                      className={'dot' + (mine(row) ? ' mine' : start(row) ? ' start' : '')}
+                    />
+                  ))}
+                </span>
+              </button>
+            </PressedToggle>
           )
         })}
       </div>

@@ -46,7 +46,7 @@ it('persists frequency and shows a failed test delivery as an error', async () =
       </QueryClientProvider>
     </MemoryRouter>,
   )
-  fireEvent.click(await screen.findByRole('button', { name: '每天' }))
+  fireEvent.click(await screen.findByRole('radio', { name: '每天' }))
   await waitFor(() => expect(settings.frequency).toBe('daily'))
   fireEvent.click(screen.getByRole('button', { name: '发一封测试邮件' }))
   expect(await screen.findByRole('alert')).toHaveProperty('textContent', '邮件服务尚未配置')

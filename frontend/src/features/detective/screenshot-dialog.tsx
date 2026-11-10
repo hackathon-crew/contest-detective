@@ -1,3 +1,4 @@
+import { Textarea } from '@huyanxius/ui'
 import { useEffect, useRef, useState } from 'react'
 import { ImagePlus } from 'lucide-react'
 import { Button } from '@huyanxius/ui'
@@ -224,7 +225,8 @@ export function ScreenshotDialog({
                   />
                   {t('查证这条说法')} {index + 1}
                 </label>
-                <textarea
+                <Textarea
+                  unstyled
                   aria-label={t('说法 {number}', { number: index + 1 })}
                   value={claim.text}
                   rows={2}

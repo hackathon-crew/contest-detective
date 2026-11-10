@@ -1,10 +1,11 @@
+import { Switch } from '@huyanxius/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useCurrentUser } from '@/entities/user'
 import { dateFields, fieldNames, formatDate, safeUrl } from '@/entities/contest'
 import { apiClient } from '@/shared/api'
 import type { FieldValue, NotificationRead, StatusRead, WatchRead } from '@/shared/api/generated'
-import { failure, Row, Switch } from './components'
+import { failure, Row } from './components'
 import { translate, translateSystemText, type Locale, type Message } from '@/shared/i18n'
 import { useLocale } from '@/shared/i18n/locale-context'
 
@@ -251,10 +252,12 @@ function AccountWatch({ userId, followKey }: { userId: string; followKey: string
                     )}
                   </div>
                   <Switch
-                    on={item.enabled ?? false}
-                    label={t('盯梢「{name}」', { name: item.contest_name })}
+                    unstyled
+                    className="sw"
+                    checked={item.enabled ?? false}
+                    aria-label={t('盯梢「{name}」', { name: item.contest_name })}
                     disabled={busy}
-                    change={(enabled) =>
+                    onCheckedChange={(enabled) =>
                       void run('toggle:' + item.contest_id, (signal) =>
                         apiClient.request<StatusRead>(
                           '/account/watch/' + encodeURIComponent(item.contest_id),

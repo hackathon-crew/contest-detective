@@ -188,7 +188,6 @@ export function DetectivePage() {
                 className="detective-icon"
                 aria-label={t('研究面板')}
                 title={t('研究面板')}
-                aria-pressed={researchOpen}
               >
                 <PanelRight aria-hidden="true" strokeWidth={1.5} />
               </button>

@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Check, X } from 'lucide-react'
 import {
@@ -83,34 +84,34 @@ export function ContestFilters({
           : filters[key] === value
     const count = countFilter(contests, filters, key, value, follows)
     return (
-      <button
-        key={key + String(value)}
-        className={
-          (kind === 'chips' ? 'cchip' : 'opt' + (kind === 'radio' ? ' radio' : '')) +
-          (count === 0 && !selected ? ' zero' : '')
-        }
-        type="button"
-        aria-pressed={selected}
-        onClick={() => {
-          const next =
-            kind === 'multi' || kind === 'chips'
-              ? selected
-                ? (filters[key] as string[]).filter((v) => v !== value)
-                : [...(filters[key] as string[]), String(value)]
-              : kind === 'toggle'
-                ? !selected
-                : value
-          onChange({ [key]: next })
-        }}
-      >
-        {kind !== 'chips' && (
-          <span className="box">
-            <Check className="ic" />
-          </span>
-        )}
-        {label}
-        <span className="n">{count}</span>
-      </button>
+      <PressedToggle pressed={selected} key={key + String(value)}>
+        <button
+          className={
+            (kind === 'chips' ? 'cchip' : 'opt' + (kind === 'radio' ? ' radio' : '')) +
+            (count === 0 && !selected ? ' zero' : '')
+          }
+          type="button"
+          onClick={() => {
+            const next =
+              kind === 'multi' || kind === 'chips'
+                ? selected
+                  ? (filters[key] as string[]).filter((v) => v !== value)
+                  : [...(filters[key] as string[]), String(value)]
+                : kind === 'toggle'
+                  ? !selected
+                  : value
+            onChange({ [key]: next })
+          }}
+        >
+          {kind !== 'chips' && (
+            <span className="box">
+              <Check className="ic" />
+            </span>
+          )}
+          {label}
+          <span className="n">{count}</span>
+        </button>
+      </PressedToggle>
     )
   }
   return (

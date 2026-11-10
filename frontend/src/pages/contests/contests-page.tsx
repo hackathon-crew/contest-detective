@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router'
@@ -283,15 +284,16 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
                   </button>
                 )}
               </label>
-              <button
-                className="site-button site-button--outline"
-                type="button"
-                aria-pressed={matches !== null}
-                onClick={() => (matches ? setMatches(null) : setProfileSection('all'))}
-              >
-                <UserRound className="ic" />
-                {t('按我的情况挑')}
-              </button>
+              <PressedToggle pressed={matches !== null}>
+                <button
+                  className="site-button site-button--outline"
+                  type="button"
+                  onClick={() => (matches ? setMatches(null) : setProfileSection('all'))}
+                >
+                  <UserRound className="ic" />
+                  {t('按我的情况挑')}
+                </button>
+              </PressedToggle>
             </div>
           </div>
           <div className="head-octo" title={t('点一下它')}>
@@ -325,18 +327,19 @@ export function ContestsPage({ contestId }: { contestId?: string }) {
             onClose={closeSheet}
             calendar={<ContestDatePicker {...pickerProps} />}
             actions={
-              <button
-                className="site-button site-button--outline"
-                type="button"
-                aria-pressed={browser.filters.mine}
-                onClick={() => {
-                  if (requireLogin()) change({ mine: true })
-                  scrollToLibrary()
-                }}
-              >
-                {t('我的关注')}
-                {follows.ids.length > 0 && <span className="badge">{follows.ids.length}</span>}
-              </button>
+              <PressedToggle pressed={browser.filters.mine}>
+                <button
+                  className="site-button site-button--outline"
+                  type="button"
+                  onClick={() => {
+                    if (requireLogin()) change({ mine: true })
+                    scrollToLibrary()
+                  }}
+                >
+                  {t('我的关注')}
+                  {follows.ids.length > 0 && <span className="badge">{follows.ids.length}</span>}
+                </button>
+              </PressedToggle>
             }
           />
           <div className="library-results">

@@ -1,3 +1,4 @@
+import { Textarea, ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router'
 import type { Profile } from '@/shared/api'
@@ -363,32 +364,33 @@ export function ResearchPreview({
         <div className="research-body">
           <label className="research-question">
             想查清什么
-            <textarea
+            <Textarea
+              unstyled
               aria-label="深度检索问题"
               value={question}
               onChange={(event) => setQuestion(event.target.value)}
               rows={3}
             />
           </label>
-          <div
+          <ToggleGroup
             className="research-tabs"
-            role="group"
+            type="single"
+            unstyled
+            value={String(active)}
+            onValueChange={(value) => {
+              if (value) setActive(Number(value))
+            }}
             aria-label="深度检索步骤"
             style={{ '--selected-step': active } as CSSProperties}
           >
             <span className="research-active-surface" aria-hidden="true" />
             {researchSteps.map(([icon, title], index) => (
-              <button
-                type="button"
-                key={title}
-                aria-pressed={active === index}
-                onClick={() => setActive(index)}
-              >
+              <ToggleGroupItem key={title} value={String(index)}>
                 <Icon name={icon} />
                 {title}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
+          </ToggleGroup>
           <div className="research-focus" key={`${active}-${cycle}`}>
             <strong>{step[2]}</strong>
             <p>{step[3]}</p>
@@ -495,24 +497,24 @@ export function WatchPreview() {
             <Icon name="refresh" />
           </button>
         </div>
-        <div
+        <ToggleGroup
           className="mail-tabs seg"
-          role="group"
+          type="single"
+          unstyled
+          value={String(active)}
+          onValueChange={(value) => {
+            if (value) setActive(Number(value))
+          }}
           aria-label="邮件内容预览"
           style={{ '--selected-mail': active } as CSSProperties}
         >
           <span className="mail-active-surface" aria-hidden="true" />
           {mailContents.map(({ title }, index) => (
-            <button
-              type="button"
-              key={title}
-              aria-pressed={active === index}
-              onClick={() => setActive(index)}
-            >
+            <ToggleGroupItem key={title} value={String(index)}>
               {title}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
         <div className="mail-preview" key={`${active}-${cycle}`}>
           <span className="mail-preview-icon">
             <Icon name={content.icon} large />

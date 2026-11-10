@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import type { ReactNode } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, List, SlidersHorizontal, X } from 'lucide-react'
 import { ContestCard, ContestSeriesRow, type LibraryRow } from '@/entities/contest'
@@ -91,7 +92,16 @@ export function ContestBrowser({
               </span>
             )}
           </button>
-          <div className="seg" role="group" aria-label={t('排序')}>
+          <ToggleGroup
+            type="single"
+            unstyled
+            className="seg"
+            aria-label={t('排序')}
+            value={params.sort}
+            onValueChange={(value) => {
+              if (value) void setParams({ sort: value as typeof params.sort, page: 1 })
+            }}
+          >
             {(
               [
                 ['preparation', t('准备时间优先')],
@@ -99,36 +109,31 @@ export function ContestBrowser({
                 ['start', t('开赛最早')],
               ] as const
             ).map(([sort, label]) => (
-              <button
-                type="button"
-                key={sort}
-                aria-pressed={params.sort === sort}
-                onClick={() => void setParams({ sort, page: 1 })}
-              >
+              <ToggleGroupItem key={sort} value={sort}>
                 {label}
-              </button>
+              </ToggleGroupItem>
             ))}
-          </div>
-          <div className="seg" role="group" aria-label={t('视图')} id="view">
-            <button
-              type="button"
-              aria-label={t('列表')}
-              aria-pressed={params.view === 'list'}
-              onClick={() => void setParams({ view: 'list' })}
-            >
+          </ToggleGroup>
+          <ToggleGroup
+            type="single"
+            unstyled
+            className="seg"
+            aria-label={t('视图')}
+            id="view"
+            value={params.view}
+            onValueChange={(value) => {
+              if (value) void setParams({ view: value as typeof params.view })
+            }}
+          >
+            <ToggleGroupItem aria-label={t('列表')} value="list">
               <List className="ic" />
               <span className="v-txt">{t('列表')}</span>
-            </button>
-            <button
-              type="button"
-              aria-label={t('日历')}
-              aria-pressed={params.view !== 'list'}
-              onClick={() => void setParams({ view: 'calendar' })}
-            >
+            </ToggleGroupItem>
+            <ToggleGroupItem aria-label={t('日历')} value="calendar">
               <CalendarDays className="ic" />
               <span className="v-txt">{t('日历')}</span>
-            </button>
-          </div>
+            </ToggleGroupItem>
+          </ToggleGroup>
           {exportAction}
         </div>
       </div>

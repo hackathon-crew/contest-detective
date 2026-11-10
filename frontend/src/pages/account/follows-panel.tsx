@@ -1,3 +1,4 @@
+import { PressedToggle } from '@/shared/ui/pressed-toggle'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useCurrentUser } from '@/entities/user'
@@ -156,16 +157,17 @@ export function FollowsPanel() {
           </div>
           <div className="f-acts">
             {!closed && (
-              <button
-                className="iconbtn bell"
-                type="button"
-                aria-pressed={row.reminders}
-                aria-label={t(row.reminders ? '关掉这场的截止提醒' : '打开这场的截止提醒')}
-                disabled={follows.pending}
-                onClick={() => void remind(row)}
-              >
-                <Ic name={row.reminders ? 'bell' : 'bell-off'} />
-              </button>
+              <PressedToggle pressed={row.reminders}>
+                <button
+                  className="iconbtn bell"
+                  type="button"
+                  aria-label={t(row.reminders ? '关掉这场的截止提醒' : '打开这场的截止提醒')}
+                  disabled={follows.pending}
+                  onClick={() => void remind(row)}
+                >
+                  <Ic name={row.reminders ? 'bell' : 'bell-off'} />
+                </button>
+              </PressedToggle>
             )}
             <button
               className="iconbtn unfollow"

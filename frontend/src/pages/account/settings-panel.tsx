@@ -1,3 +1,4 @@
+import { DialogTitle } from '@huyanxius/ui'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -356,9 +357,11 @@ export function SettingsPanel() {
           </button>
         </div>
       </div>
-      <AccountModal open={deleting} close={() => setDeleting(false)} titleId="del-title" narrow>
+      <AccountModal open={deleting} close={() => setDeleting(false)}>
         <form className="dlg-pad" onSubmit={(e) => void remove(e)}>
-          <h3 id="del-title">{t('删除这个账号？')}</h3>
+          <DialogTitle asChild>
+            <h3>{t('删除这个账号？')}</h3>
+          </DialogTitle>
           <p>
             {t('画像、{count} 场关注、追踪条件和推送设置会一起删掉，没法恢复。输入登录邮箱确认。', {
               count: account.data?.follows_count ?? '—',

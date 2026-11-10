@@ -238,8 +238,7 @@ it.each(['default', 'library'] as const)(
     expect(onAsk).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'one', name: '城市服务挑战赛' }),
     )
-    const follow = within(actions).getByRole('button', { name: '关注' })
-    expect(follow.getAttribute('data-size')).toBe('sm')
+    const follow = within(actions).getByRole('button', { name: '关注', pressed: false })
     fireEvent.click(follow)
     expect(toggle).toHaveBeenCalledWith('one')
   },

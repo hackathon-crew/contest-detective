@@ -1,3 +1,4 @@
+import { Collapsible, CollapsibleContent, ToggleGroup, ToggleGroupItem } from '@huyanxius/ui'
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import {
   ArrowRight,
@@ -110,32 +111,6 @@ export function Row({
     </div>
   )
 }
-export function Switch({
-  on,
-  change,
-  label,
-  disabled = false,
-  id,
-}: {
-  on: boolean
-  change: (v: boolean) => void
-  label: string
-  disabled?: boolean
-  id?: string
-}) {
-  return (
-    <button
-      className="sw"
-      type="button"
-      role="switch"
-      id={id}
-      aria-checked={on}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => change(!on)}
-    />
-  )
-}
 export function Segments<T extends string | number>({
   values,
   value,
@@ -150,13 +125,23 @@ export function Segments<T extends string | number>({
   id?: string
 }) {
   return (
-    <div className="seg" role="group" aria-label={label} id={id}>
+    <ToggleGroup
+      type="single"
+      unstyled
+      className="seg"
+      aria-label={label}
+      id={id}
+      value={value == null ? '' : String(value)}
+      onValueChange={(next) => {
+        if (next) change(values.find(([v]) => String(v) === next)![0])
+      }}
+    >
       {values.map(([v, text]) => (
-        <button type="button" key={v} aria-pressed={v === value} onClick={() => change(v)}>
+        <ToggleGroupItem key={v} value={String(v)}>
           {text}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 export function Chips<T extends string | number>({
@@ -171,21 +156,22 @@ export function Chips<T extends string | number>({
   label?: string
 }) {
   return (
-    <div className="chips" role="group" aria-label={label}>
+    <ToggleGroup
+      type="multiple"
+      unstyled
+      className="chips"
+      aria-label={label}
+      value={selected.map(String)}
+      onValueChange={(next) =>
+        change(next.map((key) => values.find(([v]) => String(v) === key)![0]))
+      }
+    >
       {values.map(([v, text]) => (
-        <button
-          className="cchip"
-          type="button"
-          key={v}
-          aria-pressed={selected.includes(v)}
-          onClick={() =>
-            change(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v])
-          }
-        >
+        <ToggleGroupItem className="cchip" key={v} value={String(v)}>
           {text}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   )
 }
 export function Tags({
@@ -256,11 +242,11 @@ export function Tags({
 }
 export function Expand({ open, children }: { open: boolean; children: ReactNode }) {
   return (
-    <div className={'expand' + (open ? ' open' : '')} inert={!open}>
-      <div>
+    <Collapsible className="expand" open={open} inert={!open}>
+      <CollapsibleContent forceMount>
         <div className="expand-in">{children}</div>
-      </div>
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 export function SecretField({
